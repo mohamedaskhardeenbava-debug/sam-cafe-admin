@@ -1,0 +1,206 @@
+.dishes-page {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.dish-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 0 !important;
+}
+
+.dish-block {
+  overflow: hidden;
+}
+
+.dish-title {
+  font-size: 24px !important;
+  font-weight: 600;
+  color: #111;
+  margin: 19.92px 0 !important;
+}
+
+.category-dropdown {
+  min-width: 220px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #d0d0d0;
+  background-color: #ffffff;
+  font-size: 16px;
+  font-weight: 500;
+  outline: none;
+  color: #111;
+  cursor: pointer;
+}
+
+.category-dropdown:hover {
+  border-color: #b5b5b5;
+}
+
+.category-dropdown:focus {
+  border-color: #111;
+}
+
+.dish-title {
+  font-size: 32px;
+  font-weight: 600;
+  color: #111;
+  margin: 0;
+}
+
+.dish-table-wrapper {
+  width: 100%;
+  max-width: 100%;
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin: 0 auto;
+}
+
+.dish-table-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
+
+.dish-table {
+  width: 70%;
+  max-width: 70%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  margin-bottom: 30px;
+  background-color: #ffffff;
+}
+
+.dish-table th {
+  background-color: #414141;
+  color: #ffffff;
+  padding: 8px 10px;
+  font-size: 14px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dish-table td {
+  padding: 8px 10px;
+  font-size: 14px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-bottom: 1px solid #cacaca;
+}
+
+.dish-table tbody tr:hover {
+  background-color: rgb(234, 234, 234);
+}
+
+.dish-table th:nth-child(1),
+.dish-table td:nth-child(1) {
+  width: 56px;
+  min-width: 56px;
+  max-width: 56px;
+  text-align: center;
+}
+
+.dish-image,
+.dish-placeholder {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background-color: #f0f0f0;
+}
+
+.dish-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.icon-btn {
+  background-color: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+  border: none;
+  padding: 0;
+}
+
+
+.-edit-btn {
+  color: red;
+}
+
+.delete-btn {
+  color: red;
+}
+
+.dish-table th:nth-child(1),
+.dish-table td:nth-child(1),
+.dish-table th:nth-child(5),
+.dish-table td:nth-child(5),
+.dish-table th:nth-child(6),
+.dish-table td:nth-child(6) {
+  width: 72px;
+}
+
+.dish-table th:nth-child(4),
+.dish-table td:nth-child(4) {
+  width: 48px;
+}
+
+.dish-header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.dish-add-btn {
+  background: #111;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.category-modal.large {
+  width: 480px;
+}
+
+.category-modal textarea {
+  resize: none;
+  min-height: 70px;
+}
+
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+@media screen and (max-width:992px) {
+  .dish-table {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .dish-table th {
+  font-size: 12px;
+}
+
+.dish-table td {
+  font-size: 12px;
+}
+
+.icon-btn {
+  font-size: 12px;
+}
+}

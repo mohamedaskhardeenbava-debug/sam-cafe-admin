@@ -1,0 +1,46 @@
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background-color: #f4f5f7;
+  overflow: hidden;
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #f4f5f7;
+}
+
+.topbar {
+  height: 64px;
+  flex-shrink: 0;
+}
+
+.page {
+  flex: 1;
+  padding: 24px;
+  background-color: #f4f5f7;
+  overflow-y: scroll;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 10px;
+  }
+}
+
+
+
