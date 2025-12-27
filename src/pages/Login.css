@@ -47,11 +47,16 @@
   text-align: center;
 }
 
-.login-card p {
+.forgot {
   font-size: 12px;
   text-decoration: underline;
   color: rgb(54, 54, 255);
   cursor: pointer;
+}
+
+.error-text {
+  color: #e63946;
+  margin: 0;
 }
 
 .username-section {
@@ -73,3 +78,20 @@
   box-sizing: border-box;
   margin-top: 8px;
 }
+
+.logout-btn {
+  background: transparent;
+  border: 1px solid #e53935;
+  color: #e53935;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  margin-right: 12px;
+}
+
+.logout-btn:hover {
+  background: #e53935;
+  color: #fff;
+}
+

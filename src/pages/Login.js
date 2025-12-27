@@ -47,17 +47,29 @@
 
 // export default Login;
 
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
+
+const ADMIN_EMAIL = "admin@samcafe.com";
+const ADMIN_PASSWORD = "admin123";
 
 const Login = ({ onLogin }) => {
   const navigate = useNavigate();
 
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    onLogin();                // set auth flag in App.js
-    navigate("/", { replace: true });
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      onLogin();
+      navigate("/", { replace: true });
+    } else {
+      setError("Invalid username or password");
+    }
   };
 
   return (
@@ -70,6 +82,8 @@ const Login = ({ onLogin }) => {
           <input
             type="email"
             placeholder="Enter username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
           />
         </div>
@@ -79,11 +93,15 @@ const Login = ({ onLogin }) => {
           <input
             type="password"
             placeholder="Enter password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             required
           />
         </div>
 
-        <p className="forgot-password">Forgot password?</p>
+        <p className="forgot">Forgot Password?</p>
+
+        {error && <p className="error-text">{error}</p>}
 
         <button type="submit">Login</button>
       </form>
@@ -92,4 +110,3 @@ const Login = ({ onLogin }) => {
 };
 
 export default Login;
-

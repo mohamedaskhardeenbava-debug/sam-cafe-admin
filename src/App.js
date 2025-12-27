@@ -1227,7 +1227,7 @@ import Login from "./pages/Login";
 import "./App.css";
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const [adminData, setAdminData] = useState({
@@ -2281,7 +2281,11 @@ function App() {
         <Topbar
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
+          isAuthenticated={isAuthenticated}
+          setIsAuthenticated={setIsAuthenticated}
+
         />
+
 
         {/* PAGE CONTENT */}
         <div className="page">

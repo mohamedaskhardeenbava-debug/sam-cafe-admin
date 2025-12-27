@@ -49,9 +49,11 @@
 
 import "./Topbar.css";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
-const Topbar = ({ isSidebarOpen, setIsSidebarOpen }) => {
+const Topbar = ({ isSidebarOpen, setIsSidebarOpen, isAuthenticated, setIsAuthenticated }) => {
   const [scrolled, setScrolled] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const scrollContainer = document.querySelector(".main-content");
@@ -75,6 +77,10 @@ const Topbar = ({ isSidebarOpen, setIsSidebarOpen }) => {
     }
   };
 
+  const handleLogout = () => {
+    setIsAuthenticated(false)
+  };
+
   return (
     <div className={`topbar ${scrolled ? "topbar-scrolled" : ""}`}>
       <div className="topbar-left">
@@ -90,6 +96,10 @@ const Topbar = ({ isSidebarOpen, setIsSidebarOpen }) => {
       </div>
 
       <div className="topbar-right">
+        <button className="logout-btn" onClick={handleLogout}>
+          Logout
+        </button>
+
         <span className="admin-name">Admin</span>
         <div className="admin-avatar">S</div>
       </div>
@@ -98,3 +108,4 @@ const Topbar = ({ isSidebarOpen, setIsSidebarOpen }) => {
 };
 
 export default Topbar;
+
