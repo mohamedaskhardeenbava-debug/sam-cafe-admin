@@ -59,7 +59,7 @@ const Login = ({ onLogin }) => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -68,7 +68,7 @@ const Login = ({ onLogin }) => {
       onLogin();
       navigate("/", { replace: true });
     } else {
-      setError("Invalid username or password");
+      setError(true);
     }
   };
 
@@ -83,7 +83,10 @@ const Login = ({ onLogin }) => {
             type="email"
             placeholder="Enter username"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setError(false);
+            }}
             required
           />
         </div>
@@ -94,14 +97,17 @@ const Login = ({ onLogin }) => {
             type="password"
             placeholder="Enter password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setError(false);
+            }}
             required
           />
         </div>
 
         <p className="forgot">Forgot Password?</p>
 
-        {error && <p className="error-text">{error}</p>}
+        {error && <p className="error-text">Invalid username or password</p>}
 
         <button type="submit">Login</button>
       </form>
@@ -110,3 +116,4 @@ const Login = ({ onLogin }) => {
 };
 
 export default Login;
+
