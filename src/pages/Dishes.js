@@ -837,9 +837,9 @@ const Dishes = ({ adminData, setAdminData, toCamelCase }) => {
 </div>
 
             {/* INGREDIENT INPUT */}
-            <div className="ingredient-form">
+            <div className="ingredient-form border">
               <div className="form-group">
-                <label htmlFor="">Add-on Name</label>
+                <label htmlFor="">Ingredient Name</label>
               <input
                 value={ingredientForm.name}
                 onChange={(e) =>
@@ -879,10 +879,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase }) => {
               <button type="button" onClick={handleAddIngredient}>
                 Add Ingredient
               </button>
-            </div>
-
-            {/* INGREDIENT LIST */}
-            {newDish.ingredients.length > 0 && (
+{newDish.ingredients.length > 0 && (
               <table className="ingredient-form-table">
                 <thead>
                   <tr>
@@ -913,6 +910,11 @@ const Dishes = ({ adminData, setAdminData, toCamelCase }) => {
                 </tbody>
               </table>
             )}
+
+            </div>
+
+            {/* INGREDIENT LIST */}
+            
 
 
 

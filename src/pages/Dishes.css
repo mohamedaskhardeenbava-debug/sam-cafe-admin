@@ -235,6 +235,7 @@
   border-collapse: collapse;
   table-layout: fixed;
   background-color: #ffffff;
+  margin-top: 10px;
 }
 
 .ingredient-form-table thead {
@@ -276,6 +277,11 @@
   height: 16px;
 }
 
+.border {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  padding: 12px;
+}
 @media screen and (max-width:992px) {
   .dish-table {
     width: 100%;

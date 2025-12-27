@@ -519,6 +519,16 @@ const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase }) => {
               </div>
             </div>
 
+            <div className="form-group">
+  <label htmlFor="">Description</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+            />
+</div>
+
             <div className="form-actions">
               <button onClick={handleSave}>
                 {isEditMode ? "Save Changes" : "Add Ingredient"}
