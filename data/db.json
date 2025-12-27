@@ -1611,7 +1611,7 @@
     "ingredients": [
       {
         "id": "mozzarella",
-        "name": "Mozzarella Cheese",
+        "name": "Mo",
         "image": "/assets/ingredient-assets/mazarola.png",
         "usedInCategories": [
           "pizza",

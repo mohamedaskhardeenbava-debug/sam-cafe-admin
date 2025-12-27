@@ -72,7 +72,6 @@
 
 .category-table tbody tr:hover {
   background-color: rgb(234, 234, 234);
-  cursor: pointer;
 }
 
 .category-image,

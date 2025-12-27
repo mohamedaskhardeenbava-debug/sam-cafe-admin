@@ -1,22 +1,1233 @@
-import "./App.css";
-import { useState, useEffect } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+// import "./App.css";
+// import { useState, useEffect } from "react";
+// import { Routes, Route, Navigate } from "react-router-dom";
+
+// import Sidebar from "./components/layout/Sidebar";
+// import Topbar from "./components/layout/Topbar";
+
+// import Dashboard from "./pages/Dashboard";
+// import Ingredients from "./pages/Ingredients";
+// import Dishes from "./pages/Dishes";
+// import Categories from "./pages/Categories";
+// import IngredientDetails from "./pages/IngredientDetails";
+// import DishDetails from "./pages/DishDetails";
+// import Login from "./pages/Login";
+
+// import api from "./api";
+
+// function App() {
+//   const [isAuthenticated, setIsAuthenticated] = useState(false);
+//   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+//   const [adminData, setAdminData] = useState({
+//     categories: [
+//       {
+//         id: "pizza",
+//         name: "Pizza",
+//         image: "/assets/category-assets/pizza.png",
+
+//         varieties: [
+//           { id: "pizza_sm", name: "Small", basePrice: 199 },
+//           { id: "pizza_md", name: "Medium", basePrice: 299 },
+//           { id: "pizza_lg", name: "Large", basePrice: 399 },
+//           { id: "pizza_special", name: "Special", basePrice: 449 },
+//           { id: "pizza_king", name: "King Size", basePrice: 549 },
+//           { id: "pizza_thin", name: "Thin Crust", basePrice: 349 },
+//           { id: "pizza_cheese_burst", name: "Cheese Burst", basePrice: 499 },
+//           { id: "pizza_stuffed", name: "Stuffed Crust", basePrice: 469 }
+//         ],
+
+//         dishes: [
+//           {
+//             id: "chicken_pizza",
+//             name: "Chicken Pizza",
+//             image: "/image-assets/pizza/pizza1.png",
+//             basePrice: 349,
+//             description:
+//               "Chicken Pizza is prepared with tender chicken pieces layered over a tangy tomato base.",
+//             benefits: {
+//               calories: 520,
+//               protein: 32,
+//               fibre: 4,
+//               fat: 22
+//             },
+//             ingredients: [
+//               { name: "Chicken", calories: 239, quantity: 20 },
+//               { name: "Mozzarella Cheese", calories: 280, quantity: 10 },
+//               { name: "Tomato Sauce", calories: 29, quantity: 40 },
+//               { name: "Onion", calories: 40, quantity: 30 },
+//               { name: "Capsicum", calories: 31, quantity: 10 },
+//               { name: "Olive Oil", calories: 119, quantity: 5 },
+//               { name: "Garlic", calories: 149, quantity: 5 },
+//               { name: "Oregano", calories: 265, quantity: 2 },
+//               { name: "Black Pepper", calories: 251, quantity: 1 },
+//               { name: "Butter", calories: 717, quantity: 5 }
+//             ]
+//           },
+
+//           {
+//             id: "paneer_pizza",
+//             name: "Paneer Pizza",
+//             image: "/image-assets/pizza/pizza2.png",
+//             basePrice: 329,
+//             description:
+//               "Paneer Pizza is a vegetarian favorite with soft paneer cubes and vegetables.",
+//             benefits: {
+//               calories: 500,
+//               protein: 26,
+//               fibre: 4,
+//               fat: 24
+//             },
+//             ingredients: [
+//               { name: "Paneer", calories: 265, quantity: 60 },
+//               { name: "Mozzarella Cheese", calories: 280, quantity: 30 },
+//               { name: "Tomato Sauce", calories: 29, quantity: 20 },
+//               { name: "Onion", calories: 40, quantity: 40 },
+//               { name: "Capsicum", calories: 31, quantity: 35 },
+//               { name: "Olive Oil", calories: 119, quantity: 5 },
+//               { name: "Garlic", calories: 149, quantity: 5 },
+//               { name: "Oregano", calories: 265, quantity: 2 },
+//               { name: "Butter", calories: 717, quantity: 5 },
+//               { name: "Black Pepper", calories: 251, quantity: 1 }
+//             ]
+//           },
+
+//           {
+//             id: "cheese_pizza",
+//             name: "Cheese Pizza",
+//             image: "/image-assets/pizza/pizza3.png",
+//             basePrice: 299,
+//             description:
+//               "Cheese Pizza focuses on pure comfort with a rich cheese layer.",
+//             benefits: {
+//               calories: 480,
+//               protein: 24,
+//               fibre: 3,
+//               fat: 23
+//             },
+//             ingredients: [
+//               { name: "Mozzarella Cheese", calories: 280, quantity: 40 },
+//               { name: "Tomato Sauce", calories: 29, quantity: 25 },
+//               { name: "Oregano", calories: 265, quantity: 30 },
+//               { name: "Garlic", calories: 149, quantity: 10 },
+//               { name: "Butter", calories: 717, quantity: 10 },
+//               { name: "Olive Oil", calories: 119, quantity: 5 },
+//               { name: "Onion", calories: 40, quantity: 20 },
+//               { name: "Capsicum", calories: 31, quantity: 20 },
+//               { name: "Black Pepper", calories: 251, quantity: 1 },
+//               { name: "Salt", calories: 0, quantity: 2 }
+//             ]
+//           },
+
+//           {
+//             id: "pepperoni_pizza",
+//             name: "Pepperoni Pizza",
+//             image: "/image-assets/pizza/pizza4.png",
+//             basePrice: 379,
+//             description:
+//               "Pepperoni Pizza is bold and indulgent with spicy meat slices.",
+//             benefits: {
+//               calories: 560,
+//               protein: 28,
+//               fibre: 3,
+//               fat: 30
+//             },
+//             ingredients: [
+//               { name: "Pepperoni", calories: 494, quantity: 20 },
+//               { name: "Mozzarella Cheese", calories: 280, quantity: 50 },
+//               { name: "Tomato Sauce", calories: 29, quantity: 35 },
+//               { name: "Olive", calories: 115, quantity: 10 },
+//               { name: "Onion", calories: 40, quantity: 20 },
+//               { name: "Capsicum", calories: 31, quantity: 20 },
+//               { name: "Garlic", calories: 149, quantity: 5 },
+//               { name: "Oregano", calories: 265, quantity: 2 },
+//               { name: "Butter", calories: 717, quantity: 5 },
+//               { name: "Black Pepper", calories: 251, quantity: 1 }
+//             ]
+//           }
+//         ]
+//       }, {
+//         id: "burger",
+//         name: "Burger",
+//         image: "/assets/category-assets/burger.png",
+
+//         varieties: [
+//           { id: "burger_reg", name: "Regular", basePrice: 49 },
+//           { id: "burger_double", name: "Double Patty", basePrice: 99 },
+//           { id: "burger_cheese", name: "Cheese Loaded", basePrice: 89 },
+//           { id: "burger_supreme", name: "Supreme", basePrice: 129 },
+//           { id: "burger_king", name: "King Burger", basePrice: 169 },
+//           { id: "burger_grilled", name: "Grilled", basePrice: 109 },
+//           { id: "burger_crispy", name: "Crispy", basePrice: 99 },
+//           { id: "burger_signature", name: "Signature", basePrice: 149 }
+//         ],
+
+//         dishes: [
+//           {
+//             id: "chicken_burger",
+//             name: "Chicken Burger",
+//             image: "/image-assets/burger/image1.png",
+//             basePrice: 199,
+//             description:
+//               "Juicy chicken patty seasoned with aromatic spices delivers a rich, savory bite in every mouthful. Crispy on the outside and tender inside, it offers the perfect balance of crunch and softness. Fresh lettuce and creamy sauce add a refreshing contrast to the bold flavors. Soft toasted buns hold everything together beautifully. A satisfying choice for chicken lovers craving comfort and indulgence.",
+//             benefits: {
+//               calories: 430,
+//               protein: 29,
+//               fibre: 3,
+//               fat: 20
+//             },
+//             ingredients: [
+//               { name: "Chicken", calories: 239, quantity: 30 },
+//               { name: "Mayonnaise", calories: 680, quantity: 20 },
+//               { name: "Lettuce", calories: 15, quantity: 10 },
+//               { name: "Onion", calories: 40, quantity: 15 },
+//               { name: "Tomato", calories: 18, quantity: 15 },
+//               { name: "Butter", calories: 717, quantity: 5 },
+//               { name: "Garlic", calories: 149, quantity: 5 },
+//               { name: "Black Pepper", calories: 251, quantity: 1 },
+//               { name: "Salt", calories: 0, quantity: 2 },
+//               { name: "Burger Bun", calories: 265, quantity: 60 }
+//             ]
+//           },
+
+//           {
+//             id: "veg_burger",
+//             name: "Veg Burger",
+//             image: "/image-assets/burger/image2.png",
+//             basePrice: 179,
+//             description:
+//               "A wholesome vegetable patty made from fresh garden vegetables creates a light yet flavorful experience. Mild spices enhance the natural taste without overpowering it. Crisp lettuce and tangy sauce add freshness and balance. Served in a soft toasted bun, it feels both healthy and filling. Perfect for those who enjoy clean, comforting flavors.",
+//             benefits: {
+//               calories: 390,
+//               protein: 16,
+//               fibre: 5,
+//               fat: 18
+//             },
+//             ingredients: [
+//               { name: "Mozzarella Cheese", calories: 280, quantity: 20 },
+//               { name: "Capsicum", calories: 31, quantity: 15 },
+//               { name: "Onion", calories: 40, quantity: 10 },
+//               { name: "Lettuce", calories: 15, quantity: 10 },
+//               { name: "Tomato", calories: 18, quantity: 15 },
+//               { name: "Mayonnaise", calories: 680, quantity: 15 },
+//               { name: "Butter", calories: 717, quantity: 5 },
+//               { name: "Garlic", calories: 149, quantity: 5 },
+//               { name: "Salt", calories: 0, quantity: 2 },
+//               { name: "Burger Bun", calories: 265, quantity: 60 }
+//             ]
+//           },
+
+//           {
+//             id: "paneer_burger",
+//             name: "Paneer Burger",
+//             image: "/image-assets/burger/image3.png",
+//             basePrice: 189,
+//             description:
+//               "Soft, grilled paneer brings a rich and creamy texture to every bite. Light spices and herbs enhance its natural milkiness. Paired with crunchy vegetables, it creates a delightful contrast of textures. A smooth, mildly spiced sauce ties the flavors together. Ideal for vegetarians who enjoy a luxurious, protein-rich burger.",
+//             benefits: {
+//               calories: 420,
+//               protein: 21,
+//               fibre: 4,
+//               fat: 22
+//             },
+//             ingredients: [
+//               { name: "Paneer", calories: 265, quantity: 30 },
+//               { name: "Mayonnaise", calories: 680, quantity: 15 },
+//               { name: "Onion", calories: 40, quantity: 10 },
+//               { name: "Lettuce", calories: 15, quantity: 10 },
+//               { name: "Tomato", calories: 18, quantity: 15 },
+//               { name: "Butter", calories: 717, quantity: 5 },
+//               { name: "Garlic", calories: 149, quantity: 5 },
+//               { name: "Capsicum", calories: 31, quantity: 10 },
+//               { name: "Salt", calories: 0, quantity: 2 },
+//               { name: "Burger Bun", calories: 265, quantity: 60 }
+//             ]
+//           },
+
+//           {
+//             id: "cheese_burger",
+//             name: "Cheese Burger",
+//             image: "/image-assets/burger/image4.png",
+//             basePrice: 219,
+//             description:
+//               "Melted cheese blankets the patty, creating a smooth and indulgent flavor profile. Each bite delivers a rich, creamy taste that feels comforting and satisfying. The warmth of the cheese pairs perfectly with fresh toppings. Soft buns enhance the overall melt-in-the-mouth experience. A timeless classic made for true cheese lovers.",
+//             benefits: {
+//               calories: 460,
+//               protein: 27,
+//               fibre: 3,
+//               fat: 24
+//             },
+//             ingredients: [
+//               { name: "Mozzarella Cheese", calories: 280, quantity: 40 },
+//               { name: "Chicken", calories: 239, quantity: 25 },
+//               { name: "Onion", calories: 40, quantity: 10 },
+//               { name: "Lettuce", calories: 15, quantity: 10 },
+//               { name: "Tomato", calories: 18, quantity: 15 },
+//               { name: "Mayonnaise", calories: 680, quantity: 15 },
+//               { name: "Butter", calories: 717, quantity: 5 },
+//               { name: "Garlic", calories: 149, quantity: 5 },
+//               { name: "Salt", calories: 0, quantity: 2 },
+//               { name: "Burger Bun", calories: 265, quantity: 60 }
+//             ]
+//           },
+
+//           {
+//             id: "spicy_burger",
+//             name: "Spicy Burger",
+//             image: "/image-assets/burger/image5.png",
+//             basePrice: 209,
+//             description:
+//               "Bold spices ignite the palate with an exciting burst of heat. The patty is infused with fiery flavors that build with every bite. Cooling sauces and fresh vegetables balance the intensity perfectly. The soft bun absorbs the spice while keeping the burger hearty. A must-try for those who love strong, adventurous flavors.",
+//             benefits: {
+//               calories: 440,
+//               protein: 28,
+//               fibre: 3,
+//               fat: 21
+//             },
+//             ingredients: [
+//               { name: "Chicken", calories: 239, quantity: 30 },
+//               { name: "Jalapeno", calories: 29, quantity: 10 },
+//               { name: "Mozzarella Cheese", calories: 280, quantity: 20 },
+//               { name: "Onion", calories: 40, quantity: 10 },
+//               { name: "Lettuce", calories: 15, quantity: 10 },
+//               { name: "Tomato", calories: 18, quantity: 15 },
+//               { name: "Mayonnaise", calories: 680, quantity: 15 },
+//               { name: "Butter", calories: 717, quantity: 5 },
+//               { name: "Salt", calories: 0, quantity: 2 },
+//               { name: "Burger Bun", calories: 265, quantity: 60 }
+//             ]
+//           }
+//         ]
+//       },
+//       {
+//         id: "wraps",
+//         name: "Wraps",
+//         image: "/assets/category-assets/wraps.png",
+
+//         varieties: [
+//           { id: "wrap_classic", name: "Classic Wrap", basePrice: 159 },
+//           { id: "wrap_grilled", name: "Grilled Wrap", basePrice: 179 },
+//           { id: "wrap_cheese", name: "Cheese Wrap", basePrice: 189 },
+//           { id: "wrap_double", name: "Double Filling", basePrice: 209 },
+//           { id: "wrap_spicy", name: "Spicy Wrap", basePrice: 169 },
+//           { id: "wrap_large", name: "Large Wrap", basePrice: 199 },
+//           { id: "wrap_special", name: "Special Wrap", basePrice: 219 },
+//           { id: "wrap_signature", name: "Signature Wrap", basePrice: 239 }
+//         ],
+
+//         dishes: [
+//           {
+//             id: "chicken_wrap",
+//             name: "Chicken Wrap",
+//             basePrice: 199,
+//             description:
+//               "Chicken Wrap is a wholesome handheld meal filled with tender chicken and fresh vegetables.",
+//             benefits: { calories: 420, protein: 28, fibre: 4, fat: 18 },
+//             ingredients: [
+//               { name: "Chicken", calories: 239, quantity: 30 },
+//               { name: "Wrap Bread", calories: 310, quantity: 50 },
+//               { name: "Lettuce", calories: 15, quantity: 10 },
+//               { name: "Onion", calories: 40, quantity: 15 },
+//               { name: "Mayonnaise", calories: 680, quantity: 20 }
+//             ]
+//           },
+
+//           {
+//             id: "paneer_wrap",
+//             name: "Paneer Wrap",
+//             basePrice: 189,
+//             description:
+//               "Paneer Wrap combines soft paneer with crunchy vegetables and mild spices.",
+//             benefits: { calories: 400, protein: 22, fibre: 4, fat: 20 },
+//             ingredients: [
+//               { name: "Paneer", calories: 265, quantity: 40 },
+//               { name: "Wrap Bread", calories: 310, quantity: 50 },
+//               { name: "Capsicum", calories: 31, quantity: 15 },
+//               { name: "Onion", calories: 40, quantity: 10 },
+//               { name: "Mayonnaise", calories: 680, quantity: 15 }
+//             ]
+//           },
+
+//           {
+//             id: "veg_wrap",
+//             name: "Veg Wrap",
+//             basePrice: 169,
+//             description:
+//               "Veg Wrap is packed with fresh vegetables and light seasoning.",
+//             benefits: { calories: 360, protein: 14, fibre: 5, fat: 14 },
+//             ingredients: [
+//               { name: "Wrap Bread", calories: 310, quantity: 50 },
+//               { name: "Lettuce", calories: 15, quantity: 10 },
+//               { name: "Capsicum", calories: 31, quantity: 15 },
+//               { name: "Onion", calories: 40, quantity: 10 },
+//               { name: "Mayonnaise", calories: 680, quantity: 10 }
+//             ]
+//           },
+
+//           {
+//             id: "cheese_wrap",
+//             name: "Cheese Wrap",
+//             basePrice: 179,
+//             description:
+//               "Cheese Wrap focuses on rich melted cheese paired with vegetables.",
+//             benefits: { calories: 390, protein: 18, fibre: 3, fat: 22 },
+//             ingredients: [
+//               { name: "Mozzarella Cheese", calories: 280, quantity: 30 },
+//               { name: "Wrap Bread", calories: 310, quantity: 50 },
+//               { name: "Onion", calories: 40, quantity: 10 },
+//               { name: "Capsicum", calories: 31, quantity: 15 }
+//             ]
+//           },
+
+//           {
+//             id: "spicy_wrap",
+//             name: "Spicy Wrap",
+//             basePrice: 179,
+//             description:
+//               "Spicy Wrap delivers heat through sauces and jalapenos balanced with creaminess.",
+//             benefits: { calories: 410, protein: 20, fibre: 4, fat: 19 },
+//             ingredients: [
+//               { name: "Chicken", calories: 239, quantity: 25 },
+//               { name: "Jalapeno", calories: 29, quantity: 10 },
+//               { name: "Wrap Bread", calories: 310, quantity: 50 },
+//               { name: "Mayonnaise", calories: 680, quantity: 15 }
+//             ]
+//           }
+//         ]
+//       },
+//       {
+//         id: "sandwich",
+//         name: "Sandwich",
+//         image: "/assets/category-assets/sandwich.png",
+
+//         varieties: [
+//           { id: "sandwich_plain", name: "Plain", basePrice: 119 },
+//           { id: "sandwich_grilled", name: "Grilled", basePrice: 139 },
+//           { id: "sandwich_cheese", name: "Cheese Sandwich", basePrice: 149 },
+//           { id: "sandwich_club", name: "Club Sandwich", basePrice: 189 },
+//           { id: "sandwich_double", name: "Double Layer", basePrice: 169 },
+//           { id: "sandwich_toasted", name: "Toasted", basePrice: 129 },
+//           { id: "sandwich_special", name: "Special", basePrice: 199 },
+//           { id: "sandwich_signature", name: "Signature", basePrice: 219 }
+//         ],
+
+//         dishes: [
+//           {
+//             id: "chicken_sandwich",
+//             name: "Chicken Sandwich",
+//             basePrice: 179,
+//             description:
+//               "Chicken Sandwich is layered with tender chicken and fresh vegetables.",
+//             benefits: { calories: 390, protein: 26, fibre: 3, fat: 16 },
+//             ingredients: [
+//               { name: "Chicken", calories: 239, quantity: 30 },
+//               { name: "Bread", calories: 265, quantity: 40 },
+//               { name: "Mayonnaise", calories: 680, quantity: 20 },
+//               { name: "Lettuce", calories: 15, quantity: 20 }
+//             ]
+//           },
+
+//           {
+//             id: "veg_sandwich",
+//             name: "Veg Sandwich",
+//             basePrice: 149,
+//             description:
+//               "Veg Sandwich is a light and refreshing meal with fresh vegetables.",
+//             benefits: { calories: 330, protein: 12, fibre: 5, fat: 14 },
+//             ingredients: [
+//               { name: "Bread", calories: 265, quantity: 40 },
+//               { name: "Capsicum", calories: 31, quantity: 15 },
+//               { name: "Onion", calories: 40, quantity: 10 },
+//               { name: "Lettuce", calories: 15, quantity: 10 }
+//             ]
+//           },
+
+//           {
+//             id: "paneer_sandwich",
+//             name: "Paneer Sandwich",
+//             basePrice: 169,
+//             description:
+//               "Paneer Sandwich combines Indian paneer with sandwich bread.",
+//             benefits: { calories: 370, protein: 18, fibre: 3, fat: 18 },
+//             ingredients: [
+//               { name: "Paneer", calories: 265, quantity: 40 },
+//               { name: "Bread", calories: 265, quantity: 40 },
+//               { name: "Onion", calories: 40, quantity: 10 }
+//             ]
+//           },
+
+//           {
+//             id: "cheese_sandwich",
+//             name: "Cheese Sandwich",
+//             basePrice: 159,
+//             description:
+//               "Cheese Sandwich is rich and comforting with melted cheese layers.",
+//             benefits: { calories: 360, protein: 16, fibre: 2, fat: 20 },
+//             ingredients: [
+//               { name: "Mozzarella Cheese", calories: 280, quantity: 30 },
+//               { name: "Bread", calories: 265, quantity: 40 }
+//             ]
+//           },
+
+//           {
+//             id: "club_sandwich",
+//             name: "Club Sandwich",
+//             basePrice: 199,
+//             description:
+//               "Club Sandwich is a layered meal with chicken, vegetables, and bread.",
+//             benefits: { calories: 450, protein: 28, fibre: 4, fat: 22 },
+//             ingredients: [
+//               { name: "Chicken", calories: 239, quantity: 30 },
+//               { name: "Bread", calories: 265, quantity: 60 },
+//               { name: "Mayonnaise", calories: 680, quantity: 20 }
+//             ]
+//           }
+//         ]
+//       },
+//       {
+//         id: "pasta",
+//         name: "Pasta",
+//         image: "/assets/category-assets/pasta.png",
+
+//         varieties: [
+//           { id: "pasta_regular", name: "Regular", basePrice: 179 },
+//           { id: "pasta_white", name: "White Sauce", basePrice: 199 },
+//           { id: "pasta_red", name: "Red Sauce", basePrice: 189 },
+//           { id: "pasta_cheese", name: "Cheese Pasta", basePrice: 209 },
+//           { id: "pasta_baked", name: "Baked Pasta", basePrice: 229 },
+//           { id: "pasta_spicy", name: "Spicy Pasta", basePrice: 199 },
+//           { id: "pasta_large", name: "Large Bowl", basePrice: 249 },
+//           { id: "pasta_signature", name: "Signature Pasta", basePrice: 269 }
+//         ],
+
+//         dishes: [
+//           {
+//             id: "white_sauce_pasta",
+//             name: "White Sauce Pasta",
+//             basePrice: 249,
+//             description:
+//               "White Sauce Pasta is creamy and comforting, made with cheese and vegetables.",
+//             benefits: { calories: 470, protein: 22, fibre: 4, fat: 23 },
+//             ingredients: [
+//               { name: "Mozzarella Cheese", calories: 280, quantity: 30 },
+//               { name: "Mushroom", calories: 22, quantity: 20 },
+//               { name: "Garlic", calories: 149, quantity: 10 },
+//               { name: "Onion", calories: 40, quantity: 15 }
+//             ]
+//           },
+//           {
+//             id: "red_sauce_pasta",
+//             name: "Red Sauce Pasta",
+//             basePrice: 229,
+//             description:
+//               "Red Sauce Pasta features a tangy tomato base with herbs and vegetables.",
+//             benefits: { calories: 430, protein: 18, fibre: 5, fat: 15 },
+//             ingredients: [
+//               { name: "Tomato Sauce", calories: 29, quantity: 40 },
+//               { name: "Garlic", calories: 149, quantity: 10 },
+//               { name: "Onion", calories: 40, quantity: 15 },
+//               { name: "Capsicum", calories: 31, quantity: 20 }
+//             ]
+//           },
+//           {
+//             id: "chicken_pasta",
+//             name: "Chicken Pasta",
+//             basePrice: 269,
+//             description:
+//               "Chicken Pasta combines tender chicken with pasta in a savory sauce.",
+//             benefits: { calories: 480, protein: 30, fibre: 4, fat: 20 },
+//             ingredients: [
+//               { name: "Chicken", calories: 239, quantity: 40 },
+//               { name: "Mozzarella Cheese", calories: 280, quantity: 20 },
+//               { name: "Garlic", calories: 149, quantity: 10 }
+//             ]
+//           },
+//           {
+//             id: "paneer_pasta",
+//             name: "Paneer Pasta",
+//             basePrice: 259,
+//             description:
+//               "Paneer Pasta blends Italian pasta with Indian paneer for a unique flavor.",
+//             benefits: { calories: 460, protein: 24, fibre: 4, fat: 22 },
+//             ingredients: [
+//               { name: "Paneer", calories: 265, quantity: 40 },
+//               { name: "Tomato Sauce", calories: 29, quantity: 30 },
+//               { name: "Onion", calories: 40, quantity: 15 }
+//             ]
+//           },
+//           {
+//             id: "spicy_pasta",
+//             name: "Spicy Pasta",
+//             basePrice: 239,
+//             description:
+//               "Spicy Pasta delivers bold heat through sauces and seasoning.",
+//             benefits: { calories: 450, protein: 20, fibre: 5, fat: 18 },
+//             ingredients: [
+//               { name: "Schezwan Sauce", calories: 90, quantity: 30 },
+//               { name: "Garlic", calories: 149, quantity: 10 },
+//               { name: "Capsicum", calories: 31, quantity: 20 }
+//             ]
+//           }
+//         ]
+//       },
+//       {
+//         id: "rice",
+//         name: "Rice",
+//         image: "/assets/category-assets/rice.png",
+
+//         varieties: [
+//           { id: "rice_plain", name: "Plain Rice", basePrice: 99 },
+//           { id: "rice_fried", name: "Fried Rice", basePrice: 149 },
+//           { id: "rice_veg", name: "Veg Rice", basePrice: 159 },
+//           { id: "rice_spicy", name: "Spicy Rice", basePrice: 169 },
+//           { id: "rice_bowl", name: "Rice Bowl", basePrice: 179 },
+//           { id: "rice_large", name: "Large Bowl", basePrice: 199 },
+//           { id: "rice_special", name: "Special Rice", basePrice: 219 },
+//           { id: "rice_signature", name: "Signature Rice", basePrice: 239 }
+//         ],
+
+//         dishes: [
+//           {
+//             id: "chicken_fried_rice",
+//             name: "Chicken Fried Rice",
+//             basePrice: 219,
+//             description:
+//               "Chicken Fried Rice is stir-fried with spices and sauces for rich flavor.",
+//             benefits: { calories: 480, protein: 24, fibre: 3, fat: 14 },
+//             ingredients: [
+//               { name: "Rice", calories: 130, quantity: 30 },
+//               { name: "Chicken", calories: 239, quantity: 30 },
+//               { name: "Garlic", calories: 149, quantity: 30 }
+//             ]
+//           },
+//           {
+//             id: "veg_fried_rice",
+//             name: "Veg Fried Rice",
+//             basePrice: 189,
+//             description:
+//               "Veg Fried Rice is light and flavorful with fresh vegetables.",
+//             benefits: { calories: 420, protein: 14, fibre: 4, fat: 12 },
+//             ingredients: [
+//               { name: "Rice", calories: 130, quantity: 30 },
+//               { name: "Capsicum", calories: 30, quantity: 30 },
+//               { name: "Onion", calories: 40, quantity: 30 }
+//             ]
+//           },
+//           {
+//             id: "schezwan_rice",
+//             name: "Schezwan Rice",
+//             basePrice: 199,
+//             description:
+//               "Schezwan Rice is spicy and aromatic with bold flavors.",
+//             benefits: { calories: 450, protein: 16, fibre: 3, fat: 15 },
+//             ingredients: [
+//               { name: "Rice", calories: 130, quantity: 30 },
+//               { name: "Schezwan Sauce", calories: 90, quantity: 30 }
+//             ]
+//           },
+//           {
+//             id: "paneer_rice",
+//             name: "Paneer Rice",
+//             basePrice: 209,
+//             description:
+//               "Paneer Rice combines soft paneer with rice for a creamy texture.",
+//             benefits: { calories: 460, protein: 22, fibre: 3, fat: 18 },
+//             ingredients: [
+//               { name: "Rice", calories: 130, quantity: 30 },
+//               { name: "Paneer", calories: 265, quantity: 40 }
+//             ]
+//           },
+//           {
+//             id: "garlic_rice",
+//             name: "Garlic Rice",
+//             basePrice: 179,
+//             description:
+//               "Garlic Rice is aromatic and lightly seasoned.",
+//             benefits: { calories: 400, protein: 12, fibre: 3, fat: 10 },
+//             ingredients: [
+//               { name: "Rice", calories: 130, quantity: 30 },
+//               { name: "Garlic", calories: 149, quantity: 20 }
+//             ]
+//           }
+//         ]
+//       },
+//       {
+//         id: "noodles",
+//         name: "Noodles",
+//         image: "/assets/category-assets/noodles.png",
+
+//         varieties: [
+//           { id: "noodle_plain", name: "Plain Noodles", basePrice: 139 },
+//           { id: "noodle_hakka", name: "Hakka Noodles", basePrice: 159 },
+//           { id: "noodle_spicy", name: "Spicy Noodles", basePrice: 169 },
+//           { id: "noodle_schezwan", name: "Schezwan", basePrice: 179 },
+//           { id: "noodle_fried", name: "Fried Noodles", basePrice: 159 },
+//           { id: "noodle_large", name: "Large Bowl", basePrice: 199 },
+//           { id: "noodle_special", name: "Special Noodles", basePrice: 219 },
+//           { id: "noodle_signature", name: "Signature Noodles", basePrice: 239 }
+//         ],
+
+//         dishes: [
+//           {
+//             id: "veg_noodles",
+//             name: "Veg Noodles",
+//             basePrice: 169,
+//             description:
+//               "Veg Noodles are tossed with vegetables and sauces.",
+//             benefits: { calories: 410, protein: 14, fibre: 4, fat: 12 },
+//             ingredients: [
+//               { name: "Noodles", calories: 138, quantity: 40 },
+//               { name: "Capsicum", calories: 31, quantity: 20 },
+//               { name: "Onion", calories: 40, quantity: 20 }
+//             ]
+//           },
+//           {
+//             id: "chicken_noodles",
+//             name: "Chicken Noodles",
+//             basePrice: 189,
+//             description:
+//               "Chicken Noodles combine protein and carbohydrates in one dish.",
+//             benefits: { calories: 450, protein: 24, fibre: 3, fat: 14 },
+//             ingredients: [
+//               { name: "Noodles", calories: 138, quantity: 30 },
+//               { name: "Chicken", calories: 239, quantity: 30 }
+//             ]
+//           },
+//           {
+//             id: "schezwan_noodles",
+//             name: "Schezwan Noodles",
+//             basePrice: 199,
+//             description:
+//               "Schezwan Noodles are spicy and aromatic.",
+//             benefits: { calories: 440, protein: 16, fibre: 3, fat: 15 },
+//             ingredients: [
+//               { name: "Noodles", calories: 138, quantity: 30 },
+//               { name: "Schezwan Sauce", calories: 90, quantity: 30 }
+//             ]
+//           },
+//           {
+//             id: "paneer_noodles",
+//             name: "Paneer Noodles",
+//             basePrice: 199,
+//             description:
+//               "Paneer Noodles offer a vegetarian protein option.",
+//             benefits: { calories: 460, protein: 22, fibre: 3, fat: 18 },
+//             ingredients: [
+//               { name: "Noodles", calories: 138, quantity: 30 },
+//               { name: "Paneer", calories: 265, quantity: 40 }
+//             ]
+//           },
+//           {
+//             id: "garlic_noodles",
+//             name: "Garlic Noodles",
+//             basePrice: 179,
+//             description:
+//               "Garlic Noodles are fragrant and mildly seasoned.",
+//             benefits: { calories: 400, protein: 12, fibre: 3, fat: 10 },
+//             ingredients: [
+//               { name: "Noodles", calories: 138, quantity: 40 },
+//               { name: "Garlic", calories: 149, quantity: 20 }
+//             ]
+//           }
+//         ]
+//       },
+//       {
+//         id: "nachos",
+//         name: "Nachos",
+//         image: "/assets/category-assets/nachos.png",
+
+//         varieties: [
+//           { id: "nachos_plain", name: "Plain Nachos", basePrice: 129 },
+//           { id: "nachos_cheese", name: "Cheese Nachos", basePrice: 159 },
+//           { id: "nachos_loaded", name: "Loaded Nachos", basePrice: 199 },
+//           { id: "nachos_spicy", name: "Spicy Nachos", basePrice: 169 },
+//           { id: "nachos_large", name: "Large Nachos", basePrice: 189 },
+//           { id: "nachos_supreme", name: "Supreme Nachos", basePrice: 219 },
+//           { id: "nachos_special", name: "Special Nachos", basePrice: 239 },
+//           { id: "nachos_signature", name: "Signature Nachos", basePrice: 259 }
+//         ],
+
+//         dishes: [
+//           {
+//             id: "cheese_nachos",
+//             name: "Cheese Nachos",
+//             basePrice: 179,
+//             description:
+//               "Cheese Nachos are crispy corn chips topped with melted cheese.",
+//             benefits: { calories: 450, protein: 16, fibre: 3, fat: 24 },
+//             ingredients: [
+//               { name: "Nachos Chips", calories: 490, quantity: 30 },
+//               { name: "Mozzarella Cheese", calories: 280, quantity: 20 }
+//             ]
+//           },
+//           {
+//             id: "loaded_nachos",
+//             name: "Loaded Nachos",
+//             basePrice: 199,
+//             description:
+//               "Loaded Nachos come with cheese and toppings for layered flavors.",
+//             benefits: { calories: 500, protein: 18, fibre: 4, fat: 26 },
+//             ingredients: [
+//               { name: "Nachos Chips", calories: 490, quantity: 30 },
+//               { name: "Chicken", calories: 239, quantity: 30 }
+//             ]
+//           },
+//           {
+//             id: "spicy_nachos",
+//             name: "Spicy Nachos",
+//             basePrice: 169,
+//             description:
+//               "Spicy Nachos deliver heat through sauces and jalapenos.",
+//             benefits: { calories: 470, protein: 15, fibre: 3, fat: 25 },
+//             ingredients: [
+//               { name: "Nachos Chips", calories: 490, quantity: 30 },
+//               { name: "Jalapeno", calories: 29, quantity: 15 }
+//             ]
+//           },
+//           {
+//             id: "paneer_nachos",
+//             name: "Paneer Nachos",
+//             basePrice: 189,
+//             description:
+//               "Paneer Nachos add Indian flavor to a classic snack.",
+//             benefits: { calories: 480, protein: 20, fibre: 3, fat: 23 },
+//             ingredients: [
+//               { name: "Nachos Chips", calories: 490, quantity: 30 },
+//               { name: "Paneer", calories: 265, quantity: 40 }
+//             ]
+//           },
+//           {
+//             id: "supreme_nachos",
+//             name: "Supreme Nachos",
+//             basePrice: 219,
+//             description:
+//               "Supreme Nachos are fully loaded with toppings and cheese.",
+//             benefits: { calories: 520, protein: 22, fibre: 4, fat: 28 },
+//             ingredients: [
+//               { name: "Nachos Chips", calories: 490, quantity: 30 },
+//               { name: "Mozzarella Cheese", calories: 280, quantity: 20 }
+//             ]
+//           }
+//         ]
+//       }
+
+//     ],
+//     ingredients: [
+
+//       {
+//         id: "mozzarella",
+//         name: "Mozzarella Cheese",
+//         image: "/assets/ingredient-assets/mazarola.png",
+//         usedInCategories: ["pizza", "burger", "sandwich", "nachos", "pasta"],
+//         pricePer100g: 60,
+//         stockRemaining : 20,
+//         nutritionPer100g: {
+//           kcal: 280,
+//           protein: 28,
+//           fat: 17,
+//           fibre: 0
+//         },
+//         description:
+//           "Mozzarella is a soft, creamy cheese known for its mild flavor and excellent melting quality.",
+//         history:
+//           "Mozzarella originated in Italy and became globally popular through pizza."
+//       },
+
+//       {
+//         id: "tomato_sauce",
+//         name: "Tomato Sauce",
+//         image: "/assets/ingredient-assets/tomato-sauce.png",
+//         usedInCategories: ["pizza", "pasta", "sandwich"],
+//         pricePer100g: 20,
+//         stockRemaining : 20,
+//         nutritionPer100g: {
+//           kcal: 29,
+//           protein: 1,
+//           fat: 0,
+//           fibre: 2
+//         },
+//         description:
+//           "Tomato sauce provides a tangy, savory base for many dishes.",
+//         history:
+//           "Introduced to Europe in the 16th century and became central to Italian cuisine."
+//       },
+
+//       {
+//         id: "lettuce",
+//         name: "Lettuce",
+//         image: "/assets/ingredient-assets/lettuce.png",
+//         usedInCategories: ["burger", "sandwich", "wraps"],
+//         pricePer100g: 10,
+//         stockRemaining : 20,
+//         nutritionPer100g: {
+//           kcal: 15,
+//           protein: 1,
+//           fat: 0,
+//           fibre: 1
+//         },
+//         description:
+//           "Lettuce adds freshness and crunch to meals.",
+//         history:
+//           "Cultivated since ancient Egyptian times."
+//       },
+
+//       {
+//         id: "chicken",
+//         name: "Chicken",
+//         image: "/assets/ingredient-assets/chicken.png",
+//         usedInCategories: ["burger", "wraps", "rice", "noodles", "nachos"],
+//         pricePer100g: 80,
+//         stockRemaining : 20,
+//         nutritionPer100g: {
+//           kcal: 239,
+//           protein: 27,
+//           fat: 14,
+//           fibre: 0
+//         },
+//         description:
+//           "Chicken is a lean and versatile protein that absorbs flavors well.",
+//         history:
+//           "Domesticated over 8,000 years ago."
+//       },
+
+//       {
+//         id: "onion",
+//         name: "Onion",
+//         image: "/assets/ingredient-assets/onion.png",
+//         usedInCategories: [
+//           "pizza",
+//           "burger",
+//           "sandwich",
+//           "wraps",
+//           "rice",
+//           "noodles"
+//         ],
+//         pricePer100g: 12,
+//         stockRemaining : 20,
+//         nutritionPer100g: {
+//           kcal: 40,
+//           protein: 1,
+//           fat: 0,
+//           fibre: 2
+//         },
+//         description:
+//           "Onions add sweetness and aroma to dishes when cooked.",
+//         history:
+//           "Cultivated for over 5,000 years."
+//       },
+
+//       {
+//         id: "capsicum",
+//         name: "Capsicum",
+//         image: "/assets/ingredient-assets/capsicum.png",
+//         usedInCategories: [
+//           "pizza",
+//           "pasta",
+//           "rice",
+//           "noodles",
+//           "nachos",
+//           "wraps"
+//         ],
+//         pricePer100g: 18,
+//         stockRemaining : 20,
+//         nutritionPer100g: {
+//           kcal: 31,
+//           protein: 1,
+//           fat: 0,
+//           fibre: 2
+//         },
+//         description:
+//           "Capsicum adds crunch, mild sweetness, and vibrant color.",
+//         history:
+//           "Originated in the Americas."
+//       },
+
+//       {
+//         id: "paneer",
+//         name: "Paneer",
+//         image: "/assets/ingredient-assets/panneer.png",
+//         usedInCategories: [
+//           "pizza",
+//           "wraps",
+//           "sandwich",
+//           "rice",
+//           "nachos"
+//         ],
+//         pricePer100g: 70,
+//         stockRemaining : 20,
+//         nutritionPer100g: {
+//           kcal: 265,
+//           protein: 18,
+//           fat: 20,
+//           fibre: 0
+//         },
+//         description:
+//           "Paneer is a fresh Indian cheese that absorbs spices well.",
+//         history:
+//           "Used in Indian cuisine for centuries."
+//       },
+//       {
+//         id: "jalapeno",
+//         name: "Jalapeno",
+//         image: "/assets/ingredient-assets/jalapeno.png",
+//         usedInCategories: ["pizza", "burger", "nachos", "wraps"],
+//         pricePer100g: 20,
+//         stockRemaining : 20,
+//         nutritionPer100g: {
+//           kcal: 29,
+//           protein: 1,
+//           fat: 0,
+//           fibre: 3
+//         },
+//         description:
+//           "Jalapenos add moderate heat and crunch.",
+//         history:
+//           "Originated in Mexico."
+//       },
+
+//       {
+//         id: "mayonnaise",
+//         name: "Mayonnaise",
+//         image: "/assets/ingredient-assets/mayonnaise.png",
+//         usedInCategories: ["burger", "sandwich", "wraps"],
+//         pricePer100g: 25,
+//         stockRemaining : 20,
+//         nutritionPer100g: {
+//           kcal: 680,
+//           protein: 1,
+//           fat: 75,
+//           fibre: 0
+//         },
+//         description:
+//           "Mayonnaise is a creamy sauce that adds richness.",
+//         history:
+//           "Believed to have originated in France."
+//       },
+
+//       {
+//         id: "schezwan_sauce",
+//         name: "Schezwan Sauce",
+//         image: "/assets/ingredient-assets/schezwan.png",
+//         usedInCategories: ["rice", "noodles", "wraps", "pasta"],
+//         pricePer100g: 22,
+//         stockRemaining : 20,
+//         nutritionPer100g: {
+//           kcal: 90,
+//           protein: 2,
+//           fat: 6,
+//           fibre: 1
+//         },
+//         description:
+//           "Schezwan sauce is spicy and garlicky.",
+//         history:
+//           "Derived from Sichuan cuisine."
+//       },
+
+//       {
+//         id: "garlic",
+//         name: "Garlic",
+//         image: "/assets/ingredient-assets/garlic.png",
+//         usedInCategories: ["pizza", "pasta", "rice", "noodles", "wraps"],
+//         pricePer100g: 14,
+//         stockRemaining : 20,
+//         nutritionPer100g: {
+//           kcal: 149,
+//           protein: 6,
+//           fat: 0,
+//           fibre: 2
+//         },
+//         description:
+//           "Garlic adds strong aroma and depth of flavor.",
+//         history:
+//           "Used for over 7,000 years across cultures."
+//       }
+//     ],
+//   });
+
+//   /* ---------------- LOGIN HANDLER ---------------- */
+//   const handleLogin = () => {
+//     setIsAuthenticated(true);
+//   };
+
+//   /* ---------------- FETCH MENU ---------------- */
+//   // const fetchMenu = async () => {
+//   //   try {
+//   //     const res = await api.get("/menu");
+//   //     setAdminData({
+//   //       ingredients: res.data.ingredients,
+//   //       categories: res.data.categories
+//   //     });
+//   //   } catch (err) {
+//   //     console.error("Failed to fetch menu", err);
+//   //   }
+//   // };
+
+//   // useEffect(() => {
+//   //   if (isAuthenticated) {
+//   //     fetchMenu();
+//   //   }
+//   // }, [isAuthenticated]);
+
+//   /* ---------------- INGREDIENT CRUD ---------------- */
+//   const addIngredient = async (ingredient) => {
+//     const res = await api.get("/menu");
+
+//     const updatedMenu = {
+//       ...res.data,
+//       ingredients: [...res.data.ingredients, ingredient]
+//     };
+
+//     await api.put("/menu", updatedMenu);
+
+//     setAdminData((prev) => ({
+//       ...prev,
+//       ingredients: updatedMenu.ingredients
+//     }));
+//   };
+
+//   const updateIngredient = async (id, updated) => {
+//     const res = await api.get("/menu");
+
+//     const updatedMenu = {
+//       ...res.data,
+//       ingredients: res.data.ingredients.map((ing) =>
+//         ing.id === id ? updated : ing
+//       )
+//     };
+
+//     await api.put("/menu", updatedMenu);
+
+//     setAdminData((prev) => ({
+//       ...prev,
+//       ingredients: updatedMenu.ingredients
+//     }));
+//   };
+
+//   const deleteIngredient = async (id) => {
+//     const res = await api.get("/menu");
+
+//     const updatedMenu = {
+//       ...res.data,
+//       ingredients: res.data.ingredients.filter(
+//         (ing) => ing.id !== id
+//       )
+//     };
+
+//     await api.put("/menu", updatedMenu);
+
+//     setAdminData((prev) => ({
+//       ...prev,
+//       ingredients: updatedMenu.ingredients
+//     }));
+//   };
+
+//   /* ---------------- AUTH GUARD ---------------- */
+//   if (!isAuthenticated) {
+//     return (
+//       <Routes>
+//         <Route
+//           path="*"
+//           element={<Login onLogin={handleLogin} />}
+//         />
+//       </Routes>
+//     );
+//   }
+
+//   /* ---------------- ADMIN LAYOUT ---------------- */
+//   return (
+//     <div className="app">
+//       <Sidebar isOpen={isSidebarOpen} />
+
+//       <div className={`app-main ${isSidebarOpen ? "expanded" : "collapsed"}`}>
+//         <Topbar
+//           isSidebarOpen={isSidebarOpen}
+//           setIsSidebarOpen={setIsSidebarOpen}
+//         />
+
+//         <div className="page">
+//           <Routes>
+//             <Route path="/" element={<Dashboard adminData={adminData} />} />
+
+//             <Route
+//               path="/categories"
+//               element={
+//                 <Categories
+//                   adminData={adminData}
+//                   setAdminData={setAdminData}
+//                 />
+//               }
+//             />
+
+//             <Route
+//               path="/ingredients"
+//               element={
+//                 <Ingredients
+//                   adminData={adminData}
+//                   onAdd={addIngredient}
+//                   onUpdate={updateIngredient}
+//                   onDelete={deleteIngredient}
+//                 />
+//               }
+//             />
+
+//             <Route
+//               path="/ingredients/:ingredientId"
+//               element={
+//                 <IngredientDetails
+//                   adminData={adminData}
+//                   setAdminData={setAdminData}
+//                 />
+//               }
+//             />
+
+//             <Route
+//               path="/dishes/:categoryId?"
+//               element={
+//                 <Dishes
+//                   adminData={adminData}
+//                   setAdminData={setAdminData}
+//                 />
+//               }
+//             />
+
+//             <Route
+//               path="/dishes/:categoryId/:dishId"
+//               element={
+//                 <DishDetails
+//                   adminData={adminData}
+//                   setAdminData={setAdminData}
+//                 />
+//               }
+//             />
+
+//             <Route path="*" element={<Navigate to="/" />} />
+//           </Routes>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+// export default App;
+
+import { Routes, Route } from "react-router-dom";
+import { useState } from "react";
 
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
 
 import Dashboard from "./pages/Dashboard";
-import Ingredients from "./pages/Ingredients";
-import Dishes from "./pages/Dishes";
 import Categories from "./pages/Categories";
-import IngredientDetails from "./pages/IngredientDetails";
+import Dishes from "./pages/Dishes";
 import DishDetails from "./pages/DishDetails";
+import Ingredients from "./pages/Ingredients";
+import IngredientDetails from "./pages/IngredientDetails";
 import Login from "./pages/Login";
 
-import api from "./api";
+import "./App.css";
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const [adminData, setAdminData] = useState({
@@ -820,7 +2031,7 @@ function App() {
         image: "/assets/ingredient-assets/mazarola.png",
         usedInCategories: ["pizza", "burger", "sandwich", "nachos", "pasta"],
         pricePer100g: 60,
-        stockRemaining : 20,
+        stockRemaining: 20,
         nutritionPer100g: {
           kcal: 280,
           protein: 28,
@@ -839,7 +2050,7 @@ function App() {
         image: "/assets/ingredient-assets/tomato-sauce.png",
         usedInCategories: ["pizza", "pasta", "sandwich"],
         pricePer100g: 20,
-        stockRemaining : 20,
+        stockRemaining: 20,
         nutritionPer100g: {
           kcal: 29,
           protein: 1,
@@ -858,7 +2069,7 @@ function App() {
         image: "/assets/ingredient-assets/lettuce.png",
         usedInCategories: ["burger", "sandwich", "wraps"],
         pricePer100g: 10,
-        stockRemaining : 20,
+        stockRemaining: 20,
         nutritionPer100g: {
           kcal: 15,
           protein: 1,
@@ -877,7 +2088,7 @@ function App() {
         image: "/assets/ingredient-assets/chicken.png",
         usedInCategories: ["burger", "wraps", "rice", "noodles", "nachos"],
         pricePer100g: 80,
-        stockRemaining : 20,
+        stockRemaining: 20,
         nutritionPer100g: {
           kcal: 239,
           protein: 27,
@@ -903,7 +2114,7 @@ function App() {
           "noodles"
         ],
         pricePer100g: 12,
-        stockRemaining : 20,
+        stockRemaining: 20,
         nutritionPer100g: {
           kcal: 40,
           protein: 1,
@@ -929,7 +2140,7 @@ function App() {
           "wraps"
         ],
         pricePer100g: 18,
-        stockRemaining : 20,
+        stockRemaining: 20,
         nutritionPer100g: {
           kcal: 31,
           protein: 1,
@@ -954,7 +2165,7 @@ function App() {
           "nachos"
         ],
         pricePer100g: 70,
-        stockRemaining : 20,
+        stockRemaining: 20,
         nutritionPer100g: {
           kcal: 265,
           protein: 18,
@@ -972,7 +2183,7 @@ function App() {
         image: "/assets/ingredient-assets/jalapeno.png",
         usedInCategories: ["pizza", "burger", "nachos", "wraps"],
         pricePer100g: 20,
-        stockRemaining : 20,
+        stockRemaining: 20,
         nutritionPer100g: {
           kcal: 29,
           protein: 1,
@@ -991,7 +2202,7 @@ function App() {
         image: "/assets/ingredient-assets/mayonnaise.png",
         usedInCategories: ["burger", "sandwich", "wraps"],
         pricePer100g: 25,
-        stockRemaining : 20,
+        stockRemaining: 20,
         nutritionPer100g: {
           kcal: 680,
           protein: 1,
@@ -1010,7 +2221,7 @@ function App() {
         image: "/assets/ingredient-assets/schezwan.png",
         usedInCategories: ["rice", "noodles", "wraps", "pasta"],
         pricePer100g: 22,
-        stockRemaining : 20,
+        stockRemaining: 20,
         nutritionPer100g: {
           kcal: 90,
           protein: 2,
@@ -1029,7 +2240,7 @@ function App() {
         image: "/assets/ingredient-assets/garlic.png",
         usedInCategories: ["pizza", "pasta", "rice", "noodles", "wraps"],
         pricePer100g: 14,
-        stockRemaining : 20,
+        stockRemaining: 20,
         nutritionPer100g: {
           kcal: 149,
           protein: 6,
@@ -1044,109 +2255,38 @@ function App() {
     ],
   });
 
-  /* ---------------- LOGIN HANDLER ---------------- */
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-  };
 
-  /* ---------------- FETCH MENU ---------------- */
-  // const fetchMenu = async () => {
-  //   try {
-  //     const res = await api.get("/menu");
-  //     setAdminData({
-  //       ingredients: res.data.ingredients,
-  //       categories: res.data.categories
-  //     });
-  //   } catch (err) {
-  //     console.error("Failed to fetch menu", err);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   if (isAuthenticated) {
-  //     fetchMenu();
-  //   }
-  // }, [isAuthenticated]);
-
-  /* ---------------- INGREDIENT CRUD ---------------- */
-  const addIngredient = async (ingredient) => {
-    const res = await api.get("/menu");
-
-    const updatedMenu = {
-      ...res.data,
-      ingredients: [...res.data.ingredients, ingredient]
-    };
-
-    await api.put("/menu", updatedMenu);
-
-    setAdminData((prev) => ({
-      ...prev,
-      ingredients: updatedMenu.ingredients
-    }));
-  };
-
-  const updateIngredient = async (id, updated) => {
-    const res = await api.get("/menu");
-
-    const updatedMenu = {
-      ...res.data,
-      ingredients: res.data.ingredients.map((ing) =>
-        ing.id === id ? updated : ing
-      )
-    };
-
-    await api.put("/menu", updatedMenu);
-
-    setAdminData((prev) => ({
-      ...prev,
-      ingredients: updatedMenu.ingredients
-    }));
-  };
-
-  const deleteIngredient = async (id) => {
-    const res = await api.get("/menu");
-
-    const updatedMenu = {
-      ...res.data,
-      ingredients: res.data.ingredients.filter(
-        (ing) => ing.id !== id
-      )
-    };
-
-    await api.put("/menu", updatedMenu);
-
-    setAdminData((prev) => ({
-      ...prev,
-      ingredients: updatedMenu.ingredients
-    }));
-  };
-
-  /* ---------------- AUTH GUARD ---------------- */
   if (!isAuthenticated) {
-    return (
-      <Routes>
-        <Route
-          path="*"
-          element={<Login onLogin={handleLogin} />}
-        />
-      </Routes>
-    );
+    return <Login onLogin={() => setIsAuthenticated(true)} />;
   }
 
-  /* ---------------- ADMIN LAYOUT ---------------- */
+  const toCamelCase = (value) =>
+    value
+      .trim()
+      .split(/\s+/)
+      .map(
+        word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+      )
+      .join(" ");
+
+
   return (
     <div className="app">
+      {/* SIDEBAR */}
       <Sidebar isOpen={isSidebarOpen} />
 
+      {/* RIGHT SIDE CONTENT */}
       <div className={`app-main ${isSidebarOpen ? "expanded" : "collapsed"}`}>
+        {/* TOPBAR */}
         <Topbar
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
         />
 
+        {/* PAGE CONTENT */}
         <div className="page">
           <Routes>
-            <Route path="/" element={<Dashboard adminData={adminData} />} />
+            <Route path="/" element={<Dashboard />} />
 
             <Route
               path="/categories"
@@ -1154,39 +2294,30 @@ function App() {
                 <Categories
                   adminData={adminData}
                   setAdminData={setAdminData}
-                />
+                  toCamelCase={toCamelCase}
+                ></Categories>
               }
             />
 
             <Route
-              path="/ingredients"
-              element={
-                <Ingredients
-                  adminData={adminData}
-                  onAdd={addIngredient}
-                  onUpdate={updateIngredient}
-                  onDelete={deleteIngredient}
-                />
-              }
-            />
-
-            <Route
-              path="/ingredients/:ingredientId"
-              element={
-                <IngredientDetails
-                  adminData={adminData}
-                  setAdminData={setAdminData}
-                />
-              }
-            />
-
-            <Route
-              path="/dishes/:categoryId?"
+              path="/dishes"
               element={
                 <Dishes
                   adminData={adminData}
                   setAdminData={setAdminData}
-                />
+                  toCamelCase={toCamelCase}
+                ></Dishes>
+              }
+            />
+
+            <Route
+              path="/dishes/:categoryId"
+              element={
+                <Dishes
+                  adminData={adminData}
+                  setAdminData={setAdminData}
+                  toCamelCase={toCamelCase}
+                ></Dishes>
               }
             />
 
@@ -1196,16 +2327,59 @@ function App() {
                 <DishDetails
                   adminData={adminData}
                   setAdminData={setAdminData}
-                />
+                  toCamelCase={toCamelCase}
+                ></DishDetails>
               }
             />
 
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route
+              path="/ingredients"
+              element={
+                <Ingredients
+                  toCamelCase={toCamelCase}
+                  adminData={adminData}
+                  onAdd={(payload) =>
+                    setAdminData((prev) => ({
+                      ...prev,
+                      ingredients: [...prev.ingredients, payload]
+                    }))
+                  }
+                  onUpdate={(id, payload) =>
+                    setAdminData((prev) => ({
+                      ...prev,
+                      ingredients: prev.ingredients.map((i) =>
+                        i.id === id ? payload : i
+                      )
+                    }))
+                  }
+                  onDelete={(id) =>
+                    setAdminData((prev) => ({
+                      ...prev,
+                      ingredients: prev.ingredients.filter(
+                        (i) => i.id !== id
+                      )
+                    }))
+                  }
+                ></Ingredients>
+              }
+            />
+
+            <Route
+              path="/ingredients/:ingredientId"
+              element={
+                <IngredientDetails
+                  adminData={adminData}
+                  setAdminData={setAdminData}
+                  toCamelCase={toCamelCase}
+                ></IngredientDetails>
+              }
+            />
           </Routes>
         </div>
       </div>
     </div>
   );
+
 }
 
 export default App;
