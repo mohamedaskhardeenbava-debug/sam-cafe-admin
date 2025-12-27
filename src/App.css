@@ -21,6 +21,7 @@ body {
   flex-direction: column;
   height: 100%;
   background-color: #f4f5f7;
+  overflow-y: auto;
 }
 
 .topbar {
