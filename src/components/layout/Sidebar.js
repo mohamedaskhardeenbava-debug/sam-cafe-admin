@@ -54,7 +54,7 @@ const menu = [
   { label: "Dashboard", path: "/", icon: "📊" },
   { label: "Categories", path: "/categories", icon: "C" },
   { label: "Dishes", path: "/dishes", icon: "D" },
-  { label: "Add-ons", path: "/ingredients", icon: "I" }
+  { label: "Ingredients", path: "/ingredients", icon: "I" }
 ];
 
 const Sidebar = ({ isOpen = true }) => {
