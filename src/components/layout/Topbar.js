@@ -1,111 +1,138 @@
-// import './Topbar.css'
-// import { useState, useEffect } from 'react';
-
-// const Topbar = ({ isSidebarOpen, setIsSidebarOpen }) => {
-
-//   const [scrolled, setScrolled] = useState(false);
-
-//   useEffect(() => {
-//     const scrollContainer = document.querySelector(".app-main");
-
-//     if (!scrollContainer) return;
-
-//     const handleScroll = () => {
-//       setScrolled(scrollContainer.scrollTop > 0);
-//     };
-
-//     scrollContainer.addEventListener("scroll", handleScroll);
-
-//     return () => {
-//       scrollContainer.removeEventListener("scroll", handleScroll);
-//     };
-//   }, []);
-
-
-//   return (
-//     <div className={`topbar ${scrolled ? "topbar-scrolled" : ""}`}>
-//       <div className="topbar-left">
-//         <button
-//           className="sidebar-toggle"
-//           onClick={() => setIsSidebarOpen(prev => !prev)}
-//           aria-label="Toggle Sidebar"
-//         >
-//           ☰
-//         </button>
-
-//         <h3 className="topbar-title">Sam Cafe Admin</h3>
-//       </div>
-
-//       <div className="topbar-right">
-//         <span className="admin-name">Admin</span>
-//         <div className="admin-avatar">S</div>
-//       </div>
-//     </div>
-//   );
-// }
-
-// export default Topbar;
-
-
+import React, { useEffect, useRef, useState } from "react";
 import "./Topbar.css";
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import human from "../../icon/human.png";
+import notification from "../../icon/notification.png";
 
-const Topbar = ({ isSidebarOpen, setIsSidebarOpen, isAuthenticated, setIsAuthenticated }) => {
+const Topbar = ({ setIsAuthenticated }) => {
   const [scrolled, setScrolled] = useState(false);
-  const navigate = useNavigate();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
 
+  const notifRef = useRef(null);
+  const profileRef = useRef(null);
+
+  /*Sticky shadow on scroll*/
   useEffect(() => {
-    const scrollContainer = document.querySelector(".main-content");
+    const container = document.querySelector(".main-content");
+    if (!container) return;
 
-    if (!scrollContainer) return;
-
-    const handleScroll = () => {
-      setScrolled(scrollContainer.scrollTop > 0);
-    };
-
-    scrollContainer.addEventListener("scroll", handleScroll);
-
-    return () => {
-      scrollContainer.removeEventListener("scroll", handleScroll);
-    };
+    const onScroll = () => setScrolled(container.scrollTop > 0);
+    container.addEventListener("scroll", onScroll);
+    return () => container.removeEventListener("scroll", onScroll);
   }, []);
 
-  const handleToggle = () => {
-    if (typeof setIsSidebarOpen === "function") {
-      setIsSidebarOpen((prev) => !prev);
-    }
-  };
+  /*  Click outside close*/
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        notifRef.current &&
+        !notifRef.current.contains(e.target)
+      ) {
+        setShowNotifications(false);
+      }
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(e.target)
+      ) {
+        setShowProfile(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleLogout = () => {
-    setIsAuthenticated(false)
+    setIsAuthenticated(false);
   };
 
   return (
-    <div className={`topbar ${scrolled ? "topbar-scrolled" : ""}`}>
+    <header className={`topbar ${scrolled ? "topbar-scrolled" : ""}`}>
+      {/* LEFT */}
       <div className="topbar-left">
-        <button
-          className="sidebar-toggle"
-          onClick={handleToggle}
-          aria-label="Toggle Sidebar"
-        >
-          ☰
-        </button>
-
         <h3 className="topbar-title">Sam Cafe Admin</h3>
       </div>
 
+      {/* RIGHT */}
       <div className="topbar-right">
-        <button className="logout-btn" onClick={handleLogout}>
-          Logout
-        </button>
+        {/* NOTIFICATIONS */}
+        <div className="topbar-icon-wrapper" ref={notifRef}>
+          <button
+            className="notification-icon-btn"
+            onClick={() => {
+              setShowNotifications((v) => !v);
+              setShowProfile(false);
+            }}
+            aria-label="Notifications"
+          >
+            <img src={notification} alt="" />
+            <span className="notif-dot" />
+          </button>
 
-        <span className="admin-name">Admin</span>
-        <div className="admin-avatar">S</div>
+          {showNotifications && (
+            <div className="dropdown notification-dropdown">
+              <h4 className="dropdown-title">Notifications</h4>
+
+              <ul className="notification-list">
+                <li>
+                  <strong>New Order</strong>
+                  <span>#ORD-2391 placed</span>
+                </li>
+                <li>
+                  <strong>Low Stock</strong>
+                  <span>Mozzarella Cheese</span>
+                </li>
+                <li>
+                  <strong>Payment Success</strong>
+                  <span>₹1,240 received</span>
+                </li>
+              </ul>
+
+              <button className="view-all-btn">
+                View all notifications
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* PROFILE */}
+        <div className="topbar-icon-wrapper" ref={profileRef}>
+          <button
+            className="profile-btn"
+            onClick={() => {
+              setShowProfile((v) => !v);
+              setShowNotifications(false);
+            }}
+          >
+            <div className="profile-avatar"><img src={human} alt="" /></div>
+            <span className="profile-name">Admin</span>
+          </button>
+
+          {showProfile && (
+            <div className="dropdown profile-dropdown">
+              <div className="profile-info">
+                <div className="profile-avatar large">S</div>
+                <div>
+                  <p className="profile-fullname">Sam Cafe Admin</p>
+                  <p className="profile-role">Administrator</p>
+                </div>
+              </div>
+
+              <div className="dropdown-divider" />
+
+              <button
+                className="logout-btn"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </header>
   );
 };
 
 export default Topbar;
-

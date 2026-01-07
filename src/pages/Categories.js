@@ -1,275 +1,19 @@
-// import React, { useState } from "react";
-// import "./Categories.css";
-// import { useNavigate } from "react-router-dom";
-// import api from "../api"; // adjust path if needed
-
-// const Categories = ({ adminData, setAdminData }) => {
-//   const navigate = useNavigate();
-//   const [showForm, setShowForm] = useState(false);
-//   const [imagePreview, setImagePreview] = useState("");
-//   const [newCategory, setNewCategory] = useState({
-//     name: "",
-//     image: ""
-//   });
-
-//   const generateCategoryId = (name) =>
-//     name
-//       .toLowerCase()
-//       .trim()
-//       .replace(/[^a-z0-9\s]/g, "")
-//       .replace(/\s+/g, "_");
-
-//   const handleAddCategory = async () => {
-//     if (!newCategory.name.trim()) {
-//       alert("Category name is required");
-//       return;
-//     }
-
-//     const categoryId = generateCategoryId(newCategory.name);
-
-//     const exists = adminData.categories.some(
-//       (cat) => cat.id === categoryId
-//     );
-
-//     if (exists) {
-//       alert("Category already exists");
-//       return;
-//     }
-
-//     const newCategoryPayload = {
-//       id: categoryId,
-//       name: newCategory.name,
-//       image: newCategory.image,
-//       dishes: []
-//     };
-
-//     try {
-//       // 1. Get current menu
-//       const res = await api.get("/menu");
-
-//       const updatedMenu = {
-//         ...res.data,
-//         categories: [...res.data.categories, newCategoryPayload]
-//       };
-
-//       // 2. Update menu (IMPORTANT)
-//       await api.put("/menu", updatedMenu);
-
-//       // 3. Update frontend state
-//       setAdminData((prev) => ({
-//         ...prev,
-//         categories: updatedMenu.categories
-//       }));
-
-//       setShowForm(false);
-//       setNewCategory({ name: "", image: "" });
-//     } catch (error) {
-//       console.error("Failed to add category:", error);
-//     }
-//   };
-
-//   const handleDeleteCategory = async (categoryId) => {
-//     const category = adminData.categories.find(
-//       (cat) => cat.id === categoryId
-//     );
-
-//     if (!category) return;
-
-//     if (category.dishes.length > 0) {
-//       const confirmDelete = window.confirm(
-//         "This category contains dishes. Are you sure you want to delete it?"
-//       );
-//       if (!confirmDelete) return;
-//     } else {
-//       const confirmDelete = window.confirm(
-//         "Are you sure you want to delete this category?"
-//       );
-//       if (!confirmDelete) return;
-//     }
-
-//     try {
-//       const res = await api.get("/menu");
-
-//       const updatedMenu = {
-//         ...res.data,
-//         categories: res.data.categories.filter(
-//           (cat) => cat.id !== categoryId
-//         )
-//       };
-
-//       await api.put("/menu", updatedMenu);
-
-//       setAdminData((prev) => ({
-//         ...prev,
-//         categories: updatedMenu.categories
-//       }));
-//     } catch (error) {
-//       console.error("Failed to delete category:", error);
-//     }
-//   };
-
-//   const getMostAndLeastSelling = (dishes = []) => {
-//     if (dishes.length === 0) return { most: "-", least: "-" };
-
-//     let most = dishes[0];
-//     let least = dishes[0];
-
-//     dishes.forEach((dish) => {
-//       if (dish.basePrice > most.basePrice) most = dish;
-//       if (dish.basePrice < least.basePrice) least = dish;
-//     });
-
-//     return {
-//       most: most.name,
-//       least: least.name
-//     };
-//   };
-
-//   const handleImageUpload = (e) => {
-//     const file = e.target.files[0];
-//     if (!file) return;
-
-//     const reader = new FileReader();
-//     reader.onloadend = () => {
-//       setNewCategory((prev) => ({
-//         ...prev,
-//         image: reader.result   // base64 string
-//       }));
-//       setImagePreview(reader.result);
-//     };
-
-//     reader.readAsDataURL(file);
-//   };
-
-//   return (
-//     <div className="categories-page">
-//       <div className="category-header">
-//         <h2 className="category-title">Categories</h2>
-//         <button
-//           className="category-add-btn"
-//           onClick={() => setShowForm(true)}
-//         >
-//           + Add Category
-//         </button>
-//       </div>
-
-//       <div className="category-table-wrapper">
-//         <table className="category-table">
-//           <thead>
-//             <tr>
-//               <th>Image</th>
-//               <th>Category</th>
-//               <th>No. of Dishes</th>
-//               <th>Most Selling Dish</th>
-//               <th>Least Selling Dish</th>
-//               <th>Delete</th>
-//             </tr>
-//           </thead>
-
-//           <tbody>
-//             {adminData.categories.map((category) => {
-//               const stats = getMostAndLeastSelling(category.dishes);
-
-//               return (
-//                 <tr key={category.id}>
-
-//                   <td>
-//                     <div
-//                       className="category-image clickable"
-//                       onClick={() => navigate(`/dishes/${category.id}`)}
-//                     >
-//                       <img src={category.image || ""} alt="" />
-//                     </div>
-//                   </td>
-
-//                   <td
-//                     className="category-name clickable"
-//                     onClick={() => navigate(`/dishes/${category.id}`)}
-//                   >
-//                     {category.name}
-//                   </td>
-
-
-
-//                   <td>{category.dishes.length}</td>
-
-//                   <td>{stats.most}</td>
-
-//                   <td>{stats.least}</td>
-
-//                   <td>
-//                     <button
-//                       className="icon-btn delete-btn"
-//                       onClick={() => handleDeleteCategory(category.id)}
-//                     >
-//                       Delete
-//                     </button>
-//                   </td>
-//                 </tr>
-//               );
-//             })}
-//           </tbody>
-//         </table>
-//       </div>
-
-//       {showForm && (
-//         <div className="category-modal-overlay">
-//           <div className="category-modal form-actions">
-//             <h3>Add New Category</h3>
-
-//             <input
-//               type="text"
-//               placeholder="Category Name"
-//               value={newCategory.name}
-//               onChange={(e) =>
-//                 setNewCategory({ ...newCategory, name: e.target.value })
-//               }
-//             />
-
-//             <input
-//               type="file"
-//               accept="image/*"
-//               onChange={handleImageUpload}
-//             />
-
-
-//             {imagePreview && (
-//               <img
-//                 src={imagePreview}
-//                 alt="Preview"
-//                 style={{
-//                   width: "120px",
-//                   height: "120px",
-//                   objectFit: "cover",
-//                   borderRadius: "8px",
-//                   marginTop: "10px"
-//                 }}
-//               />
-//             )}
-
-
-//             <div className="modal-actions">
-//               <button onClick={handleAddCategory}>Add</button>
-//               <button onClick={() => setShowForm(false)}>Cancel</button>
-//             </div>
-//           </div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default Categories;
-
-
 import React, { useState } from "react";
 import "./Categories.css";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
+import deleteIcon from "../icon/delete-icon.png";
+import editIcon from "../icon/edit-icon.png";
+import { allowTextInput } from "../App";
 
 const Categories = ({ adminData, setAdminData, toCamelCase }) => {
   const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
-  const [imagePreview, setImagePreview] = useState("");
+  const [imagePreview, setImagePreview] = useState("")
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editCategoryId, setEditCategoryId] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editImage, setEditImage] = useState("");
   const [newCategory, setNewCategory] = useState({
     name: "",
     image: ""
@@ -282,11 +26,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase }) => {
       .replace(/[^a-z0-9\s]/g, "")
       .replace(/\s+/g, "_");
 
-  /* ===============================
-     ADD CATEGORY (CREATE)
-  =============================== */
-
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (!newCategory.name.trim()) {
       alert("Category name is required");
       return;
@@ -310,46 +50,164 @@ const Categories = ({ adminData, setAdminData, toCamelCase }) => {
       dishes: []
     };
 
-    setAdminData((prev) => ({
-      ...prev,
-      categories: [...prev.categories, newCategoryPayload]
-    }));
+    try {
+      // 1. Get current menu
+      const res = await api.get("/menu");
 
-    setShowForm(false);
-    setNewCategory({ name: "", image: "" });
-    setImagePreview("");
+      const updatedMenu = {
+        ...res.data,
+        categories: [...res.data.categories, newCategoryPayload]
+      };
+
+      // 2. Update menu (IMPORTANT)
+      await api.put("/menu", updatedMenu);
+
+      // 3. Update frontend state
+      setAdminData((prev) => ({
+        ...prev,
+        categories: updatedMenu.categories
+      }));
+
+      resetAddCategoryForm();
+    } catch (error) {
+      console.error("Failed to add category:", error);
+    }
   };
 
-  /* ===============================
-     DELETE CATEGORY (DELETE)
-  =============================== */
+  const openEditModal = (category) => {
+    setEditCategoryId(category.id);
+    setEditName(category.name);
+    setEditImage(category.image || "");
+    setShowEditModal(true);
+  };
 
-  const handleDeleteCategory = (categoryId) => {
+
+
+
+  const handleDeleteCategory = async (categoryId) => {
     const category = adminData.categories.find(
       (cat) => cat.id === categoryId
     );
 
     if (!category) return;
 
-    const confirmDelete = window.confirm(
-      category.dishes.length > 0
-        ? "This category contains dishes. Are you sure you want to delete it?"
-        : "Are you sure you want to delete this category?"
-    );
+    if (category.dishes.length > 0) {
+      const confirmDelete = window.confirm(
+        "This category contains dishes. Are you sure you want to delete it?"
+      );
+      if (!confirmDelete) return;
+    } else {
+      const confirmDelete = window.confirm(
+        "Are you sure you want to delete this category?"
+      );
+      if (!confirmDelete) return;
+    }
 
-    if (!confirmDelete) return;
+    try {
+      const res = await api.get("/menu");
 
-    setAdminData((prev) => ({
-      ...prev,
-      categories: prev.categories.filter(
-        (cat) => cat.id !== categoryId
-      )
-    }));
+      const updatedMenu = {
+        ...res.data,
+        categories: res.data.categories.filter(
+          (cat) => cat.id !== categoryId
+        )
+      };
+
+      await api.put("/menu", updatedMenu);
+
+      setAdminData((prev) => ({
+        ...prev,
+        categories: updatedMenu.categories
+      }));
+    } catch (error) {
+      console.error("Failed to delete category:", error);
+    }
   };
 
-  /* ===============================
-     DERIVED STATS
-  =============================== */
+  const handleSaveCategoryEdit = async () => {
+    if (!editName.trim()) {
+      alert("Category name cannot be empty");
+      return;
+    }
+
+    try {
+      const res = await api.get("/menu");
+
+      const updatedMenu = {
+        ...res.data,
+        categories: res.data.categories.map((cat) =>
+          cat.id === editCategoryId
+            ? {
+              ...cat,
+              name: editName,
+              image: editImage
+            }
+            : cat
+        )
+      };
+
+      await api.put("/menu", updatedMenu);
+
+      setAdminData((prev) => ({
+        ...prev,
+        categories: updatedMenu.categories
+      }));
+
+      setEditCategoryId(null);
+      setEditName("");
+      setEditImage("");
+    } catch (err) {
+      console.error("Failed to update category", err);
+    }
+  };
+
+  const handleEditImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => setEditImage(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editName.trim()) {
+      alert("Category name cannot be empty");
+      return;
+    }
+
+    const newCategoryId = generateCategoryId(editName);
+
+    const res = await api.get("/menu");
+
+    const updatedMenu = {
+      ...res.data,
+      categories: res.data.categories.map((cat) =>
+        cat.id === editCategoryId
+          ? {
+            ...cat,
+            id: newCategoryId,
+            name: editName,
+            image: editImage
+          }
+          : cat
+      ),
+      ingredients: res.data.ingredients.map((ing) => ({
+        ...ing,
+        usedInCategories: ing.usedInCategories.map((cid) =>
+          cid === editCategoryId ? newCategoryId : cid
+        )
+      }))
+    };
+
+    await api.put("/menu", updatedMenu);
+
+    setAdminData({
+      ...updatedMenu
+    });
+
+    resetEditCategoryForm();
+  };
 
   const getMostAndLeastSelling = (dishes = []) => {
     if (dishes.length === 0) return { most: "-", least: "-" };
@@ -368,10 +226,6 @@ const Categories = ({ adminData, setAdminData, toCamelCase }) => {
     };
   };
 
-  /* ===============================
-     IMAGE HANDLING
-  =============================== */
-
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -386,6 +240,21 @@ const Categories = ({ adminData, setAdminData, toCamelCase }) => {
     };
 
     reader.readAsDataURL(file);
+  };
+
+  // Reset Add Category form
+  const resetAddCategoryForm = () => {
+    setNewCategory({ name: "", image: "" });
+    setImagePreview("");
+    setShowForm(false);
+  };
+
+  // Reset Edit Category form
+  const resetEditCategoryForm = () => {
+    setEditCategoryId(null);
+    setEditName("");
+    setEditImage("");
+    setShowEditModal(false);
   };
 
   return (
@@ -407,8 +276,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase }) => {
               <th>Image</th>
               <th>Category</th>
               <th>No. of Dishes</th>
-              <th>Most Selling Dish</th>
-              <th>Least Selling Dish</th>
+              <th>Edit</th>
               <th>Delete</th>
             </tr>
           </thead>
@@ -419,38 +287,40 @@ const Categories = ({ adminData, setAdminData, toCamelCase }) => {
 
               return (
                 <tr key={category.id}>
+
                   <td>
                     <div
                       className="category-image clickable"
-                      onClick={() =>
-                        navigate(`/dishes/${category.id}`)
-                      }
+                      onClick={() => navigate(`/dishes/${category.id}`)}
                     >
-                      <img src={category.image || ""} alt="" />
+                      <img src="" alt="" />
                     </div>
                   </td>
 
                   <td
                     className="category-name clickable"
-                    onClick={() =>
-                      navigate(`/dishes/${category.id}`)
-                    }
+                    onClick={() => navigate(`/dishes/${category.id}`)}
                   >
                     {category.name}
                   </td>
 
                   <td>{category.dishes.length}</td>
-                  <td>{stats.most}</td>
-                  <td>{stats.least}</td>
+
+                  <td>
+                    <button
+                      className="icon-btn edit-btn"
+                      onClick={() => openEditModal(category)}
+                    >
+                      <img src={editIcon} alt="" />
+                    </button>
+                  </td>
 
                   <td>
                     <button
                       className="icon-btn delete-btn"
-                      onClick={() =>
-                        handleDeleteCategory(category.id)
-                      }
+                      onClick={() => handleDeleteCategory(category.id)}
                     >
-                      Delete
+                      <img src={deleteIcon} alt="" />
                     </button>
                   </td>
                 </tr>
@@ -462,32 +332,56 @@ const Categories = ({ adminData, setAdminData, toCamelCase }) => {
 
       {showForm && (
         <div className="category-modal-overlay">
-          <div className="category-modal form-actions">
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            handleAddCategory();
+          }} className="category-modal form-actions">
             <h3>Add New Category</h3>
+            <button
+              type="button"
+              className="category-close-btn"
+              aria-label="Close"
+              onClick={resetAddCategoryForm}
+            >
 
-            <input
-              type="text"
-              placeholder="Category Name"
-              value={newCategory.name}
-              onChange={(e) =>
-                setNewCategory({
-                  ...newCategory,
-                  name: e.target.value
-                })
-              }
-              onBlur={(e) =>
-                setNewCategory({
-                  ...newCategory,
-                  name: toCamelCase(e.target.value)
-                })
-              }
-            />
+            </button>
 
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-            />
+            <div className="form-group">
+              <input
+                autoFocus
+                required
+                type="text"
+                placeholder="Category Name"
+                value={newCategory.name}
+                onChange={(e) =>
+                  setNewCategory((prev) => ({
+                    ...prev,
+                    name: allowTextInput(
+                      prev.name,
+                      e.target.value,
+                      100,
+                      5
+                    )
+                  }))
+                }
+                onBlur={(e) =>
+                  setNewCategory((prev) => ({
+                    ...prev,
+                    name: toCamelCase(e.target.value)
+                  }))
+                }
+              />
+            </div>
+
+            <div className="form-group">
+              <input
+                required
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+              />
+            </div>
+
 
             {imagePreview && (
               <img
@@ -503,9 +397,71 @@ const Categories = ({ adminData, setAdminData, toCamelCase }) => {
               />
             )}
 
+
             <div className="modal-actions">
-              <button onClick={handleAddCategory}>Add</button>
-              <button onClick={() => setShowForm(false)}>
+              <button type="submit">Add</button>
+              <button type="button" onClick={resetAddCategoryForm}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {showEditModal && (
+        <div className="category-modal-overlay">
+          <div className="category-modal form-actions">
+            <h3>Edit Category</h3>
+            <button
+              type="button"
+              className="category-close-btn"
+              aria-label="Close"
+              onClick={resetEditCategoryForm}
+            ></button>
+
+            <div className="form-group">
+              <input
+                autoFocus
+                type="text"
+                value={editName}
+                onChange={(e) =>
+                  setEditName((prev) =>
+                    allowTextInput(prev, e.target.value, 100, 5)
+                  )
+                }
+                onBlur={(e) =>
+                  setEditName(toCamelCase(e.target.value))
+                }
+
+
+              />
+            </div>
+
+            <div className="form-group">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleEditImageUpload}
+              />
+            </div>
+
+            {editImage && (
+              <img
+                src={editImage}
+                alt="Preview"
+                style={{
+                  width: "120px",
+                  height: "120px",
+                  objectFit: "cover",
+                  borderRadius: "8px",
+                  marginTop: "10px"
+                }}
+              />
+            )}
+
+            <div className="modal-actions">
+              <button onClick={handleSaveEdit}>Save</button>
+              <button type="button" onClick={resetEditCategoryForm}>
                 Cancel
               </button>
             </div>

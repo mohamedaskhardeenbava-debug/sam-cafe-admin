@@ -21,7 +21,7 @@
   transform: translateY(-50%) rotate(45deg);
 }
 
-.ingredient-container {
+.favourite-container {
   max-width: 900px;
   background: #ffffff;
   border-radius: 14px;
@@ -29,21 +29,21 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
 }
 
-.ingredient-details-header {
+.favourite-details-header {
   display: flex;
   align-items: center;
   gap: 16px;
   margin-bottom: 16px;
 }
 
-.ingredient-details-image {
+.favourite-details-image {
   position: relative;
   width: 50%;
   aspect-ratio: 1 / 1;
   background-color: #f0f0f0;
 }
 
-.ingredient-details-image img {
+.favourite-details-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -54,12 +54,17 @@
   margin-bottom: 22px;
 }
 
-.section-title {
+.fav-section-title {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 12px;
   font-weight: 600;
-  margin-bottom: 8px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.fav-section-title p {
+    margin: 0;
 }
 
 .edit-icon {
