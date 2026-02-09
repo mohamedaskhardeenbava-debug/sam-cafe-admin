@@ -16,14 +16,29 @@
   padding: 0 16px;
   height: 64px;
   border-bottom: 1px solid #e6e6e6;
+  transition: background-color 0.2s ease;
 }
 
+.brand-icon,
 .brand-icon img {
   width: 50px;
 }
 
 .brand-logo img {
   width: 50%;
+}
+
+.logo {
+  transition: opacity 0.15s ease;
+}
+
+.logo.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.logo.visible {
+  opacity: 1;
 }
 
 .sidebar-menu {
@@ -67,7 +82,16 @@
 }
 
 .sidebar-text {
-  white-space: nowrap;
+  transition: opacity 0.15s ease;
+}
+
+.sidebar-text.hide {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sidebar-text.show {
+  opacity: 1;
 }
 
 .sidebar-footer {
@@ -76,4 +100,8 @@
   text-align: center;
   color: #888;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar {
+  will-change: width;
 }

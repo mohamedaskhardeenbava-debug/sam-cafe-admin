@@ -23,23 +23,30 @@
   margin: 19.92px 0 !important;
 }
 
-.category-dropdown {
+.category-buttons {
+  display: flex;
+  gap: 8px;
   min-width: 220px;
-  padding: 8px;
+  overflow-x: auto;
+}
+
+.category-btn {
+  padding: 10px 14px;
   border-radius: 8px;
-  border: 1px solid #d0d0d0;
-  background-color: #ffffff;
-  font-size: 16px;
-  font-weight: 500;
-  color: #111;
+  border: 1px solid #ccc;
+  background: #fff;
   cursor: pointer;
+  text-align: center;
+  font-weight: 500;
 }
 
-.category-dropdown:hover {
-  border-color: #b5b5b5;
+.category-btn:hover {
+  background: #f3f3f3;
 }
 
-.category-dropdown:focus {
+.category-btn.active {
+  background: #111;
+  color: #fff;
   border-color: #111;
 }
 
@@ -55,10 +62,6 @@
   max-height: calc(100vh - 185px);
   overflow-y: auto;
   overflow-x: hidden;
-}
-
-.dish-table-wrapper::-webkit-scrollbar {
-  display: none;
 }
 
 .dish-table {
@@ -195,15 +198,6 @@
   overflow-y: auto;
 }
 
-.category-modal-body::-webkit-scrollbar {
-  width: 4px;
-}
-
-.category-modal-body::-webkit-scrollbar-thumb {
-  background: #c4c4c4;
-  border-radius: 8px;
-}
-
 .category-modal-footer {
   position: sticky;
   bottom: 0;
@@ -291,6 +285,15 @@
 .ingredient-form {
   display: flex;
   flex-direction: column;
+}
+
+.ingredient-form select {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #fff;
 }
 
 .add-ingredient-button {

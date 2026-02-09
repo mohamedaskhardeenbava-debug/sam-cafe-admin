@@ -1,0 +1,115 @@
+/* CONTAINER – SAME AS ingredient-container */
+.order-container {
+  max-width: 900px;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+/* HEADER – SAME STRUCTURE */
+.order-details-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* BACK BUTTON – IDENTICAL */
+.back-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 25px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  position: relative;
+}
+
+.back-btn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 40%;
+  width: 12px;
+  height: 12px;
+  border-left: 3px solid #111;
+  border-bottom: 3px solid #111;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+/* SECTION – SAME AS IngredientDetails */
+.section {
+  margin-bottom: 22px;
+}
+
+.section-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+/* ORDER INFO TABLE */
+.order-info-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.order-info-table td {
+  padding: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+/* TABLE – SAME AS data-table */
+.items-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.items-table tbody tr:hover {
+  background-color: rgb(234, 234, 234);
+}
+
+.items-table th,
+.items-table td {
+  border: 1px solid #e0e0e0;
+  padding: 8px;
+  font-size: 14px;
+}
+
+.items-table th {
+  background: #f5f5f5;
+  text-align: left;
+}
+
+.items-table th:nth-child(1),
+.items-table td:nth-child(1) {
+  width: 80px;
+}
+
+.items-table th:nth-child(2),
+.items-table td:nth-child(2) {
+  width: 200px;
+}
+
+.items-table th:nth-child(3),
+.items-table td:nth-child(3) {
+  width: 60px;
+}
+
+.items-table th:nth-child(4),
+.items-table td:nth-child(4) {
+  width: 60px
+}
+
+.items-table th:nth-child(5),
+.items-table td:nth-child(5) {
+  width: 60px
+}
+
+/* TOTAL */
+.order-total {
+  font-size: 18px;
+  font-weight: 600;
+  text-align: right;
+}

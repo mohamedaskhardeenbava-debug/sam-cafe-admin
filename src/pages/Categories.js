@@ -5,8 +5,11 @@ import api from "../api";
 import deleteIcon from "../icon/delete-icon.png";
 import editIcon from "../icon/edit-icon.png";
 import { allowTextInput } from "../App";
+import { useMemo } from "react";
+import { sortArray } from "../App";
+import { EmptyRow } from "../App";
 
-const Categories = ({ adminData, setAdminData, toCamelCase }) => {
+const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }) => {
   const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [imagePreview, setImagePreview] = useState("")
@@ -18,6 +21,11 @@ const Categories = ({ adminData, setAdminData, toCamelCase }) => {
     name: "",
     image: ""
   });
+
+  const sortedCategories = useMemo(
+    () => sortArray(adminData.categories, sortConfig),
+    [adminData.categories, sortConfig]
+  );
 
   const generateCategoryId = (name) =>
     name
@@ -35,7 +43,9 @@ const Categories = ({ adminData, setAdminData, toCamelCase }) => {
     const categoryId = generateCategoryId(newCategory.name);
 
     const exists = adminData.categories.some(
-      (cat) => cat.id === categoryId
+      cat =>
+        cat.name.trim().toLowerCase() ===
+        newCategory.name.trim().toLowerCase()
     );
 
     if (exists) {
@@ -80,9 +90,6 @@ const Categories = ({ adminData, setAdminData, toCamelCase }) => {
     setEditImage(category.image || "");
     setShowEditModal(true);
   };
-
-
-
 
   const handleDeleteCategory = async (categoryId) => {
     const category = adminData.categories.find(
@@ -177,6 +184,18 @@ const Categories = ({ adminData, setAdminData, toCamelCase }) => {
     }
 
     const newCategoryId = generateCategoryId(editName);
+
+    const duplicate = adminData.categories.some(
+      cat =>
+        cat.id !== editCategoryId &&
+        cat.name.trim().toLowerCase() ===
+        editName.trim().toLowerCase()
+    );
+
+    if (duplicate) {
+      alert("Another category with this name already exists");
+      return;
+    }
 
     const res = await api.get("/menu");
 
@@ -274,7 +293,17 @@ const Categories = ({ adminData, setAdminData, toCamelCase }) => {
           <thead>
             <tr>
               <th>Image</th>
-              <th>Category</th>
+              <th
+                onClick={() => handleSort("name")}
+                className={sortConfig.key === "name" ? "sorted" : ""}
+              >
+                <span className="th-content sort-th">
+                  <span>Name</span>
+                  <span className="sort-arrow">
+                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                  </span>
+                </span>
+              </th>
               <th>No. of Dishes</th>
               <th>Edit</th>
               <th>Delete</th>
@@ -282,50 +311,53 @@ const Categories = ({ adminData, setAdminData, toCamelCase }) => {
           </thead>
 
           <tbody>
-            {adminData.categories.map((category) => {
-              const stats = getMostAndLeastSelling(category.dishes);
+            {sortedCategories.length === 0 ? (
+              <EmptyRow colSpan={5} message="No categories available" />
+            ) : (
+              sortedCategories.map((category) => {
+                const stats = getMostAndLeastSelling(category.dishes);
 
-              return (
-                <tr key={category.id}>
+                return (
+                  <tr key={category.id}>
 
-                  <td>
-                    <div
-                      className="category-image clickable"
+                    <td>
+                      <div
+                        className="category-image clickable"
+                        onClick={() => navigate(`/dishes/${category.id}`)}
+                      >
+                        <img src="" alt="" />
+                      </div>
+                    </td>
+
+                    <td
+                      className="category-name clickable"
                       onClick={() => navigate(`/dishes/${category.id}`)}
                     >
-                      <img src="" alt="" />
-                    </div>
-                  </td>
+                      {category.name}
+                    </td>
 
-                  <td
-                    className="category-name clickable"
-                    onClick={() => navigate(`/dishes/${category.id}`)}
-                  >
-                    {category.name}
-                  </td>
+                    <td>{category.dishes.length}</td>
 
-                  <td>{category.dishes.length}</td>
+                    <td>
+                      <button
+                        className="icon-btn edit-btn"
+                        onClick={() => openEditModal(category)}
+                      >
+                        <img src={editIcon} alt="" />
+                      </button>
+                    </td>
 
-                  <td>
-                    <button
-                      className="icon-btn edit-btn"
-                      onClick={() => openEditModal(category)}
-                    >
-                      <img src={editIcon} alt="" />
-                    </button>
-                  </td>
-
-                  <td>
-                    <button
-                      className="icon-btn delete-btn"
-                      onClick={() => handleDeleteCategory(category.id)}
-                    >
-                      <img src={deleteIcon} alt="" />
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
+                    <td>
+                      <button
+                        className="icon-btn delete-btn"
+                        onClick={() => handleDeleteCategory(category.id)}
+                      >
+                        <img src={deleteIcon} alt="" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              }))}
           </tbody>
         </table>
       </div>
@@ -397,7 +429,6 @@ const Categories = ({ adminData, setAdminData, toCamelCase }) => {
               />
             )}
 
-
             <div className="modal-actions">
               <button type="submit">Add</button>
               <button type="button" onClick={resetAddCategoryForm}>
@@ -432,8 +463,6 @@ const Categories = ({ adminData, setAdminData, toCamelCase }) => {
                 onBlur={(e) =>
                   setEditName(toCamelCase(e.target.value))
                 }
-
-
               />
             </div>
 

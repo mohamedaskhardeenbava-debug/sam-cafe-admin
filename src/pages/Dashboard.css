@@ -13,22 +13,17 @@
   margin-bottom: 20px;
 }
 
-/*    DATE PICKER – ENTERPRISE UI */
-
+/*DATE PICKER – ENTERPRISE UI */
 .dashboard-filter input[type="date"] {
   height: 38px;
   min-width: 150px;
-
   padding: 0 14px;
   font-size: 14px;
   font-weight: 500;
-
   color: #111;
   background-color: #ffffff;
-
   border: 1px solid #d1d5db;
   border-radius: 999px;
-
   cursor: pointer;
   transition:
     border-color 0.2s ease,
@@ -153,6 +148,12 @@
   flex-direction: column;
 }
 
+.chart-card.line {
+  display: flex;
+  flex-direction: column;
+  gap: 50px;
+}
+
 .dashboard-piechart {
   display: flex;
   flex-direction: column;
@@ -192,11 +193,9 @@
   filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.18));
 }
 
-
 .recharts-pie-sector:focus {
   outline: none;
 }
-
 
 /*  RIGHT PANEL (BAR CHART) */
 .dashboard-barchart {
@@ -226,6 +225,16 @@
 
 .charts-header {
   margin-top: 30px;
+}
+
+.dashboard-export-btn {
+  background: #111;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-left: auto;
 }
 
 /* REMOVE MARGIN HACK */

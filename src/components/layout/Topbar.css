@@ -1,4 +1,4 @@
-/*Topbar Base*/
+/* Topbar Base*/
 .topbar {
   position: sticky;
   top: 0;
@@ -37,6 +37,41 @@
 
 .topbar-icon-wrapper {
   position: relative;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+
+  width: 20px !important;
+  height: 20px;
+
+  background: linear-gradient(135deg, #ff5252, #e53935);
+  color: #fff;
+
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow: 0 4px 10px rgba(229, 57, 53, 0.35);
+  transform: scale(1);
+  animation: badgePop 0.25s ease;
+}
+
+@keyframes badgePop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /*Icon Buttons */
@@ -138,6 +173,8 @@
   list-style: none;
   padding: 0;
   margin: 0;
+  max-height: 260px; /* ~5 items */
+  overflow-y: auto;
 }
 
 .notification-list li {

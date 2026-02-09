@@ -1,0 +1,45 @@
+.user-details-container {
+  max-width: 900px;
+  width: 100%;
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.06);
+}
+
+.user-details-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.user-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 24px;
+}
+
+.user-info-table td {
+  padding: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.user-orders-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.user-orders-table th,
+.user-orders-table td {
+  padding: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.user-orders-table th {
+  background: #f5f5f5;
+}
+
+.clickable {
+  cursor: pointer;
+}

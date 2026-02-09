@@ -1,65 +1,89 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Favourites.css";
+import { EmptyRow } from "../App";
 
-const Favourites = ({ adminData }) => {
+
+const Favourites = ({ adminData, handleSort, sortConfig }) => {
     const navigate = useNavigate();
+    const dishes = adminData.favourites || [];
 
-    const favouritesCategory = adminData.favourites?.[0];
+    const sortedFavourites = useMemo(() => {
+        if (!sortConfig.key) return dishes;
 
-    const dishes = favouritesCategory?.dishes || [];
+        const data = [...dishes];
 
-    console.log("FAVOURITES DATA:", adminData.favourites);
+        data.sort((a, b) => {
+            if (sortConfig.key === "name") {
+                return sortConfig.direction === "asc"
+                    ? a.name.localeCompare(b.name)
+                    : b.name.localeCompare(a.name);
+            }
 
-    console.log("ADMIN DATA FULL:", adminData);
+            if (sortConfig.key === "price") {
+                return sortConfig.direction === "asc"
+                    ? a.totalPrice - b.totalPrice
+                    : b.totalPrice - a.totalPrice;
+            }
+
+            return 0;
+        });
+
+        return data;
+    }, [dishes, sortConfig]);
 
     return (
         <div className="favourites-page">
-            <h2 className="page-title">Favourites</h2>
+            <h2 className="favourites-title">Favourites</h2>
 
             <div className="favourites-table-wrapper">
                 <table className="favourites-table">
                     <thead>
                         <tr>
                             <th>Image</th>
-                            <th>Dish Name</th>
-                            <th>Base Price</th>
+                            <th
+                                onClick={() => handleSort("name")}
+                                className={sortConfig.key === "name" ? "sorted" : ""}
+                            >
+                                <span className="th-content sort-th">
+                                    <span>Dish Name</span>
+                                    <span className="sort-arrow">
+                                        {sortConfig.direction === "asc" ? "▲" : "▼"}
+                                    </span>
+                                </span>
+                            </th>
+                            <th>Price</th>
                         </tr>
                     </thead>
 
                     <tbody>
-                        {dishes.map((dish) => (
-                            <tr key={dish.id}>
-                                <td
-                                    className="clickable"
-                                    onClick={() => navigate(`/favourites/${dish.id}`)}
-                                >
-                                    <div className="favourites-image">
-                                        <img
-                                            src={dish.image}
-                                            alt=""
-                                        />
-                                    </div>
-                                </td>
+                        {sortedFavourites.length === 0 ? (
+                            <EmptyRow colSpan={3} message="No favourite dishes added" />
+                        ) : (
+                            sortedFavourites.map((dish) => (
+                                <tr key={dish.id}>
+                                    <td
+                                        className="clickable"
+                                        onClick={() => navigate(`/favourites/${dish.id}`)}
+                                    >
+                                        <div className="favourites-image">
+                                            <img
+                                                src={dish.image}
+                                                alt=""
+                                            />
+                                        </div>
+                                    </td>
 
-                                <td
-                                    className="clickable"
-                                    onClick={() => navigate(`/favourites/${dish.id}`)}
-                                >
-                                    {dish.name}
-                                </td>
+                                    <td
+                                        className="clickable"
+                                        onClick={() => navigate(`/favourites/${dish.id}`)}
+                                    >
+                                        {dish.name}
+                                    </td>
 
-                                <td>₹{dish.basePrice}</td>
-                            </tr>
-                        ))}
-
-                        {dishes.length === 0 && (
-                            <tr>
-                                <td colSpan="3" className="empty-row">
-                                    No favourite dishes added
-                                </td>
-                            </tr>
-                        )}
+                                    <td>₹{dish.totalPrice}</td>
+                                </tr>
+                            )))}
                     </tbody>
                 </table>
             </div>

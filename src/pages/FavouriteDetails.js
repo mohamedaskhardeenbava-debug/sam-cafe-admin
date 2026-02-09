@@ -6,16 +6,12 @@ const FavouriteDetails = ({ adminData }) => {
     const { dishId } = useParams();
     const navigate = useNavigate();
 
-    const favouritesCategory = adminData.favourites?.find(
-        (f) => f.id === "favourites"
+    const dish = adminData.favourites?.find(
+        (d) => String(d.id) === String(dishId)
     );
 
-    const dish = favouritesCategory?.dishes.find(
-        (d) => d.id === dishId
-    );
-
-    if (!favouritesCategory) {
-        return <div className="page">No favourites data found</div>;
+    if (!adminData.favourites || adminData.favourites.length === 0) {
+        return <div className="page">No favourites added</div>;
     }
 
     if (!dish) {
@@ -24,7 +20,6 @@ const FavouriteDetails = ({ adminData }) => {
 
     return (
         <div className="favourite-details-page">
-
 
             <div className="favourite-container">
                 <div className="favourite-details-header">
@@ -43,7 +38,7 @@ const FavouriteDetails = ({ adminData }) => {
                 <div className="section">
                     <div className="fav-section-title">
                         <span>
-                            Name:  
+                            Name:
                         </span>
                         <p>{dish.name}</p>
                     </div>
@@ -52,7 +47,7 @@ const FavouriteDetails = ({ adminData }) => {
                 <div className="section">
                     <div className="fav-section-title">
                         <span>Base Price:</span>
-                        <p>{dish.basePrice}</p>
+                        <p>₹{dish.totalPrice}</p>
                     </div>
                 </div>
 
@@ -75,7 +70,6 @@ const FavouriteDetails = ({ adminData }) => {
                                 <tr>
                                     <th>Name</th>
                                     <th>Quantity (g)</th>
-                                    <th>Calories</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -83,7 +77,6 @@ const FavouriteDetails = ({ adminData }) => {
                                     <tr key={i}>
                                         <td>{ing.name}</td>
                                         <td>{ing.quantity}</td>
-                                        <td>{ing.calories}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -91,7 +84,37 @@ const FavouriteDetails = ({ adminData }) => {
                     </div>
                 </div>
 
-
+                <div className="section">
+                    <div className="section-title with-action">
+                        <span>Nutritional Beneifts</span>
+                    </div>
+                    <div className="table-wrapper">
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nutrition</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {dish.benefits && Object.keys(dish.benefits).length > 0 ? (
+                                    Object.entries(dish.benefits).map(([key, value]) => (
+                                        <tr key={key}>
+                                            <td>{key}</td>
+                                            <td>{value}</td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="2" style={{ textAlign: "center", color: "#777" }}>
+                                            No nutrition information available
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     );

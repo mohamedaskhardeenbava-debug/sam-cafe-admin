@@ -6,6 +6,9 @@ import categoryIcon from "../../icon/category-icon.png";
 import dishIcon from "../../icon/dish-icon.png";
 import ingredientIcon from "../../icon/ingredient-icon.png";
 import stockIcon from "../../icon/stock-icon.png";
+import orderIcon from "../../icon/order-icon.png";
+import userIcon from "../../icon/user-icon.png";
+import favouriteIcon from "../../icon/favourite-icon.png"
 import logo from "../../icon/logo.png";
 import logoShrink from "../../icon/logo-shrink.png";
 import React, { useState, useEffect } from "react";
@@ -16,7 +19,9 @@ const menu = [
   { label: "Dishes", path: "/dishes", icon: dishIcon },
   { label: "Ingredients", path: "/ingredients", icon: ingredientIcon },
   { label: "Stocks", path: "/stocks", icon: stockIcon },
-  { label: "Favourites", path: "/favourites", icon: dishIcon }
+  { label: "Favourites", path: "/favourites", icon: favouriteIcon },
+  { label: "Orders", path: "/orders", icon: orderIcon },
+  { label: "Users", path: "/users", icon: userIcon }
 ];
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
@@ -33,17 +38,25 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         onClick={() => setIsOpen(prev => !prev)}
         style={{ cursor: "pointer" }}
       >
-        {!isOpen && (
-          <span className="brand-icon">
-            <img src={logoShrink} alt="Sam Cafe" />
-          </span>
-        )}
+        <span className="brand-icon">
+          <img
+            src={logoShrink}
+            alt="Sam Cafe"
+            className={`logo ${isOpen ? "hidden" : "visible"}`}
+            loading="lazy"
+            decoding="async"
+          />
+        </span>
 
-        {isOpen && (
-          <span className="brand-logo">
-            <img src={logo} alt="Sam Cafe" />
-          </span>
-        )}
+        <span className="brand-logo">
+          <img
+            src={logo}
+            alt="Sam Cafe"
+            className={`logo ${isOpen ? "visible" : "hidden"}`}
+            loading="lazy"
+            decoding="async"
+          />
+        </span>
       </div>
 
       <nav className="sidebar-menu">
@@ -58,7 +71,9 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             <span className="sidebar-icon">
               <img src={item.icon} alt={item.label} />
             </span>
-            {isOpen && <span className="sidebar-text">{item.label}</span>}
+            <span className={`sidebar-text ${isOpen ? "show" : "hide"}`}>
+              {item.label}
+            </span>
           </NavLink>
         ))}
       </nav>

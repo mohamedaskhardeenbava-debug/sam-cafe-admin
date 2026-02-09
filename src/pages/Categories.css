@@ -33,11 +33,6 @@
   overflow-y: auto;
 }
 
-.category-table-wrapper::-webkit-scrollbar {
-  display: none;
-}
-
-
 .category-table {
   border-collapse: separate;
   border-spacing: 0;
@@ -191,21 +186,16 @@ button img {
   position: absolute;
   top: 24px;
   right: 24px;
-
   width: 36px;
   height: 36px;
-
   border-radius: 5px;
   border: none;
   background-color: #f2f2f2;
-
   cursor: pointer;
   padding: 0;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   transition: background-color 0.2s ease, transform 0.15s ease;
 }
 
@@ -224,10 +214,8 @@ button img {
 .category-close-btn::after {
   content: "";
   position: absolute;
-
   width: 18px;
   height: 2px;
-
   background-color: #333;
   border-radius: 2px;
 }

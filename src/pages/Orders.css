@@ -1,0 +1,406 @@
+.orders-page {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* HEADER */
+.orders-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.orders-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #111;
+}
+
+/* FILTER */
+.orders-filter {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+}
+
+/*DATE PICKER – ENTERPRISE UI */
+.orders-filter input[type="date"] {
+  height: 38px;
+  min-width: 150px;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+/* Hover */
+.orders-filter input[type="date"]:hover {
+  border-color: #9ca3af;
+  background-color: #f9fafb;
+}
+
+/* Focus (MNC blue ring) */
+.orders-filter input[type="date"]:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  background-color: #ffffff;
+}
+
+/* Disabled */
+.orders-filter input[type="date"]:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Calendar icon */
+.orders-filter input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.orders-filter input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Remove inner buttons */
+.orders-filter input[type="date"]::-webkit-clear-button,
+.orders-filter input[type="date"]::-webkit-inner-spin-button {
+  display: none;
+}
+
+.orders-export-btn {
+  background: #111;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+
+/* TABLE WRAPPER */
+.orders-table-wrapper {
+  width: 100%;
+  max-width: 100%;
+  max-height: calc(100vh - 185px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* TABLE */
+.orders-table {
+  width: 100%;
+  max-width: 100%;
+  background-color: #ffffff;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+.orders-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #414141;
+}
+
+.orders-table th {
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.orders-table td {
+  padding: 8px 10px;
+  font-size: 14px;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-bottom: 1px solid #e0e0e0;
+  height: 36px;
+}
+
+.orders-table th:nth-child(1),
+.orders-table td:nth-child(1) {
+  width: 90px;
+}
+
+.orders-table tbody tr:hover {
+  background-color: rgb(234, 234, 234);
+}
+
+.orders-table tr.clickable {
+  cursor: pointer;
+}
+
+@keyframes pulse {
+  0% { background-color: #fff3cd; }
+  50% { background-color: #ffe08a; }
+  100% { background-color: #fff3cd; }
+}
+
+tr.highlight-order td {
+  animation: pulse 1s ease-in-out 2;
+}
+
+/* STATUS COLORS */
+.status {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* placed */
+.status-placed {
+  color: #d32f2f;
+}
+
+/* preparing */
+.status-preparing {
+  color: #ffb700;
+}
+
+/* service pickup */
+.status-service-pickup {
+  color: #fb7100;
+}
+
+/* completed */
+.status-completed {
+  color: #2e7d32;
+}
+
+/* ===============================
+   ORDER SUB TABLE (DETAIL VIEW)
+   =============================== */
+
+/* wrapper row */
+.order-sub-row td {
+  padding: 12px 20px;
+  background: #eaeaea;
+  /* soft blue-grey */
+  border-bottom: 1px solid #dfe3ea;
+  position: static;
+}
+
+/* sub-table container */
+.order-items-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #ffffff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  table-layout: fixed;
+  border: 1px solid #e8e8e8;
+}
+
+/* header */
+.order-items-table thead {
+  background: #eef2f7;
+  position: relative;
+  /* NOT sticky */
+  z-index: 1;
+}
+
+.order-items-table th {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #d6dbe3;
+}
+
+/* body rows */
+.order-items-table td {
+  padding: 8px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid #eee;
+  background-color: #fff;
+}
+
+.order-items-table th:nth-child(1),
+.order-items-table td:nth-child(1),
+.order-items-table th:nth-child(2),
+.order-items-table td:nth-child(2) {
+  width: 200px;
+  max-width: 500px;
+}
+
+.order-items-table th:nth-child(3),
+.order-items-table td:nth-child(3) {
+  width: 50px;
+  max-width: 50px;
+}
+
+.order-items-table th:nth-child(4),
+.order-items-table td:nth-child(4),
+.order-items-table th:nth-child(5),
+.order-items-table td:nth-child(5),
+.order-items-table th:nth-child(6),
+.order-items-table td:nth-child(6) {
+  width: 80px;
+  max-width: 80px;
+}
+
+.pickup-btn {
+  padding: 6px 10px;
+  font-size: 12px;
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.overlay-box {
+  background: #fff;
+  padding: 30px;
+  border-radius: 8px;
+  min-width: 280px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.overlay-box h3 {
+  margin: 0;
+}
+
+.pickup-notes {
+  margin-top: 12px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.pickup-notes-text {
+  margin-top: 6px;
+  color: #333;
+}
+
+.pickup-notes.muted {
+  color: #999;
+}
+
+.button-container {
+  display: flex;
+  gap: 10px;
+}
+
+.button-container button {
+  padding: 20px;
+  font-size: 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  border: none;
+  transition: all 100ms ease-in;
+  background-color: #d8d8d8;
+  color: #111;
+  font-weight: 600;
+}
+
+.overlay-box .cancel {
+  padding: 8px 14px;
+  font-size: 14px;
+  width: fit-content;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  transition: all 100ms ease-in;
+  background-color: #d8d8d8;
+  color: #111;
+}
+
+.overlay-box .cancel:hover {
+  scale: 1.05;
+}
+
+.pickup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.pickup-modal {
+  background: #fff;
+  padding: 24px;
+  border-radius: 16px;
+  width: 320px;
+  text-align: center;
+}
+
+.pickup-actions {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.btn-cancel {
+  background: #ccc;
+  border: none;
+  padding: 8px 14px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.btn-confirm {
+  background: #00ad09;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+@media screen and (max-width: 768px) {
+  .orders-table-wrapper {
+    width: 100% !important;
+  }
+
+  .orders-table th {
+    font-size: 12px;
+  }
+
+  .orders-table td {
+    font-size: 12px;
+  }
+}

@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "./Dishes.css";
 import api from "../api";
 import deleteIcon from "../icon/delete-icon.png";
 import { allowTextInput } from "../App";
+import { EmptyRow } from "../App";
 
-const Dishes = ({ adminData, setAdminData, toCamelCase }) => {
+const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }) => {
   const [dishImagePreview, setDishImagePreview] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [editingDish, setEditingDish] = useState(null);
@@ -25,6 +26,15 @@ const Dishes = ({ adminData, setAdminData, toCamelCase }) => {
     },
     ingredients: []
   });
+
+  const availableIngredients = adminData.ingredients
+    .filter(
+      ing =>
+        !newDish.ingredients.some(
+          selected => selected.name === ing.name
+        )
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const resetDishForm = () => {
     setShowForm(false);
@@ -79,9 +89,47 @@ const Dishes = ({ adminData, setAdminData, toCamelCase }) => {
     (cat) => cat.id === selectedCategoryId
   );
 
+  const sortedDishes = useMemo(() => {
+    if (!selectedCategory || !sortConfig.key) {
+      return selectedCategory?.dishes || [];
+    }
+
+    const data = [...selectedCategory.dishes];
+
+    data.sort((a, b) => {
+      if (sortConfig.key === "name") {
+        return sortConfig.direction === "asc"
+          ? a.name.localeCompare(b.name)
+          : b.name.localeCompare(a.name);
+      }
+
+      if (sortConfig.key === "basePrice") {
+        return sortConfig.direction === "asc"
+          ? a.basePrice - b.basePrice
+          : b.basePrice - a.basePrice;
+      }
+
+      return 0;
+    });
+
+    return data;
+  }, [selectedCategory, sortConfig]);
+
   const handleSaveDish = async () => {
     if (!newDish.name || !newDish.basePrice) {
       alert("Dish name and base price are required");
+      return;
+    }
+
+    const duplicateDish = selectedCategory.dishes.some(
+      d =>
+        (!editingDish || d.id !== editingDish.id) &&
+        d.name.trim().toLowerCase() ===
+        newDish.name.trim().toLowerCase()
+    );
+
+    if (duplicateDish) {
+      alert("Dish with this name already exists in this category");
       return;
     }
 
@@ -216,14 +264,25 @@ const Dishes = ({ adminData, setAdminData, toCamelCase }) => {
   });
 
   const handleAddIngredient = () => {
-    if (!ingredientForm.name.trim()) return;
+    if (!ingredientForm.name) return;
 
-    setNewDish((prev) => ({
+    const exists = newDish.ingredients.some(
+      ing =>
+        ing.name.trim().toLowerCase() ===
+        ingredientForm.name.trim().toLowerCase()
+    );
+
+    if (exists) {
+      alert("Ingredient already added to this dish");
+      return;
+    }
+
+    setNewDish(prev => ({
       ...prev,
       ingredients: [
         ...prev.ingredients,
         {
-          name: ingredientForm.name.trim(),
+          name: ingredientForm.name,
           quantity: ingredientForm.quantity,
           calories: Number(ingredientForm.calories || 0)
         }
@@ -246,25 +305,22 @@ const Dishes = ({ adminData, setAdminData, toCamelCase }) => {
       <div className="dish-header">
         <h2 className="dish-title">Dishes</h2>
 
-        <select
-          className="category-dropdown"
-          value={selectedCategoryId}
-          onChange={(e) => {
-            const newCategoryId = e.target.value;
-
-            setSelectedCategoryId(newCategoryId);
-            setEditingDishId(null);
-
-            navigate(`/dishes/${newCategoryId}`, { replace: true });
-          }}
-
-        >
-          {adminData.categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
+        <div className="category-buttons">
+          {adminData.categories.map(cat => (
+            <button
+              key={cat.id}
+              className={`category-btn ${selectedCategoryId === cat.id ? "active" : ""
+                }`}
+              onClick={() => {
+                setSelectedCategoryId(cat.id);
+                setEditingDishId(null);
+                navigate(`/dishes/${cat.id}`, { replace: true });
+              }}
+            >
+              {cat.name}
+            </button>
           ))}
-        </select>
+        </div>
 
         <button
           className="dish-add-btn"
@@ -283,14 +339,24 @@ const Dishes = ({ adminData, setAdminData, toCamelCase }) => {
             <thead>
               <tr>
                 <th>Image</th>
-                <th>Dish Name</th>
+                <th
+                  onClick={() => handleSort("name")}
+                  className={sortConfig.key === "name" ? "sorted" : ""}
+                >
+                  <span className="th-content sort-th">
+                    <span>Name</span>
+                    <span className="sort-arrow">
+                      {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    </span>
+                  </span>
+                </th>
                 <th>Base Price</th>
                 <th>Delete</th>
               </tr>
             </thead>
 
             <tbody>
-              {selectedCategory?.dishes.map((dish) => (
+              {sortedDishes.map((dish) => (
                 <tr key={dish.id}>
                   <td
                     className="clickable"
@@ -327,12 +393,8 @@ const Dishes = ({ adminData, setAdminData, toCamelCase }) => {
                 </tr>
               ))}
 
-              {selectedCategory?.dishes.length === 0 && (
-                <tr>
-                  <td colSpan="5" style={{ textAlign: "center", padding: "20px" }}>
-                    No dishes available
-                  </td>
-                </tr>
+              {sortedDishes.length === 0 && (
+                <EmptyRow colSpan={4} message="No dishes available" />
               )}
             </tbody>
           </table>
@@ -463,26 +525,23 @@ const Dishes = ({ adminData, setAdminData, toCamelCase }) => {
                 <div className="border">
                   <div className="form-group">
                     <label htmlFor="">Ingredient Name</label>
-                    <input
+                    <select
                       value={ingredientForm.name}
                       onChange={(e) =>
-                        setIngredientForm((prev) => ({
+                        setIngredientForm(prev => ({
                           ...prev,
-                          name: allowTextInput(
-                            prev.name,
-                            e.target.value,
-                            100,
-                            5
-                          )
+                          name: e.target.value
                         }))
                       }
-                      onBlur={(e) =>
-                        setIngredientForm((prev) => ({
-                          ...prev,
-                          name: toCamelCase(e.target.value)
-                        }))
-                      }
-                    />
+                    >
+                      <option value="">Select ingredient</option>
+
+                      {availableIngredients.map(ing => (
+                        <option key={ing.id} value={ing.name}>
+                          {ing.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="form-group">

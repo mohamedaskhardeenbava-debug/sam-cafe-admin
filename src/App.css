@@ -22,7 +22,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: #f4f5f7;
+  /* background-color: #f4f5f7; */
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -35,18 +35,209 @@ body {
 .page {
   flex: 1;
   padding: 24px;
-  background-color: #f4f5f7;
+  /* background-color: #f4f5f7; */
   box-sizing: border-box;
 }
 
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
-  -webkit-appearance: none ;
+  -webkit-appearance: none;
   margin: 0;
 }
 
-input[type="number"] {
-  -moz-appearance: textfield;
+.clickable {
+  color: #1951d2;
+  font-weight: 600;
+}
+
+.clickable:hover {
+  color: #d21919;
+  cursor: pointer;
+}
+
+.data-table {
+  width: 100%;
+  margin-top: 8px;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  border: 1px solid #e0e0e0;
+  padding: 8px;
+  font-size: 14px;
+}
+
+.data-table th {
+  background: #f5f5f5;
+  text-align: start;
+}
+
+.data-table tbody tr:hover {
+  background-color: rgb(234, 234, 234);
+}
+
+.data-table th:nth-child(1),
+.data-table td:nth-child(1) {
+  width: 40%;
+}
+
+.data-table th:nth-child(2),
+.data-table td:nth-child(2) {
+  width: 30%;
+}
+
+.data-table th:nth-child(3),
+.data-table td:nth-child(3) {
+  width: 20%;
+}
+
+.data-table th:nth-child(4),
+.data-table td:nth-child(4) {
+  width: 10%;
+  text-align: center;
+}
+
+.th-content {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Arrow exists but is invisible */
+.sort-arrow {
+  width: 14px;
+  /* reserve space */
+  text-align: center;
+  font-size: 12px;
+  opacity: 0;
+  /* HIDDEN by default */
+  transition: opacity 0.15s ease;
+}
+
+/* Arrow visible ONLY after click */
+th.sorted .sort-arrow {
+  opacity: 1;
+}
+
+.sort-th {
+  color: #00BFFF;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.sort-th:hover {
+  color: #ffffff;
+  cursor: pointer;
+}
+
+/* =========================================
+   FORCE FLAT SCROLLBAR (MAXIMUM POSSIBLE)
+   ========================================= */
+
+/* Chrome / Edge / Safari */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Removes rounded overlay illusion */
+::-webkit-scrollbar-thumb:vertical {
+  border-radius: 0 !important;
+}
+
+::-webkit-scrollbar-thumb:horizontal {
+  border-radius: 0 !important;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scroll-behavior: smooth;
+}
+
+/* ============================= */
+/* TABLE WRAPPER SCROLLBARS */
+/* ============================= */
+
+/* Chrome / Edge / Safari */
+.stocks-table-wrapper::-webkit-scrollbar,
+.ingredient-table-wrapper::-webkit-scrollbar,
+.dish-table-wrapper::-webkit-scrollbar,
+.category-table-wrapper::-webkit-scrollbar, 
+.category-buttons::-webkit-scrollbar{
+  width: 8px;
+}
+
+/* Track */
+.stocks-table-wrapper::-webkit-scrollbar-track,
+.ingredient-table-wrapper::-webkit-scrollbar-track,
+.dish-table-wrapper::-webkit-scrollbar-track,
+.category-table-wrapper::-webkit-scrollbar-track,
+.category-buttons::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 0;
+}
+
+/* Thumb */
+.stocks-table-wrapper::-webkit-scrollbar-thumb,
+.ingredient-table-wrapper::-webkit-scrollbar-thumb,
+.dish-table-wrapper::-webkit-scrollbar-thumb,
+.category-table-wrapper::-webkit-scrollbar-thumb,
+.category-buttons::-webkit-scrollbar-thumb{
+  background-color: #9ca3af;
+  border-radius: 0;
+}
+
+/* Hover */
+.stocks-table-wrapper::-webkit-scrollbar-thumb:hover,
+.ingredient-table-wrapper::-webkit-scrollbar-thumb:hover,
+.dish-table-wrapper::-webkit-scrollbar-thumb:hover,
+.category-table-wrapper::-webkit-scrollbar-thumb:hover,
+.category-buttons::-webkit-scrollbar-thumb:hover {
+  background-color: #6b7280;
+}
+
+/* REMOVE TOP & BOTTOM BUTTONS */
+.stocks-table-wrapper::-webkit-scrollbar-button,
+.ingredient-table-wrapper::-webkit-scrollbar-button,
+.dish-table-wrapper::-webkit-scrollbar-button,
+.category-table-wrapper::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  opacity: 0 !important;
+}
+
+/* Firefox */
+.stocks-table-wrapper,
+.ingredient-table-wrapper,
+.dish-table-wrapper,
+.category-table-wrapper,
+.category-buttons {
+  scrollbar-color: #9ca3af #f1f1f1;
 }
 
 @media (max-width: 768px) {

@@ -34,11 +34,6 @@
   max-height: calc(100vh - 185px);
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: none;
-}
-
-.ingredient-table-wrapper::-webkit-scrollbar {
-  display: none;
 }
 
 .ingredient-table {
@@ -74,7 +69,6 @@
 .ingredient-table td {
   padding: 8px 10px;
   font-size: 14px;
-  color: #333333;
   text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -327,15 +321,6 @@
   overflow-y: auto;
 }
 
-.ingredient-modal-body::-webkit-scrollbar {
-  width: 4px;
-}
-
-.ingredient-modal-body::-webkit-scrollbar-thumb {
-  background: #c4c4c4;
-  border-radius: 8px;
-}
-
 .ingredient-modal-footer {
   position: sticky;
   bottom: 0;
@@ -406,7 +391,6 @@
 
   .ingredient-table th,
   .ingredient-table td {
-    padding: 8px 10px;
     font-size: 12px;
   }
 

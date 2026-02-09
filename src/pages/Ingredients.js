@@ -1,19 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import "./Ingredients.css";
 import { useNavigate } from "react-router-dom";
 import deleteIcon from "../icon/delete-icon.png";
 import { allowTextInput } from "../App";
+import { sortArray } from "../App";
+import { EmptyRow } from "../App";
 
-const CATEGORY_OPTIONS = [
-  { id: "pizza", label: "Pizza" },
-  { id: "burger", label: "Burger" },
-  { id: "sandwich", label: "Sandwich" },
-  { id: "wraps", label: "Wraps" },
-  { id: "pasta", label: "Pasta" },
-  { id: "rice", label: "Rice" },
-  { id: "noodles", label: "Noodles" },
-  { id: "nachos", label: "Nachos" }
-];
 
 const EMPTY_FORM = {
   id: "",
@@ -36,7 +28,7 @@ const EMPTY_FORM = {
 const generateIngredientId = (name) =>
   name.trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
 
-const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase }) => {
+const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase, handleSort, sortConfig }) => {
   const [showForm, setShowForm] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [imagePreview, setImagePreview] = useState("");
@@ -49,7 +41,24 @@ const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase }) => {
     setImagePreview("");
   };
 
+  const sortedIngredients = useMemo(
+    () => sortArray(adminData.ingredients, sortConfig),
+    [adminData.ingredients, sortConfig]
+  );
+
   const handleSave = () => {
+    const normalizedName = formData.name.trim().toLowerCase();
+
+    const duplicate = adminData.ingredients.some(
+      ing =>
+        (!isEditMode || ing.id !== formData.id) &&
+        ing.name.trim().toLowerCase() === normalizedName
+    );
+
+    if (duplicate) {
+      alert("Ingredient with this name already exists");
+      return;
+    }
 
     const payload = {
       ...formData,
@@ -90,13 +99,6 @@ const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase }) => {
 
   const openAddForm = () => {
     resetIngredientForm();
-    setShowForm(true);
-  };
-
-  const openEditForm = (ingredient) => {
-    setFormData({ ...ingredient });
-    setImagePreview(ingredient.image || "");
-    setIsEditMode(true);
     setShowForm(true);
   };
 
@@ -179,7 +181,7 @@ const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase }) => {
               <div className="form-group">
                 <label>Used For</label>
                 <div className="checkbox-grid">
-                  {CATEGORY_OPTIONS.map((cat) => (
+                  {adminData.categories.map((cat) => (
                     <label key={cat.id} className="checkbox-item">
                       <input
                         type="checkbox"
@@ -197,7 +199,7 @@ const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase }) => {
                           });
                         }}
                       />
-                      {cat.label}
+                      {cat.name}
                     </label>
                   ))}
                 </div>
@@ -273,7 +275,17 @@ const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase }) => {
           <thead>
             <tr>
               <th>Image</th>
-              <th>Name</th>
+              <th
+                onClick={() => handleSort("name")}
+                className={sortConfig.key === "name" ? "sorted" : ""}
+              >
+                <span className="th-content sort-th">
+                  <span>Name</span>
+                  <span className="sort-arrow">
+                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                  </span>
+                </span>
+              </th>
               <th>Calories</th>
               <th>Protein</th>
               <th>Fibre</th>
@@ -283,36 +295,39 @@ const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase }) => {
           </thead>
 
           <tbody>
-            {adminData.ingredients.map((ingredient) => (
-              <tr key={ingredient.id}>
-                <td className="clickable"
-                  onClick={() => navigate(`/ingredients/${ingredient.id}`)}>
-                  <div className="ingredient-image">
-                    <img src="" alt="" />
-                  </div>
-                </td>
+            {sortedIngredients.length === 0 ? (
+              <EmptyRow colSpan={7} message="No ingredients found" />
+            ) : (
+              sortedIngredients.map((ingredient) => (
+                <tr key={ingredient.id}>
+                  <td className="clickable"
+                    onClick={() => navigate(`/ingredients/${ingredient.id}`)}>
+                    <div className="ingredient-image">
+                      <img src="" alt="" />
+                    </div>
+                  </td>
 
-                <td className="clickable"
-                  onClick={() => navigate(`/ingredients/${ingredient.id}`)}>{ingredient.name}</td>
-                <td>{ingredient.nutritionPer100g.kcal}</td>
-                <td>{ingredient.nutritionPer100g.protein}g</td>
-                <td>{ingredient.nutritionPer100g.fibre}g</td>
-                <td>{ingredient.nutritionPer100g.fat}g</td>
+                  <td className="clickable"
+                    onClick={() => navigate(`/ingredients/${ingredient.id}`)}>{ingredient.name}</td>
+                  <td>{ingredient.nutritionPer100g.kcal}</td>
+                  <td>{ingredient.nutritionPer100g.protein}g</td>
+                  <td>{ingredient.nutritionPer100g.fibre}g</td>
+                  <td>{ingredient.nutritionPer100g.fat}g</td>
 
-                <td>
-                  <button
-                    className="ingredient-icon-btn ingredient-delete-btn"
-                    onClick={() => {
-                      if (window.confirm("Delete this ingredient?")) {
-                        onDelete(ingredient.id);
-                      }
-                    }}
-                  >
-                    <img src={deleteIcon} alt="" />
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  <td>
+                    <button
+                      className="ingredient-icon-btn ingredient-delete-btn"
+                      onClick={() => {
+                        if (window.confirm("Delete this ingredient?")) {
+                          onDelete(ingredient.id);
+                        }
+                      }}
+                    >
+                      <img src={deleteIcon} alt="" />
+                    </button>
+                  </td>
+                </tr>
+              )))}
           </tbody>
         </table>
       </div>

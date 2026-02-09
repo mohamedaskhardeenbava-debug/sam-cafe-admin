@@ -3,40 +3,40 @@ import "./Stocks.css";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 import editIcon from "../icon/edit-icon.png";
+import * as XLSX from "xlsx";
+import { EmptyRow } from "../App";
 
-const Stocks = ({ adminData, setAdminData }) => {
+const toTwoDecimals = (value) =>
+  Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+
+const applyAutoColumnWidth = (sheet, rows) => {
+  if (!rows.length) return;
+
+  sheet["!cols"] = Object.keys(rows[0]).map(key => ({
+    wch: Math.max(
+      key.length,
+      ...rows.map(r => String(r[key] ?? "").length)
+    ) + 2
+  }));
+};
+
+const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
   const navigate = useNavigate();
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedIngredient, setSelectedIngredient] = useState(null);
   const [addStock, setAddStock] = useState("");
   const [pricePer100g, setPricePer100g] = useState("");
-  const [stockMin, setStockMin] = useState("");
   const [stockMax, setStockMax] = useState("");
-
-  /* ---------------- SORT STATE ---------------- */
-  const [sortConfig, setSortConfig] = useState({
-    key: "name",        //  default sort by name
-    direction: "asc"    //  ascending
-  });
-
-  const handleSort = (key) => {
-    setSortConfig((prev) => ({
-      key,
-      direction:
-        prev.key === key && prev.direction === "asc"
-          ? "desc"
-          : "asc"
-    }));
-  };
+  const [expiryDate, setExpiryDate] = useState("");
 
   const calculateStockPercent = (ing) => {
-    const { stockRemaining, stockMax } = ing;
+    const remaining = toTwoDecimals(ing.stockRemaining ?? 0);
+    const max = toTwoDecimals(ing.stockMax ?? 0);
 
-    if (!stockMax || stockMax <= 0) return 0;
+    if (!max || max <= 0) return 0;
 
-    const percent = (stockRemaining / stockMax) * 100;
-
+    const percent = (remaining / max) * 100;
     return Math.max(0, Math.min(100, Math.round(percent)));
   };
 
@@ -45,30 +45,41 @@ const Stocks = ({ adminData, setAdminData }) => {
     const data = [...adminData.ingredients];
 
     data.sort((a, b) => {
-  if (sortConfig.key === "name") {
-    return sortConfig.direction === "asc"
-      ? a.name.localeCompare(b.name)
-      : b.name.localeCompare(a.name);
-  }
+      if (sortConfig.key === "name") {
+        return sortConfig.direction === "asc"
+          ? a.name.localeCompare(b.name)
+          : b.name.localeCompare(a.name);
+      }
 
-  let aVal = 0;
-  let bVal = 0;
+      let aVal = 0;
+      let bVal = 0;
 
-  if (sortConfig.key === "price") {
-    aVal = a.pricePer100g ?? 0;
-    bVal = b.pricePer100g ?? 0;
-  } else if (sortConfig.key === "stock") {
-    aVal = a.stockRemaining ?? 0;
-    bVal = b.stockRemaining ?? 0;
-  } else if (sortConfig.key === "stockPercent") {
-    aVal = calculateStockPercent(a);
-    bVal = calculateStockPercent(b);
-  }
+      if (sortConfig.key === "price") {
+        aVal = a.pricePer100g ?? 0;
+        bVal = b.pricePer100g ?? 0;
+      }
+      else if (sortConfig.key === "stock") {
+        aVal = toTwoDecimals(a.stockRemaining ?? 0);
+        bVal = toTwoDecimals(b.stockRemaining ?? 0);
+      }
+      else if (sortConfig.key === "stockPercent") {
+        aVal = calculateStockPercent(a);
+        bVal = calculateStockPercent(b);
+      }
+      else if (sortConfig.key === "lastUpdated") {
+        aVal = a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0;
+        bVal = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
+      }
 
-  return sortConfig.direction === "asc"
-    ? aVal - bVal
-    : bVal - aVal;
-});
+      else if (sortConfig.key === "expiryDate") {
+        aVal = a.expiryDate ? new Date(a.expiryDate).getTime() : 0;
+        bVal = b.expiryDate ? new Date(b.expiryDate).getTime() : 0;
+      }
+
+      return sortConfig.direction === "asc"
+        ? aVal - bVal
+        : bVal - aVal;
+    });
 
     return data;
   }, [adminData.ingredients, sortConfig]);
@@ -78,8 +89,8 @@ const Stocks = ({ adminData, setAdminData }) => {
     setSelectedIngredient(ingredient);
     setAddStock("");
     setPricePer100g(ingredient.pricePer100g || "");
-    setStockMin(ingredient.stockMin ?? "");
     setStockMax(ingredient.stockMax ?? "");
+    setExpiryDate(ingredient.expiryDate || "");
     setShowEditModal(true);
   };
 
@@ -88,28 +99,25 @@ const Stocks = ({ adminData, setAdminData }) => {
     setSelectedIngredient(null);
     setAddStock("");
     setPricePer100g("");
-    setStockMin("");
     setStockMax("");
   };
 
   const handleSave = async () => {
     const addValue = Number(addStock || 0);
     const newPrice = Number(pricePer100g);
-    const min = Number(stockMin);
     const max = Number(stockMax);
+    const date = new Date().toISOString().split("T")[0];
 
     if (newPrice <= 0) {
       alert("Price must be greater than 0");
       return;
     }
 
-    if (min < 0 || max <= 0 || min >= max) {
-      alert("Stock Min must be less than Stock Max");
-      return;
-    }
+    const updatedStock = toTwoDecimals(
+      Number(selectedIngredient.stockRemaining || 0) + addValue
+    );
 
-    const updatedStock =
-      Number(selectedIngredient.stockRemaining || 0) + addValue;
+    const roundedPrice = toTwoDecimals(newPrice);
 
     try {
       const res = await api.get("/menu");
@@ -121,9 +129,10 @@ const Stocks = ({ adminData, setAdminData }) => {
             ? {
               ...ing,
               stockRemaining: updatedStock,
-              pricePer100g: newPrice,
-              stockMin: min,
-              stockMax: max
+              pricePer100g: roundedPrice,
+              stockMax: max,
+              expiryDate: expiryDate || null,
+              lastUpdated: date
             }
             : ing
         )
@@ -142,11 +151,39 @@ const Stocks = ({ adminData, setAdminData }) => {
     }
   };
 
+  const handleExportStocks = () => {
+    if (!adminData.ingredients.length) {
+      alert("No stock data available");
+      return;
+    }
+
+    const rows = adminData.ingredients.map((ing) => ({
+      Ingredient: ing.name,
+      "Stock Remaining (kg)": toTwoDecimals(ing.stockRemaining ?? 0),
+      "Last Purchased": ing.lastUpdated || "-"
+    }));
+
+    const sheet = XLSX.utils.json_to_sheet(rows);
+    applyAutoColumnWidth(sheet, rows);
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, "Stocks");
+
+    XLSX.writeFile(workbook, "stocks_export.xlsx");
+  };
+
   return (
     <div className="stocks-page">
       {/* HEADER */}
       <div className="stocks-header">
         <h2 className="stocks-title">Stocks</h2>
+
+        <button
+          className="stocks-export-btn"
+          onClick={handleExportStocks}
+        >
+          Export
+        </button>
       </div>
 
       {/* TABLE */}
@@ -154,20 +191,76 @@ const Stocks = ({ adminData, setAdminData }) => {
         <table className="stocks-table">
           <thead>
             <tr>
-              <th onClick={() => handleSort("name")}>
-                Ingredient
-              </th>
-              <th onClick={() => handleSort("price")}>
-                Price / 100g
-              </th>
-              <th onClick={() => handleSort("stock")}>
-                Stock (kg)
+              <th
+                onClick={() => handleSort("name")}
+                className={sortConfig.key === "name" ? "sorted" : ""}
+              >
+                <span className="th-content sort-th">
+                  <span>Ingredient</span>
+                  <span className="sort-arrow">
+                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                  </span>
+                </span>
               </th>
 
-              <th onClick={() => handleSort("stockPercent")}>
-                Stocks (%)
-                {/* {sortConfig.key === "stockPercent" &&
-                  (sortConfig.direction === "asc" ? " ↑" : " ↓")} */}
+              <th
+                onClick={() => handleSort("price")}
+                className={sortConfig.key === "price" ? "sorted" : ""}
+              >
+                <span className="th-content sort-th">
+                  <span>Price / 100g</span>
+                  <span className="sort-arrow">
+                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                  </span>
+                </span>
+              </th>
+
+              <th
+                onClick={() => handleSort("stock")}
+                className={sortConfig.key === "stock" ? "sorted" : ""}
+              >
+                <span className="th-content sort-th">
+                  <span>Stock (kg)</span>
+                  <span className="sort-arrow">
+                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                  </span>
+                </span>
+              </th>
+
+              <th
+                onClick={() => handleSort("stockPercent")}
+                className={sortConfig.key === "stockPercent" ? "sorted" : ""}
+              >
+                <span className="th-content sort-th">
+                  <span>Stocks (%)</span>
+                  <span className="sort-arrow">
+                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                  </span>
+                </span>
+              </th>
+
+              <th
+                onClick={() => handleSort("lastUpdated")}
+                className={sortConfig.key === "lastUpdated" ? "sorted" : ""}
+              >
+                <span className="th-content sort-th">
+                  <span>Last Purchased</span>
+                  <span className="sort-arrow">
+                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                  </span>
+                </span>
+              </th>
+
+              <th
+                onClick={() => handleSort("expiryDate")}
+                className={sortConfig.key === "expiryDate" ? "sorted" : ""}
+              >
+                <span className="th-content sort-th">
+                  <span>Expiry Date</span>
+                  <span className="sort-arrow">
+                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                  </span>
+                </span>
               </th>
 
               <th>Edit</th>
@@ -175,34 +268,41 @@ const Stocks = ({ adminData, setAdminData }) => {
           </thead>
 
           <tbody>
-            {sortedIngredients.map((ing) => (
-              <tr key={ing.id}>
-                <td>{ing.name}</td>
-                <td>₹{ing.pricePer100g}</td>
-                <td>{ing.stockRemaining ?? 0}</td>
-                <td
-                  style={{
-                    fontWeight: 600,
-                    color:
-                      calculateStockPercent(ing) < 30
-                        ? "red"
-                        : calculateStockPercent(ing) < 60
-                          ? "#e6a700"
-                          : "green"
-                  }}
-                >
-                  {calculateStockPercent(ing)}%
-                </td>
-                <td>
-                  <button
-                    className="stocks-edit-btn"
-                    onClick={() => openEditModal(ing)}
+            {sortedIngredients.length === 0 ? (
+              <EmptyRow colSpan={6} message="No stock data available" />
+            ) : (
+              sortedIngredients.map((ing) => (
+                <tr key={ing.id}>
+                  <td>{ing.name}</td>
+                  <td>₹{toTwoDecimals(ing.pricePer100g)}</td>
+                  <td>{toTwoDecimals(ing.stockRemaining ?? 0)}</td>
+                  <td
+                    style={{
+                      fontWeight: 600,
+                      color:
+                        calculateStockPercent(ing) < 30
+                          ? "red"
+                          : calculateStockPercent(ing) < 60
+                            ? "#e6a700"
+                            : "green"
+                    }}
                   >
-                    <img src={editIcon} alt="" />
-                  </button>
-                </td>
-              </tr>
-            ))}
+                    {calculateStockPercent(ing)}%
+                  </td>
+                  <td>{ing.lastUpdated}</td>
+                  <td>
+                    {ing.expiryDate || "-"}
+                  </td>
+                  <td>
+                    <button
+                      className="stocks-edit-btn"
+                      onClick={() => openEditModal(ing)}
+                    >
+                      <img src={editIcon} alt="" />
+                    </button>
+                  </td>
+                </tr>
+              )))}
           </tbody>
         </table>
       </div>
@@ -231,17 +331,6 @@ const Stocks = ({ adminData, setAdminData }) => {
             </div>
 
             <div className="stocks-form-group">
-              <label>Stock Min (kg)</label>
-              <input
-                type="number"
-                min="1"
-                step="1"
-                value={stockMin}
-                onChange={(e) => setStockMin(e.target.value)}
-              />
-            </div>
-
-            <div className="stocks-form-group">
               <label>Stock Max (kg)</label>
               <input
                 type="number"
@@ -265,12 +354,26 @@ const Stocks = ({ adminData, setAdminData }) => {
 
             {addStock && (
               <p className="stocks-calc-text">
-                {selectedIngredient.stockRemaining || 0} + {addStock} ={" "}
-                {Number(selectedIngredient.stockRemaining || 0) +
-                  Number(addStock)}{" "}
+                {toTwoDecimals(selectedIngredient.stockRemaining ?? 0)} +{" "}
+                {toTwoDecimals(addStock)} ={" "}
+                <strong>
+                  {toTwoDecimals(
+                    toTwoDecimals(selectedIngredient.stockRemaining ?? 0) +
+                    toTwoDecimals(addStock)
+                  )}
+                </strong>{" "}
                 kg
               </p>
             )}
+
+            <div className="stocks-form-group">
+              <label>Expiry Date</label>
+              <input
+                type="date"
+                value={expiryDate}
+                onChange={(e) => setExpiryDate(e.target.value)}
+              />
+            </div>
 
             <div className="form-actions">
               <button onClick={handleSave}>Save</button>
