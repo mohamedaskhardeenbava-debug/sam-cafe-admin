@@ -1,0 +1,10 @@
+.print-content {
+    font-size: 16px;
+}
+
+@media print {
+    .print-content{
+        font-size: 12pt;
+        color: gray;
+    }
+}

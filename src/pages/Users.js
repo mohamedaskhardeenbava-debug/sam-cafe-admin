@@ -22,10 +22,10 @@ const Users = ({ handleSort, sortConfig }) => {
         const message =
             "🎉 Special offers are waiting for you at Sam Cafe!";
 
-        window.open(
-            `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`,
-            "_blank"
-        );
+        const sendCampaignToAllUsers = async () => {
+            await api.post("/campaign", { users });
+            alert("Campaign sent successfully");
+        };
     };
 
     const getTotalItemsOrdered = (user) => {
@@ -47,7 +47,7 @@ const Users = ({ handleSort, sortConfig }) => {
         <div className="users-page">
             <div className="users-header">
                 <h2 className="users-title">Users</h2>
-                <button className="users-btn" onClick={sendCampaignToAllUsers}>
+                <button className="campaign-btn" onClick={sendCampaignToAllUsers}>
                     Campaign
                 </button>
             </div>

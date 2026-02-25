@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 import * as XLSX from "xlsx";
 import { EmptyRow } from "../App";
@@ -106,16 +107,17 @@ const NoChartData = ({ message = "No data available" }) => (
 );
 
 const Dashboard = ({ adminData, orders = [] }) => {
+  const navigate = useNavigate();
+
   const ingredients = adminData.ingredients || [];
   const [activeIndex, setActiveIndex] = useState(null);
 
   const today = format(new Date(), "yyyy-MM-dd");
-  const [fromDate, setFromDate] = useState(
-    format(subDays(new Date(), 7), "yyyy-MM-dd")
-  );
-  const [toDate, setToDate] = useState(
-    format(new Date(), "yyyy-MM-dd")
-  );
+
+  const [fromDate, setFromDate] = useState(today);
+  const [toDate, setToDate] = useState(today);
+  const [modeFilter, setModeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const num = (v) => {
     const n = Number(v);
@@ -140,7 +142,8 @@ const Dashboard = ({ adminData, orders = [] }) => {
     Number(item.totalPrice ?? resolveUnitPrice(item) * resolveQty(item));
 
   /* ---------------- FILTER ORDERS ---------------- */
-  const filteredOrders = useMemo(() => {
+  /* ---------- DATE ONLY FILTER ---------- */
+  const baseFilteredOrders = useMemo(() => {
     const from = new Date(fromDate);
     from.setHours(0, 0, 0, 0);
 
@@ -153,10 +156,83 @@ const Dashboard = ({ adminData, orders = [] }) => {
     });
   }, [orders, fromDate, toDate]);
 
-  const hasOrders = filteredOrders.length > 0;
+  /* ---------- MODE FILTER ---------- */
+  const modeFilteredOrders = useMemo(() => {
+    if (modeFilter === "all") return baseFilteredOrders;
+
+    return baseFilteredOrders.filter(
+      order =>
+        (order.mode || "take away").toLowerCase() === modeFilter
+    );
+  }, [baseFilteredOrders, modeFilter]);
+
+  /* ---------- STATUS FILTER ---------- */
+  const statusFilteredOrders = useMemo(() => {
+    if (statusFilter === "all") return baseFilteredOrders;
+
+    return baseFilteredOrders.filter(
+      order =>
+        order.status?.toLowerCase() === statusFilter
+    );
+  }, [baseFilteredOrders, statusFilter]);
+
+
+  const itemStats = useMemo(() => {
+    const stats = {
+      total: 0,
+      placed: 0,
+      preparing: 0,
+      servicePickup: 0,
+      completed: 0
+    };
+
+    const source =
+      modeFilter !== "all"
+        ? modeFilteredOrders
+        : statusFilter !== "all"
+          ? statusFilteredOrders
+          : baseFilteredOrders;
+
+    source.forEach(order => {
+      order.items.forEach(item => {
+        const qty = Number(item.quantity ?? 0);
+        const status = item.status?.toLowerCase();
+
+        stats.total += qty;
+
+        if (status === "placed") stats.placed += qty;
+        else if (status === "preparing") stats.preparing += qty;
+        else if (status === "service pickup") stats.servicePickup += qty;
+        else if (status === "completed") stats.completed += qty;
+      });
+    });
+
+    return stats;
+  }, [
+    baseFilteredOrders,
+    modeFilteredOrders,
+    statusFilteredOrders,
+    modeFilter,
+    statusFilter
+  ]);
+
+  const orderModeStats = useMemo(() => {
+    let dineIn = 0;
+    let takeaway = 0;
+
+    baseFilteredOrders.forEach(order => {
+      const mode = (order.mode || "").toLowerCase();
+      if (mode === "dine in") dineIn += 1;
+      else takeaway += 1;
+    });
+
+    return { dineIn, takeaway };
+  }, [baseFilteredOrders]);
+
+  const hasOrders = baseFilteredOrders.length > 0;
 
   const handleExport = () => {
-    if (filteredOrders.length === 0) {
+    if (baseFilteredOrders.length === 0) {
       alert("No data available for selected date range");
       return;
     }
@@ -164,7 +240,7 @@ const Dashboard = ({ adminData, orders = [] }) => {
     /* ---------- SHEET 1: ORDERS ---------- */
     const orderRows = [];
 
-    filteredOrders.forEach(order => {
+    baseFilteredOrders.forEach(order => {
       order.items.forEach(item => {
 
         const isCustomized =
@@ -231,7 +307,7 @@ const Dashboard = ({ adminData, orders = [] }) => {
   };
 
   /* ---------------- KPIs ---------------- */
-  const totalSales = filteredOrders.reduce(
+  const totalSales = baseFilteredOrders.reduce(
     (sum, order) =>
       sum +
       order.items.reduce(
@@ -241,15 +317,7 @@ const Dashboard = ({ adminData, orders = [] }) => {
     0
   );
 
-  const totalOrders = filteredOrders.reduce(
-    (sum, order) =>
-      sum +
-      (order.items || []).reduce(
-        (s, item) => s + resolveQty(item),
-        0
-      ),
-    0
-  );
+  const totalOrders = baseFilteredOrders.length;
 
   /* ---------------- SALES COMPARISON ---------------- */
   const previousOrders = useMemo(() => {
@@ -296,7 +364,7 @@ const Dashboard = ({ adminData, orders = [] }) => {
     const map = {};
     let grandTotal = 0;
 
-    filteredOrders.forEach(order => {
+    baseFilteredOrders.forEach(order => {
       order.items.forEach(item => {
         const amount = resolveRevenue(item);
         if (amount <= 0) return;
@@ -316,13 +384,13 @@ const Dashboard = ({ adminData, orders = [] }) => {
         amount: value
       })
     );
-  }, [filteredOrders]);
+  }, [baseFilteredOrders]);
 
   const categoryItemSummary = useMemo(() => {
     const map = {};
     let grandRevenue = 0;
 
-    filteredOrders.forEach(order => {
+    baseFilteredOrders.forEach(order => {
       order.items.forEach(item => {
         const category = item.categoryId || "unknown";
         const qty = resolveQty(item);
@@ -351,7 +419,7 @@ const Dashboard = ({ adminData, orders = [] }) => {
           ? Number(((row.revenue / grandRevenue) * 100).toFixed(2))
           : 0
     }));
-  }, [filteredOrders]);
+  }, [baseFilteredOrders]);
 
   /* ---------------- ALL INGREDIENT STOCK ---------------- */
   const stockData = useMemo(() => {
@@ -382,7 +450,7 @@ const Dashboard = ({ adminData, orders = [] }) => {
   const dailyRevenue = useMemo(() => {
     const map = {};
 
-    filteredOrders.forEach(order => {
+    baseFilteredOrders.forEach(order => {
       const date = order.date;
 
       order.items.forEach(item => {
@@ -397,12 +465,12 @@ const Dashboard = ({ adminData, orders = [] }) => {
         date,
         revenue
       }));
-  }, [filteredOrders]);
+  }, [baseFilteredOrders]);
 
   const monthlyRevenue = useMemo(() => {
     const map = {};
 
-    filteredOrders.forEach(order => {
+    baseFilteredOrders.forEach(order => {
       // YYYY-MM
       const month = format(new Date(order.date), "yyyy-MM");
 
@@ -418,7 +486,7 @@ const Dashboard = ({ adminData, orders = [] }) => {
         month,
         revenue
       }));
-  }, [filteredOrders]);
+  }, [baseFilteredOrders]);
 
   const revenueTrendData = useMemo(() => {
     return dailyRevenue.map(d => {
@@ -504,7 +572,7 @@ const Dashboard = ({ adminData, orders = [] }) => {
 
   return (
     <div className="dashboard-page">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div className="dashboard-header">
         <h2 className="dashboard-title">Dashboard</h2>
 
         <button
@@ -513,45 +581,184 @@ const Dashboard = ({ adminData, orders = [] }) => {
         >
           Export
         </button>
+
+        <div className="dashboard-kpi-row">
+          <div className="kpi-card kpi-small">
+            <p>Total Orders</p>
+            <h3>{totalOrders}</h3>
+          </div>
+
+          <div
+            className={`kpi-card kpi-small link ${modeFilter === "dine in" ? "active" : ""
+              }`}
+            onClick={() => {
+              setModeFilter(prev =>
+                prev === "dine in" ? "all" : "dine in"
+              );
+            }}
+            onDoubleClick={() =>
+              navigate("/orders", {
+                state: {
+                  mode: "dine in",
+                  fromDate,
+                  toDate
+                }
+              })
+            }
+          >
+            <p>Dine In</p>
+            <h3>{orderModeStats.dineIn}</h3>
+          </div>
+
+          <div
+            className={`kpi-card kpi-small link ${modeFilter === "take away" ? "active" : ""
+              }`}
+            onClick={() => {
+              setModeFilter(prev =>
+                prev === "take away" ? "all" : "take away"
+              );
+            }}
+            onDoubleClick={() =>
+              navigate("/orders", {
+                state: {
+                  mode: "take away",
+                  fromDate,
+                  toDate
+                }
+              })
+            }
+          >
+            <p>Take Away</p>
+            <h3>{orderModeStats.takeaway}</h3>
+          </div>
+        </div>
       </div>
 
       {/* DATE FILTER */}
       <div className="dashboard-filter">
-        {/* FROM DATE */}
-        <input
-          type="date"
-          value={fromDate}
-          max={toDate}
-          onChange={(e) => {
-            const selected = e.target.value;
 
-            if (selected > toDate) {
-              setFromDate(selected);
-              setToDate(selected);
-            } else {
-              setFromDate(selected);
-            }
-          }}
-        />
+        <div className="dashboard-filter-date">
+          {/* FROM DATE */}
+          <input
+            type="date"
+            value={fromDate}
+            max={toDate}
+            onChange={(e) => {
+              const selected = e.target.value;
 
-        {/* TO DATE */}
-        <input
-          type="date"
-          value={toDate}
-          min={fromDate}
-          max={today}
-          onChange={(e) => {
-            const selected = e.target.value;
+              if (selected > toDate) {
+                setFromDate(selected);
+                setToDate(selected);
+              } else {
+                setFromDate(selected);
+              }
+            }}
+          />
 
-            if (selected < fromDate) {
-              setToDate(fromDate);
-            } else if (selected > today) {
-              setToDate(today);
-            } else {
-              setToDate(selected);
-            }
-          }}
-        />
+          {/* TO DATE */}
+          <input
+            type="date"
+            value={toDate}
+            min={fromDate}
+            max={today}
+            onChange={(e) => {
+              const selected = e.target.value;
+
+              if (selected < fromDate) {
+                setToDate(fromDate);
+              } else if (selected > today) {
+                setToDate(today);
+              } else {
+                setToDate(selected);
+              }
+            }}
+          />
+        </div>
+
+        <div className="dashboard-filter-kpis">
+          <div className="dashboard-kpi-row">
+            <div className="kpi-card kpi-small">
+              <p>Total Items</p>
+              <h3>{itemStats.total}</h3>
+            </div>
+
+            <div
+              className={"kpi-card status-placed kpi-small link"}
+              onClick={() => {
+                setStatusFilter(prev =>
+                  prev === "placed" ? "all" : "placed"
+                );
+                navigate("/orders", {
+                  state: {
+                    status: "placed",
+                    fromDate,
+                    toDate
+                  }
+                })
+              }}
+            >
+              <p>Placed</p>
+              <h3>{itemStats.placed}</h3>
+            </div>
+
+            <div
+              className={"kpi-card kpi-small status-preparing link"}
+              onClick={() => {
+                setStatusFilter(prev =>
+                  prev === "preparing" ? "all" : "preparing"
+                );
+                navigate("/orders", {
+                  state: {
+                    status: "preparing",
+                    fromDate,
+                    toDate
+                  }
+                })
+              }}
+            >
+              <p>Preparing</p>
+              <h3>{itemStats.preparing}</h3>
+            </div>
+
+            <div
+              className={"kpi-card kpi-small status-service-pickup link"}
+              onClick={() => {
+                setStatusFilter(prev =>
+                  prev === "service pickup" ? "all" : "service pickup"
+                );
+                navigate("/orders", {
+                  state: {
+                    status: "service pickup",
+                    fromDate,
+                    toDate
+                  }
+                })
+              }}
+            >
+              <p>Service Pickup</p>
+              <h3>{itemStats.servicePickup}</h3>
+            </div>
+
+            <div
+              className={"kpi-card kpi-small status-completed link"}
+              onClick={() => {
+                setStatusFilter(prev =>
+                  prev === "completed" ? "all" : "completed"
+                );
+                navigate("/orders", {
+                  state: {
+                    status: "completed",
+                    fromDate,
+                    toDate
+                  }
+                })
+              }}
+            >
+              <p>Completed</p>
+              <h3>{itemStats.completed}</h3>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* MAIN LAYOUT */}

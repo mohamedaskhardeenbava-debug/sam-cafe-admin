@@ -58,17 +58,22 @@
 }
 
 .dish-table-wrapper {
-  width: 600px !important;
+  width: 100%;
   max-height: calc(100vh - 185px);
   overflow-y: auto;
-  overflow-x: hidden;
+  padding: 0 10px;
+  background: #e9e9e9;
+  border-radius: 20px;
+  box-sizing: border-box;
 }
 
 .dish-table {
+  width: 100%;
   border-collapse: separate;
-  border-spacing: 0;
+  border-spacing: 0 5px;
+  /* row spacing */
+  background: transparent;
   table-layout: fixed;
-  background-color: #ffffff;
 }
 
 .dish-table thead {
@@ -79,20 +84,17 @@
 }
 
 .dish-table th {
-  color: #ffffff;
-  padding: 8px 10px;
-  font-size: 14px;
+  padding: 16px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #e9e9e9;
   text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  position: sticky;
-  top: 0;
-  z-index: 6;
 }
 
 .dish-table td {
-  padding: 8px 10px;
   font-size: 14px;
   text-align: left;
   white-space: nowrap;
@@ -103,6 +105,29 @@
 
 .dish-table tbody tr:hover {
   background-color: rgb(234, 234, 234);
+}
+
+.dish-table tbody tr {
+  background: #ffffff !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+  transition: all 0.25s ease;
+}
+
+.dish-table tbody tr td {
+  padding: 10px;
+  font-size: 14px;
+  border: none;
+  background: #ffffff;
+}
+
+.dish-table tbody tr td:first-child {
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+}
+
+.dish-table tbody tr td:last-child {
+  border-top-right-radius: 16px;
+  border-bottom-right-radius: 16px;
 }
 
 .dish-image,
@@ -152,11 +177,13 @@
 }
 
 .dish-add-btn {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid #111;
   background: #111;
   color: #fff;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 8px;
+  font-weight: 500;
   cursor: pointer;
   margin-left: auto;
 }

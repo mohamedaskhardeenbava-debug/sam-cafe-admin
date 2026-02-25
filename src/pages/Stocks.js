@@ -202,7 +202,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                   </span>
                 </span>
               </th>
-
+              <th>Brand</th>
               <th
                 onClick={() => handleSort("price")}
                 className={sortConfig.key === "price" ? "sorted" : ""}
@@ -262,7 +262,6 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                   </span>
                 </span>
               </th>
-
               <th>Edit</th>
             </tr>
           </thead>
@@ -273,7 +272,17 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
             ) : (
               sortedIngredients.map((ing) => (
                 <tr key={ing.id}>
-                  <td>{ing.name}</td>
+                  <td
+                    className="clickable"
+                    onClick={() => navigate(`/ingredients/${ing.id}`)}
+                  >
+                    {ing.name}
+                  </td>
+                  <td>
+                    {ing.brands?.length
+                      ? ing.brands.map(b => b.name).join("/ ")
+                      : "-"}
+                  </td>
                   <td>₹{toTwoDecimals(ing.pricePer100g)}</td>
                   <td>{toTwoDecimals(ing.stockRemaining ?? 0)}</td>
                   <td

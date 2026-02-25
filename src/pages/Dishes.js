@@ -8,7 +8,7 @@ import { EmptyRow } from "../App";
 
 const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }) => {
   const [dishImagePreview, setDishImagePreview] = useState("");
-  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const [editingDish, setEditingDish] = useState(null);
   const [editingDishId, setEditingDishId] = useState(null);
   const [editedPrice, setEditedPrice] = useState("");
@@ -77,26 +77,28 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       );
 
       if (exists) {
-        setSelectedCategoryId(categoryId);
+        setSelectedCategoryIds(categoryId);
         return;
       }
     }
 
-    setSelectedCategoryId(adminData.categories[0].id);
+    setSelectedCategoryIds(adminData.categories[0].id);
   }, [adminData.categories, categoryId]);
 
   const selectedCategory = adminData.categories.find(
-    (cat) => cat.id === selectedCategoryId
+    (cat) => cat.id === selectedCategoryIds
   );
 
   const sortedDishes = useMemo(() => {
-    if (!selectedCategory || !sortConfig.key) {
-      return selectedCategory?.dishes || [];
-    }
+    const selected = adminData.categories.filter(cat =>
+      selectedCategoryIds.includes(cat.id)
+    );
 
-    const data = [...selectedCategory.dishes];
+    const dishes = selected.flatMap(cat => cat.dishes || []);
 
-    data.sort((a, b) => {
+    if (!sortConfig.key) return dishes;
+
+    return [...dishes].sort((a, b) => {
       if (sortConfig.key === "name") {
         return sortConfig.direction === "asc"
           ? a.name.localeCompare(b.name)
@@ -111,9 +113,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
       return 0;
     });
-
-    return data;
-  }, [selectedCategory, sortConfig]);
+  }, [adminData.categories, selectedCategoryIds, sortConfig]);
 
   const handleSaveDish = async () => {
     if (!newDish.name || !newDish.basePrice) {
@@ -136,7 +136,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     const dishPayload = {
       id: editingDish
         ? editingDish.id
-        : `${selectedCategoryId}_${Date.now()}`,
+        : `${selectedCategoryIds}_${Date.now()}`,
       name: newDish.name,
       image: newDish.image,
       basePrice: Number(newDish.basePrice),
@@ -156,7 +156,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       const updatedMenu = {
         ...res.data,
         categories: res.data.categories.map((cat) =>
-          cat.id === selectedCategoryId
+          cat.id === selectedCategoryIds
             ? {
               ...cat,
               dishes: editingDish
@@ -187,7 +187,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     setAdminData((prev) => ({
       ...prev,
       categories: prev.categories.map((cat) =>
-        cat.id === selectedCategoryId
+        cat.id === selectedCategoryIds
           ? {
             ...cat,
             dishes: cat.dishes.map((dish) =>
@@ -221,7 +221,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       const updatedMenu = {
         ...res.data,
         categories: res.data.categories.map((cat) =>
-          cat.id === selectedCategoryId
+          cat.id === selectedCategoryIds
             ? {
               ...cat,
               dishes: cat.dishes.filter((dish) => dish.id !== dishId)
@@ -309,12 +309,14 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
           {adminData.categories.map(cat => (
             <button
               key={cat.id}
-              className={`category-btn ${selectedCategoryId === cat.id ? "active" : ""
+              className={`category-btn ${selectedCategoryIds.includes(cat.id) ? "active" : ""
                 }`}
               onClick={() => {
-                setSelectedCategoryId(cat.id);
-                setEditingDishId(null);
-                navigate(`/dishes/${cat.id}`, { replace: true });
+                setSelectedCategoryIds(prev =>
+                  prev.includes(cat.id)
+                    ? prev.filter(id => id !== cat.id)
+                    : [...prev, cat.id]
+                );
               }}
             >
               {cat.name}
@@ -360,11 +362,11 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 <tr key={dish.id}>
                   <td
                     className="clickable"
-                    onClick={() => navigate(`/dishes/${selectedCategoryId}/${dish.id}`)}
+                    onClick={() => navigate(`/dishes/${selectedCategoryIds}/${dish.id}`)}
                   >
                     <div
                       className="dish-image"
-                      onClick={() => navigate(`/dishes/${selectedCategoryId}/${dish.id}`)}
+                      onClick={() => navigate(`/dishes/${selectedCategoryIds}/${dish.id}`)}
                     >
                       <img src={dish.image || ""} alt="" />
                     </div>
@@ -372,7 +374,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
                   <td
                     className="dish-name clickable"
-                    onClick={() => navigate(`/dishes/${selectedCategoryId}/${dish.id}`)}
+                    onClick={() => navigate(`/dishes/${selectedCategoryIds}/${dish.id}`)}
                   >
                     {dish.name}
                   </td>

@@ -4,17 +4,93 @@ import api from "../api";
 import "./Orders.css";
 import * as XLSX from "xlsx";
 import { EmptyRow } from "../App";
-
+import { QRCodeCanvas } from "qrcode.react";
+import { createPortal } from "react-dom";
 
 const SEVEN_MIN = 7 * 60 * 1000;
 const ONE_MIN = 60 * 1000;
+const DATE_STORAGE_KEY = "orders_date_filter";
 
-const persistOrder = async (order) => {
+const formatIndianTime = (dateStr, timeStr) => {
+    if (!dateStr || !timeStr) return "—";
+
+    const dateTime = new Date(`${dateStr}T${timeStr}`);
+
+    if (isNaN(dateTime.getTime())) return timeStr;
+
+    return dateTime.toLocaleTimeString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+    });
+};
+
+const sendWhatsApp = async (order, status) => {
+    if (!order.mobile) return;
+
+    const templateMap = {
+        placed: "order_placed",
+
+        preparing: "order_preparing",
+        "service pickup": "order_ready",
+        completed: "order_completed"
+    };
+
+    const template = templateMap[status];
+    if (!template) return;
+
+    try {
+        await api.post("/whatsapp/order-status", {
+            phone: `91${order.mobile}`,
+            template,
+            vars: [order.userName || "Customer", order.id]
+        });
+    } catch (err) {
+        console.error("WhatsApp send failed", err);
+    }
+};
+
+const persistOrder = async (order, refresh) => {
     try {
         await api.put(`/orders/${order.id}`, order);
+        refresh && refresh();
     } catch (err) {
         console.error("Failed to persist order", err);
     }
+};
+
+const persistOrderEverywhere = async (updatedOrder) => {
+    // 1️⃣ Update global orders (always valid)
+    await api.put(`/orders/${updatedOrder.id}`, updatedOrder);
+
+    // 2️⃣ If no userId → STOP (TAKE AWAY / guest orders)
+    if (!updatedOrder.userId) {
+        console.warn("ℹ️ Order has no userId, skipping user sync");
+        return;
+    }
+
+    // 3️⃣ Fetch user safely
+    let user;
+    try {
+        const userRes = await api.get(`/users/${updatedOrder.userId}`);
+        user = userRes.data;
+    } catch {
+        console.warn("⚠️ User not found, skipping user sync");
+        return;
+    }
+
+    if (!Array.isArray(user.orders)) return;
+
+    // 4️⃣ Update embedded order
+    const updatedUser = {
+        ...user,
+        orders: user.orders.map(o =>
+            o.id === updatedOrder.id ? updatedOrder : o
+        )
+    };
+
+    await api.put(`/users/${user.id}`, updatedUser);
 };
 
 const getCreatedTime = (order) => {
@@ -54,18 +130,160 @@ const resolveUnitPrice = (item) =>
 const resolveRevenue = (item) =>
     Number(item.totalPrice ?? resolveUnitPrice(item) * resolveQty(item));
 
+const StableQRCode = React.memo(({ value }) => {
+    return (
+        <QRCodeCanvas
+            value={value}
+            size={120}
+            level="M"
+            includeMargin
+        />
+    );
+});
+
+const BillLayout = React.memo(({ order, editable, onQtyChange, buildUpiUrl, onClose }) => {
+    const totals = useMemo(() => {
+        const subTotal = order.items.reduce(
+            (sum, i) => sum + Number(i.totalPrice || 0),
+            0
+        );
+        const cgst = +(subTotal * 0.025).toFixed(2);
+        const sgst = +(subTotal * 0.025).toFixed(2);
+        return {
+            subTotal,
+            cgst,
+            sgst,
+            total: +(subTotal + cgst + sgst).toFixed(2)
+        };
+    }, [order.items]);
+
+    const qrValue = useMemo(
+        () => buildUpiUrl(totals.total, order.id),
+        [totals.total, order.id, buildUpiUrl]
+    );
+
+    return (
+        <div className="bill-receipt">
+            <div className="bill-header">
+                <button
+                    className="orders-close-btn"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onClose();
+                    }}
+                ></button>
+                <h3>Sam Cafe</h3>
+                <p>Contact: +91-9080179608</p>
+                <hr />
+                <p>Order : {order.id}</p>
+                <p>Date  : {order.date}</p>
+                <p>
+                    Time  : {formatIndianTime(order.date, order.time)}
+                </p>
+                <hr />
+            </div>
+
+            <div className="bill-table">
+                <div className="bill-row head">
+                    <span>ITEM</span>
+                    <span>QTY</span>
+                    <span>TOTAL</span>
+                </div>
+
+                {order.items.map((item, idx) => (
+                    <div key={idx} className="bill-row">
+                        <span>{item.dishName}</span>
+
+                        {editable ? (
+                            <>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={item.quantity}
+                                    onChange={(e) =>
+                                        onQtyChange(idx, {
+                                            quantity: e.target.value,
+                                            price: resolveUnitPrice(item)
+                                        })
+                                    }
+                                />
+
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={resolveUnitPrice(item)}
+                                    onChange={(e) =>
+                                        onQtyChange(idx, {
+                                            quantity: item.quantity,
+                                            price: Number(e.target.value)
+                                        })
+                                    }
+                                />
+                            </>
+                        ) : (
+                            <span>{item.quantity}</span>
+                        )}
+
+                        <span>₹{item.totalPrice}</span>
+                    </div>
+                ))}
+            </div>
+
+            <hr />
+
+            <div className="bill-summary">
+                <div><span>Subtotal</span><span>₹{totals.subTotal}</span></div>
+                <div><span>CGST @2.5%</span><span>₹{totals.cgst}</span></div>
+                <div><span>SGST @2.5%</span><span>₹{totals.sgst}</span></div>
+                <div className="total">
+                    <span>TOTAL</span>
+                    <span>₹{totals.total}</span>
+                </div>
+            </div>
+
+            <div className="bill-qr-section">
+                <div className="bill-qr-title">Scan To Pay</div>
+                <StableQRCode value={qrValue} />
+            </div>
+        </div>
+    );
+});
+
 const Orders = ({ order, handleSort, sortConfig }) => {
     const navigate = useNavigate();
     const [orders, setOrders] = useState(order?.orders || []);
     const [activeOrderId, setActiveOrderId] = useState(null);
     const [pendingStatus, setPendingStatus] = useState(null);
     const [pickupConfirm, setPickupConfirm] = useState(null);
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [modeFilter, setModeFilter] = useState("all");
     const [, forceTick] = useState(0);
     const todayISO = new Date().toISOString().split("T")[0];
-    const [fromDate, setFromDate] = useState(todayISO);
-    const [toDate, setToDate] = useState(todayISO);
+    const toggleOrder = (orderId) => {
+        setActiveOrderId(prev => prev === orderId ? null : orderId);
+    };
+
+    const savedDates = JSON.parse(
+        localStorage.getItem(DATE_STORAGE_KEY) || "null"
+    );
+
+    const [fromDate, setFromDate] = useState(
+        savedDates?.fromDate || todayISO
+    );
+
+    const [toDate, setToDate] = useState(
+        savedDates?.toDate || todayISO
+    );
     const location = useLocation();
     const orderRefs = useRef({});
+    const [selectedTemplate, setSelectedTemplate] = useState("");
+    const [sendingOrderId, setSendingOrderId] = useState(null);
+    const [openMenuOrderId, setOpenMenuOrderId] = useState(null);
+    const [editBillOrder, setEditBillOrder] = useState(null);
+    const [previewBillOrder, setPreviewBillOrder] = useState(null);
+    const [editableBill, setEditableBill] = useState(null);
+    const [menuPos, setMenuPos] = useState(null);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -76,10 +294,18 @@ const Orders = ({ order, handleSort, sortConfig }) => {
     }, []);
 
     useEffect(() => {
-        if (order?.orders?.length) {
-            setOrders(order.orders);
-        }
-    }, [order]);
+        const fetchOrders = async () => {
+            try {
+                const res = await api.get("/orders");
+                setOrders(res.data || []);
+            } catch (err) {
+                console.error("Failed to fetch orders", err);
+            }
+        };
+
+        fetchOrders();
+    }, []);
+
 
     useEffect(() => {
         const id = location.state?.scrollToOrderId;
@@ -88,13 +314,27 @@ const Orders = ({ order, handleSort, sortConfig }) => {
         const el = orderRefs.current[id];
         if (el) {
             el.scrollIntoView({ behavior: "smooth", block: "center" });
-            el.classList.add("highlight-order");
+            el.classList.add("blink");
 
             setTimeout(() => {
-                el.classList.remove("highlight-order");
-            }, 2000);
+                el.classList.remove("blink");
+            }, 900);
         }
     }, [location.state]);
+
+    const buildUpiUrl = (amount, orderId) => {
+        const upiId = "9019081708@upi";
+        const name = "Sam Cafe";
+
+        return (
+            `upi://pay?pa=${upiId}` +
+            `&pn=${encodeURIComponent(name)}` +
+            `&am=${amount}` +
+            `&cu=INR` +
+            `&tn=Order%20${orderId}` +
+            `&tr=ORDER_${orderId}`
+        );
+    };
 
     /* ---------------- SAFE TOTAL RESOLUTION ---------------- */
     const resolveItemTotal = useCallback(
@@ -115,7 +355,9 @@ const Orders = ({ order, handleSort, sortConfig }) => {
                 o.items.reduce(
                     (sum, item) => sum + resolveItemTotal(item),
                     0
-                )
+                ),
+
+            whatsappSent: o.whatsappSent || {},
         }));
     }, [orders, resolveItemTotal]);
 
@@ -152,8 +394,7 @@ const Orders = ({ order, handleSort, sortConfig }) => {
     };
 
     const renderItemTimer = (item, order) => {
-        if (isCompletedOrder(order)) return "—";
-
+        // If item is completed or picked up, stop timer
         if (
             item.status === "completed" ||
             item.status === "service pickup"
@@ -161,6 +402,7 @@ const Orders = ({ order, handleSort, sortConfig }) => {
             return "—";
         }
 
+        // Use item created time if available, else fallback to order
         const start = item.createdAt
             ? new Date(item.createdAt).getTime()
             : getCreatedTime(order);
@@ -168,19 +410,18 @@ const Orders = ({ order, handleSort, sortConfig }) => {
         if (isNaN(start)) return "—";
 
         const elapsed = Date.now() - start;
-        const limit = SEVEN_MIN;
 
-        if (elapsed <= limit) {
+        if (elapsed <= SEVEN_MIN) {
             return (
                 <span style={{ color: "#2e7d32", fontWeight: 600 }}>
-                    {formatDuration(limit - elapsed)}
+                    {formatDuration(SEVEN_MIN - elapsed)}
                 </span>
             );
         }
 
         return (
             <span style={{ color: "#d32f2f", fontWeight: 600 }}>
-                +{formatDuration(elapsed - limit)}
+                +{formatDuration(elapsed - SEVEN_MIN)}
             </span>
         );
     };
@@ -196,9 +437,21 @@ const Orders = ({ order, handleSort, sortConfig }) => {
             if (!order.date) return false;
 
             const orderDate = new Date(order.date);
-            return orderDate >= from && orderDate <= to;
+            const withinDate = orderDate >= from && orderDate <= to;
+
+            const matchesStatus =
+                statusFilter === "all" ||
+                normalizeStatus(order.status) === statusFilter;
+
+            const orderMode = (order.mode || "take away").toLowerCase();
+
+            const matchesMode =
+                modeFilter === "all" ||
+                orderMode === modeFilter;
+
+            return withinDate && matchesStatus && matchesMode;
         });
-    }, [normalizedOrders, fromDate, toDate]);
+    }, [normalizedOrders, fromDate, toDate, statusFilter, modeFilter]);
 
     const sortedOrders = useMemo(() => {
         const data = [...filteredOrders];
@@ -246,18 +499,30 @@ const Orders = ({ order, handleSort, sortConfig }) => {
     };
 
     useEffect(() => {
-        if (!orders.length) return;
+        if (!order?.orders?.length) return;
 
-        setOrders(prev =>
-            prev.map(order => ({
+        setOrders(
+            order.orders.map(order => ({
                 ...order,
-                status: order.status ?? "placed",
-                items: order.items.map(item => ({
-                    ...item,
-                    status: item.status ?? "placed",
-                    createdAt: item.createdAt ?? order.createdAt,
-                    pickupAt: item.pickupAt ?? null
-                }))
+
+                status: order.status || "placed",
+                whatsappSent: order.whatsappSent || {},
+                items: order.items.map(item => {
+                    // 🔒 DO NOT TOUCH progressed items
+                    if (
+                        item.status === "service pickup" ||
+                        item.status === "completed"
+                    ) {
+                        return item;
+                    }
+
+                    return {
+                        ...item,
+                        status: item.status || "placed",
+                        createdAt: item.createdAt || order.createdAt,
+                        pickupAt: item.pickupAt || null
+                    };
+                })
             }))
         );
     }, [order]);
@@ -268,25 +533,45 @@ const Orders = ({ order, handleSort, sortConfig }) => {
                 let changed = false;
 
                 const updated = prev.map(order => {
-                    if (order.status !== "placed") return order;
+                    // if ANY item has moved past placed, do nothing
+                    if (
+                        order.items.some(
+                            i => i.status === "service pickup" || i.status === "completed"
+                        )
+                    ) {
+                        return order;
+                    }
 
                     const start = new Date(order.createdAt).getTime();
                     if (Date.now() - start < ONE_MIN) return order;
 
                     changed = true;
 
-                    const items = order.items.map(item => ({
-                        ...item,
-                        status: "preparing",
-                        createdAt: item.createdAt ?? order.createdAt
-                    }));
+                    const items = order.items.map(item => {
+                        if (item.status !== "placed") return item;
+
+                        return {
+                            ...item,
+                            status: "preparing",
+                            createdAt: item.createdAt ?? order.createdAt
+                        };
+                    });
+
+                    const newStatus = deriveOrderStatusFromItems(items);
 
                     const updatedOrder = {
                         ...order,
-                        status: "preparing",
-                        items
+                        items,
+                        status: newStatus,
+                        whatsappSent: {
+                            ...order.whatsappSent,
+                            ...(order.whatsappSent?.completed ? {} : { completed: true })
+                        }
                     };
 
+                    if (!order.whatsappSent?.completed) {
+                        sendWhatsApp(updatedOrder, "completed");
+                    }
                     persistOrder(updatedOrder);
                     return updatedOrder;
                 });
@@ -325,8 +610,15 @@ const Orders = ({ order, handleSort, sortConfig }) => {
 
                     const newStatus = deriveOrderStatusFromItems(items);
 
+                    console.log("📦 Order WhatsApp data", {
+                        mobile: order.mobile,
+                        status: newStatus
+                    })
+
                     const updatedOrder = {
                         ...order,
+
+                        whatsappSent: order.whatsappSent || {},
                         items,
                         status: newStatus,
                         ...(newStatus === "completed" && {
@@ -345,8 +637,24 @@ const Orders = ({ order, handleSort, sortConfig }) => {
         return () => clearInterval(interval);
     }, []);
 
-    const isCompletedOrder = (order) =>
-        normalizeStatus(order.status) === "completed";
+    useEffect(() => {
+        localStorage.setItem(
+            DATE_STORAGE_KEY,
+            JSON.stringify({ fromDate, toDate })
+        );
+    }, [fromDate, toDate]);
+
+    useEffect(() => {
+        if (!location.state) return;
+
+        const { mode, status, fromDate: fd, toDate: td } = location.state;
+
+        if (mode) setModeFilter(mode);
+        if (status) setStatusFilter(status);
+        if (fd) setFromDate(fd);
+        if (td) setToDate(td);
+
+    }, [location.state]);
 
     const exportOrders = (orders, from, to) => {
         if (!orders.length) {
@@ -356,30 +664,22 @@ const Orders = ({ order, handleSort, sortConfig }) => {
 
         const rows = [];
 
-        orders.forEach(order => {
-            order.items.forEach(item => {
-                const isCustomized =
-                    (Array.isArray(item.ingredients) && item.ingredients.length > 0) ||
-                    Boolean(item.notes);
-
-                const ingredientsText = isCustomized
-                    ? item.ingredients
-                        ?.map(ing => `${ing.name} - ${ing.quantity}g`)
-                        .join(", ")
-                    : "-";
+        sortedOrders.forEach(order => {
+            order.items.forEach((item, index) => {
+                const ingredients = (item.ingredients || [])
+                    .map(i => `${i.name} - ${i.quantity}g`)
+                    .join(", ");
 
                 rows.push({
-                    OrderID: order.id,
-                    Date: order.date,
-                    Time: order.time ?? new Date(order.createdAt).toLocaleTimeString(),
-                    Customer: order.userName || "",
-                    Category: item.categoryId,
+                    OrderID: index === 0 ? order.id : "",
+                    Date: index === 0 ? order.date : "",
+                    Time: index === 0 ? order.time : "",
+                    Customer: index === 0 ? (order.userName || "Guest") : "",
+                    Category: item.categoryName || item.categoryId || "",
                     Dish: item.dishName,
-                    Quantity: resolveQty(item),
-                    Customized: isCustomized ? "Yes" : "No",
-                    Ingredients: ingredientsText,
-                    UnitPrice: resolveUnitPrice(item),
-                    TotalPrice: resolveRevenue(item)
+                    Quantity: item.quantity ?? item.qty ?? 0,
+                    Customized: item.isCustomized ? "Yes" : "No",
+                    Ingredients: ingredients
                 });
             });
         });
@@ -404,13 +704,150 @@ const Orders = ({ order, handleSort, sortConfig }) => {
         );
     };
 
+    const printBill = async (order) => {
+        try {
+            const billData = {
+                orderId: order.id,
+                date: order.date,
+                time: order.time,
+                customer: order.userName || "Guest",
+                items: order.items.map(item => ({
+                    name: item.dishName,
+                    qty: item.quantity,
+                    price: item.totalPrice
+                })),
+                subtotal: order.resolvedTotal,
+                cgst: +(order.resolvedTotal * 0.025).toFixed(2),
+                sgst: +(order.resolvedTotal * 0.025).toFixed(2),
+                total: +(order.resolvedTotal * 1.05).toFixed(2),
+                upiUrl: buildUpiUrl((order.resolvedTotal * 1.05).toFixed(2))
+            };
+
+            await api.post("http://localhost:9001/print/bill", billData);
+        } catch (err) {
+            alert("Failed to print bill");
+            console.error(err);
+        }
+    };
+
+    const buildBillTotals = (order) => {
+        const subTotal = order.items.reduce(
+            (sum, i) => sum + Number(i.totalPrice || 0),
+            0
+        );
+
+        const cgst = +(subTotal * 0.025).toFixed(2);
+        const sgst = +(subTotal * 0.025).toFixed(2);
+
+        return {
+            subTotal,
+            cgst,
+            sgst,
+            total: +(subTotal + cgst + sgst).toFixed(2)
+        };
+    };
+
+    const closeAllBillOverlays = () => {
+        setEditBillOrder(null);
+        setPreviewBillOrder(null);
+    };
+
+    const closeOptionsMenu = () => {
+        setOpenMenuOrderId(null);
+        setMenuPos(null);
+    };
+
+    const recalcOrderTotals = (order) => {
+        const items = order.items.map(item => {
+            const qty = Number(item.quantity || 0);
+            const price = Number(
+                item.price ??
+                item.unitPrice ??
+                resolveUnitPrice(item)
+            );
+
+            const totalPrice = +(qty * price).toFixed(2);
+
+            return {
+                ...item,
+                quantity: qty,
+                price,
+                unitPrice: price,   // normalize
+                totalPrice
+            };
+        });
+
+        const subTotal = +items.reduce(
+            (sum, i) => sum + i.totalPrice,
+            0
+        ).toFixed(2);
+
+        const cgst = +(subTotal * 0.025).toFixed(2);
+        const sgst = +(subTotal * 0.025).toFixed(2);
+        const total = +(subTotal + cgst + sgst).toFixed(2);
+
+        return {
+            ...order,
+            items,
+            totalAmount: subTotal,
+            totalWithGST: {
+                subTotal,
+                cgst,
+                sgst,
+                total
+            }
+        };
+    };
+
     return (
         <div className="orders-page">
 
             <div className="orders-header">
                 <h2 className="orders-title">Orders</h2>
 
+                <select
+                    value={statusFilter}
+                    onChange={(e) => {
+                        const value = e.target.value;
+                        setStatusFilter(value);
+
+                        if (value === "all") {
+                            handleSort("id");   // fallback default sort
+                        } else {
+                            handleSort("status");
+                        }
+                    }}
+                    className="orders-status-dropdown"
+                >
+                    <option value="all">All Status</option>
+                    <option value="placed">Placed</option>
+                    <option value="preparing">Preparing</option>
+                    <option value="service pickup">Service Pickup</option>
+                    <option value="completed">Completed</option>
+                </select>
+
+                <select
+                    value={modeFilter}
+                    onChange={(e) => setModeFilter(e.target.value)}
+                    className="orders-status-dropdown"
+                >
+                    <option value="all">All Modes</option>
+                    <option value="dine in">Dine In</option>
+                    <option value="take away">Take Away</option>
+                </select>
+
                 <div className="orders-filter">
+                    <button
+                        type="button"
+                        className="orders-today-btn"
+                        onClick={() => {
+                            setFromDate(todayISO);
+                            setToDate(todayISO);
+                        }}
+                    >
+                        Today
+                    </button>
+
                     {/* FROM DATE */}
                     <input
                         type="date"
@@ -457,6 +894,18 @@ const Orders = ({ order, handleSort, sortConfig }) => {
 
             <div className="orders-table-wrapper">
                 <table className="orders-table">
+                    <colgroup>
+                        <col style={{ width: "120px" }} />  {/* Order ID */}
+                        <col style={{ width: "120px" }} />                            {/* Date */}
+                        <col style={{ width: "150px" }} />                            {/* Time */}
+                        <col />                            {/* Customer */}
+                        <col style={{ width: "110px" }} />  {/* Mode */}
+                        <col style={{ width: "90px" }} />  {/* Table No */}
+                        <col style={{ width: "120px" }} />  {/* Items */}
+                        <col style={{ width: "90px" }} />  {/* Total */}
+                        <col style={{ width: "110px" }} /> {/* Status */}
+                        <col style={{ width: "60px" }} />  {/* Bill */}
+                    </colgroup>
                     <thead>
                         <tr>
                             <th
@@ -483,6 +932,8 @@ const Orders = ({ order, handleSort, sortConfig }) => {
                             </th>
                             <th>time of order</th>
                             <th>Customer Name</th>
+                            <th>Mode</th>
+                            <th>Table No</th>
                             <th>No of Items</th>
                             <th>Total</th>
                             <th
@@ -500,12 +951,13 @@ const Orders = ({ order, handleSort, sortConfig }) => {
                                     </span>
                                 </span>
                             </th>
+                            <th>Bill</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         {sortedOrders.length === 0 ? (
-                            <EmptyRow colSpan={7} message="No orders for selected date range" />
+                            <EmptyRow colSpan={10} message="No orders for selected date range" />
                         ) : (
                             sortedOrders.map(order => {
                                 const orderStatus = deriveOrderStatusFromItems(order.items);
@@ -519,6 +971,7 @@ const Orders = ({ order, handleSort, sortConfig }) => {
                                         <tr
                                             ref={el => (orderRefs.current[order.id] = el)}
                                             className="order-main-row"
+                                            onClick={() => toggleOrder(order.id)}
                                         >
                                             <td
                                                 className="clickable"
@@ -527,27 +980,57 @@ const Orders = ({ order, handleSort, sortConfig }) => {
                                                 {order.id}
                                             </td>
                                             <td>{order.date}</td>
-                                            <td>{order.time}</td>
+                                            <td>{formatIndianTime(order.date, order.time)}</td>
+
                                             <td>{order.userName}</td>
+                                            <td>
+                                                {order.mode ? order.mode.toUpperCase() : "TAKE AWAY"}
+                                            </td>
+                                            <td>
+                                                {order.tableNo != null ? order.tableNo : "---"}
+                                            </td>
                                             <td>{order.items.length}</td>
                                             <td>₹{order.resolvedTotal}</td>
-                                            <td className={`status status-${normalizeStatus(orderStatus).replace(/\s+/g, "-")}`}>
-                                                {orderStatus}
+                                            <td>
+                                                <div className={`status status-${normalizeStatus(orderStatus).replace(/\s+/g, "-")}`}>{orderStatus}</div>
+                                            </td>
+                                            <td>
+                                                <div className="bill-actions">
+                                                    <button
+                                                        className="options-btn"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const rect = e.currentTarget.getBoundingClientRect();
+
+                                                            setMenuPos({
+                                                                top: rect.bottom + 6,
+                                                                left: rect.right - 90
+                                                            });
+
+                                                            setOpenMenuOrderId(
+                                                                openMenuOrderId === order.id ? null : order.id
+                                                            );
+                                                        }}
+                                                    >
+                                                        ⋮
+                                                    </button>
+
+                                                </div>
                                             </td>
                                         </tr>
 
                                         {/* SUB TABLE – ITEM LEVEL */}
-                                        <tr className="order-sub-row">
-                                            <td colSpan={7}>
+                                        <tr
+                                            className={`order-sub-row ${activeOrderId === order.id ? "open" : ""}`}
+                                        >
+                                            <td colSpan={10}>
                                                 <table className="order-items-table">
                                                     <thead>
                                                         <tr>
                                                             <th>Dish</th>
                                                             <th>Notes</th>
                                                             <th>Qty</th>
-                                                            {order.status !== "completed" &&
-                                                                <th>Timer</th>
-                                                            }
+                                                            <th>Timer</th>
                                                             <th>Status</th>
                                                             {order.status === "preparing" &&
                                                                 <th>Action</th>
@@ -583,14 +1066,25 @@ const Orders = ({ order, handleSort, sortConfig }) => {
                                                                 <td>{item.qty ?? item.quantity}</td>
 
                                                                 {/* ITEM TIMER */}
-                                                                {order.status !== "completed" &&
-                                                                    <td>{renderItemTimer(item, order)}</td>
-                                                                }
+                                                                <td>
+                                                                    {item.pickupStatus === "on_time" && (
+                                                                        <span style={{ color: "#2e7d32", fontWeight: 600 }}>
+                                                                            On Time
+                                                                        </span>
+                                                                    )}
+
+                                                                    {item.pickupStatus === "late" && (
+                                                                        <span style={{ color: "#d32f2f", fontWeight: 600 }}>
+                                                                            Late Order
+                                                                        </span>
+                                                                    )}
+
+                                                                    {!item.pickupStatus && renderItemTimer(item, order)}
+                                                                </td>
 
                                                                 {/* ITEM STATUS */}
-                                                                <td
-                                                                    className={`status status-${normalizeStatus(item.status).replace(/\s+/g, "-")}`}                                                                >
-                                                                    {item.status}
+                                                                <td>
+                                                                    <div className={`status status-${normalizeStatus(item.status).replace(/\s+/g, "-")}`}>{item.status}</div>
                                                                 </td>
 
                                                                 {/* ITEM PICKUP */}
@@ -666,25 +1160,52 @@ const Orders = ({ order, handleSort, sortConfig }) => {
                                         prev.map(o => {
                                             if (o.id !== orderId) return o;
 
-                                            const items = o.items.map((i, index) =>
-                                                index === itemIndex
-                                                    ? {
-                                                        ...i,
-                                                        status: "service pickup",
-                                                        pickupAt: new Date().toISOString()
-                                                    }
-                                                    : i
-                                            );
+                                            const now = Date.now();
+                                            const created = getCreatedTime(o);
+
+                                            const items = o.items.map((i, index) => {
+                                                if (index !== itemIndex) return i;
+
+                                                const now = Date.now();
+                                                const start = i.createdAt
+                                                    ? new Date(i.createdAt).getTime()
+                                                    : getCreatedTime(o);
+
+                                                const pickupStatus =
+                                                    now - start <= SEVEN_MIN ? "on_time" : "late";
+
+                                                return {
+                                                    ...i,
+                                                    status: "service pickup",
+                                                    pickupAt: new Date().toISOString(),
+                                                    pickupStatus   // ✅ ITEM LEVEL
+                                                };
+                                            });
 
                                             const newStatus = deriveOrderStatusFromItems(items);
+
+                                            console.log("📦 Order WhatsApp data", {
+                                                mobile: order.mobile,
+                                                status: newStatus
+                                            });
 
                                             const updated = {
                                                 ...o,
                                                 items,
-                                                status: newStatus
+                                                status: newStatus,
+                                                whatsappSent: {
+                                                    ...o.whatsappSent,
+                                                    ...(o.whatsappSent?.[newStatus] ? {} : { [newStatus]: true })
+                                                }
                                             };
 
-                                            persistOrder(updated);
+                                            if (!o.whatsappSent?.[newStatus]) {
+                                                sendWhatsApp(updated, newStatus);
+                                            }
+                                            persistOrder(updated, async () => {
+                                                const res = await api.get("/orders");
+                                                setOrders(res.data || []);
+                                            });
                                             return updated;
                                         })
                                     );
@@ -698,9 +1219,160 @@ const Orders = ({ order, handleSort, sortConfig }) => {
                     </div>
                 </div>
             )}
+
+            {openMenuOrderId && menuPos &&
+                createPortal(
+                    <div
+                        className="options-menu portal"
+                        style={{
+                            top: menuPos.top,
+                            left: menuPos.left
+                        }}
+                    >
+                        <div
+                            onClick={(e) => {
+                                closeOptionsMenu();
+                                closeAllBillOverlays();
+                                e.stopPropagation();
+                                setEditableBill(
+                                    JSON.parse(JSON.stringify(
+                                        orders.find(o => o.id === openMenuOrderId)
+                                    ))
+                                );
+                                setEditBillOrder(true);
+                            }}
+                        >
+                            Edit
+                        </div>
+
+                        <div
+                            onClick={(e) => {
+                                closeOptionsMenu();
+                                closeAllBillOverlays();
+                                e.stopPropagation();
+                                setPreviewBillOrder(
+                                    orders.find(o => o.id === openMenuOrderId)
+                                );
+                            }}
+                        >
+                            Preview
+                        </div>
+
+                        <div
+                            onClick={(e) => {
+                                closeOptionsMenu();
+                                e.stopPropagation();
+                                printBill(orders.find(o => o.id === openMenuOrderId));
+                            }}
+                        >
+                            Print
+                        </div>
+                    </div>,
+                    document.body
+                )
+            }
+
+            {editBillOrder && (
+                <div className="overlay">
+                    <div className="bill-modal" onClick={(e) => e.stopPropagation()}>
+                        <BillLayout
+                            onClose={closeAllBillOverlays}
+                            order={editableBill}
+                            editable
+                            buildUpiUrl={buildUpiUrl}
+                            onQtyChange={(idx, { quantity, price }) => {
+                                setEditableBill(prev => {
+                                    const q =
+                                        quantity === "" ? "" : Number(quantity);
+                                    const p = Math.max(0, price);
+
+                                    const newItems = prev.items.map((item, i) =>
+                                        i === idx
+                                            ? {
+                                                ...item,
+                                                quantity: q,
+                                                price: p,
+                                                totalPrice: quantity === "" ? item.totalPrice : +(q * p).toFixed(2)
+                                            }
+                                            : item
+                                    );
+
+                                    return {
+                                        ...prev,
+                                        items: newItems
+                                    };
+                                });
+                            }}
+                        />
+
+                        <div className="bill-modal-actions">
+                            <button className="secondary" onClick={() => setEditBillOrder(null)}>Cancel</button>
+                            <button
+                                className="secondary"
+                                onClick={() => {
+                                    const previewData = recalcOrderTotals(editableBill);
+
+                                    setEditBillOrder(null);      // ✅ close Edit modal FIRST
+                                    setPreviewBillOrder(previewData); // ✅ then open Preview modal
+                                }}
+                            >
+                                Preview
+                            </button>
+                            <button
+                                className="primary"
+                                onClick={async () => {
+                                    try {
+                                        const updatedOrder = recalcOrderTotals(
+                                            JSON.parse(JSON.stringify(editableBill))
+                                        );
+
+                                        await persistOrderEverywhere(updatedOrder);
+
+                                        // ✅ update UI immediately
+                                        setOrders(prev =>
+                                            prev.map(o => o.id === updatedOrder.id ? updatedOrder : o)
+                                        );
+
+                                        setEditBillOrder(null);
+                                    } catch (err) {
+                                        console.error("❌ Save failed", err);
+                                        alert("Failed to save bill. Check console.");
+                                    }
+                                }}
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {previewBillOrder && (
+                <div className="overlay">
+                    <div className="bill-modal">
+                        <BillLayout
+                            onClose={closeAllBillOverlays}
+                            order={previewBillOrder}
+                            buildUpiUrl={buildUpiUrl}
+                        />
+
+                        <div className="bill-modal-actions">
+                            <button
+                                className="primary"
+                                onClick={() => {
+                                    printBill(previewBillOrder);
+                                    setPreviewBillOrder(null);
+                                }}
+                            >
+                                Print
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
-
 };
 
 export default Orders;

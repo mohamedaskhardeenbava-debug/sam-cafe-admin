@@ -4,6 +4,7 @@ import api from "../api";
 import editIcon from "../icon/edit-icon.png";
 import "./IngredientDetails.css";
 import { allowTextInput } from "../App";
+import deleteIcon from "../icon/delete-icon.png";
 
 const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName }) => {
     const { ingredientId } = useParams();
@@ -15,6 +16,8 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
 
     const [localIngredient, setLocalIngredient] = useState(null);
     const [editSection, setEditSection] = useState(null);
+    const [showBrandInput, setShowBrandInput] = useState(false);
+    const [brandInput, setBrandInput] = useState("");
 
     useEffect(() => {
         if (ingredient) {
@@ -155,6 +158,128 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
                     </div>
                 </div>
 
+                <div className="section">
+                    <div className="section-title">
+                        <span>Brands</span>
+                        <img
+                            className="edit-icon"
+                            src={editIcon}
+                            alt="edit"
+                            onClick={() => setEditSection("brands")}
+                        />
+                    </div>
+
+                    {editSection === "brands" ? (
+                        <>
+                            {!showBrandInput && (
+                                <button
+                                    className="add-ingredient-button"
+                                    onClick={() => setShowBrandInput(true)}
+                                >
+                                    + Add Brand
+                                </button>
+                            )}
+
+                            {showBrandInput && (
+                                <div className="inline-input">
+                                    <input
+                                        autoFocus
+                                        value={brandInput}
+                                        onChange={(e) =>
+                                            setBrandInput(
+                                                allowTextInput(brandInput, e.target.value, 50, 2)
+                                            )
+                                        }
+                                    />
+
+                                    <div className="actions">
+                                        <button
+                                            onClick={() => {
+                                                if (!brandInput.trim()) return;
+
+                                                const id = `brand_${brandInput
+                                                    .toLowerCase()
+                                                    .replace(/\s+/g, "_")}`;
+
+                                                if (
+                                                    localIngredient.brands?.some(
+                                                        b => b.name.toLowerCase() === brandInput.toLowerCase()
+                                                    )
+                                                ) {
+                                                    alert("Brand already exists");
+                                                    return;
+                                                }
+
+                                                setLocalIngredient(prev => ({
+                                                    ...prev,
+                                                    brands: [...(prev.brands || []), { id, name: brandInput }]
+                                                }));
+
+                                                setBrandInput("");
+                                                setShowBrandInput(false);
+                                            }}
+                                        >
+                                            Add
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                setBrandInput("");
+                                                setShowBrandInput(false);
+                                            }}
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {localIngredient.brands?.length > 0 && (
+                                <table className="ingredient-detail-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Brand</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {localIngredient.brands.map((b, index) => (
+                                            <tr key={b.id}>
+                                                <td>{b.name}</td>
+                                                <td>
+                                                    <div
+                                                        className="ingredient-delete-btn"
+                                                        onClick={() =>
+                                                            setLocalIngredient(prev => ({
+                                                                ...prev,
+                                                                brands: prev.brands.filter((_, i) => i !== index)
+                                                            }))
+                                                        }
+                                                    >
+                                                        <img src={deleteIcon} alt="" />
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
+
+                            <div className="actions">
+                                <button onClick={() => saveIngredient(localIngredient)}>
+                                    Save
+                                </button>
+                                <button onClick={resetEditState}>Cancel</button>
+                            </div>
+                        </>
+                    ) : (
+                        <p>
+                            {localIngredient.brands?.length
+                                ? localIngredient.brands.map(b => b.name).join(", ")
+                                : "-"}
+                        </p>
+                    )}
+                </div>
 
                 {/* USED IN */}
                 <div className="section">

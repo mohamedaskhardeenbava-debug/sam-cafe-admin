@@ -87,6 +87,10 @@ const OrderDetails = ({ orders, menu }) => {
                 </td>
                 <td><strong>Customer Name:</strong> {order.userName ?? "-"}</td>
               </tr>
+              <tr>
+                <td><strong>Mode:</strong> {order.mode}</td>
+                <td><strong>Table No:</strong> {order.tableNo ?? "-"}</td>
+              </tr>
             </tbody>
           </table>
         </div>

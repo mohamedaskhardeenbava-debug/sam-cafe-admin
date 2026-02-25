@@ -10,6 +10,7 @@ import { EmptyRow } from "../App";
 const EMPTY_FORM = {
   id: "",
   name: "",
+  brands: [],
   image: "",
   usedInCategories: [],
   pricePer100g: "",
@@ -33,6 +34,9 @@ const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase, handle
   const [isEditMode, setIsEditMode] = useState(false);
   const [imagePreview, setImagePreview] = useState("");
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [showBrandInput, setShowBrandInput] = useState(false);
+  const [brandInput, setBrandInput] = useState("");
+
   const navigate = useNavigate();
   const resetIngredientForm = () => {
     setShowForm(false);
@@ -62,6 +66,7 @@ const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase, handle
 
     const payload = {
       ...formData,
+      brands: formData.brands || [],
       id: generateIngredientId(formData.name),
       pricePer100g: Number(formData.pricePer100g),
       stockRemaining: Number(formData.stockRemaining),
@@ -253,6 +258,108 @@ const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase, handle
                   }
                 />
               </div>
+
+              <div className="form-group">
+                <label>Brands</label>
+
+                {!showBrandInput && (
+                  <button
+                    type="button"
+                    className="add-ingredient-button"
+                    onClick={() => setShowBrandInput(true)}
+                  >
+                    + Add Brand
+                  </button>
+                )}
+
+                {showBrandInput && (
+                  <div className="inline-input">
+                    <input
+                      autoFocus
+                      type="text"
+                      value={brandInput}
+                      onChange={(e) =>
+                        setBrandInput(
+                          allowTextInput(brandInput, e.target.value, 50, 2)
+                        )
+                      }
+                    />
+
+                    <div className="action">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!brandInput.trim()) return;
+
+                          const id = `brand_${brandInput
+                            .toLowerCase()
+                            .replace(/\s+/g, "_")}`;
+
+                          if (
+                            formData.brands.some(
+                              b => b.name.toLowerCase() === brandInput.toLowerCase()
+                            )
+                          ) {
+                            alert("Brand already added");
+                            return;
+                          }
+
+                          setFormData(prev => ({
+                            ...prev,
+                            brands: [...prev.brands, { id, name: brandInput }]
+                          }));
+
+                          setBrandInput("");
+                          setShowBrandInput(false);
+                        }}
+                      >
+                        Add
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBrandInput("");
+                          setShowBrandInput(false);
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {formData.brands.length > 0 && (
+                  <table className="ingredient-form-table">
+                    <thead>
+                      <tr>
+                        <th>Brand</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {formData.brands.map((b, index) => (
+                        <tr key={b.id}>
+                          <td>{b.name}</td>
+                          <td>
+                            <div
+                              className="ingredient-delete-btn"
+                              onClick={() =>
+                                setFormData(prev => ({
+                                  ...prev,
+                                  brands: prev.brands.filter((_, i) => i !== index)
+                                }))
+                              }
+                            >
+                              <img src={deleteIcon} alt="" />
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             </div>
 
             <div className="ingredient-modal-footer">
@@ -286,6 +393,7 @@ const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase, handle
                   </span>
                 </span>
               </th>
+              <th>Brand</th>
               <th>Calories</th>
               <th>Protein</th>
               <th>Fibre</th>
@@ -308,7 +416,13 @@ const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase, handle
                   </td>
 
                   <td className="clickable"
-                    onClick={() => navigate(`/ingredients/${ingredient.id}`)}>{ingredient.name}</td>
+                    onClick={() => navigate(`/ingredients/${ingredient.id}`)}>{ingredient.name}
+                  </td>
+                  <td>
+                    {ingredient.brands?.length
+                      ? ingredient.brands.map(b => b.name).join(" / ")
+                      : "-"}
+                  </td>
                   <td>{ingredient.nutritionPer100g.kcal}</td>
                   <td>{ingredient.nutritionPer100g.protein}g</td>
                   <td>{ingredient.nutritionPer100g.fibre}g</td>

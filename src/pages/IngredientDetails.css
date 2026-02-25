@@ -151,3 +151,66 @@
 .clickable {
   cursor: pointer;
 }
+
+.ingredient-detail-action{
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.ingredient-detail-table {
+  width: 100%;
+  max-width: 500px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background-color: #ffffff;
+  margin-top: 10px;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+.ingredient-detail-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background-color: #414141;
+}
+
+.ingredient-detail-table th {
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: sticky;
+  top: 0;
+  z-index: 6;
+}
+
+.ingredient-detail-table td {
+  padding: 8px 10px;
+  font-size: 14px;
+  color: #333333;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.ingredient-detail-table tbody tr:hover {
+  background-color: rgb(234, 234, 234);
+}
+
+.ingredient-detail-table th:nth-child(2),
+.ingredient-detail-table td:nth-child(2){
+  width: 50px;
+}
+
+.ingredient-detail-table td:nth-child(2){
+  text-align: center;
+}

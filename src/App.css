@@ -46,12 +46,12 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .clickable {
-  color: #1951d2;
+  color: #00BFFF;
   font-weight: 600;
 }
 
 .clickable:hover {
-  color: #d21919;
+  color: #111;
   cursor: pointer;
 }
 
@@ -121,13 +121,13 @@ th.sorted .sort-arrow {
 }
 
 .sort-th {
-  color: #00BFFF;
+  color: #00aeff;
   font-weight: 600;
   transition: all 0.3s ease;
 }
 
 .sort-th:hover {
-  color: #ffffff;
+  color: #111;
   cursor: pointer;
 }
 
@@ -238,6 +238,14 @@ th.sorted .sort-arrow {
 .category-table-wrapper,
 .category-buttons {
   scrollbar-color: #9ca3af #f1f1f1;
+}
+
+textarea {
+  resize: none;
+}
+
+button {
+  cursor: pointer !important;
 }
 
 @media (max-width: 768px) {
