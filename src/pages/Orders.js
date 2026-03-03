@@ -250,18 +250,28 @@ const BillLayout = React.memo(({ order, editable, onQtyChange, buildUpiUrl, onCl
     );
 });
 
-const Orders = ({ order, handleSort, sortConfig }) => {
+const Orders = ({ order, handleSort, sortConfig, adminData, setAdminData }) => {
     const navigate = useNavigate();
-    const [orders, setOrders] = useState(order?.orders || []);
-    const [activeOrderId, setActiveOrderId] = useState(null);
+    const orders = adminData.orders;
+    const [openOrderIds, setOpenOrderIds] = useState([]);
     const [pendingStatus, setPendingStatus] = useState(null);
     const [pickupConfirm, setPickupConfirm] = useState(null);
     const [statusFilter, setStatusFilter] = useState("all");
     const [modeFilter, setModeFilter] = useState("all");
+    const [openStatusDropdown, setOpenStatusDropdown] = useState(false);
+    const [openModeDropdown, setOpenModeDropdown] = useState(false);
     const [, forceTick] = useState(0);
     const todayISO = new Date().toISOString().split("T")[0];
     const toggleOrder = (orderId) => {
-        setActiveOrderId(prev => prev === orderId ? null : orderId);
+        setOpenOrderIds(prev => {
+            if (prev.includes(orderId)) {
+                // close it
+                return prev.filter(id => id !== orderId);
+            } else {
+                // open it
+                return [...prev, orderId];
+            }
+        });
     };
 
     const savedDates = JSON.parse(
@@ -284,28 +294,6 @@ const Orders = ({ order, handleSort, sortConfig }) => {
     const [previewBillOrder, setPreviewBillOrder] = useState(null);
     const [editableBill, setEditableBill] = useState(null);
     const [menuPos, setMenuPos] = useState(null);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            forceTick(t => t + 1);
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, []);
-
-    useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                const res = await api.get("/orders");
-                setOrders(res.data || []);
-            } catch (err) {
-                console.error("Failed to fetch orders", err);
-            }
-        };
-
-        fetchOrders();
-    }, []);
-
 
     useEffect(() => {
         const id = location.state?.scrollToOrderId;
@@ -501,14 +489,13 @@ const Orders = ({ order, handleSort, sortConfig }) => {
     useEffect(() => {
         if (!order?.orders?.length) return;
 
-        setOrders(
-            order.orders.map(order => ({
+        setAdminData(prev => ({
+            ...prev,
+            orders: order.orders.map(order => ({
                 ...order,
-
                 status: order.status || "placed",
                 whatsappSent: order.whatsappSent || {},
                 items: order.items.map(item => {
-                    // 🔒 DO NOT TOUCH progressed items
                     if (
                         item.status === "service pickup" ||
                         item.status === "completed"
@@ -524,16 +511,15 @@ const Orders = ({ order, handleSort, sortConfig }) => {
                     };
                 })
             }))
-        );
+        }));
     }, [order]);
 
     useEffect(() => {
         const interval = setInterval(() => {
-            setOrders(prev => {
-                let changed = false;
+            setAdminData(prev => {
+                let hasChange = false;
 
-                const updated = prev.map(order => {
-                    // if ANY item has moved past placed, do nothing
+                const updatedOrders = prev.orders.map(order => {
                     if (
                         order.items.some(
                             i => i.status === "service pickup" || i.status === "completed"
@@ -545,50 +531,42 @@ const Orders = ({ order, handleSort, sortConfig }) => {
                     const start = new Date(order.createdAt).getTime();
                     if (Date.now() - start < ONE_MIN) return order;
 
-                    changed = true;
+                    hasChange = true;
 
-                    const items = order.items.map(item => {
+                    const updatedItems = order.items.map(item => {
                         if (item.status !== "placed") return item;
 
                         return {
                             ...item,
-                            status: "preparing",
-                            createdAt: item.createdAt ?? order.createdAt
+                            status: "preparing"
                         };
                     });
 
-                    const newStatus = deriveOrderStatusFromItems(items);
-
-                    const updatedOrder = {
+                    return {
                         ...order,
-                        items,
-                        status: newStatus,
-                        whatsappSent: {
-                            ...order.whatsappSent,
-                            ...(order.whatsappSent?.completed ? {} : { completed: true })
-                        }
+                        items: updatedItems,
+                        status: "preparing"
                     };
-
-                    if (!order.whatsappSent?.completed) {
-                        sendWhatsApp(updatedOrder, "completed");
-                    }
-                    persistOrder(updatedOrder);
-                    return updatedOrder;
                 });
 
-                return changed ? updated : prev;
+                if (!hasChange) return prev;
+
+                return {
+                    ...prev,
+                    orders: updatedOrders
+                };
             });
-        }, 1000);
+        }, 5000); // 🔥 check every 5 seconds instead of 1
 
         return () => clearInterval(interval);
     }, []);
 
     useEffect(() => {
         const interval = setInterval(() => {
-            setOrders(prev => {
+            setAdminData(prev => {
                 let hasAnyChange = false;
 
-                const updated = prev.map(order => {
+                const updated = prev.orders.map(order => {
                     let changed = false;
 
                     const items = order.items.map(item => {
@@ -606,33 +584,22 @@ const Orders = ({ order, handleSort, sortConfig }) => {
                     if (!changed) return order;
 
                     hasAnyChange = true;
-                    const allDone = items.every(i => i.status === "completed");
 
-                    const newStatus = deriveOrderStatusFromItems(items);
-
-                    console.log("📦 Order WhatsApp data", {
-                        mobile: order.mobile,
-                        status: newStatus
-                    })
-
-                    const updatedOrder = {
+                    return {
                         ...order,
-
-                        whatsappSent: order.whatsappSent || {},
                         items,
-                        status: newStatus,
-                        ...(newStatus === "completed" && {
-                            completedAt: order.completedAt ?? new Date().toISOString()
-                        })
+                        status: deriveOrderStatusFromItems(items)
                     };
-
-                    persistOrder(updatedOrder);
-                    return updatedOrder;
                 });
 
-                return hasAnyChange ? updated : prev;
+                if (!hasAnyChange) return prev;
+
+                return {
+                    ...prev,
+                    orders: updated
+                };
             });
-        }, 1000);
+        }, 5000); // 🔥 5 seconds
 
         return () => clearInterval(interval);
     }, []);
@@ -655,6 +622,16 @@ const Orders = ({ order, handleSort, sortConfig }) => {
         if (td) setToDate(td);
 
     }, [location.state]);
+
+    useEffect(() => {
+        const close = () => {
+            setOpenStatusDropdown(false);
+            setOpenModeDropdown(false);
+        };
+
+        window.addEventListener("click", close);
+        return () => window.removeEventListener("click", close);
+    }, []);
 
     const exportOrders = (orders, from, to) => {
         if (!orders.length) {
@@ -799,42 +776,255 @@ const Orders = ({ order, handleSort, sortConfig }) => {
         };
     };
 
+    const OrderRow = React.memo(({
+        order,
+        toggleOrder,
+        openOrderIds,
+        navigate,
+        renderItemTimer,
+        deriveOrderStatusFromItems,
+        normalizeStatus,
+        orderRefs,
+        setPickupConfirm
+    }) => {
+
+        const isOpen = openOrderIds.includes(order.id);
+        const orderStatus = deriveOrderStatusFromItems(order.items);
+
+        return (
+            <>
+                {/* ================= MAIN ROW ================= */}
+                <tr
+                    ref={el => (orderRefs.current[order.id] = el)}
+                    className="order-main-row"
+                    onClick={() => toggleOrder(order.id)}
+                >
+                    <td
+                        className="clickable"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/orders/${order.id}`);
+                        }}
+                    >
+                        {order.id}
+                    </td>
+
+                    <td>{order.date}</td>
+                    <td>{formatIndianTime(order.date, order.time)}</td>
+                    <td>{order.userName}</td>
+                    <td>
+                        {order.mode ? order.mode.toUpperCase() : "TAKE AWAY"}
+                    </td>
+                    <td>{order.tableNo ?? "---"}</td>
+                    <td>{order.items.length}</td>
+                    <td>₹{order.resolvedTotal}</td>
+
+                    <td>
+                        <div
+                            className={`status status-${normalizeStatus(orderStatus).replace(/\s+/g, "-")}`}
+                        >
+                            {orderStatus}
+                        </div>
+                    </td>
+
+                    <td>
+                        <div className="bill-actions">
+                            <button
+                                className="options-btn"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                ⋮
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+
+                {/* ================= SUB ROW ================= */}
+                <tr className={`order-sub-row ${isOpen ? "open" : ""}`}>
+                    <td colSpan={10}>
+                        <div className="order-sub-content">
+                            <table className="order-items-table">
+                                <thead>
+                                    <tr>
+                                        <th>Dish</th>
+                                        <th>Notes</th>
+                                        <th>Qty</th>
+                                        <th>Timer</th>
+                                        <th>Status</th>
+                                        {order.status === "preparing" && (
+                                            <th>Action</th>
+                                        )}
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    {order.items.map((item, idx) => (
+                                        <tr key={idx}>
+                                            <td
+                                                className={
+                                                    item.categoryId === "combo"
+                                                        ? "combo-item"
+                                                        : "clickable"
+                                                }
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+
+                                                    if (item.categoryId === "combo") return;
+
+                                                    navigate(
+                                                        `/dishes/${item.categoryId}/${item.dishId || "__custom__"}`,
+                                                        {
+                                                            state: {
+                                                                fromOrder: true,
+                                                                orderItem: item
+                                                            }
+                                                        }
+                                                    );
+                                                }}
+                                            >
+                                                {item.dishName}
+                                            </td>
+
+                                            <td>
+                                                {item.notes ? item.notes : "-----------"}
+                                            </td>
+
+                                            <td>{item.qty ?? item.quantity}</td>
+
+                                            {/* TIMER */}
+                                            <td>
+                                                {item.pickupStatus === "on_time" && (
+                                                    <span style={{ color: "#2e7d32", fontWeight: 600 }}>
+                                                        On Time
+                                                    </span>
+                                                )}
+
+                                                {item.pickupStatus === "late" && (
+                                                    <span style={{ color: "#d32f2f", fontWeight: 600 }}>
+                                                        Late Order
+                                                    </span>
+                                                )}
+
+                                                {!item.pickupStatus &&
+                                                    renderItemTimer(item, order)}
+                                            </td>
+
+                                            {/* STATUS */}
+                                            <td>
+                                                <div
+                                                    className={`status status-${normalizeStatus(item.status).replace(/\s+/g, "-")}`}
+                                                >
+                                                    {item.status}
+                                                </div>
+                                            </td>
+
+                                            {/* PICKUP BUTTON */}
+                                            {order.status === "preparing" && (
+                                                <td>
+                                                    {item.status === "preparing" && (
+                                                        <button
+                                                            className="pickup-btn"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setPickupConfirm({
+                                                                    orderId: order.id,
+                                                                    itemIndex: idx,
+                                                                    item
+                                                                });
+                                                            }}
+                                                        >
+                                                            Order Pickup
+                                                        </button>
+                                                    )}
+                                                </td>
+                                            )}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+            </>
+        );
+    },
+        (prev, next) =>
+            prev.order === next.order &&
+            prev.openOrderIds === next.openOrderIds
+    );
+
     return (
         <div className="orders-page">
 
             <div className="orders-header">
                 <h2 className="orders-title">Orders</h2>
 
-                <select
-                    value={statusFilter}
-                    onChange={(e) => {
-                        const value = e.target.value;
-                        setStatusFilter(value);
+                <div className="orders-dropdown-wrapper">
+                    <button
+                        className="orders-status-dropdown"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenModeDropdown(false);
+                            setOpenStatusDropdown(prev => !prev);
+                        }}
+                    >
+                        {statusFilter === "all" ? "All Status" : statusFilter}
+                    </button>
 
-                        if (value === "all") {
-                            handleSort("id");   // fallback default sort
-                        } else {
-                            handleSort("status");
-                        }
-                    }}
-                    className="orders-status-dropdown"
-                >
-                    <option value="all">All Status</option>
-                    <option value="placed">Placed</option>
-                    <option value="preparing">Preparing</option>
-                    <option value="service pickup">Service Pickup</option>
-                    <option value="completed">Completed</option>
-                </select>
+                    {openStatusDropdown && (
+                        <div className="orders-dropdown-menu">
+                            {["all", "placed", "preparing", "service pickup", "completed"]
+                                .map(status => (
+                                    <div
+                                        key={status}
+                                        onClick={() => {
+                                            setStatusFilter(status);
+                                            setOpenStatusDropdown(false);
+                                            status === "all"
+                                                ? handleSort("id")
+                                                : handleSort("status");
+                                        }}
+                                    >
+                                        {status === "all"
+                                            ? "All Status"
+                                            : status}
+                                    </div>
+                                ))}
+                        </div>
+                    )}
+                </div>
 
-                <select
-                    value={modeFilter}
-                    onChange={(e) => setModeFilter(e.target.value)}
-                    className="orders-status-dropdown"
-                >
-                    <option value="all">All Modes</option>
-                    <option value="dine in">Dine In</option>
-                    <option value="take away">Take Away</option>
-                </select>
+                <div className="orders-dropdown-wrapper">
+                    <button
+                        className="orders-status-dropdown"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenStatusDropdown(false);
+                            setOpenModeDropdown(prev => !prev);
+                        }}
+                    >
+                        {modeFilter === "all" ? "All Modes" : modeFilter}
+                    </button>
+
+                    {openModeDropdown && (
+                        <div className="orders-dropdown-menu">
+                            {["all", "dine in", "take away"].map(mode => (
+                                <div
+                                    key={mode}
+                                    onClick={() => {
+                                        setModeFilter(mode);
+                                        setOpenModeDropdown(false);
+                                    }}
+                                >
+                                    {mode === "all"
+                                        ? "All Modes"
+                                        : mode}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
                 <div className="orders-filter">
                     <button
@@ -853,6 +1043,7 @@ const Orders = ({ order, handleSort, sortConfig }) => {
                         type="date"
                         value={fromDate}
                         max={toDate}
+                        onClick={(e) => e.target.showPicker && e.target.showPicker()}
                         onChange={(e) => {
                             const selected = e.target.value;
                             if (selected > toDate) {
@@ -870,6 +1061,7 @@ const Orders = ({ order, handleSort, sortConfig }) => {
                         value={toDate}
                         min={fromDate}
                         max={todayISO}
+                        onClick={(e) => e.target.showPicker && e.target.showPicker()}
                         onChange={(e) => {
                             const selected = e.target.value;
                             if (selected < fromDate) {
@@ -959,160 +1151,22 @@ const Orders = ({ order, handleSort, sortConfig }) => {
                         {sortedOrders.length === 0 ? (
                             <EmptyRow colSpan={10} message="No orders for selected date range" />
                         ) : (
-                            sortedOrders.map(order => {
-                                const orderStatus = deriveOrderStatusFromItems(order.items);
-                                const allItemsCompleted = order.items.every(
-                                    i => i.status === "completed"
-                                );
-
-                                return (
-                                    <React.Fragment key={order.id}>
-                                        {/* MAIN ORDER ROW */}
-                                        <tr
-                                            ref={el => (orderRefs.current[order.id] = el)}
-                                            className="order-main-row"
-                                            onClick={() => toggleOrder(order.id)}
-                                        >
-                                            <td
-                                                className="clickable"
-                                                onClick={() => navigate(`/orders/${order.id}`)}
-                                            >
-                                                {order.id}
-                                            </td>
-                                            <td>{order.date}</td>
-                                            <td>{formatIndianTime(order.date, order.time)}</td>
-
-                                            <td>{order.userName}</td>
-                                            <td>
-                                                {order.mode ? order.mode.toUpperCase() : "TAKE AWAY"}
-                                            </td>
-                                            <td>
-                                                {order.tableNo != null ? order.tableNo : "---"}
-                                            </td>
-                                            <td>{order.items.length}</td>
-                                            <td>₹{order.resolvedTotal}</td>
-                                            <td>
-                                                <div className={`status status-${normalizeStatus(orderStatus).replace(/\s+/g, "-")}`}>{orderStatus}</div>
-                                            </td>
-                                            <td>
-                                                <div className="bill-actions">
-                                                    <button
-                                                        className="options-btn"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            const rect = e.currentTarget.getBoundingClientRect();
-
-                                                            setMenuPos({
-                                                                top: rect.bottom + 6,
-                                                                left: rect.right - 90
-                                                            });
-
-                                                            setOpenMenuOrderId(
-                                                                openMenuOrderId === order.id ? null : order.id
-                                                            );
-                                                        }}
-                                                    >
-                                                        ⋮
-                                                    </button>
-
-                                                </div>
-                                            </td>
-                                        </tr>
-
-                                        {/* SUB TABLE – ITEM LEVEL */}
-                                        <tr
-                                            className={`order-sub-row ${activeOrderId === order.id ? "open" : ""}`}
-                                        >
-                                            <td colSpan={10}>
-                                                <table className="order-items-table">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Dish</th>
-                                                            <th>Notes</th>
-                                                            <th>Qty</th>
-                                                            <th>Timer</th>
-                                                            <th>Status</th>
-                                                            {order.status === "preparing" &&
-                                                                <th>Action</th>
-                                                            }
-                                                        </tr>
-                                                    </thead>
-
-                                                    <tbody>
-                                                        {order.items.map((item, idx) => (
-                                                            <tr key={idx}>
-                                                                <td
-                                                                    className={item.categoryId === "combo" ? "combo-item" : "clickable"}
-                                                                    onClick={(e) => {
-                                                                        e.preventDefault();
-                                                                        e.stopPropagation();
-
-                                                                        if (item.categoryId === "combo") return;
-
-                                                                        navigate(
-                                                                            `/dishes/${item.categoryId}/${item.dishId || "__custom__"}`,
-                                                                            {
-                                                                                state: {
-                                                                                    fromOrder: true,
-                                                                                    orderItem: item
-                                                                                }
-                                                                            }
-                                                                        );
-                                                                    }}
-                                                                >
-                                                                    {item.dishName}
-                                                                </td>
-                                                                <td>{item.notes ? item.notes : '-----------'}</td>
-                                                                <td>{item.qty ?? item.quantity}</td>
-
-                                                                {/* ITEM TIMER */}
-                                                                <td>
-                                                                    {item.pickupStatus === "on_time" && (
-                                                                        <span style={{ color: "#2e7d32", fontWeight: 600 }}>
-                                                                            On Time
-                                                                        </span>
-                                                                    )}
-
-                                                                    {item.pickupStatus === "late" && (
-                                                                        <span style={{ color: "#d32f2f", fontWeight: 600 }}>
-                                                                            Late Order
-                                                                        </span>
-                                                                    )}
-
-                                                                    {!item.pickupStatus && renderItemTimer(item, order)}
-                                                                </td>
-
-                                                                {/* ITEM STATUS */}
-                                                                <td>
-                                                                    <div className={`status status-${normalizeStatus(item.status).replace(/\s+/g, "-")}`}>{item.status}</div>
-                                                                </td>
-
-                                                                {/* ITEM PICKUP */}
-                                                                {order.status === "preparing" &&
-                                                                    <td>
-                                                                        {item.status === "preparing" && (
-                                                                            <button
-                                                                                className="pickup-btn"
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    setPickupConfirm({ orderId: order.id, itemIndex: idx, item });
-                                                                                }}
-                                                                            >
-                                                                                Order Pickup
-                                                                            </button>
-                                                                        )}
-                                                                    </td>
-                                                                }
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </td>
-                                        </tr>
-
-                                    </React.Fragment>
-                                );
-                            }))}
+                            sortedOrders.map(order => (
+                                <OrderRow
+                                    key={order.id}
+                                    order={order}
+                                    toggleOrder={toggleOrder}
+                                    openOrderIds={openOrderIds}
+                                    navigate={navigate}
+                                    renderItemTimer={renderItemTimer}
+                                    deriveOrderStatusFromItems={deriveOrderStatusFromItems}
+                                    normalizeStatus={normalizeStatus}
+                                    orderRefs={orderRefs}
+                                    openMenuOrderId={openMenuOrderId}
+                                    setOpenMenuOrderId={setOpenMenuOrderId}
+                                    setMenuPos={setMenuPos}
+                                />
+                            )))}
                     </tbody>
                 </table>
             </div>
@@ -1156,8 +1210,9 @@ const Orders = ({ order, handleSort, sortConfig }) => {
                                 onClick={() => {
                                     const { orderId, itemIndex } = pickupConfirm;
 
-                                    setOrders(prev =>
-                                        prev.map(o => {
+                                    setAdminData(prev => ({
+                                        ...prev,
+                                        orders: prev.orders.map(o => {
                                             if (o.id !== orderId) return o;
 
                                             const now = Date.now();
@@ -1185,7 +1240,7 @@ const Orders = ({ order, handleSort, sortConfig }) => {
                                             const newStatus = deriveOrderStatusFromItems(items);
 
                                             console.log("📦 Order WhatsApp data", {
-                                                mobile: order.mobile,
+                                                mobile: o.mobile,
                                                 status: newStatus
                                             });
 
@@ -1204,11 +1259,14 @@ const Orders = ({ order, handleSort, sortConfig }) => {
                                             }
                                             persistOrder(updated, async () => {
                                                 const res = await api.get("/orders");
-                                                setOrders(res.data || []);
+                                                setAdminData(prev => ({
+                                                    ...prev,
+                                                    orders: res.data || []
+                                                }));
                                             });
                                             return updated;
                                         })
-                                    );
+                                    }));
 
                                     setPickupConfirm(null);
                                 }}
@@ -1329,9 +1387,12 @@ const Orders = ({ order, handleSort, sortConfig }) => {
                                         await persistOrderEverywhere(updatedOrder);
 
                                         // ✅ update UI immediately
-                                        setOrders(prev =>
-                                            prev.map(o => o.id === updatedOrder.id ? updatedOrder : o)
-                                        );
+                                        setAdminData(prev => ({
+                                            ...prev,
+                                            orders: prev.orders.map(o =>
+                                                o.id === updatedOrder.id ? updatedOrder : o
+                                            )
+                                        }));
 
                                         setEditBillOrder(null);
                                     } catch (err) {

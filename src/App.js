@@ -1,6 +1,7 @@
 import "./App.css";
 import { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
@@ -69,49 +70,42 @@ function App() {
   const [adminData, setAdminData] = useState({
     categories: [],
     favourites: [],
-    ingredients: []
+    ingredients: [],
+    orders: [],
+    users: []
   });
-
-  const [orders, setOrders] = useState({
-    orders: []
-  });
-
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const res = await api.get("/orders");
-        setOrders({ orders: res.data || [] });
-      } catch (err) {
-        console.error("Failed to fetch orders", err);
-      }
-    };
-
-    fetchOrders();
-  }, []);
 
   /* ---------------- LOGIN HANDLER ---------------- */
   const handleLogin = () => {
     setIsAuthenticated(true);
   };
 
-  /* ---------------- FETCH MENU ---------------- */
-  const fetchMenu = async () => {
-    try {
-      const res = await api.get("/menu");
-      setAdminData({
-        categories: res.data.categories || [],
-        favourites: res.data.favourites || [],
-        ingredients: res.data.ingredients || []
-      });
-    } catch (err) {
-      console.error("Failed to fetch menu", err);
-    }
-  };
-
+  /* ---------------- FETCH DATA ---------------- */
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchMenu();
-    }
+    if (!isAuthenticated) return;
+
+    const fetchAllData = async () => {
+      try {
+        const [menuRes, ordersRes, usersRes] = await Promise.all([
+          api.get("/menu"),
+          api.get("/orders"),
+          api.get("/users")
+        ]);
+
+        setAdminData({
+          categories: menuRes.data.categories || [],
+          favourites: menuRes.data.favourites || [],
+          ingredients: menuRes.data.ingredients || [],
+          orders: ordersRes.data || [],
+          users: usersRes.data || []
+        });
+
+      } catch (err) {
+        console.error("Failed to fetch admin data", err);
+      }
+    };
+
+    fetchAllData();
   }, [isAuthenticated]);
 
   /* ---------------- INGREDIENT CRUD ---------------- */
@@ -207,7 +201,7 @@ function App() {
         <Topbar
           isAuthenticated={isAuthenticated}
           setIsAuthenticated={setIsAuthenticated}
-          orders={orders.orders}
+          orders={adminData.orders}
           ingredients={adminData.ingredients}
         />
 
@@ -218,7 +212,7 @@ function App() {
               element={
                 <Dashboard
                   adminData={adminData}
-                  orders={orders.orders}
+                  orders={adminData.orders}
                 />
               }
             />
@@ -320,7 +314,8 @@ function App() {
               path="/orders"
               element={
                 <Orders
-                  order={orders}
+                  adminData={adminData}
+                  setAdminData={setAdminData}
                   sortConfig={sortConfig}
                   handleSort={handleSort}
                 />
@@ -329,7 +324,12 @@ function App() {
 
             <Route
               path="/orders/:orderId"
-              element={<OrderDetails orders={orders.orders} menu={adminData} />}
+              element={
+                <OrderDetails
+                  orders={adminData.orders}
+                  menu={adminData}
+                />
+              }
             />
 
             <Route
@@ -338,11 +338,12 @@ function App() {
                 <Users
                   sortConfig={sortConfig}
                   handleSort={handleSort}
+                  users={adminData.users}
                 />
               }
             />
 
-            <Route path="/users/:userId" element={<UserDetails />} />
+            <Route path="/users/:userId" element={<UserDetails users={adminData.users} />} />
 
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

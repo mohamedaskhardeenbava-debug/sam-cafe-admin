@@ -79,6 +79,42 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
         reader.readAsDataURL(file);
     };
 
+    const getDisabledInfo = () => {
+        if (!localIngredient) return { label: "—", type: "none" };
+
+        if (localIngredient.isDisabledGlobally === true) {
+            return { label: "All Dishes", type: "all" };
+        }
+
+        const disabled = localIngredient.disabledForDishes || [];
+
+        if (disabled.length === 0) {
+            return { label: "—", type: "none" };
+        }
+
+        const dishNames = adminData.categories
+            .flatMap(cat => cat.dishes || [])
+            .filter(d => disabled.includes(d.id))
+            .map(d => d.name);
+
+        return {
+            label: dishNames.length ? dishNames.join(", ") : "—",
+            type: "partial"
+        };
+    };
+
+    const isExpiringSoon = (expiryDate) => {
+        if (!expiryDate) return false;
+
+        const today = new Date();
+        const expiry = new Date(expiryDate);
+
+        const diffTime = expiry - today;
+        const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+        return diffDays <= 15;
+    };
+
     return (
         <div className="ingredient-details-page">
 
@@ -340,6 +376,53 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
                     )}
                 </div>
 
+                <div className="section">
+                    <div className="section-title">
+                        <span>Stock & Visibility Info</span>
+                    </div>
+
+                    <table className="stock-visibility-table">
+                        <tbody>
+                            <tr>
+                                <td><strong>Disabled In</strong></td>
+                                <td
+                                    style={{
+                                        fontWeight: 600,
+                                        color:
+                                            getDisabledInfo().type === "all"
+                                                ? "red"
+                                                : getDisabledInfo().type === "partial"
+                                                    ? "#e6a700"
+                                                    : "#888"
+                                    }}
+                                >
+                                    {getDisabledInfo().label}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><strong>Expiry Date</strong></td>
+                                <td
+                                    style={{
+                                        color: isExpiringSoon(localIngredient.expiryDate)
+                                            ? "red"
+                                            : "inherit",
+                                        fontWeight: isExpiringSoon(localIngredient.expiryDate)
+                                            ? 600
+                                            : 400
+                                    }}
+                                >
+                                    {localIngredient.expiryDate || "-"}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td><strong>Last Purchased</strong></td>
+                                <td>{localIngredient.lastUpdated || "-"}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
                 {/* NUTRITION TABLE */}
                 <div className="section">

@@ -6,7 +6,7 @@ body {
 }
 
 body {
-  background-color: #f4f5f7;
+  background-color: #f6f6f6;
   overflow: hidden;
 }
 
@@ -46,7 +46,7 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .clickable {
-  color: #00BFFF;
+  color: #1F51FF;
   font-weight: 600;
 }
 
@@ -121,8 +121,7 @@ th.sorted .sort-arrow {
 }
 
 .sort-th {
-  color: #00aeff;
-  font-weight: 600;
+  color: #0034d0;
   transition: all 0.3s ease;
 }
 

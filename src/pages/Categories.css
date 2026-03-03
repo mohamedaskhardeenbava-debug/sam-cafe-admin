@@ -58,7 +58,7 @@
   padding: 16px 12px;
   font-size: 13px;
   font-weight: 600;
-  color: #6b7280;
+  color: #555;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   background: #e9e9e9;
@@ -114,10 +114,25 @@
   font-weight: 500;
 }
 
-.category-table th:nth-child(2),
-.category-table td:nth-child(2) {
-  width: 400px;
-  max-width: 400px;
+.category-table th:nth-child(1),
+.category-table td:nth-child(1) {
+  width: 48px;
+  max-width: 48px;
+}
+
+.category-table th:nth-child(3),
+.category-table td:nth-child(3) {
+  width: 120px;
+  max-width: 120px;
+}
+
+.category-table th:nth-child(4),
+.category-table td:nth-child(4),
+.category-table th:nth-child(5),
+.category-table td:nth-child(5) {
+  width: 72px !important;
+  max-width: 72px !important;
+  text-align: center;
 }
 
 .category-add-btn {
@@ -197,6 +212,7 @@ button img {
   border-radius: 12px;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 .form-group textarea {

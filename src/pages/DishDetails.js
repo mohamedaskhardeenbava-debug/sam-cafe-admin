@@ -23,6 +23,13 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
     // TEMP buffer ONLY for ingredients editing
     const [editingIngredients, setEditingIngredients] = useState(null);
 
+    const disabledIngredientsForThisDish = adminData.ingredients
+        .filter(ing =>
+            ing.isDisabledGlobally === true ||
+            (ing.disabledForDishes || []).includes(dishId)
+        )
+        .map(ing => ing.name);
+
     useEffect(() => {
         if (dish) {
             setLocalDish(JSON.parse(JSON.stringify(dish)));
@@ -456,6 +463,22 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
                     )}
                 </div>
 
+                {disabledIngredientsForThisDish.length > 0 && (
+                    <div className="section">
+                        <div className="section-title">
+                            <span>Disabled Ingredients For This Dish</span>
+                        </div>
+
+                        <p
+                            style={{
+                                color: "red",
+                                fontWeight: 600
+                            }}
+                        >
+                            {disabledIngredientsForThisDish.join(", ")}
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -1,7 +1,8 @@
-.dashboard-header{
+.dashboard-header {
   display: flex;
   align-items: center;
-  gap: 12px;justify-content: space-between;
+  gap: 12px;
+  justify-content: space-between;
 }
 
 /* TITLE */
@@ -87,9 +88,17 @@
   gap: 10px;
 }
 
+.dashboard-kpi-row-inheader {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+
 .dashboard-kpi-row {
   display: flex;
   gap: 10px;
+  margin-left: auto;
+  margin-right: 84px;
 }
 
 .kpi-card.kpi-small {
@@ -233,7 +242,7 @@
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
 
-.chart-card h4{
+.chart-card h4 {
   margin-top: 10px;
 }
 
@@ -332,7 +341,6 @@
   color: #fff;
   font-weight: 500;
   cursor: pointer;
-  margin-left: auto;
 }
 
 /* REMOVE MARGIN HACK */

@@ -575,14 +575,7 @@ const Dashboard = ({ adminData, orders = [] }) => {
       <div className="dashboard-header">
         <h2 className="dashboard-title">Dashboard</h2>
 
-        <button
-          className="dashboard-export-btn"
-          onClick={handleExport}
-        >
-          Export
-        </button>
-
-        <div className="dashboard-kpi-row">
+        <div className="dashboard-kpi-row-inheader">
           <div className="kpi-card kpi-small">
             <p>Total Orders</p>
             <h3>{totalOrders}</h3>
@@ -632,6 +625,13 @@ const Dashboard = ({ adminData, orders = [] }) => {
             <h3>{orderModeStats.takeaway}</h3>
           </div>
         </div>
+
+        <button
+          className="dashboard-export-btn"
+          onClick={handleExport}
+        >
+          Export
+        </button>
       </div>
 
       {/* DATE FILTER */}
@@ -643,6 +643,7 @@ const Dashboard = ({ adminData, orders = [] }) => {
             type="date"
             value={fromDate}
             max={toDate}
+            onClick={(e) => e.target.showPicker && e.target.showPicker()}
             onChange={(e) => {
               const selected = e.target.value;
 
@@ -661,6 +662,7 @@ const Dashboard = ({ adminData, orders = [] }) => {
             value={toDate}
             min={fromDate}
             max={today}
+            onClick={(e) => e.target.showPicker && e.target.showPicker()}
             onChange={(e) => {
               const selected = e.target.value;
 

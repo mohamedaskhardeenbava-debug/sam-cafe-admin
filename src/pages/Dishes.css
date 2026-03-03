@@ -87,7 +87,7 @@
   padding: 16px 12px;
   font-size: 13px;
   font-weight: 600;
-  color: #6b7280;
+  color: #555;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   background: #e9e9e9;
@@ -130,6 +130,25 @@
   border-bottom-right-radius: 16px;
 }
 
+.dish-table th:nth-child(1),
+.dish-table td:nth-child(1) {
+  width: 48px;
+  max-width: 48px;
+}
+
+.dish-table th:nth-child(3),
+.dish-table td:nth-child(3){
+  width: 120px !important;
+  max-width: 120px !important;
+}
+
+.dish-table th:nth-child(4),
+.dish-table td:nth-child(4) {
+  width: 72px !important;
+  max-width: 72px !important;
+  text-align: center;
+}
+
 .dish-image,
 .dish-placeholder {
   width: 36px;
@@ -160,14 +179,6 @@
 
 .delete-btn {
   color: red;
-}
-
-
-
-.dish-table th:nth-child(2),
-.dish-table td:nth-child(2) {
-  width: 400px;
-  max-width: 400px;
 }
 
 .dish-header-actions {
@@ -223,6 +234,11 @@
 
 .category-modal-body {
   overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.category-modal-body input {
+  box-sizing: border-box;
 }
 
 .category-modal-footer {
@@ -380,9 +396,15 @@
   background-color: rgb(234, 234, 234);
 }
 
+.ingredient-delete-btn {
+  cursor: pointer;
+}
+
+
 .ingredient-delete-btn img {
   width: 16px;
   height: 16px;
+  cursor: pointer;
 }
 
 .border {

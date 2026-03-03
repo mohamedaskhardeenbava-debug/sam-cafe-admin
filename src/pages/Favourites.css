@@ -34,7 +34,7 @@
   padding: 16px 12px;
   font-size: 13px;
   font-weight: 600;
-  color: #6b7280;
+  color: #555;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   background: #e9e9e9;
@@ -79,8 +79,8 @@
 
 .favourites-table th:nth-child(1),
 .favourites-table td:nth-child(1) {
-  width: 72px;
-  max-width: 72px;
+  width: 48px;
+  max-width: 48px;
 }
 
 .favourites-table th:nth-child(3),

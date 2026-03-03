@@ -3,16 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import api from "../api";
 import "./UserDetails.css";
 
-const UserDetails = () => {
+const UserDetails = ({ users }) => {
   const { userId } = useParams();
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    api.get("/users").then(res => {
-      setUser(res.data.find(u => u.id === userId));
-    });
-  }, [userId]);
+  const user = users.find(u => u.id === userId);
 
   if (!user) return null;
 

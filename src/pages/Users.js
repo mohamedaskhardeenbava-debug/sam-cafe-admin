@@ -5,18 +5,13 @@ import { sortArray } from "../App";
 import "./Users.css";
 import { EmptyRow } from "../App";
 
-const Users = ({ handleSort, sortConfig }) => {
-    const [users, setUsers] = useState([]);
+const Users = ({ handleSort, sortConfig, users }) => {
     const navigate = useNavigate();
 
     const sortedUsers = useMemo(
         () => sortArray(users, sortConfig),
         [users, sortConfig]
     );
-
-    useEffect(() => {
-        api.get("/users").then(res => setUsers(res.data || []));
-    }, []);
 
     const sendCampaignToAllUsers = () => {
         const message =
