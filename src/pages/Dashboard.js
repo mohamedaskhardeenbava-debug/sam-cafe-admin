@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 import * as XLSX from "xlsx";
 import { EmptyRow } from "../App";
+import dayjs from "dayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 import {
   PieChart,
@@ -118,6 +122,9 @@ const Dashboard = ({ adminData, orders = [] }) => {
   const [toDate, setToDate] = useState(today);
   const [modeFilter, setModeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const [openFrom, setOpenFrom] = useState(false);
+  const [openTo, setOpenTo] = useState(false);
 
   const num = (v) => {
     const n = Number(v);
@@ -638,43 +645,96 @@ const Dashboard = ({ adminData, orders = [] }) => {
       <div className="dashboard-filter">
 
         <div className="dashboard-filter-date">
-          {/* FROM DATE */}
-          <input
-            type="date"
-            value={fromDate}
-            max={toDate}
-            onClick={(e) => e.target.showPicker && e.target.showPicker()}
-            onChange={(e) => {
-              const selected = e.target.value;
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
 
-              if (selected > toDate) {
-                setFromDate(selected);
-                setToDate(selected);
-              } else {
-                setFromDate(selected);
-              }
-            }}
-          />
+            {/* FROM DATE WRAPPER */}
+            <div
+              style={{ display: "inline-block" }}
+                onClick={() => setOpenFrom(true)}
+            >
+              <DatePicker
+                open={openFrom}
+                onClose={() => setOpenFrom(false)}
+                value={dayjs(fromDate)}
+                format="DD/MM/YYYY"
+                maxDate={dayjs(toDate)}
+                onChange={(newValue) => {
+                  if (!newValue) return;
 
-          {/* TO DATE */}
-          <input
-            type="date"
-            value={toDate}
-            min={fromDate}
-            max={today}
-            onClick={(e) => e.target.showPicker && e.target.showPicker()}
-            onChange={(e) => {
-              const selected = e.target.value;
+                  const selected = newValue.format("YYYY-MM-DD");
 
-              if (selected < fromDate) {
-                setToDate(fromDate);
-              } else if (selected > today) {
-                setToDate(today);
-              } else {
-                setToDate(selected);
-              }
-            }}
-          />
+                  if (selected > toDate) {
+                    setFromDate(selected);
+                    setToDate(selected);
+                  } else {
+                    setFromDate(selected);
+                  }
+
+                  setOpenFrom(false);
+                }}
+                slotProps={{
+                  field: {
+                    sx: {
+                      minWidth: 140,
+                      maxWidth: 240,
+                      height: 38,
+                      borderRadius: "999px",
+                      backgroundColor: "#fff",
+                      overflow: "hidden",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+
+                      "&.Mui-focused": {
+                        boxShadow: "0 0 0 3px rgba(37, 99, 235, 0.15)"
+                      }
+                    }
+                  }
+                }}
+              />
+            </div>
+
+            {/* TO DATE WRAPPER */}
+            <div
+              style={{ display: "inline-block" }}
+                onClick={() => setOpenTo(true)}
+            >
+              <DatePicker
+                open={openTo}
+                onClose={() => setOpenTo(false)}
+                value={dayjs(toDate)}
+                format="DD/MM/YYYY"
+                minDate={dayjs(fromDate)}
+                maxDate={dayjs()}
+                onChange={(newValue) => {
+                  if (!newValue) return;
+
+                  setToDate(newValue.format("YYYY-MM-DD"));
+                  setOpenTo(false);
+                }}
+                slotProps={{
+                  field: {
+                    sx: {
+                      minWidth: 140,
+                      maxWidth: 240,
+                      height: 38,
+                      borderRadius: "999px",
+                      backgroundColor: "#fff",
+                      overflow: "hidden",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+
+                      "&.Mui-focused": {
+                        boxShadow: "0 0 0 3px rgba(37, 99, 235, 0.15)"
+                      }
+                    }
+                  }
+                }}
+              />
+            </div>
+
+          </LocalizationProvider>
         </div>
 
         <div className="dashboard-filter-kpis">

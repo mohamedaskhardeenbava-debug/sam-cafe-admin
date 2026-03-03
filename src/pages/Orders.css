@@ -50,17 +50,6 @@
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
-.orders-status-dropdown:hover {
-  border-color: #9ca3af;
-  background-color: #f9fafb;
-}
-
-.orders-status-dropdown:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-}
-
 /* Improve option appearance (browser-limited support) */
 .orders-status-dropdown option {
   font-size: 14px;
@@ -87,64 +76,6 @@
   font-weight: 500;
   cursor: pointer;
 }
-
-/*DATE PICKER – ENTERPRISE UI */
-.orders-filter input[type="date"] {
-  height: 38px;
-  min-width: 150px;
-  padding: 0 14px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #111;
-  background-color: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 999px;
-  cursor: pointer;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    background-color 0.2s ease;
-}
-
-/* Hover */
-.orders-filter input[type="date"]:hover {
-  border-color: #9ca3af;
-  background-color: #f9fafb;
-}
-
-/* Focus (MNC blue ring) */
-.orders-filter input[type="date"]:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-  background-color: #ffffff;
-}
-
-/* Disabled */
-.orders-filter input[type="date"]:disabled {
-  background-color: #f3f4f6;
-  color: #9ca3af;
-  cursor: not-allowed;
-}
-
-/* Calendar icon */
-.orders-filter input[type="date"]::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
-}
-
-.orders-filter input[type="date"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
-}
-
-/* Remove inner buttons */
-.orders-filter input[type="date"]::-webkit-clear-button,
-.orders-filter input[type="date"]::-webkit-inner-spin-button {
-  display: none;
-}
-
-
 
 .orders-export-btn {
   height: 38px;

@@ -26,62 +26,6 @@
   gap: 12px;
 }
 
-/*DATE PICKER – ENTERPRISE UI */
-.dashboard-filter-date input[type="date"] {
-  height: 38px;
-  min-width: 150px;
-  padding: 0 14px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #111;
-  background-color: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 999px;
-  cursor: pointer;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    background-color 0.2s ease;
-}
-
-/* Hover */
-.dashboard-filter-date input[type="date"]:hover {
-  border-color: #9ca3af;
-  background-color: #f9fafb;
-}
-
-/* Focus (MNC blue ring) */
-.dashboard-filter-date input[type="date"]:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-  background-color: #ffffff;
-}
-
-/* Disabled */
-.dashboard-filter-date input[type="date"]:disabled {
-  background-color: #f3f4f6;
-  color: #9ca3af;
-  cursor: not-allowed;
-}
-
-/* Calendar icon */
-.dashboard-filter-date input[type="date"]::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
-}
-
-.dashboard-filter-date input[type="date"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
-}
-
-/* Remove inner buttons */
-.dashboard-filter-date input[type="date"]::-webkit-clear-button,
-.dashboard-filter-date input[type="date"]::-webkit-inner-spin-button {
-  display: none;
-}
-
 .dashboard-filter-kpis {
   display: flex;
   flex-direction: column;
@@ -485,6 +429,30 @@
   }
 }
 
+.MuiFormControl-root.MuiPickersTextField-root.css-1f4x2g8-MuiFormControl-root-MuiPickersTextField-root {
+  border: 1px solid #d1d5db;
+}
+
+.MuiPickersInputBase-root.MuiPickersOutlinedInput-root.MuiPickersInputBase-colorPrimary.MuiPickersInputBase-adornedEnd.css-vycme6-MuiPickersInputBase-root-MuiPickersOutlinedInput-root:hover {
+cursor: pointer !important;
+}
+
+.MuiFormControl-root.MuiPickersTextField-root.css-1f4x2g8-MuiFormControl-root-MuiPickersTextField-root:hover {
+  border-color: #9ca3af;
+  background-color: #f9fafb;
+  
+}
+
+.MuiFormControl-root.MuiPickersTextField-root.css-1f4x2g8-MuiFormControl-root-MuiPickersTextField-root:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.MuiPickersSectionList-section.css-joz0rk-MuiPickersSectionList-section-MuiPickersInputBase-section {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 1px;
+}
 
 /*  RESPONSIVE*/
 @media screen and (max-width: 992px) {
@@ -506,9 +474,5 @@
 @media screen and (max-width: 578px) {
   .dashboard-filter-date {
     flex-wrap: wrap;
-  }
-
-  .dashboard-filter-date input[type="date"] {
-    width: 100%;
   }
 }
