@@ -1,0 +1,529 @@
+/* ================= PAGE ================= */
+.staff-page {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ================= HEADER ================= */
+.staff-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start !important;
+    margin-bottom: 20px;
+}
+
+.staff-header h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #111;
+    margin: 0;
+}
+
+.staff-add-btn {
+    height: 38px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid #111;
+    background: #111;
+    color: #fff;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.staff-add-btn:hover {
+    background: #000;
+}
+
+/* ================= TABLE ================= */
+.staff-table-wrapper {
+    width: 100%;
+    max-height: calc(100vh - 175px);
+    overflow-y: auto;
+    padding: 0 10px;
+    background: #e9e9e9;
+    border-radius: 20px;
+    box-sizing: border-box;
+}
+
+.staff-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 5px;
+    background: transparent;
+    table-layout: fixed;
+}
+
+/* HEADER */
+.staff-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.staff-table th {
+    padding: 16px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: #e9e9e9;
+    text-align: left;
+}
+
+/* ROW */
+.staff-table tbody tr {
+    background: #ffffff !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+    transition: all 0.25s ease;
+}
+
+.staff-table tbody tr:hover {
+    background-color: rgb(234, 234, 234);
+}
+
+/* CELLS */
+.staff-table td {
+    padding: 10px;
+    font-size: 14px;
+    border: none;
+    background: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* RADIUS */
+.staff-table td:first-child {
+    border-top-left-radius: 16px;
+    border-bottom-left-radius: 16px;
+}
+
+.staff-table td:last-child {
+    border-top-right-radius: 16px;
+    border-bottom-right-radius: 16px;
+}
+
+/* COLUMN WIDTHS */
+.staff-table th:nth-child(1),
+.staff-table td:nth-child(1) {
+    width: 48px;
+    max-width: 48px;
+}
+
+.staff-table th:nth-child(4),
+.staff-table td:nth-child(4),
+.staff-table th:nth-child(5),
+.staff-table td:nth-child(5) {
+    width: 50px;
+}
+
+.staff-table th:nth-child(6),
+.staff-table td:nth-child(6),
+.staff-table th:nth-child(7),
+.staff-table td:nth-child(7) {
+    text-align: center;
+    width: 50px;
+}
+
+
+/* IMAGE */
+.staff-image {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+}
+
+.staff-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* ACTION BUTTONS */
+.staff-table button {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+}
+
+.staff-table button:hover {
+    transform: scale(1.1);
+}
+
+/* ================= MODAL ================= */
+.staff-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+/* CARD */
+.staff-modal {
+    background: #ffffff;
+    width: 560px;
+    max-height: 85vh;
+    padding: 24px;
+    border-radius: 14px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* HEADER */
+.staff-modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background-color: #ffffff;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.staff-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* CLOSE BUTTON */
+.staff-modal-header button {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    border: none;
+    background: #f2f2f2;
+    cursor: pointer;
+    position: relative;
+}
+
+.staff-modal-header button:hover {
+    background: #e5e5e5;
+}
+
+.staff-modal-header button::before,
+.staff-modal-header button::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 2px;
+    background: #333;
+    top: 50%;
+    left: 50%;
+}
+
+.staff-modal-header button::before {
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.staff-modal-header button::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+/* BODY */
+.staff-modal-body {
+    overflow-y: auto;
+    padding-top: 10px;
+}
+
+.staff-modal-body textarea {
+    resize: none;
+    min-height: 70px;
+}
+
+/* LABEL TITLES */
+.staff-modal-body h4 {
+    margin: 10px 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* ADD BUTTON */
+.staff-modal-body button {
+    width: fit-content;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: #111;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+}
+
+.experience-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.experience-input-row input {
+    flex: 1;
+}
+
+.exp-table {
+    width: 100%;
+    margin-top: 10px;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #f0f0f0;
+}
+
+.exp-table thead {
+    background: #f5f5f5;
+}
+
+.exp-table th {
+    padding: 8px 10px;
+    font-size: 12px;
+    text-align: left;
+    font-weight: 600;
+}
+
+.exp-table td {
+    padding: 8px 10px;
+    border-top: 1px solid #eee;
+    font-size: 13px;
+}
+
+.exp-table tbody tr:hover {
+    background: #f9f9f9;
+}
+
+.exp-table th:nth-child(2),
+.exp-table td:nth-child(2) {
+    width: 120px;
+}
+
+.exp-table th:nth-child(3),
+.exp-table td:nth-child(3) {
+    width: 70px;
+}
+
+.staff-image-preview {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-top: 10px;
+    border: 1px solid #ddd;
+}
+
+/* RADIO GROUP */
+.staff-modal-body label {
+    margin-right: 10px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.exp-table {
+    width: 100%;
+    max-width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    background-color: #ffffff;
+    margin-top: 10px;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+}
+
+.exp-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background-color: #414141;
+}
+
+.exp-table th {
+    padding: 8px 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    position: sticky;
+    top: 0;
+    z-index: 6;
+}
+
+.exp-table td {
+    padding: 8px 10px;
+    font-size: 14px;
+    color: #333333;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.exp-table tbody tr:hover {
+    background-color: rgb(234, 234, 234);
+}
+
+.exp-delete-btn {
+    background-color: transparent !important;
+    width: 100% !important;
+    text-align: left !important;
+}
+
+.radio-group {
+    display: flex;
+    gap: 10px;
+}
+
+.staff-modal-body input[type="radio"] {
+    margin-right: 4px;
+}
+
+.radio-btn {
+    height: 14px;
+}
+
+.radio-btn input {
+    width: 13px;
+    cursor: pointer;
+    margin: 0;
+}
+
+.staff-preview-card {
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #f0f0f0;
+}
+
+.preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+}
+
+.preview-table td,
+.preview-table th {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 13px;
+}
+
+.preview-table th {
+    text-align: left;
+    background: #f5f5f5;
+    font-weight: 600;
+}
+
+.preview-table td {
+    width: 50%;
+}
+
+.preview-header {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.preview-header-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-header-details-name {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.preview-header-details-others {
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.preview-section {
+    margin-bottom: 12px;
+}
+
+.preview-section h4 {
+    margin-bottom: 6px;
+    font-size: 14px;
+    color: #111;
+}
+
+/* ================= FOOTER ================= */
+.staff-modal-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background-color: #ffffff;
+
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 10px;
+}
+
+/* BUTTONS */
+.staff-modal-footer button {
+    padding: 8px 14px;
+    font-size: 13px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+}
+
+.staff-modal-footer button:first-child {
+    background: #2563eb;
+    color: white;
+}
+
+.staff-modal-footer button:nth-child(2) {
+    background: #f0f0f0;
+}
+
+.staff-modal-footer button:hover {
+    transform: scale(1.05);
+}
+
+/* ================= PREVIEW ================= */
+.preview {
+    line-height: 1.8;
+    font-size: 14px;
+}
+
+.preview p {
+    margin: 4px 0;
+}
+
+.org-add-btn {
+    height: 28px;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 768px) {
+
+    .staff-table th,
+    .staff-table td {
+        font-size: 12px;
+    }
+
+    .staff-modal {
+        width: 95%;
+    }
+}

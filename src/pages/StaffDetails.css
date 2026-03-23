@@ -1,0 +1,241 @@
+/* ================= PAGE ================= */
+.staff-details-page {
+    padding: 20px;
+}
+
+
+/* ================= CONTAINER ================= */
+.dish-container {
+    background: #fff;
+    padding: 24px;
+    border-radius: 14px;
+    max-width: 900px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+/* ================= HEADER ================= */
+.dish-details-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.dish-details-header h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+/* BACK BUTTON */
+.back-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    position: relative;
+}
+
+.back-btn::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 42%;
+    width: 10px;
+    height: 10px;
+    border-left: 3px solid #111;
+    border-bottom: 3px solid #111;
+    transform: translateY(-50%) rotate(45deg);
+}
+
+/* ================= IMAGE ================= */
+/* ================= IMAGE + DOC ROW ================= */
+.staff-image-row {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.staff-details-image {
+  position: relative;
+  width: 50%;
+  aspect-ratio: 1 / 1;
+}
+
+.staff-details-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+.image-upload-btn {
+    position: absolute;
+    bottom: 4px;
+    right: 0;
+    background: #111;
+    color: #fff;
+    font-size: 12px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.name-section {
+    width: 100%;
+}
+
+/* ================= SECTION ================= */
+.section {
+    margin-top: 22px;
+}
+
+/* TITLE */
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.section-title span {
+    font-size: 15px;
+}
+
+.edit-icon {
+    margin-left: auto;
+    width: 16px;
+    cursor: pointer;
+}
+
+/* ================= TEXT ================= */
+.section p {
+    margin: 8px 0;
+    font-size: 14px;
+    color: #333;
+}
+
+/* ================= INPUT ================= */
+input,
+textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 7px 8px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+}
+
+textarea {
+    min-height: 80px;
+    resize: none;
+}
+
+/* ================= ACTIONS ================= */
+.actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+}
+
+.actions button {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    background: #f0f0f0;
+    transition: 0.2s;
+}
+
+.actions button:first-child {
+    background: #111;
+    color: #fff;
+}
+
+.actions button:hover {
+    transform: scale(1.05);
+}
+
+/* ================= ADD BUTTON ================= */
+.section button {
+    margin-top: 10px;
+    padding: 6px 10px;
+    background: #111;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* ================= DELETE ICON ================= */
+.section img[src*="delete"] {
+    width: 16px;
+    cursor: pointer;
+}
+
+/* ================= DOCUMENT PREVIEW ================= */
+.document-preview {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.document-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 12px;
+}
+
+.document-card img {
+    width: 110px;
+    height: 110px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+}
+
+.staff-details-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+}
+
+.staff-details-table td,
+.staff-details-table th {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 13px;
+}
+
+.staff-details-table th {
+    text-align: left;
+    background: #f5f5f5;
+    font-weight: 600;
+}
+
+.staff-details-table td {
+    width: 50%;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 768px) {
+    .dish-container {
+        padding: 16px;
+    }
+
+    .staff-details-image {
+        width: 160px;
+    }
+
+    .data-table th,
+    .data-table td {
+        font-size: 12px;
+    }
+}

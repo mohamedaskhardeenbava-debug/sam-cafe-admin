@@ -91,8 +91,9 @@ const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase, handle
     if (!file) return;
 
     const reader = new FileReader();
+
     reader.onloadend = () => {
-      setFormData((prev) => ({
+      setFormData(prev => ({
         ...prev,
         image: reader.result
       }));
@@ -186,33 +187,73 @@ const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase, handle
               <div className="form-group">
                 <label>Used For</label>
                 <div className="checkbox-grid">
-                  {adminData.categories.map((cat) => (
-                    <label key={cat.id} className="checkbox-item">
-                      <input
-                        type="checkbox"
-                        checked={formData.usedInCategories.includes(cat.id)}
-                        onChange={(e) => {
-                          const updated = e.target.checked
-                            ? [...formData.usedInCategories, cat.id]
-                            : formData.usedInCategories.filter(
-                              (c) => c !== cat.id
-                            );
+                  {adminData.categories.flatMap(cat => {
 
-                          setFormData({
-                            ...formData,
-                            usedInCategories: updated
-                          });
-                        }}
-                      />
-                      {cat.name}
-                    </label>
-                  ))}
+                    if ((cat.subCategories || []).length > 0) {
+
+                      return cat.subCategories.map(sub => (
+
+                        <label key={sub.id} className="checkbox-item">
+
+                          <input
+                            type="checkbox"
+                            checked={formData.usedInCategories.includes(sub.id)}
+                            onChange={(e) => {
+
+                              const updated = e.target.checked
+                                ? [...formData.usedInCategories, sub.id]
+                                : formData.usedInCategories.filter(id => id !== sub.id);
+
+                              setFormData({
+                                ...formData,
+                                usedInCategories: updated
+                              });
+
+                            }}
+                          />
+
+                          {sub.name}
+
+                        </label>
+
+                      ));
+
+                    }
+
+                    return (
+
+                      <label key={cat.id} className="checkbox-item">
+
+                        <input
+                          type="checkbox"
+                          checked={formData.usedInCategories.includes(cat.id)}
+                          onChange={(e) => {
+
+                            const updated = e.target.checked
+                              ? [...formData.usedInCategories, cat.id]
+                              : formData.usedInCategories.filter(id => id !== cat.id);
+
+                            setFormData({
+                              ...formData,
+                              usedInCategories: updated
+                            });
+
+                          }}
+                        />
+
+                        {cat.name}
+
+                      </label>
+
+                    );
+
+                  })}
                 </div>
               </div>
 
               <div className="form-group">
                 <label>Nutrition per 100g</label>
-                <div className="nutrition-grid">
+                <div className="nutrition-grid border">
                   {["kcal", "protein", "fat", "fibre"].map((key) => (
                     <div key={key}>
                       <label>{key.toUpperCase()}</label>
@@ -411,7 +452,7 @@ const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase, handle
                   <td className="clickable"
                     onClick={() => navigate(`/ingredients/${ingredient.id}`)}>
                     <div className="ingredient-image">
-                      <img src="" alt="" />
+                      <img src={ingredient.image} alt={ingredient.name} />
                     </div>
                   </td>
 

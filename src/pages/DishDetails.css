@@ -30,24 +30,27 @@
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
 }
 
-.dish-header {
+.dish-details-header {
   display: flex;
   align-items: center;
   gap: 16px;
   margin-bottom: 16px;
 }
 
+.dish-details-header h2 {
+  margin: 0;
+}
+
 .dish-details-image {
   position: relative;
   width: 50%;
   aspect-ratio: 1 / 1;
-  background-color: #f0f0f0;
 }
 
 .dish-details-image img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 12px;
 }
 
@@ -161,4 +164,9 @@ textarea {
 .action button:hover,
 .actions button:hover {
   scale: 1.05;
+}
+
+td input {
+  width: 100%;
+  box-sizing: border-box;
 }

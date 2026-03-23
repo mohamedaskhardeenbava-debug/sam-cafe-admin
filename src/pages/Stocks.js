@@ -6,6 +6,11 @@ import editIcon from "../icon/edit-icon.png";
 import deleteIcon from "../icon/delete-icon.png";
 import * as XLSX from "xlsx";
 import { EmptyRow } from "../App";
+import dayjs from "dayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { formatDisplayDate } from "../App"
 
 const toTwoDecimals = (value) =>
   Math.round((Number(value) + Number.EPSILON) * 100) / 100;
@@ -23,7 +28,13 @@ const applyAutoColumnWidth = (sheet, rows) => {
 
 const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
   const navigate = useNavigate();
+  const today = new Date().toISOString().split("T")[0];
 
+  const [fromDate, setFromDate] = useState(today);
+  const [toDate, setToDate] = useState(today);
+
+  const [openFrom, setOpenFrom] = useState(false);
+  const [openTo, setOpenTo] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedIngredient, setSelectedIngredient] = useState(null);
   const [addStock, setAddStock] = useState("");
@@ -37,8 +48,10 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
   const dishesContainingIngredient = useMemo(() => {
     if (!selectedIngredient) return [];
 
-    return adminData.categories.flatMap(category =>
-      (category.dishes || [])
+    return adminData.categories.flatMap(category => {
+
+      // 1️⃣ Dishes directly inside category
+      const directDishes = (category.dishes || [])
         .filter(dish =>
           (dish.ingredients || []).some(
             ing =>
@@ -49,9 +62,33 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         .map(dish => ({
           id: dish.id,
           name: dish.name,
+          parentCategoryId: category.id,
           categoryId: category.id
-        }))
-    );
+        }));
+
+
+      // 2️⃣ Dishes inside subCategories
+      const subCategoryDishes = (category.subCategories || []).flatMap(sub =>
+        (sub.dishes || [])
+          .filter(dish =>
+            (dish.ingredients || []).some(
+              ing =>
+                ing.name === selectedIngredient.name ||
+                ing.id === selectedIngredient.id
+            )
+          )
+          .map(dish => ({
+            id: dish.id,
+            name: dish.name,
+            parentCategoryId: category.id,
+            categoryId: sub.id
+          }))
+      );
+
+      return [...directDishes, ...subCategoryDishes];
+
+    });
+
   }, [selectedIngredient, adminData.categories]);
 
   const calculateStockPercent = (ing) => {
@@ -139,40 +176,28 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       return;
     }
 
-    const updatedStock = toTwoDecimals(
-      Number(selectedIngredient.stockRemaining || 0) + addValue
-    );
-
-    const roundedPrice = toTwoDecimals(newPrice);
+    const updatedIngredient = {
+      ...selectedIngredient,
+      stockRemaining:
+        Number(selectedIngredient.stockRemaining || 0) + addValue,
+      pricePer100g: newPrice,
+      stockMax: max,
+      expiryDate: expiryDate || null,
+      lastUpdated: date,
+      isDisabledGlobally: disableGlobally
+    };
 
     try {
-      const res = await api.get("/menu");
+      const res = await api.put(
+        `/ingredients/${selectedIngredient.id}`,
+        updatedIngredient
+      );
 
-      const updatedMenu = {
-        ...res.data,
-        ingredients: res.data.ingredients.map((ing) =>
-          ing.id === selectedIngredient.id
-            ? {
-              ...ing,
-              stockRemaining: updatedStock,
-              pricePer100g: roundedPrice,
-              stockMax: max,
-              expiryDate: expiryDate || null,
-              lastUpdated: date,
-              isDisabledGlobally: disableGlobally,
-              disabledForDishes: [
-                ...(selectedIngredient.disabledForDishes || [])
-              ]
-            }
-            : ing
-        )
-      };
-
-      await api.put("/menu", updatedMenu);
-
-      setAdminData((prev) => ({
+      setAdminData(prev => ({
         ...prev,
-        ingredients: updatedMenu.ingredients
+        ingredients: prev.ingredients.map(i =>
+          i.id === selectedIngredient.id ? res.data : i
+        )
       }));
 
       closeModal();
@@ -367,14 +392,14 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                   >
                     {calculateStockPercent(ing)}%
                   </td>
-                  <td>{ing.lastUpdated}</td>
+                  <td>{formatDisplayDate(ing.lastUpdated)}</td>
                   <td
                     style={{
                       color: isExpiringSoon(ing.expiryDate) ? "red" : "green",
                       fontWeight: isExpiringSoon(ing.expiryDate) ? 600 : 500
                     }}
                   >
-                    {ing.expiryDate || "-"}
+                    {formatDisplayDate(ing.expiryDate) || "-"}
                   </td>
                   <td>
                     {(() => {
@@ -475,11 +500,28 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
               <div className="stocks-form-group">
                 <label>Expiry Date</label>
-                <input
-                  type="date"
-                  value={expiryDate}
-                  onChange={(e) => setExpiryDate(e.target.value)}
-                />
+
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    value={expiryDate ? dayjs(expiryDate) : null}
+                    format="DD/MM/YYYY"
+                    onChange={(newValue) => {
+                      if (!newValue) {
+                        setExpiryDate("");
+                        return;
+                      }
+
+                      setExpiryDate(newValue.format("YYYY-MM-DD"));
+                    }}
+                    slotProps={{
+                      textField: {
+                        size: "small",
+                        fullWidth: true
+                      }
+                    }}
+                  />
+                </LocalizationProvider>
+
               </div>
 
               <div className="disable-section border">

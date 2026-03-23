@@ -5,6 +5,7 @@ import deleteIcon from "../icon/delete-icon.png"
 import editIcon from "../icon/edit-icon.png"
 import "./DishDetails.css";
 import { allowTextInput } from "../App";
+import { resolveCategoryAndSubCategory } from "../App"
 
 const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName, handleBack }) => {
     const { categoryId, dishId } = useParams();
@@ -14,11 +15,46 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
     const orderItem = location.state?.orderItem || null;
     const fromOrder = location.state?.fromOrder === true;
 
-    const category = adminData.categories.find(c => c.id === categoryId);
-    const dish = category?.dishes.find(d => d.id === dishId);
+    let category = adminData.categories.find(c => c.id === categoryId);
+    let subCategory = null;
+
+    if (!category) {
+
+        for (const cat of adminData.categories) {
+
+            const found = (cat.subCategories || []).find(
+                sub => sub.id === categoryId
+            );
+
+            if (found) {
+                category = cat;
+                subCategory = found;
+                break;
+            }
+
+        }
+
+    }
+
+    let dish = category?.dishes?.find(d => d.id === dishId);
+
+    if (!dish && category?.subCategories) {
+        for (const sub of category.subCategories) {
+            const found = sub.dishes?.find(d => d.id === dishId);
+            if (found) {
+                dish = found;
+                break;
+            }
+        }
+    }
 
     const [localDish, setLocalDish] = useState(null);
     const [editSection, setEditSection] = useState(null);
+
+
+    console.log(category)
+    console.log(dish)
+    console.log(localDish)
 
     // TEMP buffer ONLY for ingredients editing
     const [editingIngredients, setEditingIngredients] = useState(null);
@@ -36,88 +72,99 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
         }
     }, [dish]);
 
-    // HANDLE MAKE YOUR OWN / CUSTOM DISH
-    if (dishId === "__custom__" && orderItem) {
-        return (
-            <div className="dish-details-page">
-                <div className="dish-container">
-                    <div className="dish-header">
-                        <button
-                            className="back-btn"
-                            onClick={() => navigate(-1)}
-                        />
-                        <h2>{orderItem.dishName}</h2>
-                    </div>
-
-                    <p><strong>Category:</strong> {orderItem.categoryId}</p>
-                    <p><strong>Size:</strong> {orderItem.selectedSize}</p>
-                    <p><strong>Price:</strong> ₹{orderItem.totalPrice}</p>
-
-                    <table className="data-table">
-                        <thead>
-                            <tr>
-                                <th>Ingredient</th>
-                                <th>Qty (g)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {orderItem.ingredients.map((ing, i) => (
-                                <tr key={i}>
-                                    <td>{ing.name}</td>
-                                    <td>{ing.quantity}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        );
-    }
-
     if (!localDish) return <div className="page">Loading dish...</div>;
 
     /* ---------------- SAVE TO JSON ---------------- */
     const persistDish = async (updatedDish) => {
+
         const newDishId = generateIdFromName(updatedDish.name);
 
-        const duplicate = category.dishes.some(
-            d =>
-                d.id !== dishId &&
-                d.name.trim().toLowerCase() ===
-                updatedDish.name.trim().toLowerCase()
-        );
+        let duplicate;
+
+        if (subCategory) {
+
+            duplicate = (subCategory.dishes || []).some(
+                d =>
+                    d.id !== dishId &&
+                    d.name.trim().toLowerCase() ===
+                    updatedDish.name.trim().toLowerCase()
+            );
+
+        } else {
+
+            duplicate = (category.dishes || []).some(
+                d =>
+                    d.id !== dishId &&
+                    d.name.trim().toLowerCase() ===
+                    updatedDish.name.trim().toLowerCase()
+            );
+
+        }
 
         if (duplicate) {
             alert("Another dish with this name already exists in this category");
             return;
         }
 
-        const res = await api.get("/menu");
+        let updatedCategory;
 
-        const updatedMenu = {
-            ...res.data,
-            categories: res.data.categories.map(cat =>
-                cat.id === categoryId
-                    ? {
-                        ...cat,
-                        dishes: cat.dishes.map(d =>
+        if (subCategory) {
+
+            updatedCategory = {
+                ...category,
+                subCategories: (category.subCategories || []).map(sub => {
+
+                    if (sub.id !== subCategory.id) return sub;
+
+                    return {
+                        ...sub,
+                        dishes: (sub.dishes || []).map(d =>
                             d.id === dishId
-                                ? { ...updatedDish, id: newDishId }
+                                ? { ...d, ...updatedDish, id: newDishId }
                                 : d
                         )
-                    }
-                    : cat
-            )
-        };
+                    };
 
-        await api.put("/menu", updatedMenu);
+                })
+            };
 
-        setAdminData({ ...updatedMenu });
+        } else {
 
-        setEditSection(null);
-        setEditingIngredients(null);
-        setLocalDish(JSON.parse(JSON.stringify({ ...updatedDish, id: newDishId })));
-        navigate(`/dishes/${categoryId}/${newDishId}`, { replace: true });
+            updatedCategory = {
+                ...category,
+                dishes: (category.dishes || []).map(d =>
+                    d.id === dishId
+                        ? { ...d, ...updatedDish, id: newDishId }
+                        : d
+                )
+            };
+
+        }
+
+        try {
+
+            await api.put(`/categories/${category.id}`, updatedCategory);
+
+            setAdminData(prev => ({
+                ...prev,
+                categories: prev.categories.map(cat =>
+                    cat.id === category.id ? updatedCategory : cat
+                )
+            }));
+
+            setEditSection(null);
+            setEditingIngredients(null);
+
+            setLocalDish(JSON.parse(JSON.stringify({
+                ...updatedDish,
+                id: newDishId
+            })));
+
+            navigate(`/dishes/${categoryId}/${newDishId}`, { replace: true });
+
+        } catch (err) {
+            console.error("Failed to update dish", err);
+        }
     };
 
     /* ---------------- INGREDIENT CRUD ---------------- */
@@ -132,7 +179,7 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
     const addIngredient = () => {
         setEditingIngredients(prev => [
             ...prev,
-            { name: "", quantity: "", calories: 0 }
+            { name: "", quantity: 0 }
         ]);
     };
 
@@ -171,11 +218,18 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
 
         const reader = new FileReader();
 
-        reader.onloadend = () => {
-            setLocalDish((prev) => ({
-                ...prev,
+        reader.onloadend = async () => {
+
+            const updatedDish = {
+                ...localDish,
                 image: reader.result
-            }));
+            };
+
+            setLocalDish(updatedDish);
+
+            // SAVE TO JSON
+            await persistDish(updatedDish);
+
         };
 
         reader.readAsDataURL(file);
@@ -184,17 +238,17 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
     const ingredientsToDisplay =
         fromOrder && orderItem?.ingredients?.length > 0
             ? orderItem.ingredients
-            : localDish.ingredients;
+            : (localDish?.ingredients || []);
 
     const displayDishName =
         fromOrder && orderItem?.isCustomized
             ? orderItem.dishName
-            : localDish.name;
+            : localDish?.name;
 
     const displayPrice =
         fromOrder && orderItem?.isCustomized
             ? orderItem.totalPrice
-            : localDish.basePrice;
+            : localDish?.basePrice;
 
     if (dishId === "__custom__" && orderItem) {
         return (
@@ -225,11 +279,15 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
         );
     }
 
+    const sortedIngredients = [...adminData.ingredients].sort((a, b) =>
+        a.name.localeCompare(b.name)
+    );
+
     return (
         <div className="dish-details-page">
             <div className="dish-container">
 
-                <div className="dish-header">
+                <div className="dish-details-header">
                     <button
                         type="button"
                         className="back-btn"
@@ -251,7 +309,12 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
                     {!fromOrder && (
                         <label className="image-upload-btn">
                             Change Image
-                            <input type="file" accept="image/*" hidden onChange={handleImageUpload} />
+                            <input
+                                type="file"
+                                accept="image/*"
+                                hidden
+                                onChange={handleImageUpload}
+                            />
                         </label>
                     )}
                 </div>
@@ -436,31 +499,177 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
                 )}
 
                 {/* INGREDIENTS TABLE */}
+                {/* INGREDIENTS */}
                 <div className="section">
+
                     <div className="section-title">
                         <span>Ingredients</span>
+
+                        {!fromOrder && editSection !== "ingredients" && (
+                            <img
+                                className="edit-icon"
+                                src={editIcon}
+                                alt=""
+                                onClick={startIngredientEdit}
+                            />
+                        )}
                     </div>
 
-                    {ingredientsToDisplay.length === 0 ? (
-                        <p>No ingredients available</p>
-                    ) : (
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Qty (g)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {ingredientsToDisplay.map((ing, index) => (
-                                    <tr key={index}>
-                                        <td>{ing.name}</td>
-                                        <td>{ing.quantity}</td>
+                    {editSection === "ingredients" ? (
+
+                        <>
+                            <table className="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Qty (g)</th>
+                                        <th>Action</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+
+                                <tbody>
+
+                                    {editingIngredients.map((ing, index) => {
+
+                                        const isNew = !ing.name;
+
+                                        return (
+                                            <tr key={index}>
+
+                                                <td>
+
+                                                    {isNew ? (
+
+                                                        <select
+                                                            value={ing.name}
+                                                            onChange={(e) => {
+
+                                                                const selected = e.target.value;
+
+                                                                const updated = [...editingIngredients];
+                                                                updated[index].name = selected;
+
+                                                                setEditingIngredients(updated);
+
+                                                                // auto focus qty
+                                                                setTimeout(() => {
+                                                                    const input = document.getElementById(`qty-${index}`);
+                                                                    if (input) input.focus();
+                                                                }, 0);
+                                                            }}
+                                                        >
+
+                                                            <option value="">Select Ingredient</option>
+
+                                                            {sortedIngredients
+                                                                .filter(i => !editingIngredients.some(e => e.name === i.name))
+                                                                .map(i => (
+
+                                                                    <option key={i.id} value={i.name}>
+                                                                        {i.name}
+                                                                    </option>
+
+                                                                ))}
+
+                                                        </select>
+
+                                                    ) : (
+
+                                                        <span>{ing.name}</span>
+
+                                                    )}
+
+                                                </td>
+
+                                                <td>
+
+                                                    <input
+                                                        id={`qty-${index}`}
+                                                        type="number"
+                                                        min="0"
+                                                        value={ing.quantity}
+                                                        onChange={(e) => {
+
+                                                            const updated = [...editingIngredients];
+                                                            updated[index].quantity = Number(e.target.value);
+
+                                                            setEditingIngredients(updated);
+
+                                                        }}
+                                                    />
+
+                                                </td>
+
+                                                <td>
+
+                                                    <div
+                                                        className="ingredient-delete-btn"
+                                                        onClick={() => deleteIngredient(index)}
+                                                    >
+                                                        <img src={deleteIcon} alt="" />
+                                                    </div>
+
+                                                </td>
+
+                                            </tr>
+                                        );
+
+                                    })}
+
+                                </tbody>
+                            </table>
+
+                            <button
+                                className="add-ingredient-button"
+                                onClick={addIngredient}
+                            >
+                                + Add Ingredient
+                            </button>
+
+                            <div className="actions">
+
+                                <button onClick={saveIngredientEdit}>
+                                    Save
+                                </button>
+
+                                <button onClick={cancelIngredientEdit}>
+                                    Cancel
+                                </button>
+
+                            </div>
+
+                        </>
+
+                    ) : (
+
+                        ingredientsToDisplay.length === 0 ? (
+                            <p>No ingredients available</p>
+                        ) : (
+                            <table className="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Qty (g)</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+
+                                    {ingredientsToDisplay.map((ing, index) => (
+
+                                        <tr key={index}>
+                                            <td>{ing.name}</td>
+                                            <td>{ing.quantity}</td>
+                                        </tr>
+
+                                    ))}
+
+                                </tbody>
+                            </table>
+                        )
+
                     )}
+
                 </div>
 
                 {disabledIngredientsForThisDish.length > 0 && (

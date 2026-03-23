@@ -185,8 +185,8 @@ th.sorted .sort-arrow {
 .stocks-table-wrapper::-webkit-scrollbar,
 .ingredient-table-wrapper::-webkit-scrollbar,
 .dish-table-wrapper::-webkit-scrollbar,
-.category-table-wrapper::-webkit-scrollbar, 
-.category-buttons::-webkit-scrollbar{
+.category-table-wrapper::-webkit-scrollbar,
+.category-buttons::-webkit-scrollbar {
   width: 8px;
 }
 
@@ -205,7 +205,7 @@ th.sorted .sort-arrow {
 .ingredient-table-wrapper::-webkit-scrollbar-thumb,
 .dish-table-wrapper::-webkit-scrollbar-thumb,
 .category-table-wrapper::-webkit-scrollbar-thumb,
-.category-buttons::-webkit-scrollbar-thumb{
+.category-buttons::-webkit-scrollbar-thumb {
   background-color: #9ca3af;
   border-radius: 0;
 }
@@ -241,10 +241,82 @@ th.sorted .sort-arrow {
 
 textarea {
   resize: none;
+  font-family: inherit;
+  font-size: 14px !important;
 }
 
 button {
   cursor: pointer !important;
+}
+
+img {
+  object-fit: contain !important;
+}
+
+.checkbox {
+  width: 13px !important;
+  display: inline !important;
+}
+
+.border {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.horizontal-form-group {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-group {
+  margin-bottom: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.horizontal-form-group label,
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.horizontal-form-group input,
+.horizontal-form-group select,
+.form-group input,
+.form-group select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+}
+
+.card p,
+.category-modal p {
+  white-space: pre-line;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.checkbox-item input {
+  margin-right: 5px !important;
+  width: 14px !important;
+  cursor: pointer;
 }
 
 @media (max-width: 768px) {

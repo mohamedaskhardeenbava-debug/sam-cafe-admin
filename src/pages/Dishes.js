@@ -5,6 +5,7 @@ import api from "../api";
 import deleteIcon from "../icon/delete-icon.png";
 import { allowTextInput } from "../App";
 import { EmptyRow } from "../App";
+import { resolveCategoryAndSubCategory } from "../App"
 
 const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }) => {
   const [dishImagePreview, setDishImagePreview] = useState("");
@@ -27,7 +28,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     ingredients: []
   });
 
-  const availableIngredients = adminData.ingredients
+  const availableIngredients = (adminData.ingredients || [])
     .filter(
       ing =>
         !newDish.ingredients.some(
@@ -69,36 +70,55 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (adminData.categories.length === 0) return;
+    if (!adminData.categories?.length) return;
 
     if (categoryId) {
-      const exists = adminData.categories.some(
-        (cat) => cat.id === categoryId
-      );
-
-      if (exists) {
-        setSelectedCategoryIds(categoryId);
-        return;
-      }
+      setSelectedCategoryIds([categoryId]);
+    } else {
+      setSelectedCategoryIds([]);
     }
-
-    setSelectedCategoryIds(adminData.categories[0].id);
   }, [adminData.categories, categoryId]);
 
-  const selectedCategory = adminData.categories.find(
-    (cat) => cat.id === selectedCategoryIds
-  );
-
   const sortedDishes = useMemo(() => {
-    const selected = adminData.categories.filter(cat =>
-      selectedCategoryIds.includes(cat.id)
-    );
 
-    const dishes = selected.flatMap(cat => cat.dishes || []);
+    if (!selectedCategoryIds.length) return [];
+
+    const dishes = adminData.categories.flatMap(cat => {
+
+      let result = [];
+
+      // ✅ category dishes
+      if (selectedCategoryIds.includes(cat.id)) {
+        result.push(
+          ...(cat.dishes || []).map(d => ({
+            ...d,
+            categoryId: cat.id
+          }))
+        );
+      }
+
+      // ✅ subcategory dishes
+      (cat.subCategories || []).forEach(sub => {
+
+        if (selectedCategoryIds.includes(sub.id)) {
+          result.push(
+            ...(sub.dishes || []).map(d => ({
+              ...d,
+              categoryId: sub.id
+            }))
+          );
+        }
+
+      });
+
+      return result;
+
+    });
 
     if (!sortConfig.key) return dishes;
 
     return [...dishes].sort((a, b) => {
+
       if (sortConfig.key === "name") {
         return sortConfig.direction === "asc"
           ? a.name.localeCompare(b.name)
@@ -112,16 +132,51 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       }
 
       return 0;
+
     });
+
   }, [adminData.categories, selectedCategoryIds, sortConfig]);
 
   const handleSaveDish = async () => {
+
     if (!newDish.name || !newDish.basePrice) {
       alert("Dish name and base price are required");
       return;
     }
 
-    const duplicateDish = selectedCategory.dishes.some(
+    if (selectedCategoryIds.length !== 1) {
+      alert("Please select exactly one category to add a dish");
+      return;
+    }
+
+    const selectedId = selectedCategoryIds[0];
+
+    let category = adminData.categories.find(c => c.id === selectedId);
+    let subCategory = null;
+
+    if (!category) {
+
+      for (const cat of adminData.categories) {
+
+        const found = (cat.subCategories || []).find(
+          sub => sub.id === selectedId
+        );
+
+        if (found) {
+          category = cat;
+          subCategory = found;
+          break;
+        }
+
+      }
+
+    }
+
+    if (!category) return;
+
+    const duplicateDish = (
+      subCategory ? (subCategory.dishes || []) : (category.dishes || [])
+    ).some(
       d =>
         (!editingDish || d.id !== editingDish.id) &&
         d.name.trim().toLowerCase() ===
@@ -129,116 +184,164 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     );
 
     if (duplicateDish) {
-      alert("Dish with this name already exists in this category");
+      alert("Dish with this name already exists");
       return;
     }
 
     const dishPayload = {
       id: editingDish
         ? editingDish.id
-        : `${selectedCategoryIds}_${Date.now()}`,
+        : `${selectedId}_${Date.now()}`,
+
+      categoryId: selectedId,
+
       name: newDish.name,
       image: newDish.image,
+
       basePrice: Number(newDish.basePrice),
+
       description: newDish.description,
+
       benefits: {
-        calories: Number(newDish.benefits.calories),
-        protein: Number(newDish.benefits.protein),
-        fibre: Number(newDish.benefits.fibre),
-        fat: Number(newDish.benefits.fat)
+        calories: Number(newDish.benefits.calories || 0),
+        protein: Number(newDish.benefits.protein || 0),
+        fibre: Number(newDish.benefits.fibre || 0),
+        fat: Number(newDish.benefits.fat || 0)
       },
+
       ingredients: newDish.ingredients
     };
 
     try {
-      const res = await api.get("/menu");
 
-      const updatedMenu = {
-        ...res.data,
-        categories: res.data.categories.map((cat) =>
-          cat.id === selectedCategoryIds
-            ? {
-              ...cat,
-              dishes: editingDish
-                ? cat.dishes.map((d) =>
-                  d.id === editingDish.id ? dishPayload : d
-                )
-                : [...cat.dishes, dishPayload]
+      let updatedCategory;
+
+      if (subCategory) {
+
+        updatedCategory = {
+          ...category,
+          subCategories: (category.subCategories || []).map(sub => {
+
+            if (sub.id === subCategory.id) {
+
+              return {
+                ...sub,
+                dishes: editingDish
+                  ? (sub.dishes || []).map(d =>
+                    d.id === editingDish.id ? dishPayload : d
+                  )
+                  : [...(sub.dishes || []), dishPayload]
+              };
+
             }
-            : cat
-        )
-      };
 
-      await api.put("/menu", updatedMenu);
+            return sub;
 
-      setAdminData((prev) => ({
+          })
+        };
+
+      } else {
+
+        updatedCategory = {
+          ...category,
+          dishes: editingDish
+            ? (category.dishes || []).map(d =>
+              d.id === editingDish.id ? dishPayload : d
+            )
+            : [...(category.dishes || []), dishPayload]
+        };
+
+      }
+
+      await api.put(`/categories/${category.id}`, updatedCategory);
+
+      setAdminData(prev => ({
         ...prev,
-        categories: updatedMenu.categories
+        categories: prev.categories.map(cat =>
+          cat.id === category.id ? updatedCategory : cat
+        )
       }));
 
       resetDishForm();
+
     } catch (err) {
       console.error("Failed to save dish", err);
     }
-  };
 
-
-  const handleSave = (dishId) => {
-    setAdminData((prev) => ({
-      ...prev,
-      categories: prev.categories.map((cat) =>
-        cat.id === selectedCategoryIds
-          ? {
-            ...cat,
-            dishes: cat.dishes.map((dish) =>
-              dish.id === dishId
-                ? { ...dish, basePrice: Number(editedPrice) }
-                : dish
-            )
-          }
-          : cat
-      )
-    }));
-
-    setEditingDishId(null);
-    setEditedPrice("");
-  };
-
-  const handleCancel = () => {
-    setEditingDishId(null);
-    setEditedPrice("");
   };
 
   const handleDelete = async (dishId) => {
+
+    if (selectedCategoryIds.length !== 1) {
+      alert("Please select only one category to delete a dish");
+      return;
+    }
+
     const confirmed = window.confirm(
       "Are you sure you want to delete this dish?"
     );
+
     if (!confirmed) return;
 
-    try {
-      const res = await api.get("/menu");
+    const selectedId = selectedCategoryIds[0];
 
-      const updatedMenu = {
-        ...res.data,
-        categories: res.data.categories.map((cat) =>
-          cat.id === selectedCategoryIds
+    let category = adminData.categories.find(c => c.id === selectedId);
+    let subCategory = null;
+
+    if (!category) {
+
+      for (const cat of adminData.categories) {
+
+        const found = (cat.subCategories || []).find(
+          sub => sub.id === selectedId
+        );
+
+        if (found) {
+          category = cat;
+          subCategory = found;
+          break;
+        }
+
+      }
+
+    }
+
+    if (!category) return;
+
+    let updatedCategory;
+
+    if (subCategory) {
+
+      updatedCategory = {
+        ...category,
+        subCategories: (category.subCategories || []).map(sub =>
+          sub.id === subCategory.id
             ? {
-              ...cat,
-              dishes: cat.dishes.filter((dish) => dish.id !== dishId)
+              ...sub,
+              dishes: (sub.dishes || []).filter(d => d.id !== dishId)
             }
-            : cat
+            : sub
         )
       };
 
-      await api.put("/menu", updatedMenu);
+    } else {
 
-      setAdminData((prev) => ({
-        ...prev,
-        categories: updatedMenu.categories
-      }));
-    } catch (err) {
-      console.error("Failed to delete dish", err);
+      updatedCategory = {
+        ...category,
+        dishes: (category.dishes || []).filter(d => d.id !== dishId)
+      };
+
     }
+
+    await api.put(`/categories/${category.id}`, updatedCategory);
+
+    setAdminData(prev => ({
+      ...prev,
+      categories: prev.categories.map(cat =>
+        cat.id === category.id ? updatedCategory : cat
+      )
+    }));
+
   };
 
   const handleDishImageUpload = (e) => {
@@ -246,8 +349,9 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     if (!file) return;
 
     const reader = new FileReader();
+
     reader.onloadend = () => {
-      setNewDish((prev) => ({
+      setNewDish(prev => ({
         ...prev,
         image: reader.result
       }));
@@ -306,22 +410,53 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
         <h2 className="dish-title">Dishes</h2>
 
         <div className="category-buttons">
-          {adminData.categories.map(cat => (
-            <button
-              key={cat.id}
-              className={`category-btn ${selectedCategoryIds.includes(cat.id) ? "active" : ""
-                }`}
-              onClick={() => {
-                setSelectedCategoryIds(prev =>
-                  prev.includes(cat.id)
-                    ? prev.filter(id => id !== cat.id)
-                    : [...prev, cat.id]
-                );
-              }}
-            >
-              {cat.name}
-            </button>
-          ))}
+
+          {adminData.categories.flatMap(cat => {
+
+            if ((cat.subCategories || []).length > 0) {
+
+              return cat.subCategories.map(sub => (
+
+                <button
+                  key={sub.id}
+                  className={`category-btn ${selectedCategoryIds.includes(sub.id) ? "active" : ""
+                    }`}
+                  onClick={() => {
+                    setSelectedCategoryIds(prev =>
+                      prev.includes(sub.id)
+                        ? prev.filter(id => id !== sub.id)
+                        : [...prev, sub.id]
+                    );
+                  }}
+                >
+                  {sub.name}
+                </button>
+
+              ));
+
+            }
+
+            return (
+
+              <button
+                key={cat.id}
+                className={`category-btn ${selectedCategoryIds.includes(cat.id) ? "active" : ""
+                  }`}
+                onClick={() => {
+                  setSelectedCategoryIds(prev =>
+                    prev.includes(cat.id)
+                      ? prev.filter(id => id !== cat.id)
+                      : [...prev, cat.id]
+                  );
+                }}
+              >
+                {cat.name}
+              </button>
+
+            );
+
+          })}
+
         </div>
 
         <button
@@ -362,11 +497,11 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 <tr key={dish.id}>
                   <td
                     className="clickable"
-                    onClick={() => navigate(`/dishes/${selectedCategoryIds}/${dish.id}`)}
+                    onClick={() => navigate(`/dishes/${dish.categoryId}/${dish.id}`)}
                   >
                     <div
                       className="dish-image"
-                      onClick={() => navigate(`/dishes/${selectedCategoryIds}/${dish.id}`)}
+                      onClick={() => navigate(`/dishes/${dish.categoryId}/${dish.id}`)}
                     >
                       <img src={dish.image || ""} alt="" />
                     </div>
@@ -374,7 +509,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
                   <td
                     className="dish-name clickable"
-                    onClick={() => navigate(`/dishes/${selectedCategoryIds}/${dish.id}`)}
+                    onClick={() => navigate(`/dishes/${dish.categoryId}/${dish.id}`)}
                   >
                     {dish.name}
                   </td>
@@ -413,7 +548,28 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
             }}>
 
             <div className="category-modal-header">
-              <h3>Add New Dish for {selectedCategory?.name}</h3>
+              <h3>
+                Add New Dish
+                {selectedCategoryIds.length === 1 && (
+                  <>
+                    {" "}for{" "}
+                    {
+                      (() => {
+                        const id = selectedCategoryIds[0];
+
+                        for (const cat of adminData.categories) {
+                          if (cat.id === id) return cat.name;
+
+                          const sub = (cat.subCategories || []).find(s => s.id === id);
+                          if (sub) return sub.name;
+                        }
+
+                        return "";
+                      })()
+                    }
+                  </>
+                )}
+              </h3>
               <button
                 type="button"
                 className="dish-close-btn"
@@ -460,13 +616,6 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                   <img
                     src={dishImagePreview}
                     alt="Preview"
-                    style={{
-                      width: 140,
-                      height: 140,
-                      objectFit: "cover",
-                      borderRadius: 10,
-                      marginTop: 12
-                    }}
                   />
                 )}
               </div>
@@ -495,7 +644,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               </div>
               <div className="form-group">
                 <label htmlFor="">Nutrition</label>
-                <div className="benefits-grid">
+                <div className="benefits-grid border">
                   {["calories", "protein", "fibre", "fat"].map(key => (
                     <div key={key}>
                       <label>{key.toUpperCase()}</label>

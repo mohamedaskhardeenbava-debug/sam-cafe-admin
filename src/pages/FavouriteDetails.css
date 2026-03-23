@@ -36,6 +36,10 @@
   margin-bottom: 16px;
 }
 
+.favourite-details-header h2 {
+  margin: 0;
+}
+
 .favourite-details-image {
   position: relative;
   width: 50%;
@@ -114,18 +118,6 @@
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 4px;
   margin-top: 8px;
-}
-
-.checkbox-item {
-  display: flex;
-  align-items: center;
-  justify-content: left;
-  gap: 8px;
-  font-size: 14px;
-}
-
-.checkbox-item input {
-  cursor: pointer;
 }
 
 .action {

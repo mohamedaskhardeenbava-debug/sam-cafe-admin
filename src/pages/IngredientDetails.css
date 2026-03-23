@@ -36,6 +36,10 @@
   margin-bottom: 16px;
 }
 
+.ingredient-details-header h2 {
+  margin: 0;
+}
+
 .ingredient-details-image {
   position: relative;
   width: 50%;
@@ -111,18 +115,6 @@
   margin-top: 8px;
 }
 
-.checkbox-item {
-  display: flex;
-  align-items: center;
-  justify-content: left;
-  gap: 8px;
-  font-size: 14px;
-}
-
-.checkbox-item input {
-  cursor: pointer;
-}
-
 .action {
   display: flex;
   gap: 10px;
@@ -152,7 +144,7 @@
   cursor: pointer;
 }
 
-.ingredient-detail-action{
+.ingredient-detail-action {
   margin-top: 10px;
   display: flex;
   gap: 10px;
@@ -207,11 +199,11 @@
 }
 
 .ingredient-detail-table th:nth-child(2),
-.ingredient-detail-table td:nth-child(2){
+.ingredient-detail-table td:nth-child(2) {
   width: 50px;
 }
 
-.ingredient-detail-table td:nth-child(2){
+.ingredient-detail-table td:nth-child(2) {
   text-align: center;
 }
 
@@ -263,6 +255,6 @@
 }
 
 .stock-visibility-table th:nth-child(1),
-.stock-visibility-table td:nth-child(1){
+.stock-visibility-table td:nth-child(1) {
   width: 120px;
 }

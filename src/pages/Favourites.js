@@ -69,7 +69,7 @@ const Favourites = ({ adminData, handleSort, sortConfig }) => {
                                         <div className="favourites-image">
                                             <img
                                                 src={dish.image}
-                                                alt=""
+                                                alt={dish.name}
                                             />
                                         </div>
                                     </td>

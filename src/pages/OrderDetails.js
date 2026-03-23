@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import "./OrderDetails.css";
+import { formatDisplayDate } from "../App"
 
 const OrderDetails = ({ orders, menu }) => {
   const { orderId } = useParams();
@@ -36,13 +37,25 @@ const OrderDetails = ({ orders, menu }) => {
     if (!menu?.categories) return null;
 
     for (const category of menu.categories) {
-      const dish = category.dishes.find(
+
+      const dish = (category.dishes || []).find(
         d => d.id === item.dishId
       );
 
       if (dish) {
         return `/dishes/${category.id}/${dish.id}`;
       }
+
+      for (const sub of category.subCategories || []) {
+        const subDish = (sub.dishes || []).find(
+          d => d.id === item.dishId
+        );
+
+        if (subDish) {
+          return `/dishes/${sub.id}/${subDish.id}`;
+        }
+      }
+
     }
 
     return null;
@@ -73,7 +86,7 @@ const OrderDetails = ({ orders, menu }) => {
           <table className="order-info-table">
             <tbody>
               <tr>
-                <td><strong>Date:</strong> {order.date}</td>
+                <td><strong>Date:</strong> {formatDisplayDate(order.date)}</td>
                 <td><strong>Order ID:</strong> {order.id ?? "-"}</td>
               </tr>
               <tr>

@@ -1,0 +1,276 @@
+/* ================= COMMON PAGE ================= */
+.staff-page {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ================= HEADER (REUSED) ================= */
+.staff-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.staff-header h2 {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.staff-add-btn {
+    height: 38px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: none;
+    background: #111;
+    color: #fff;
+    cursor: pointer;
+}
+
+.staff-add-btn:hover {
+    background: #000;
+}
+
+/* ================= CARD GRID ================= */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+/* ================= CARD ================= */
+.card {
+    background: #fff;
+    padding: 16px;
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+    transition: 0.2s;
+    cursor: pointer;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+}
+
+.card h3 {
+    margin: 0 0 6px;
+    font-size: 18px;
+}
+
+.card p {
+    font-size: 13px;
+    color: #555;
+    margin: 4px 0;
+}
+
+.card span {
+    font-size: 12px;
+    color: #888;
+}
+
+/* ================= MODAL ================= */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.modal {
+    width: 500px;
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* HEADER */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header button {
+    border: none;
+    background: #eee;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+}
+
+/* BODY */
+.modal-body {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.modal-body input,
+.modal-body textarea {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+}
+
+.modal-body textarea {
+    min-height: 80px;
+}
+
+/* ================= TABLE ALIGNMENT (MATCH STAFF TABLE) ================= */
+.staff-data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 5px;
+}
+
+.staff-data-table th {
+    background: #e9e9e9;
+    padding: 12px;
+    font-size: 13px;
+}
+
+.staff-data-table td {
+    background: #fff;
+    padding: 10px;
+}
+
+/* ===== BUTTONS ===== */
+.primary-btn {
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+
+.primary-btn:hover {
+    background: #000;
+}
+
+.secondary-btn {
+    background: #eee;
+    padding: 8px 14px;
+    border-radius: 6px;
+}
+
+/* ===== DROPDOWN ===== */
+select {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    background: #fff;
+}
+
+.form-group img {
+    width: 140px;
+    height: 140px;
+}
+
+.staff-salary-table-wrapper {
+    width: 100%;
+    max-height: calc(100vh - 175px);
+    overflow-y: auto;
+    padding: 0 10px;
+    background: #e9e9e9;
+    border-radius: 20px;
+    box-sizing: border-box;
+}
+
+.staff-salary-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 5px;
+    background: transparent;
+    table-layout: fixed;
+}
+
+/* HEADER */
+.staff-salary-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.staff-salary-table th {
+    padding: 16px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: #e9e9e9;
+    text-align: left;
+}
+
+/* ROW */
+.staff-salary-table tbody tr {
+    background: #ffffff !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+    transition: all 0.25s ease;
+}
+
+.staff-salary-table tbody tr:hover {
+    background-color: rgb(234, 234, 234);
+}
+
+/* CELLS */
+.staff-salary-table td {
+    padding: 10px;
+    font-size: 14px;
+    border: none;
+    background: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.staff-salary-table td:first-child {
+    border-top-left-radius: 16px;
+    border-bottom-left-radius: 16px;
+}
+
+.staff-salary-table td:last-child {
+    border-top-right-radius: 16px;
+    border-bottom-right-radius: 16px;
+}
+
+.staff-salary-table button {
+    padding: 9px 0;
+    width: 100%;
+    font-size: 12px;
+    background: #1976d2;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.staff-training-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+}
+
+.staff-training-table td,
+.staff-training-table th {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+}
+
+.staff-training-table td {
+    width: 50%;
+}
+
+.staff-training-table td:first-child {
+    font-weight: 600;
+}

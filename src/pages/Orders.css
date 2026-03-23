@@ -9,14 +9,17 @@
 .orders-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: start;
   gap: 10px;
+  margin-bottom: 20px;
+  height: 38px;
 }
 
 .orders-title {
   font-size: 24px;
   font-weight: 600;
   color: #111;
+  margin: 0;
 }
 
 .orders-status-dropdown {
@@ -106,7 +109,7 @@
 .orders-table {
   width: 100%;
   border-collapse: separate;
-  border-spacing: 0 5px;
+  border-spacing: 0 3px;
   /* row spacing */
   background: transparent;
   table-layout: fixed;
@@ -320,29 +323,23 @@
 /* EXPAND ROW ANIMATION */
 .order-sub-row td {
   background: transparent !important;
+  padding: 0;
 }
 
-/* Smooth accordion animation */
 .order-sub-content {
+  padding: 0 12px;
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  transform: translateY(-10px);
-  transform-origin: top;
-  padding: 0 10px;
+  transform: translateY(-6px);
   transition:
-    max-height 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.35s ease,
-    transform 0.35s ease;
-  will-change: max-height, opacity, transform;
+    max-height 0.35s cubic-bezier(0.16,1,0.3,1),
+    opacity 0.25s ease,
+    transform 0.25s ease;
 }
 
-
-
-/* When open */
 .order-sub-row.open .order-sub-content {
-  max-height: 1500px;
-  /* larger for safety */
+  max-height: 600px;
   opacity: 1;
   transform: translateY(0);
 }
@@ -359,6 +356,21 @@
   table-layout: fixed;
   border: 1px solid #e8e8e8;
   transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.order-items-table {
+  animation: fadeSlide 0.25s ease;
+}
+
+@keyframes fadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .order-sub-row.open .order-items-table {

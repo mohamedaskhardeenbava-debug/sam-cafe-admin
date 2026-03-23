@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api";
 import "./UserDetails.css";
+import { formatDisplayDate } from "../App"
 
 const UserDetails = ({ users }) => {
   const { userId } = useParams();
@@ -77,7 +78,7 @@ const UserDetails = ({ users }) => {
                 user.orders.map(order => (
                   <tr key={order.id}>
                     <td className="clickable" onClick={() => navigate(`/orders/${order.id}`)}>{order.id}</td>
-                    <td>{order.date}</td>
+                    <td>{formatDisplayDate(order.date)}</td>
                     <td>{order.time}</td>
                     <td>₹{order.totalAmount}</td>
                   </tr>

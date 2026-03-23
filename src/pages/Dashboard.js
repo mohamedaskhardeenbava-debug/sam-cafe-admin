@@ -385,11 +385,33 @@ const Dashboard = ({ adminData, orders = [] }) => {
     if (grandTotal === 0) return [];
 
     return Object.entries(map).map(
-      ([name, value]) => ({
-        name,
-        value: Number(((value / grandTotal) * 100).toFixed(1)),
-        amount: value
-      })
+      ([id, value]) => {
+
+        let label = id;
+
+        for (const cat of adminData.categories) {
+
+          if (cat.id === id) {
+            label = cat.name;
+            break;
+          }
+
+          const sub = (cat.subCategories || []).find(s => s.id === id);
+
+          if (sub) {
+            label = sub.name;
+            break;
+          }
+
+        }
+
+        return {
+          name: label,   // ✅ now correct name
+          value: Number(((value / grandTotal) * 100).toFixed(1)),
+          amount: value
+        };
+
+      }
     );
   }, [baseFilteredOrders]);
 
@@ -632,13 +654,6 @@ const Dashboard = ({ adminData, orders = [] }) => {
             <h3>{orderModeStats.takeaway}</h3>
           </div>
         </div>
-
-        <button
-          className="dashboard-export-btn"
-          onClick={handleExport}
-        >
-          Export
-        </button>
       </div>
 
       {/* DATE FILTER */}
@@ -650,10 +665,11 @@ const Dashboard = ({ adminData, orders = [] }) => {
             {/* FROM DATE WRAPPER */}
             <div
               style={{ display: "inline-block" }}
-                onClick={() => setOpenFrom(true)}
+              onClick={() => setOpenFrom(true)}
             >
               <DatePicker
                 open={openFrom}
+                onOpen={() => setOpenFrom(true)}
                 onClose={() => setOpenFrom(false)}
                 value={dayjs(fromDate)}
                 format="DD/MM/YYYY"
@@ -697,10 +713,11 @@ const Dashboard = ({ adminData, orders = [] }) => {
             {/* TO DATE WRAPPER */}
             <div
               style={{ display: "inline-block" }}
-                onClick={() => setOpenTo(true)}
+              onClick={() => setOpenTo(true)}
             >
               <DatePicker
                 open={openTo}
+                onOpen={() => setOpenTo(true)}
                 onClose={() => setOpenTo(false)}
                 value={dayjs(toDate)}
                 format="DD/MM/YYYY"
@@ -736,6 +753,13 @@ const Dashboard = ({ adminData, orders = [] }) => {
 
           </LocalizationProvider>
         </div>
+
+        <button
+          className="dashboard-export-btn"
+          onClick={handleExport}
+        >
+          Export
+        </button>
 
         <div className="dashboard-filter-kpis">
           <div className="dashboard-kpi-row">

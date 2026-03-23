@@ -5,12 +5,13 @@ import editIcon from "../icon/edit-icon.png";
 import "./IngredientDetails.css";
 import { allowTextInput } from "../App";
 import deleteIcon from "../icon/delete-icon.png";
+import { formatDisplayDate } from "../App"
 
 const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName }) => {
     const { ingredientId } = useParams();
     const navigate = useNavigate();
 
-    const ingredient = adminData.ingredients.find(
+    const ingredient = adminData.ingredients?.find(
         (ing) => ing.id === ingredientId
     );
 
@@ -40,27 +41,51 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
 
     /* ---------------- SAVE TO JSON ---------------- */
     const saveIngredient = async (updated) => {
-        const newIngredientId = generateIdFromName(updated.name);
 
-        const res = await api.get("/menu");
+        const oldId = ingredient.id;   // always use actual ingredient
+        const newId = generateIdFromName(updated.name);
 
-        const updatedMenu = {
-            ...res.data,
-            ingredients: res.data.ingredients.map((ing) =>
-                ing.id === ingredientId
-                    ? { ...updated, id: newIngredientId }
-                    : ing
-            )
+        const payload = {
+            ...updated,
+            id: newId
         };
 
-        await api.put("/menu", updatedMenu);
+        try {
 
-        setAdminData({ ...updatedMenu });
-        setEditSection(null);
-        setLocalIngredient(
-            JSON.parse(JSON.stringify({ ...updated, id: newIngredientId }))
-        );
-        navigate(`/ingredients/${newIngredientId}`, { replace: true });
+            if (oldId !== newId) {
+
+                // remove old
+                await api.delete(`/ingredients/${oldId}`);
+
+                // create new
+                await api.post(`/ingredients`, payload);
+
+            } else {
+
+                // update existing
+                await api.put(`/ingredients/${oldId}`, payload);
+
+            }
+
+            // update local state
+            setAdminData(prev => ({
+                ...prev,
+                ingredients: prev.ingredients
+                    .filter(i => i.id !== oldId)
+                    .concat(payload)
+            }));
+
+            setLocalIngredient(payload);
+            setEditSection(null);
+
+            // update route if id changed
+            if (oldId !== newId) {
+                navigate(`/ingredients/${newId}`, { replace: true });
+            }
+
+        } catch (err) {
+            console.error("Ingredient update failed:", err);
+        }
     };
 
     const handleImageUpload = (e) => {
@@ -69,11 +94,16 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
 
         const reader = new FileReader();
 
-        reader.onloadend = () => {
-            setAdminData((prev) => ({
-                ...prev,
+        reader.onloadend = async () => {
+
+            const updated = {
+                ...localIngredient,
                 image: reader.result
-            }));
+            };
+
+            setLocalIngredient(updated);
+
+            await saveIngredient(updated);
         };
 
         reader.readAsDataURL(file);
@@ -93,7 +123,10 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
         }
 
         const dishNames = adminData.categories
-            .flatMap(cat => cat.dishes || [])
+            .flatMap(cat => [
+                ...(cat.dishes || []),
+                ...(cat.subCategories || []).flatMap(sub => sub.dishes || [])
+            ])
             .filter(d => disabled.includes(d.id))
             .map(d => d.name);
 
@@ -332,27 +365,71 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
                     {editSection === "usedIn" ? (
                         <>
                             <div className="checkbox-grid">
-                                {adminData.categories.map((cat) => (
-                                    <label key={cat.id} className="checkbox-item">
-                                        <input
-                                            type="checkbox"
-                                            checked={localIngredient.usedInCategories.includes(cat.id)}
-                                            onChange={(e) => {
-                                                const updated = e.target.checked
-                                                    ? [...localIngredient.usedInCategories, cat.id]
-                                                    : localIngredient.usedInCategories.filter(
-                                                        (c) => c !== cat.id
-                                                    );
+                                {adminData.categories.flatMap(cat => {
 
-                                                setLocalIngredient({
-                                                    ...localIngredient,
-                                                    usedInCategories: updated
-                                                });
-                                            }}
-                                        />
-                                        {cat.name}
-                                    </label>
-                                ))}
+                                    if ((cat.subCategories || []).length > 0) {
+
+                                        return cat.subCategories.map(sub => (
+
+                                            <label key={sub.id} className="checkbox-item">
+
+                                                <input
+                                                    type="checkbox"
+                                                    checked={(localIngredient.usedInCategories || []).includes(sub.id)}
+                                                    onChange={(e) => {
+
+                                                        const updated = e.target.checked
+                                                            ? [...localIngredient.usedInCategories, sub.id]
+                                                            : localIngredient.usedInCategories.filter(
+                                                                id => id !== sub.id
+                                                            );
+
+                                                        setLocalIngredient({
+                                                            ...localIngredient,
+                                                            usedInCategories: updated
+                                                        });
+
+                                                    }}
+                                                />
+
+                                                {sub.name}
+
+                                            </label>
+
+                                        ));
+
+                                    }
+
+                                    return (
+
+                                        <label key={cat.id} className="checkbox-item">
+
+                                            <input
+                                                type="checkbox"
+                                                checked={(localIngredient.usedInCategories || []).includes(cat.id)}
+                                                onChange={(e) => {
+
+                                                    const updated = e.target.checked
+                                                        ? [...localIngredient.usedInCategories, cat.id]
+                                                        : localIngredient.usedInCategories.filter(
+                                                            id => id !== cat.id
+                                                        );
+
+                                                    setLocalIngredient({
+                                                        ...localIngredient,
+                                                        usedInCategories: updated
+                                                    });
+
+                                                }}
+                                            />
+
+                                            {cat.name}
+
+                                        </label>
+
+                                    );
+
+                                })}
                             </div>
 
                             <div className="actions">
@@ -365,10 +442,27 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
                     ) : (
                         <div className="tag-list">
                             {localIngredient.usedInCategories.map((c) => {
-                                const cat = adminData.categories.find((x) => x.id === c);
+                                let label = null;
+
+                                for (const cat of adminData.categories) {
+
+                                    if (cat.id === c) {
+                                        label = cat.name;
+                                        break;
+                                    }
+
+                                    const sub = (cat.subCategories || []).find(s => s.id === c);
+
+                                    if (sub) {
+                                        label = sub.name;
+                                        break;
+                                    }
+
+                                }
+
                                 return (
                                     <span key={c} className="tag">
-                                        {cat?.name || c}
+                                        {label || c}
                                     </span>
                                 );
                             })}
@@ -412,13 +506,13 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
                                             : 400
                                     }}
                                 >
-                                    {localIngredient.expiryDate || "-"}
+                                    {formatDisplayDate(localIngredient.expiryDate) || "-"}
                                 </td>
                             </tr>
 
                             <tr>
                                 <td><strong>Last Purchased</strong></td>
-                                <td>{localIngredient.lastUpdated || "-"}</td>
+                                <td>{formatDisplayDate(localIngredient.lastUpdated) || "-"}</td>
                             </tr>
                         </tbody>
                     </table>

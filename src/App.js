@@ -2,6 +2,7 @@ import "./App.css";
 import { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import socket from "./socket";
 
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
@@ -20,6 +21,17 @@ import Orders from "./pages/Orders";
 import OrderDetails from "./pages/OrderDetails";
 import Users from "./pages/Users";
 import UserDetails from "./pages/UserDetails";
+import Staffs from "./pages/Staffs";
+import StaffDetails from "./pages/StaffDetails";
+import StaffAttendance from "./pages/StaffAttendance";
+import StaffSalary from "./pages/StaffSalary";
+import StaffCareer from "./pages/StaffCareer";
+import StaffTraining from "./pages/StaffTraining";
+import KitchenRecipe from "./pages/KitchenRecipe";
+import KitchenGrooming from "./pages/KitchenGrooming";
+import KitchenMise from "./pages/KitchenMise";
+import KitchenAssign from "./pages/KitchenAssign";
+import KitchenReports from "./pages/KitchenReports";
 
 import api from "./api";
 
@@ -69,10 +81,11 @@ function App() {
 
   const [adminData, setAdminData] = useState({
     categories: [],
-    favourites: [],
     ingredients: [],
     orders: [],
-    users: []
+    users: [],
+    favourites: [],
+    staff: []
   });
 
   /* ---------------- LOGIN HANDLER ---------------- */
@@ -86,18 +99,28 @@ function App() {
 
     const fetchAllData = async () => {
       try {
-        const [menuRes, ordersRes, usersRes] = await Promise.all([
-          api.get("/menu"),
+        const [catRes, ingRes, ordersRes, usersRes, favRes, staffRes, groomRes, miseRes, recipeRes] = await Promise.all([
+          api.get("/categories"),
+          api.get("/ingredients"),
           api.get("/orders"),
-          api.get("/users")
+          api.get("/users"),
+          api.get("/favourites"),
+          api.get("/staff"),
+          api.get("/grooming"),
+          api.get("/mise"),
+          api.get("/recipes")
         ]);
 
         setAdminData({
-          categories: menuRes.data.categories || [],
-          favourites: menuRes.data.favourites || [],
-          ingredients: menuRes.data.ingredients || [],
+          categories: catRes.data || [],
+          ingredients: ingRes.data || [],
           orders: ordersRes.data || [],
-          users: usersRes.data || []
+          users: usersRes.data || [],
+          favourites: favRes.data || [],
+          staff: staffRes.data || [],
+          grooming: groomRes.data || {},
+          mise: miseRes.data || {},
+          recipes: recipeRes.data || []
         });
 
       } catch (err) {
@@ -108,57 +131,122 @@ function App() {
     fetchAllData();
   }, [isAuthenticated]);
 
+  useEffect(() => {
+
+    socket.on("data-change", ({ resource, action, payload }) => {
+
+      console.log("SYNC EVENT:", resource, action);
+
+      if (resource === "orders") {
+
+        setAdminData(prev => ({
+          ...prev,
+          orders:
+            action === "created"
+              ? [...prev.orders, payload]
+              : prev.orders.map(o => o.id === payload.id ? payload : o)
+        }));
+
+      }
+
+      if (resource === "ingredients") {
+
+        if (action === "created") {
+          setAdminData(prev => ({
+            ...prev,
+            ingredients: [...prev.ingredients, payload]
+          }));
+        }
+
+        if (action === "updated") {
+          setAdminData(prev => ({
+            ...prev,
+            ingredients: prev.ingredients.map(i =>
+              i.id === payload.id ? payload : i
+            )
+          }));
+        }
+
+        if (action === "deleted") {
+          setAdminData(prev => ({
+            ...prev,
+            ingredients: prev.ingredients.filter(i => i.id !== payload)
+          }));
+        }
+
+      }
+
+    });
+
+    return () => socket.off("data-change");
+
+  }, []);
   /* ---------------- INGREDIENT CRUD ---------------- */
   const addIngredient = async (ingredient) => {
-    const res = await api.get("/menu");
+    try {
+      await api.post("/ingredients", ingredient);
+    } catch (err) {
+      console.error("Add ingredient failed:", err);
+    }
+  };
 
-    const updatedMenu = {
-      ...res.data,
-      ingredients: [...res.data.ingredients, ingredient]
-    };
+  const addStaff = async (staff) => {
+    try {
+      const res = await api.post("/staff", staff);
 
-    await api.put("/menu", updatedMenu);
+      setAdminData(prev => ({
+        ...prev,
+        staff: [...prev.staff, res.data]
+      }));
+    } catch (err) {
+      console.error("Add staff failed:", err.response?.data || err.message);
+    }
+  };
 
-    setAdminData((prev) => ({
+  const updateStaff = async (id, updated) => {
+    const res = await api.put(`/staff/${id}`, updated);
+
+    setAdminData(prev => ({
       ...prev,
-      ingredients: updatedMenu.ingredients
+      staff: prev.staff.map(s => s.id === id ? res.data : s)
+    }));
+  };
+
+  const deleteStaff = async (id) => {
+    await api.delete(`/staff/${id}`);
+
+    setAdminData(prev => ({
+      ...prev,
+      staff: prev.staff.filter(s => s.id !== id)
     }));
   };
 
   const updateIngredient = async (id, updated) => {
-    const res = await api.get("/menu");
+    try {
+      const res = await api.put(`/ingredients/${id}`, updated);
 
-    const updatedMenu = {
-      ...res.data,
-      ingredients: res.data.ingredients.map((ing) =>
-        ing.id === id ? updated : ing
-      )
-    };
-
-    await api.put("/menu", updatedMenu);
-
-    setAdminData((prev) => ({
-      ...prev,
-      ingredients: updatedMenu.ingredients
-    }));
+      setAdminData(prev => ({
+        ...prev,
+        ingredients: prev.ingredients.map(i =>
+          i.id === id ? res.data : i
+        )
+      }));
+    } catch (err) {
+      console.error("Update ingredient failed:", err);
+    }
   };
 
   const deleteIngredient = async (id) => {
-    const res = await api.get("/menu");
+    try {
+      await api.delete(`/ingredients/${id}`);
 
-    const updatedMenu = {
-      ...res.data,
-      ingredients: res.data.ingredients.filter(
-        (ing) => ing.id !== id
-      )
-    };
-
-    await api.put("/menu", updatedMenu);
-
-    setAdminData((prev) => ({
-      ...prev,
-      ingredients: updatedMenu.ingredients
-    }));
+      setAdminData(prev => ({
+        ...prev,
+        ingredients: prev.ingredients.filter(i => i.id !== id)
+      }));
+    } catch (err) {
+      console.error("Delete ingredient failed:", err);
+    }
   };
 
   /* ---------------- AUTH GUARD ---------------- */
@@ -345,6 +433,64 @@ function App() {
 
             <Route path="/users/:userId" element={<UserDetails users={adminData.users} />} />
 
+            <Route
+              path="/staffs"
+              element={
+                <Staffs
+                  adminData={adminData}
+                  onAdd={addStaff}
+                  onUpdate={updateStaff}
+                  onDelete={deleteStaff}
+                  sortConfig={sortConfig}
+                  handleSort={handleSort}
+                />
+              }
+            />
+
+            <Route
+              path="/staff/:staffId"
+              element={
+                <StaffDetails
+                  adminData={adminData}
+                  setAdminData={setAdminData}
+                />
+              }
+            />
+
+            <Route
+              path="/staff-attendance"
+              element={
+                <StaffAttendance
+                  adminData={adminData}
+                  setAdminData={setAdminData}   // ✅ ADD THIS
+                />
+              }
+            />
+
+            <Route path="/staff-salary" element={<StaffSalary adminData={adminData} />} />
+            <Route path="/staff-career" element={<StaffCareer adminData={adminData} />} />
+            <Route path="/staff-training" element={<StaffTraining adminData={adminData} />} />
+
+            <Route
+              path="/kitchen-assign"
+              element={<KitchenAssign adminData={adminData} setAdminData={setAdminData} />}
+            />
+
+            <Route
+              path="/kitchen-mise"
+              element={<KitchenMise adminData={adminData} setAdminData={setAdminData} />}
+            />
+
+            <Route
+              path="/kitchen-grooming"
+              element={<KitchenGrooming adminData={adminData} setAdminData={setAdminData} />}
+            />
+
+            <Route
+              path="/kitchen-recipe"
+              element={<KitchenRecipe adminData={adminData} setAdminData={setAdminData} />}
+            />
+            <Route path="/kitchen-reports" element={<KitchenReports adminData={adminData} />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </div>
@@ -365,9 +511,13 @@ export const sortArray = (data, sortConfig) => {
     if (aVal == null || bVal == null) return 0;
 
     if (typeof aVal === "string") {
+
+      const aStr = aVal.toLowerCase().trim();
+      const bStr = bVal.toLowerCase().trim();
+
       return sortConfig.direction === "asc"
-        ? aVal.localeCompare(bVal)
-        : bVal.localeCompare(aVal);
+        ? aStr.localeCompare(bStr)
+        : bStr.localeCompare(aStr);
     }
 
     return sortConfig.direction === "asc"
@@ -392,3 +542,43 @@ export const EmptyRow = ({ colSpan, message = "No data available" }) => (
     </td>
   </tr>
 );
+
+export const resolveCategoryAndSubCategory = (categories, id) => {
+  let category = categories.find(c => c.id === id);
+  let subCategory = null;
+
+  if (!category) {
+    for (const cat of categories) {
+      const found = (cat.subCategories || []).find(sub => sub.id === id);
+      if (found) {
+        category = cat;
+        subCategory = found;
+        break;
+      }
+    }
+  }
+
+  return { category, subCategory };
+};
+
+export const formatDisplayDate = (date) => {
+  const d = new Date(date);
+  return `${String(d.getDate()).padStart(2, "0")}-${String(
+    d.getMonth() + 1
+  ).padStart(2, "0")}-${d.getFullYear()}`;
+};
+
+export const formatIndianTime = (dateStr, timeStr) => {
+  if (!dateStr || !timeStr) return "—";
+
+  const dateTime = new Date(`${dateStr}T${timeStr}`);
+
+  if (isNaN(dateTime.getTime())) return timeStr;
+
+  return dateTime.toLocaleTimeString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  });
+};
