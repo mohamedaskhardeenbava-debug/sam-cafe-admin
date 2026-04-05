@@ -1,0 +1,182 @@
+.service-groom-page {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.service-groom-page .category-modal-body {
+  height: 100%;
+}
+
+.service-groom-page textarea {
+  height: 100%;
+}
+
+.service-groom-top {
+  margin-bottom: 20px;
+}
+
+.service-groom-add-btn {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid #111;
+  background: #111;
+  color: #fff;
+  font-weight: 500;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.service-groom-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* TABLE */
+.service-groom-table-container {
+  width: 100%;
+  max-height: calc(100vh - 175px);
+  overflow-y: auto;
+  padding: 0 10px;
+  background: #e9e9e9;
+  border-radius: 20px;
+  box-sizing: border-box;
+}
+
+.service-groom-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 5px;
+  /* row spacing */
+  background: transparent;
+  table-layout: fixed;
+}
+
+.service-groom-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background-color: #414141;
+}
+
+.service-groom-table th {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #e9e9e9;
+  text-align: left;
+}
+
+.service-groom-table td {
+  font-size: 14px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-bottom: 1px solid #cacaca;
+}
+
+.service-groom-table tbody tr:hover {
+  background-color: rgb(234, 234, 234);
+}
+
+.service-groom-table tbody tr {
+  background: #ffffff !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+  transition: all 0.25s ease;
+}
+
+.service-groom-table tbody tr td {
+  font-size: 14px;
+  border: none;
+  background: #ffffff;
+}
+
+.service-groom-table tbody tr td:first-child {
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+}
+
+.service-groom-table tbody tr td:last-child {
+  border-top-right-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+
+.service-groom-table th:first-child,
+.service-groom-table td:first-child {
+  width: 80px;
+  max-width: 80px;
+  padding: 10px;
+}
+
+.service-groom-table th:last-child,
+.service-groom-table td:last-child {
+  width: 80px;
+  max-width: 80px;
+  padding: 10px;
+}
+
+/* STAFF NAME */
+.service-groom-staff {
+  text-align: left;
+}
+
+/* CHECKBOX GROUP */
+.service-groom-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+/* STATUS */
+.service-status-yes {
+  color: #16a34a;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.service-status-no {
+  color: #dc2626;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+/* MODAL */
+.service-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.service-modal {
+  background: #fff;
+  width: 450px;
+  padding: 20px;
+  border-radius: 14px;
+}
+
+.service-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* DETAILS TABLE */
+.service-detail-table {
+  width: 100%;
+  margin-top: 15px;
+}
+
+.service-detail-table td {
+  padding: 8px;
+  text-align: left;
+}

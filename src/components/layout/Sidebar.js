@@ -22,6 +22,16 @@ const menu = [
   { label: "Stocks", path: "/stocks", icon: stockIcon },
   { label: "Favourites", path: "/favourites", icon: favouriteIcon },
   { label: "Orders", path: "/orders", icon: orderIcon },
+  {
+    label: "Events",
+    icon: orderIcon,
+    children: [
+      { label: "Reservations", path: "/events/reservations" },
+      { label: "Celebrations", path: "/events/celebrations" },
+      { label: "PreBookings", path: "/events/prebookings" },
+      { label: "Catering", path: "/events/catering" }
+    ]
+  },
   { label: "Users", path: "/users", icon: userIcon },
   {
     label: "Staff",
@@ -40,16 +50,28 @@ const menu = [
     children: [
       { label: "Recipe", path: "/kitchen-recipe" },
       { label: "Grooming", path: "/kitchen-grooming" },
-      { label: "Mise & Cleaning", path: "/kitchen-mise" },
       { label: "Staff Assigning", path: "/kitchen-assign" },
+      { label: "Mise & Cleaning", path: "/kitchen-mise" },
       { label: "Reports", path: "/kitchen-reports" }
     ]
-  }
+  },
+  {
+    label: "Service",
+    icon: staffIcon,
+    children: [
+      { label: "Grooming", path: "/service-grooming" },
+      { label: "Staff Assigning", path: "/service-assign" },
+      { label: "Mise & Cleaning", path: "/service-mise" },
+      { label: "Tables", path: "/tables" },
+      { label: "Reports", path: "/service-reports" }
+    ]
+  },
+  { label: "Offers", path: "/offers", icon: dishIcon }
 ];
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const [openMenu, setOpenMenu] = useState(null);
-const itemRefs = useRef({});
+  const itemRefs = useRef({});
 
   return (
     <motion.aside
@@ -91,9 +113,9 @@ const itemRefs = useRef({});
           if (item.children) {
             return (
               <div
-  key={index}
-  ref={(el) => (itemRefs.current[index] = el)}
->
+                key={index}
+                ref={(el) => (itemRefs.current[index] = el)}
+              >
                 <div
                   className="sidebar-link"
                   onClick={() =>

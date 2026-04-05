@@ -93,13 +93,6 @@
   margin-left: auto;
 }
 
-.edit-icon,
-.delete-icon {
-  cursor: pointer;
-  width: 16px;
-  height: 16px;
-}
-
 .add-btn {
   background: none;
   border: none;

@@ -1,8 +1,8 @@
 import "./App.css";
 import { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import socket from "./socket";
+import api from "./api";
 
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
@@ -19,21 +19,43 @@ import Favourites from "./pages/Favourites";
 import FavouriteDetails from "./pages/FavouriteDetails";
 import Orders from "./pages/Orders";
 import OrderDetails from "./pages/OrderDetails";
+import Offers from "./pages/Offers";
+import OfferDetails from "./pages/OfferDetails";
 import Users from "./pages/Users";
 import UserDetails from "./pages/UserDetails";
-import Staffs from "./pages/Staffs";
-import StaffDetails from "./pages/StaffDetails";
-import StaffAttendance from "./pages/StaffAttendance";
-import StaffSalary from "./pages/StaffSalary";
-import StaffCareer from "./pages/StaffCareer";
-import StaffTraining from "./pages/StaffTraining";
-import KitchenRecipe from "./pages/KitchenRecipe";
-import KitchenGrooming from "./pages/KitchenGrooming";
-import KitchenMise from "./pages/KitchenMise";
-import KitchenAssign from "./pages/KitchenAssign";
-import KitchenReports from "./pages/KitchenReports";
 
-import api from "./api";
+// EVENTS
+import Reservations from "./pages/events/Reservations";
+import ReservationDetails from "./pages/events/ReservationDetails";
+import Celebrations from "./pages/events/Celebrations";
+import CelebrationDetails from "./pages/events/CelebrationDetails";
+import PreBookings from "./pages/events/PreBookings";
+import PreBookingDetails from "./pages/events/PreBookingDetails";
+import Catering from "./pages/events/Catering";
+import CateringDetails from "./pages/events/CateringDetails";
+
+// STAFFS
+import Staffs from "./pages/staffs/Staffs";
+import StaffDetails from "./pages/staffs/StaffDetails";
+import StaffAttendance from "./pages/staffs/StaffAttendance";
+import StaffSalary from "./pages/staffs/StaffSalary";
+import StaffCareer from "./pages/staffs/StaffCareer";
+import StaffTraining from "./pages/staffs/StaffTraining";
+
+// KMS
+import KitchenRecipe from "./pages/kitchen/KitchenRecipe";
+import KitchenGrooming from "./pages/kitchen/KitchenGrooming";
+import KitchenMise from "./pages/kitchen/KitchenMise";
+import KitchenAssign from "./pages/kitchen/KitchenAssign";
+import KitchenReports from "./pages/kitchen/KitchenReports";
+import TableManagement from "./pages/service/TableManagement";
+
+//SMS
+import ServiceAssign from "./pages/service/ServiceAssign";
+import ServiceGrooming from "./pages/service/ServiceGrooming";
+import ServiceMise from "./pages/service/ServiceMise";
+import ServiceReports from "./pages/service/ServiceReports";
+
 
 // Hard input limiter (chars + words)
 export const allowTextInput = (
@@ -99,7 +121,22 @@ function App() {
 
     const fetchAllData = async () => {
       try {
-        const [catRes, ingRes, ordersRes, usersRes, favRes, staffRes, groomRes, miseRes, recipeRes] = await Promise.all([
+        const [
+          catRes,
+          ingRes,
+          ordersRes,
+          usersRes,
+          favRes,
+          staffRes,
+          groomRes,
+          miseRes,
+          recipeRes,
+          offerRes,
+          serviceAssignRes,
+          serviceGroomRes,
+          serviceMiseRes,
+          tablesRes
+        ] = await Promise.all([
           api.get("/categories"),
           api.get("/ingredients"),
           api.get("/orders"),
@@ -108,7 +145,12 @@ function App() {
           api.get("/staff"),
           api.get("/grooming"),
           api.get("/mise"),
-          api.get("/recipes")
+          api.get("/recipes"),
+          api.get("/offers"),
+          api.get("/serviceAssign"),
+          api.get("/serviceGrooming"),
+          api.get("/serviceMise"),
+          api.get("/tables")
         ]);
 
         setAdminData({
@@ -120,7 +162,12 @@ function App() {
           staff: staffRes.data || [],
           grooming: groomRes.data || {},
           mise: miseRes.data || {},
-          recipes: recipeRes.data || []
+          recipes: recipeRes.data || [],
+          offers: offerRes.data || [],
+          serviceAssign: serviceAssignRes.data || {},
+          serviceGrooming: serviceGroomRes.data || {},
+          serviceMise: serviceMiseRes.data || {},
+          tables: tablesRes.data?.[0]?.list || []
         });
 
       } catch (err) {
@@ -410,6 +457,18 @@ function App() {
               }
             />
 
+            <Route path="/events/reservations" element={<Reservations />} />
+            <Route path="/events/reservations/:id" element={<ReservationDetails />} />
+
+            <Route path="/events/celebrations" element={<Celebrations />} />
+            <Route path="/events/celebrations/:id" element={<CelebrationDetails />} />
+
+            <Route path="/events/prebookings" element={<PreBookings />} />
+            <Route path="/events/prebookings/:id" element={<PreBookingDetails />} />
+
+            <Route path="/events/catering" element={<Catering />} />
+            <Route path="/events/catering/:id" element={<CateringDetails />} />
+
             <Route
               path="/orders/:orderId"
               element={
@@ -491,6 +550,51 @@ function App() {
               element={<KitchenRecipe adminData={adminData} setAdminData={setAdminData} />}
             />
             <Route path="/kitchen-reports" element={<KitchenReports adminData={adminData} />} />
+
+            <Route
+              path="/tables"
+              element={
+                <TableManagement
+                  adminData={adminData}
+                  setAdminData={setAdminData}
+                />
+              }
+            />
+
+            <Route path="/service-assign" element={
+              <ServiceAssign adminData={adminData} setAdminData={setAdminData} />
+            } />
+
+            <Route path="/service-grooming" element={
+              <ServiceGrooming adminData={adminData} setAdminData={setAdminData} />
+            } />
+
+            <Route path="/service-mise" element={
+              <ServiceMise adminData={adminData} setAdminData={setAdminData} />
+            } />
+
+            <Route path="/service-reports" element={
+              <ServiceReports adminData={adminData} />
+            } />
+
+            <Route path="/offers"
+              element={
+                <Offers
+                  adminData={adminData}
+                  setAdminData={setAdminData}
+                />
+              }
+            />
+
+            <Route path="/offers/:offerId"
+              element={
+                <OfferDetails
+                  adminData={adminData}
+                  setAdminData={setAdminData}
+                />
+              }
+            />
+
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </div>
@@ -580,5 +684,29 @@ export const formatIndianTime = (dateStr, timeStr) => {
     hour: "numeric",
     minute: "2-digit",
     hour12: true
+  });
+};
+
+// ================= DATE UTILITIES (GLOBAL) =================
+
+// ✅ Safe local date key (NO timezone bug)
+export const getTodayKey = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+// ✅ Clean formatted date (UI)
+export const getTodayFormatted = () => {
+  const d = new Date();
+  return `${String(d.getDate()).padStart(2, "0")} ${d.toLocaleString("default", { month: "long" })} ${d.getFullYear()}`;
+};
+
+// ✅ Full readable date (optional)
+export const getTodayFull = () => {
+  return new Date().toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric"
   });
 };

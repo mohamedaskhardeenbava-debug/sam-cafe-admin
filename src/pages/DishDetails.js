@@ -48,13 +48,9 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
         }
     }
 
+    const [openIngredientDropdown, setOpenIngredientDropdown] = useState(false);
     const [localDish, setLocalDish] = useState(null);
     const [editSection, setEditSection] = useState(null);
-
-
-    console.log(category)
-    console.log(dish)
-    console.log(localDish)
 
     // TEMP buffer ONLY for ingredients editing
     const [editingIngredients, setEditingIngredients] = useState(null);
@@ -71,6 +67,15 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
             setLocalDish(JSON.parse(JSON.stringify(dish)));
         }
     }, [dish]);
+
+    useEffect(() => {
+            const closeDropdowns = () => {
+                setOpenIngredientDropdown(false);
+            };
+    
+            window.addEventListener("click", closeDropdowns);
+            return () => window.removeEventListener("click", closeDropdowns);
+        }, []);
 
     if (!localDish) return <div className="page">Loading dish...</div>;
 
@@ -540,38 +545,36 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
 
                                                     {isNew ? (
 
-                                                        <select
-                                                            value={ing.name}
-                                                            onChange={(e) => {
+                                                        <div className="dishes-dropdown-wrapper">
+                                                            <button
+                                                                type="button"
+                                                                className="dishes-status-dropdown"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setOpenIngredientDropdown(prev => !prev);
+                                                                }}
+                                                            >
+                                                                {editingIngredients?.[index]?.name || "Select Ingredient"}
+                                                            </button>
 
-                                                                const selected = e.target.value;
-
-                                                                const updated = [...editingIngredients];
-                                                                updated[index].name = selected;
-
-                                                                setEditingIngredients(updated);
-
-                                                                // auto focus qty
-                                                                setTimeout(() => {
-                                                                    const input = document.getElementById(`qty-${index}`);
-                                                                    if (input) input.focus();
-                                                                }, 0);
-                                                            }}
-                                                        >
-
-                                                            <option value="">Select Ingredient</option>
-
-                                                            {sortedIngredients
-                                                                .filter(i => !editingIngredients.some(e => e.name === i.name))
-                                                                .map(i => (
-
-                                                                    <option key={i.id} value={i.name}>
-                                                                        {i.name}
-                                                                    </option>
-
-                                                                ))}
-
-                                                        </select>
+                                                            {openIngredientDropdown && (
+                                                                <div className="dishes-dropdown-menu">
+                                                                    {sortedIngredients.map(ing => (
+                                                                        <div
+                                                                            key={ing.id}
+                                                                            onClick={() => {
+                                                                                const updated = [...editingIngredients];
+                                                                                updated[index].name = ing.name;
+                                                                                setEditingIngredients(updated);
+                                                                                setOpenIngredientDropdown(false);
+                                                                            }}
+                                                                        >
+                                                                            {ing.name}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
 
                                                     ) : (
 

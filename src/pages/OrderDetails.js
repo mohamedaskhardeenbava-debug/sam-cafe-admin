@@ -93,7 +93,7 @@ const OrderDetails = ({ orders, menu }) => {
                 <td>
                   <strong>Status:</strong>{" "}
                   <span
-                    className={`status status-${normalizeStatus(order.status).replace(/\s+/g, "-")}`}
+                    className={`dd-status status-${normalizeStatus(order.status).replace(/\s+/g, "-")}`}
                   >
                     {order.status}
                   </span>
@@ -165,6 +165,30 @@ const OrderDetails = ({ orders, menu }) => {
 
         {/* TOTAL */}
         <div className="section">
+          {/* 🔥 SPLIT INFO */}
+          {order.splitType && (
+            <div className="section">
+              <div className="section-title">
+                <span>Split Details</span>
+              </div>
+
+              {order.splitType === "amount" && (
+                <p>
+                  {order.splitDetails?.customers} People • ₹{order.splitDetails?.perHead} per head
+                </p>
+              )}
+
+              {order.splitType === "bill" && (
+                <div>
+                  {order.splitDetails?.map((bill, i) => (
+                    <p key={i}>
+                      Bill {i + 1}: ₹{bill.total}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <div className="section-title">
             <span>Total Amount</span>
             <p className="order-total">₹{totalAmount}</p>

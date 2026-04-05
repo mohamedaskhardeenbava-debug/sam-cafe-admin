@@ -14,6 +14,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
   const [editingDishId, setEditingDishId] = useState(null);
   const [editedPrice, setEditedPrice] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [openIngredientDropdown, setOpenIngredientDropdown] = useState(false);
   const [newDish, setNewDish] = useState({
     name: "",
     image: "",
@@ -27,6 +28,15 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     },
     ingredients: []
   });
+
+  useEffect(() => {
+          const closeDropdowns = () => {
+              setOpenIngredientDropdown(false);
+          };
+  
+          window.addEventListener("click", closeDropdowns);
+          return () => window.removeEventListener("click", closeDropdowns);
+      }, []);
 
   const availableIngredients = (adminData.ingredients || [])
     .filter(
@@ -676,23 +686,37 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 <div className="border">
                   <div className="form-group">
                     <label htmlFor="">Ingredient Name</label>
-                    <select
-                      value={ingredientForm.name}
-                      onChange={(e) =>
-                        setIngredientForm(prev => ({
-                          ...prev,
-                          name: e.target.value
-                        }))
-                      }
-                    >
-                      <option value="">Select ingredient</option>
+                    <div className="dishes-dropdown-wrapper">
+                      <button
+                        type="button"
+                        className="dishes-status-dropdown"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenIngredientDropdown(prev => !prev);
+                        }}
+                      >
+                        {ingredientForm.name || "Select Ingredient"}
+                      </button>
 
-                      {availableIngredients.map(ing => (
-                        <option key={ing.id} value={ing.name}>
-                          {ing.name}
-                        </option>
-                      ))}
-                    </select>
+                      {openIngredientDropdown && (
+                        <div className="dishes-dropdown-menu">
+                          {availableIngredients.map(ing => (
+                            <div
+                              key={ing.id}
+                              onClick={() => {
+                                setIngredientForm(prev => ({
+                                  ...prev,
+                                  name: ing.name
+                                }));
+                                setOpenIngredientDropdown(false);
+                              }}
+                            >
+                              {ing.name}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="form-group">

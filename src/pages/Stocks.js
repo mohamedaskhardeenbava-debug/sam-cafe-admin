@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import "./Stocks.css";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
@@ -33,6 +33,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
 
+  const [openDishDropdown, setOpenDishDropdown] = useState(false);
   const [openFrom, setOpenFrom] = useState(false);
   const [openTo, setOpenTo] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -44,6 +45,15 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
   const [disableGlobally, setDisableGlobally] = useState(false);
   const [selectedDishToDisable, setSelectedDishToDisable] = useState("");
+
+useEffect(() => {
+        const closeDropdowns = () => {
+            setOpenDishDropdown(false);
+        };
+
+        window.addEventListener("click", closeDropdowns);
+        return () => window.removeEventListener("click", closeDropdowns);
+    }, []);
 
   const dishesContainingIngredient = useMemo(() => {
     if (!selectedIngredient) return [];
@@ -545,22 +555,34 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                   <label>Disable For Dish</label>
 
                   <div className="stocks-form-group-select-container">
-                    <select
-                      value={selectedDishToDisable}
-                      onChange={(e) => setSelectedDishToDisable(e.target.value)}
-                    >
-                      <option value="">Select Dish</option>
+                    <div className="orders-dropdown-wrapper">
+                      <button
+                        type="button"
+                        className="orders-status-dropdown"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenDishDropdown(prev => !prev);
+                        }}
+                      >
+                        {selectedDishToDisable || "Select Dish"}
+                      </button>
 
-                      {dishesContainingIngredient
-                        .filter(d =>
-                          !(selectedIngredient.disabledForDishes || []).includes(d.id)
-                        )
-                        .map(dish => (
-                          <option key={dish.id} value={dish.id}>
-                            {dish.name}
-                          </option>
-                        ))}
-                    </select>
+                      {openDishDropdown && (
+                        <div className="orders-dropdown-menu">
+                          {dishesContainingIngredient.map(d => (
+                            <div
+                              key={d.id}
+                              onClick={() => {
+                                setSelectedDishToDisable(d.id);
+                                setOpenDishDropdown(false);
+                              }}
+                            >
+                              {d.name}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
                     <button
                       type="button"

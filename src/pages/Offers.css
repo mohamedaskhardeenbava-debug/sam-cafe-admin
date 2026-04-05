@@ -5,60 +5,59 @@
   flex-direction: column;
 }
 
-.dish-header {
+.offers-header {
   display: flex;
   gap: 12px;
   margin-bottom: 20px !important;
   align-items: start !important;
 }
 
-.dish-block {
+.offers-block {
   overflow: hidden;
 }
 
-.dish-title {
+.offers-title {
   font-size: 24px !important;
   font-weight: 600;
   color: #111;
   margin: 0;
 }
 
-.category-buttons {
+.offers-buttons {
   display: grid;
   gap: 8px;
   overflow-x: auto;
   grid-template-columns: repeat(8, 1fr);
 }
 
-.category-btn {
-  padding: 6px 10px !important;
-  border-radius: 8px ;
+.offers-btn {
+  padding: 6px 10px;
+  border-radius: 8px;
   border: 1px solid #ccc;
   background: #fff;
   cursor: pointer;
   text-align: center;
-  font-weight: 500 !important;
-  font-size: 14px !important;
+  font-weight: 500;
 }
 
-.category-btn:hover {
+.offers-btn:hover {
   background: #f3f3f3;
 }
 
-.category-btn.active {
+.offers-btn.active {
   background: #111;
   color: #fff;
   border-color: #111;
 }
 
-.dish-title {
+.offers-title {
   font-size: 32px;
   font-weight: 600;
   color: #111;
   margin: 0;
 }
 
-.dish-table-wrapper {
+.offers-table-wrapper {
   width: 100%;
   max-height: calc(100vh - 275px);
   overflow-y: auto;
@@ -68,7 +67,7 @@
   box-sizing: border-box;
 }
 
-.dish-table {
+.offers-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0 5px;
@@ -77,14 +76,14 @@
   table-layout: fixed;
 }
 
-.dish-table thead {
+.offers-table thead {
   position: sticky;
   top: 0;
   z-index: 5;
   background-color: #414141;
 }
 
-.dish-table th {
+.offers-table th {
   padding: 16px 12px;
   font-size: 13px;
   font-weight: 600;
@@ -95,7 +94,7 @@
   text-align: left;
 }
 
-.dish-table td {
+.offers-table td {
   font-size: 14px;
   text-align: left;
   white-space: nowrap;
@@ -104,66 +103,47 @@
   border-bottom: 1px solid #cacaca;
 }
 
-.dish-table tbody tr:hover {
+.offers-table tbody tr:hover {
   background-color: rgb(234, 234, 234);
 }
 
-.dish-table tbody tr {
+.offers-table tbody tr {
   background: #ffffff !important;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
   transition: all 0.25s ease;
 }
 
-.dish-table tbody tr td {
+.offers-table tbody tr td {
   padding: 10px;
   font-size: 14px;
   border: none;
   background: #ffffff;
 }
 
-.dish-table tbody tr td:first-child {
+.offers-table tbody tr td:first-child {
   border-top-left-radius: 16px;
   border-bottom-left-radius: 16px;
 }
 
-.dish-table tbody tr td:last-child {
+.offers-table tbody tr td:last-child {
   border-top-right-radius: 16px;
   border-bottom-right-radius: 16px;
 }
 
-.dish-table th:nth-child(1),
-.dish-table td:nth-child(1) {
-  width: 48px;
-  max-width: 48px;
-}
-
-.dish-table th:nth-child(3),
-.dish-table td:nth-child(3){
-  width: 120px !important;
-  max-width: 120px !important;
-}
-
-.dish-table th:nth-child(4),
-.dish-table td:nth-child(4) {
-  width: 72px !important;
-  max-width: 72px !important;
-  text-align: center;
-}
-
-.dish-image,
-.dish-placeholder {
+.offers-image,
+.offers-placeholder {
   width: 36px;
   height: 36px;
   border-radius: 6px;
 }
 
-.dish-image img {
+.offers-image img {
   width: 100%;
   height: 100%;
   object-fit: contain;  
 }
 
-.dish-name {
+.offers-name {
   font-size: 14px;
   font-weight: 500;
   text-transform: capitalize;
@@ -188,15 +168,14 @@
   color: red;
 }
 
-.dish-header-actions {
+.offers-header-actions {
   display: flex;
   gap: 12px;
   align-items: center;
 }
 
-.dish-add-btn {
+.offers-add-btn {
   height: 38px;
-  width: 110px;
   padding: 0 16px;
   border-radius: 999px;
   border: 1px solid #111;
@@ -205,10 +184,9 @@
   font-weight: 500;
   cursor: pointer;
   margin-left: auto;
-  font-size: 14px;
 }
 
-.category-modal-overlay {
+.offers-modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.45);
@@ -219,7 +197,7 @@
 }
 
 /* ---------- MODAL CARD ---------- */
-.category-modal {
+.offers-modal {
   background: #ffffff;
   width: 560px;
   max-height: 85vh;
@@ -231,7 +209,7 @@
   overflow: hidden;
 }
 
-.category-modal-header {
+.offers-modal-header {
   position: sticky;
   display: flex;
   align-items: center;
@@ -241,16 +219,16 @@
   background-color: #ffffff;
 }
 
-.category-modal-body {
+.offers-modal-body {
   overflow-y: auto;
   box-sizing: border-box;
 }
 
-.category-modal-body input {
+.offers-modal-body input {
   box-sizing: border-box;
 }
 
-.category-modal-footer {
+.offers-modal-footer {
   position: sticky;
   bottom: 0;
   z-index: 2;
@@ -258,7 +236,7 @@
   margin-top: auto;
 }
 
-.category-modal.large {
+.offers-modal.large {
   width: 480px;
 }
 
@@ -271,7 +249,7 @@
   border: 1px solid #d1d5db;
 }
 
-.dish-close-btn {
+.offers-close-btn {
   position: relative;
 
   width: 36px;
@@ -292,18 +270,18 @@
 }
 
 /* hover & active */
-.dish-close-btn:hover {
+.offers-close-btn:hover {
   background-color: #e5e5e5;
   transform: scale(1.05);
 }
 
-.dish-close-btn:active {
+.offers-close-btn:active {
   transform: scale(0.95);
 }
 
 /* ✕ icon */
-.dish-close-btn::before,
-.dish-close-btn::after {
+.offers-close-btn::before,
+.offers-close-btn::after {
   content: "";
   position: absolute;
 
@@ -315,18 +293,43 @@
 }
 
 /* first line */
-.dish-close-btn::before {
+.offers-close-btn::before {
   transform: rotate(45deg);
 }
 
 /* second line */
-.dish-close-btn::after {
+.offers-close-btn::after {
   transform: rotate(-45deg);
 }
 
-.category-modal textarea {
+.offers-modal textarea {
   resize: none;
   min-height: 70px;
+}
+
+/* PRICE BOX */
+.offers-price-preview {
+  display: flex;
+  justify-content: space-between;
+  background: #f5f5f5;
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+
+.offers-price-preview div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.offers-price-preview span {
+  font-size: 12px;
+  color: #777;
+}
+
+.offers-price-preview strong {
+  font-size: 16px;
+  color: #111;
 }
 
 .benefits-grid {
@@ -335,144 +338,11 @@
   gap: 10px;
 }
 
-.ingredient-form {
-  display: flex;
-  flex-direction: column;
-}
-
-.ingredient-form select {
-  width: 100%;
-  padding: 8px 10px;
-  font-size: 14px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background: #fff;
-}
-
-.add-ingredient-button {
-  width: fit-content;
-  margin: 0 auto;
-  padding: 6px;
-  border-radius: 6px;
-  background-color: #111;
-  color: white;
-}
-
-.ingredient-form-table {
-  width: 100%;
-  max-width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-  background-color: #ffffff;
-  margin-top: 10px;
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  table-layout: fixed;
-}
-
-.ingredient-form-table thead {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  background-color: #414141;
-}
-
-.ingredient-form-table th {
-  padding: 8px 10px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #ffffff;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  position: sticky;
-  top: 0;
-  z-index: 6;
-}
-
-.ingredient-form-table td {
-  padding: 8px 10px;
-  font-size: 14px;
-  color: #333333;
-  text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.ingredient-form-table tbody tr:hover {
-  background-color: rgb(234, 234, 234);
-}
-
-.ingredient-delete-btn {
-  cursor: pointer;
-}
-
-
-.ingredient-delete-btn img {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
-/* BUTTON */
-.custom-dropdown-btn {
-  border-radius: 10px !important;
-  border: 1px solid #d1d5db !important;
-  background: #fff !important;
-  font-size: 14px;
-}
-
-.dropdown-menu {
-  position: absolute !important;
-  z-index: 9999 !important;
-}
-
-.category-modal {
-  overflow: visible !important;
-}
-
-/* MENU */
-.custom-dropdown-menu {
-  border-radius: 12px;
-  padding: 6px;
-  max-height: 240px;
-  overflow-y: auto;
-  border: 1px solid #ddd;
-}
-
-/* ITEM */
-.custom-dropdown-item {
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-/* HOVER */
-.custom-dropdown-item:hover {
-  background: #111 !important;
-  color: #fff !important;
-}
-
-/* ACTIVE */
-.custom-dropdown-item.active {
-  background: #111 !important;
-  color: #fff !important;
-}
-
-/* TEXT */
-.item-name {
-  font-weight: 500;
-}
-
-.dishes-dropdown-wrapper {
+.offers-dropdown-wrapper {
   position: relative;
 }
 
-.dishes-dropdown-menu {
+.offers-dropdown-menu {
   position: absolute;
   max-height: 165px;
   overflow: auto;
@@ -484,11 +354,11 @@
   border-radius: 6px;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
   padding: 6px;
-  z-index: 2000;
+  z-index: 999999999;
   animation: dropdownFade 0.15s ease;
 }
 
-.dishes-dropdown-menu div {
+.offers-dropdown-menu div {
   padding: 10px 14px;
   font-size: 14px;
   border-radius: 10px;
@@ -496,11 +366,11 @@
   text-transform: capitalize;
 }
 
-.dishes-dropdown-menu div:hover {
+.offers-dropdown-menu div:hover {
   background: #f3f4f6;
 }
 
-.dishes-status-dropdown {
+.offers-status-dropdown {
   height: 33.75px;
   width: 100%;
   padding: 0 36px 0 14px;
@@ -521,20 +391,43 @@
   text-align: start;
 }
 
-.dishes-status-dropdown:hover {
+.offers-status-dropdown:hover,
+.offersdetails-status-dropdown:hover {
   border-color: #9ca3af;
   background-color: #f9fafb;
   color: #111;
 }
 
-.dishes-status-dropdown:focus {
+.offers-status-dropdown:focus,
+.offersdetails-status-dropdown:focus {
   outline: none;
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
+.offersdetails-status-dropdown {
+  height: 36.84px;
+  width: 100%;
+  padding: 0 36px 0 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  appearance: none;
+  cursor: pointer;
+  position: relative;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='%23666' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  transition: all 0.2s ease;
+  text-align: start;
+}
+
 /* Improve option appearance (browser-limited support) */
-.dishes-status-dropdown option {
+.offers-status-dropdown option {
   font-size: 14px;
   font-weight: 500;
   padding: 12px;
@@ -543,15 +436,15 @@
 }
 
 @media screen and (max-width: 768px) {
-  .dish-table-wrapper {
+  .offers-table-wrapper {
     width: 100% !important;
   }
 
-  .dish-table th {
+  .offers-table th {
     font-size: 12px;
   }
 
-  .dish-table td {
+  .offers-table td {
     font-size: 12px;
   }
 }

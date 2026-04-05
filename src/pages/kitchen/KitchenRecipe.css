@@ -1,0 +1,244 @@
+/* ================= COMMON PAGE ================= */
+.recipe-page {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.recipe-page textarea,
+.recipe-page .category-modal-body {
+    height: 100%;
+}
+
+.category-modal-body ul {
+    padding-left: 18px;
+    margin: 0;
+}
+
+.category-modal-body li {
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+/* ================= HEADER (REUSED) ================= */
+.recipe-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.recipe-header h2 {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.recipe-add-btn {
+    height: 38px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: none;
+    background: #111;
+    color: #fff;
+    cursor: pointer;
+}
+
+.recipe-add-btn:hover {
+    background: #000;
+}
+
+/* ================= recipe-card GRID ================= */
+.recipe-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+/* ================= recipe-card ================= */
+.recipe-card {
+    background: #fff;
+    padding: 16px;
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+    transition: 0.2s;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+}
+
+.recipe-card:hover {
+    transform: translateY(-3px);
+}
+
+.recipe-card h3 {
+    margin: 0 0 6px;
+    font-size: 18px;
+}
+
+.recipe-card p {
+    font-size: 13px;
+    color: #555;
+    margin: 4px 0;
+}
+
+.recipe-card span {
+    font-size: 12px;
+    color: #888;
+}
+
+.recipe-card button {
+    outline: none;
+    border: none;
+    background: none;
+}
+
+/* ================= TABLE ALIGNMENT (MATCH STAFF TABLE) ================= */
+.recipe-data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 5px;
+}
+
+.recipe-data-table th {
+    background: #e9e9e9;
+    padding: 12px;
+    font-size: 13px;
+}
+
+.recipe-data-table td {
+    background: #fff;
+    padding: 10px;
+}
+
+/* ===== BUTTONS ===== */
+.primary-btn {
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+
+.primary-btn:hover {
+    background: #000;
+}
+
+.secondary-btn {
+    background: #eee;
+    padding: 8px 14px;
+    border-radius: 6px;
+}
+
+/* ===== DROPDOWN ===== */
+select {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    background: #fff;
+}
+
+.form-group img {
+    width: 140px;
+    height: 140px;
+}
+
+.recipe-salary-table-wrapper {
+    width: 100%;
+    max-height: calc(100vh - 175px);
+    overflow-y: auto;
+    padding: 0 10px;
+    background: #e9e9e9;
+    border-radius: 20px;
+    box-sizing: border-box;
+}
+
+.recipe-salary-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 5px;
+    background: transparent;
+    table-layout: fixed;
+}
+
+/* HEADER */
+.recipe-salary-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.recipe-salary-table th {
+    padding: 16px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: #e9e9e9;
+    text-align: left;
+}
+
+/* ROW */
+.recipe-salary-table tbody tr {
+    background: #ffffff !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+    transition: all 0.25s ease;
+}
+
+.recipe-salary-table tbody tr:hover {
+    background-color: rgb(234, 234, 234);
+}
+
+/* CELLS */
+.recipe-salary-table td {
+    padding: 10px;
+    font-size: 14px;
+    border: none;
+    background: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.recipe-salary-table td:first-child {
+    border-top-left-radius: 16px;
+    border-bottom-left-radius: 16px;
+}
+
+.recipe-salary-table td:last-child {
+    border-top-right-radius: 16px;
+    border-bottom-right-radius: 16px;
+}
+
+.recipe-salary-table button {
+    padding: 9px 0;
+    width: 100%;
+    font-size: 12px;
+    background: #1976d2;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.recipe-training-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+}
+
+.recipe-training-table td,
+.recipe-training-table th {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+}
+
+.recipe-training-table td {
+    width: 50%;
+}
+
+.recipe-training-table td:first-child {
+    font-weight: 600;
+}

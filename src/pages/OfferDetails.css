@@ -1,0 +1,99 @@
+.offer-details-page {
+  display: flex;
+}
+
+.offer-container {
+  background: #fff;
+  padding: 24px;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 900px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+/* HEADER */
+.offer-details-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.offer-back-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 25px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  position: relative;
+}
+
+.offer-back-btn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 40%;
+  width: 12px;
+  height: 12px;
+  border-left: 3px solid #111;
+  border-bottom: 3px solid #111;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+/* SECTION */
+.offer-section {
+  margin-top: 20px;
+}
+
+.offer-section-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.offer-section-title p {
+  margin: 0;
+  margin-right: auto;
+}
+
+.offer-edit-icon {
+  cursor: pointer;
+  width: 16px;
+}
+
+/* TABLE */
+.offer-data-table {
+  width: 100%;
+}
+
+.offer-data-table td {
+  padding: 6px;
+}
+
+/* INPUTS */
+.offer-section input,
+.offer-section select {
+  padding: 6px;
+}
+
+/* ACTIONS */
+.offer-action {
+  display: flex;
+  gap: 10px;
+}
+
+.offer-action button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: #f0f0f0;
+}
+
+.offer-action button:first-child {
+  background: #111;
+  color: #fff;
+}

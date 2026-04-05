@@ -112,7 +112,19 @@ const StableQRCode = React.memo(({ value }) => {
     );
 });
 
-const BillLayout = React.memo(({ order, editable, onQtyChange, buildUpiUrl, onClose }) => {
+const BillLayout = React.memo(({
+    order,
+    editable,
+    onQtyChange,
+    buildUpiUrl,
+    onClose,
+    splitPeople,
+    setSplitPeople,
+    splitBills,
+    setSplitBills,
+    applySplitAmount,
+    applySplitBill
+}) => {
     const totals = useMemo(() => {
         const subTotal = order.items.reduce(
             (sum, i) => sum + Number(i.totalPrice || 0),
@@ -128,9 +140,16 @@ const BillLayout = React.memo(({ order, editable, onQtyChange, buildUpiUrl, onCl
         };
     }, [order.items]);
 
+    const finalAmount =
+        order.splitType === "amount"
+            ? order.splitDetails?.perHead
+            : order.splitType === "bill"
+                ? order.splitDetails?.[0]?.total
+                : totals.total;
+
     const qrValue = useMemo(
-        () => buildUpiUrl(totals.total, order.id),
-        [totals.total, order.id, buildUpiUrl]
+        () => buildUpiUrl(finalAmount, order.id),
+        [finalAmount, order.id]
     );
 
     return (
@@ -146,6 +165,7 @@ const BillLayout = React.memo(({ order, editable, onQtyChange, buildUpiUrl, onCl
                 <h3>Sam Cafe</h3>
                 <p>Contact: +91-9080179608</p>
                 <hr />
+                <p>Name : {order.userName}</p>
                 <p>Order : {order.id}</p>
                 <p>Date  : {formatDisplayDate(order.date)}</p>
                 <p>
@@ -204,6 +224,23 @@ const BillLayout = React.memo(({ order, editable, onQtyChange, buildUpiUrl, onCl
             <hr />
 
             <div className="bill-summary">
+                {/* 🔥 SPLIT DISPLAY */}
+                {order.splitType === "amount" && (
+                    <div className="bill-split-info">
+                        Split: {order.splitDetails?.customers} people <br />
+                        Per Head: ₹{order.splitDetails?.perHead}
+                    </div>
+                )}
+
+                {order.splitType === "bill" && (
+                    <div className="bill-split-info">
+                        {order.splitDetails?.map((bill, i) => (
+                            <div key={i}>
+                                Bill {i + 1}: ₹{bill.total}
+                            </div>
+                        ))}
+                    </div>
+                )}
                 <div><span>Subtotal</span><span>₹{totals.subTotal}</span></div>
                 <div><span>CGST @2.5%</span><span>₹{totals.cgst}</span></div>
                 <div><span>SGST @2.5%</span><span>₹{totals.sgst}</span></div>
@@ -212,6 +249,38 @@ const BillLayout = React.memo(({ order, editable, onQtyChange, buildUpiUrl, onCl
                     <span>₹{totals.total}</span>
                 </div>
             </div>
+
+            {editable && (
+                <div className="bill-split-actions">
+
+                    {/* SPLIT BY PEOPLE */}
+                    <div className="split-box">
+                        <input
+                            type="number"
+                            placeholder="No. of people"
+                            value={splitPeople}
+                            onChange={(e) => setSplitPeople(e.target.value)}
+                        />
+                        <button onClick={applySplitAmount}>
+                            Split Amount
+                        </button>
+                    </div>
+
+                    {/* SPLIT BY BILL */}
+                    <div className="split-box">
+                        <input
+                            type="number"
+                            placeholder="No. of bills"
+                            value={splitBills}
+                            onChange={(e) => setSplitBills(e.target.value)}
+                        />
+                        <button onClick={applySplitBill}>
+                            Split Bill
+                        </button>
+                    </div>
+
+                </div>
+            )}
 
             <div className="bill-qr-section">
                 <div className="bill-qr-title">Scan To Pay</div>
@@ -400,6 +469,9 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
     const [modeFilter, setModeFilter] = useState("all");
     const [openFrom, setOpenFrom] = useState(false);
     const [openTo, setOpenTo] = useState(false);
+    const [originalBill, setOriginalBill] = useState(null);
+    const [splitPeople, setSplitPeople] = useState("");
+    const [splitBills, setSplitBills] = useState("");
 
     const todayISO = new Date().toISOString().split("T")[0];
     const toggleOrder = useCallback((orderId) => {
@@ -616,7 +688,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 const updatedOrders = prev.orders.map(order => {
 
                     let orderChanged = false;
-                    const start = new Date(order.createdAt).getTime(); 
+                    const start = new Date(order.createdAt).getTime();
 
                     const items = order.items.map(item => {
 
@@ -771,6 +843,13 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
     const closeAllBillOverlays = () => {
         setEditBillOrder(null);
         setPreviewBillOrder(null);
+
+        // 🔥 RESET BACK
+        if (originalBill) {
+            setEditableBill(originalBill);
+        }
+
+        setOriginalBill(null);
     };
 
     const closeOptionsMenu = () => {
@@ -820,6 +899,96 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         };
     };
 
+    const applySplitAmount = () => {
+        if (!splitPeople || isNaN(splitPeople)) return;
+
+        const total = editableBill.items.reduce(
+            (sum, i) => sum + Number(i.totalPrice || 0),
+            0
+        );
+
+        const perHead = (total / Number(splitPeople)).toFixed(2);
+
+        setEditableBill(prev => ({
+            ...prev,
+            splitType: "amount",
+            splitDetails: {
+                customers: Number(splitPeople),
+                perHead
+            }
+        }));
+    };
+
+    const applySplitBill = () => {
+        if (!splitBills || isNaN(splitBills)) return;
+
+        const total = editableBill.items.reduce(
+            (sum, i) => sum + Number(i.totalPrice || 0),
+            0
+        );
+
+        const perBill = (total / Number(splitBills)).toFixed(2);
+
+        const splitDetails = Array.from({ length: Number(splitBills) }, () => ({
+            total: perBill
+        }));
+
+        setEditableBill(prev => ({
+            ...prev,
+            splitType: "bill",
+            splitDetails
+        }));
+    };
+
+    const handleSplitAmount = (order) => {
+        const customers = prompt("Enter number of people:");
+        if (!customers || isNaN(customers)) return;
+
+        const total = order.items.reduce(
+            (sum, i) => sum + Number(i.totalPrice || 0),
+            0
+        );
+
+        const perHead = (total / Number(customers)).toFixed(2);
+
+        const updatedOrder = {
+            ...order,
+            splitType: "amount",
+            splitDetails: {
+                customers: Number(customers),
+                perHead
+            }
+        };
+
+        // ✅ INSTANT UI UPDATE
+        setEditableBill(updatedOrder);
+    };
+
+    const handleSplitBill = (order) => {
+        const bills = prompt("Enter number of bills:");
+        if (!bills || isNaN(bills)) return;
+
+        const total = order.items.reduce(
+            (sum, i) => sum + Number(i.totalPrice || 0),
+            0
+        );
+
+        const perBill = (total / Number(bills)).toFixed(2);
+
+        const splitDetails = Array.from({ length: Number(bills) }, () => ({
+            total: perBill
+        }));
+
+        const updatedOrder = {
+            ...order,
+            splitType: "bill",
+            splitDetails
+        };
+
+        // ✅ INSTANT UI UPDATE
+        setEditableBill(updatedOrder);
+    };
+    
     const fromDay = useMemo(() => dayjs(fromDate), [fromDate]);
     const toDay = useMemo(() => dayjs(toDate), [toDate]);
 
@@ -1186,14 +1355,16 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                     >
                         <div
                             onClick={(e) => {
+                                e.stopPropagation();
                                 closeOptionsMenu();
                                 closeAllBillOverlays();
-                                e.stopPropagation();
-                                setEditableBill(
-                                    JSON.parse(JSON.stringify(
-                                        orders.find(o => o.id === openMenuOrderId)
-                                    ))
-                                );
+
+                                const selectedOrder = orders.find(o => o.id === openMenuOrderId);
+
+                                const cloned = JSON.parse(JSON.stringify(selectedOrder));
+
+                                setEditableBill(cloned);
+                                setOriginalBill(cloned);   // ✅ backup
                                 setEditBillOrder(true);
                             }}
                         >
@@ -1235,10 +1406,17 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                             order={editableBill}
                             editable
                             buildUpiUrl={buildUpiUrl}
+
+                            splitPeople={splitPeople}
+                            setSplitPeople={setSplitPeople}
+                            splitBills={splitBills}
+                            setSplitBills={setSplitBills}
+                            applySplitAmount={applySplitAmount}
+                            applySplitBill={applySplitBill}
+
                             onQtyChange={(idx, { quantity, price }) => {
                                 setEditableBill(prev => {
-                                    const q =
-                                        quantity === "" ? "" : Number(quantity);
+                                    const q = quantity === "" ? "" : Number(quantity);
                                     const p = Math.max(0, price);
 
                                     const newItems = prev.items.map((item, i) =>

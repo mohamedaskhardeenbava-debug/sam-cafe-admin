@@ -1,0 +1,591 @@
+/* ═══════════════════════════════════════════════
+   ServiceReports.css — Service Management System
+   Light theme · matches Dashboard.css white-card style
+═══════════════════════════════════════════════ */
+
+/* ── PAGE ───────────────────────────────────── */
+.s-page {
+    box-sizing: border-box;
+    background: transparent;
+}
+
+/* ── HEADER ─────────────────────────────────── */
+.s-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    gap: 12px;
+}
+
+.s-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #111;
+    margin: 0 0 2px;
+}
+
+.s-subtitle {
+    font-size: 13px;
+    color: #777;
+    margin: 0;
+    font-weight: 400;
+}
+
+.s-badge {
+    background: #111;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 5px 14px;
+    border-radius: 999px;
+}
+
+/* ── KPI ROW ────────────────────────────────── */
+.s-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.s-kpi-card {
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    will-change: transform;
+}
+
+.s-kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.s-kpi-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    flex-shrink: 0;
+}
+
+.s-kpi-label {
+    font-size: 11px;
+    color: #777;
+    margin: 0;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.s-kpi-value {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 2px 0 0;
+    color: #111;
+}
+
+.s-kpi-sub {
+    font-size: 10px;
+    color: #aaa;
+    margin: 1px 0 0;
+}
+
+/* ── GRID LAYOUTS ───────────────────────────── */
+.s-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.s-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+/* ── CARD ───────────────────────────────────── */
+.s-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    padding: 16px 20px;
+}
+
+/* ── SECTION TITLE ──────────────────────────── */
+.s-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.s-section-accent {
+    width: 3px;
+    height: 16px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.s-section-title h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.s-section-divider {
+    height: 1px;
+    background: #f0f0f0;
+    margin: 14px 0;
+}
+
+/* ── EMPTY ──────────────────────────────────── */
+.s-empty {
+    color: #aaa;
+    font-size: 13px;
+    text-align: center;
+    padding: 28px 16px;
+    margin: 0;
+}
+
+/* ── TOOLTIP ────────────────────────────────── */
+.s-tooltip {
+    background: #fff;
+    border: 1px solid #e8ecf0;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #111;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.s-tooltip-label {
+    font-size: 11px;
+    color: #777;
+    margin: 0 0 5px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.s-tooltip p {
+    margin: 2px 0;
+}
+
+/* ── PIE ROW ────────────────────────────────── */
+.s-pie-row {
+    display: flex;
+    align-items: center;
+}
+
+.s-pie-legend {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-left: 8px;
+}
+
+.s-pie-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #555;
+}
+
+.s-pie-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.s-pie-name {
+    flex: 1;
+}
+
+.s-pie-legend-item strong {
+    font-size: 13px;
+}
+
+/* ── MISE LIST ──────────────────────────────── */
+.s-mise-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.s-mise-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+}
+
+.s-mise-row.ok {
+    background: rgba(29, 209, 161, 0.07);
+    border-color: rgba(29, 209, 161, 0.25);
+}
+
+.s-mise-row.no {
+    background: rgba(238, 82, 83, 0.05);
+    border-color: rgba(238, 82, 83, 0.18);
+}
+
+.s-mise-indicator {
+    flex-shrink: 0;
+}
+
+.s-mise-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.s-mise-dot.ok {
+    background: #1dd1a1;
+    box-shadow: 0 0 5px rgba(29, 209, 161, 0.45);
+}
+
+.s-mise-dot.no {
+    background: #ccc;
+}
+
+.s-mise-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.s-mise-task {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111;
+    margin: 0;
+}
+
+.s-mise-time {
+    font-size: 11px;
+    color: #999;
+    margin: 2px 0 0;
+}
+
+.s-mise-tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 999px;
+    flex-shrink: 0;
+}
+
+.s-mise-tag.ok {
+    background: rgba(29, 209, 161, 0.15);
+    color: #1dd1a1;
+}
+
+.s-mise-tag.no {
+    background: rgba(238, 82, 83, 0.12);
+    color: #ee5253;
+}
+
+/* ── ASSIGN LIST ────────────────────────────── */
+.s-assign-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.s-assign-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #f9f9f9;
+    transition: background 0.15s;
+}
+
+.s-assign-row:hover {
+    background: #f0f0f0;
+}
+
+.s-assign-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.s-assign-body {
+    flex: 1;
+}
+
+.s-assign-task {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111;
+    margin: 0;
+}
+
+.s-assign-staff {
+    font-size: 11px;
+    color: #999;
+    margin: 2px 0 0;
+}
+
+/* ── GROOMING ───────────────────────────────── */
+.s-groom-circle-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 0 16px;
+}
+
+.s-groom-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: conic-gradient(var(--color) var(--score), #f0f0f0 0);
+    position: relative;
+}
+
+.s-groom-circle::before {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    border-radius: 50%;
+    background: #fff;
+}
+
+.s-groom-circle span {
+    position: relative;
+    z-index: 1;
+    font-size: 15px;
+    font-weight: 700;
+    color: #111;
+}
+
+.s-groom-label {
+    font-size: 11px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0;
+}
+
+.s-groom-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.s-groom-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.s-groom-name {
+    font-size: 12px;
+    color: #555;
+    width: 60px;
+    flex-shrink: 0;
+    font-weight: 500;
+}
+
+.s-groom-track {
+    flex: 1;
+    height: 6px;
+    background: #f0f0f0;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.s-groom-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s ease;
+}
+
+.s-groom-score {
+    font-size: 12px;
+    font-weight: 700;
+    color: #555;
+    width: 36px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.s-no-groom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+}
+
+.s-groom-demo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ── TABLE FALLBACK ─────────────────────────── */
+.s-no-table {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 28px 0;
+}
+
+.s-no-table-icon {
+    font-size: 32px;
+}
+
+.s-no-table p {
+    color: #aaa;
+    font-size: 13px;
+    margin: 0;
+}
+
+.s-no-table-sub {
+    font-size: 11px;
+    color: #ccc;
+}
+
+/* ── EVENT CARDS ────────────────────────────── */
+.s-event-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.s-event-card {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f9f9f9;
+    border: 1px solid #f0f0f0;
+}
+
+.s-event-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: #777;
+    margin: 0 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.s-event-nums {
+    display: flex;
+    gap: 16px;
+}
+
+.s-event-num-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.s-event-num-item span:nth-child(2) {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111;
+}
+
+.s-event-num-item p {
+    font-size: 10px;
+    color: #aaa;
+    margin: 0;
+}
+
+/* ── CATERING ───────────────────────────────── */
+.s-catering-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.s-catering-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #f9f9f9;
+}
+
+.s-catering-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111;
+    margin: 0;
+}
+
+.s-catering-detail {
+    font-size: 11px;
+    color: #999;
+    margin: 2px 0 0;
+}
+
+.s-catering-amount {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1dd1a1;
+    flex-shrink: 0;
+}
+
+/* ── RESPONSIVE ─────────────────────────────── */
+@media (max-width: 1200px) {
+    .s-kpi-row {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .s-grid-3 {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 900px) {
+    .s-grid-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .s-grid-3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .s-page {
+        padding: 14px;
+    }
+
+    .s-kpi-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

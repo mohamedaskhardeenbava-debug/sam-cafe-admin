@@ -1,0 +1,138 @@
+/* PAGE */
+.evt-res-page {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* HEADER */
+.evt-res-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.evt-res-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* ACTIONS */
+.evt-res-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.evt-res-btn {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid #111;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+/* TABLE WRAPPER (same feel as orders) */
+.evt-res-table-wrapper {
+  width: 100%;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+  padding: 0 10px;
+  background: #e9e9e9;
+  border-radius: 20px;
+}
+
+/* TABLE */
+.evt-res-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+  table-layout: fixed;
+}
+
+/* HEADER */
+.evt-res-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.evt-res-table th {
+  padding: 14px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  background: #e9e9e9;
+  text-align: left;
+}
+
+/* ROW CARD STYLE */
+.evt-res-row {
+  background: #fff;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+  transition: all 0.25s ease;
+}
+
+.evt-res-row td {
+  padding: 12px;
+  font-size: 14px;
+  border: none;
+}
+
+/* ROUNDED ROW */
+.evt-res-row td:first-child {
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+}
+
+.evt-res-row td:last-child {
+  border-top-right-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+
+/* HOVER */
+.evt-res-row:hover {
+  background: #fafafa;
+}
+
+/* CLICKABLE */
+.clickable {
+  cursor: pointer;
+}
+
+/* EMPTY */
+.evt-res-empty {
+  text-align: center;
+  padding: 20px;
+  color: #777;
+}
+
+/* STATUS */
+.evt-res-status {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+/* STATUS COLORS */
+.evt-res-status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.evt-res-status-confirmed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.evt-res-status-completed {
+  background: #e0e7ff;
+  color: #3730a3;
+}
