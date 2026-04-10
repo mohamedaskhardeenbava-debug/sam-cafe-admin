@@ -337,7 +337,8 @@ const OrderRow = React.memo(({
     onPickup,
     onOptionsClick,
     navigate,
-    orderStatus
+    orderStatus,
+    setAdminData
 }) => {
     const allItemsCompleted = order.items.every(i => i.status === "completed");
 
@@ -345,7 +346,7 @@ const OrderRow = React.memo(({
         <React.Fragment>
             <tr
                 ref={undefined}
-                className="order-main-row"
+                className={`order-main-row ${order.priority ? "priority-row" : ""}`}
                 onClick={(e) => {
                     if (e.target.closest(".options-btn")) return;
                     onToggle(order.id);
@@ -361,6 +362,37 @@ const OrderRow = React.memo(({
                 <td>{order.tableNo != null ? order.tableNo : "---"}</td>
                 <td>{order.items.length}</td>
                 <td>₹{order.resolvedTotal}</td>
+                <td onClick={(e) => e.stopPropagation()}>
+                    {orderStatus !== "completed" ? (
+                        <input
+                            type="checkbox"
+                            checked={order.priority || false}
+                            onChange={async (e) => {
+                                const updatedOrder = {
+                                    ...order,
+                                    priority: e.target.checked
+                                };
+
+                                // ✅ 1. INSTANT UI UPDATE
+                                setAdminData(prev => ({
+                                    ...prev,
+                                    orders: prev.orders.map(o =>
+                                        o.id === order.id ? updatedOrder : o
+                                    )
+                                }));
+
+                                // ✅ 2. BACKEND UPDATE
+                                try {
+                                    await persistOrderEverywhere(updatedOrder);
+                                } catch (err) {
+                                    console.error("Failed to update priority", err);
+                                }
+                            }}
+                        />
+                    ) : (
+                        "---"
+                    )}
+                </td>
                 <td>
                     <div className={`status status-${normalizeStatus(orderStatus).replace(/\s+/g, "-")}`}>
                         {orderStatus}
@@ -386,7 +418,7 @@ const OrderRow = React.memo(({
             </tr>
 
             <tr className={`order-sub-row ${isActive ? "open" : ""}`}>
-                <td colSpan={10}>
+                <td colSpan={11}>
                     <div className="order-sub-content">
                         <table className="order-items-table">
                             <thead>
@@ -590,6 +622,12 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         const sortDir = sortConfig.direction ?? "desc";
 
         data.sort((a, b) => {
+
+            // 🔥 PRIORITY FIRST (GLOBAL OVERRIDE)
+            if (a.priority && !b.priority) return -1;
+            if (!a.priority && b.priority) return 1;
+
+            // 🔽 NORMAL SORTING
             switch (sortKey) {
                 case "id":
                     return sortDir === "asc"
@@ -988,7 +1026,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         // ✅ INSTANT UI UPDATE
         setEditableBill(updatedOrder);
     };
-    
+
     const fromDay = useMemo(() => dayjs(fromDate), [fromDate]);
     const toDay = useMemo(() => dayjs(toDate), [toDate]);
 
@@ -1170,15 +1208,16 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
             <div className="orders-table-wrapper">
                 <table className="orders-table">
                     <colgroup>
-                        <col style={{ width: "120px" }} />
-                        <col style={{ width: "120px" }} />
-                        <col style={{ width: "150px" }} />
                         <col />
-                        <col style={{ width: "110px" }} />
-                        <col style={{ width: "90px" }} />
+                        <col />
+                        <col />
+                        <col />
+                        <col />
+                        <col/>
+                        <col />
+                        <col/>
+                        <col/>
                         <col style={{ width: "120px" }} />
-                        <col style={{ width: "90px" }} />
-                        <col style={{ width: "110px" }} />
                         <col style={{ width: "60px" }} />
                     </colgroup>
                     <thead>
@@ -1211,6 +1250,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                             <th>Table No</th>
                             <th>No of Items</th>
                             <th>Total</th>
+                            <th>Priority</th>
                             <th
                                 onClick={() => handleSort("status")}
                                 className={sortConfig.key === "status" ? "sorted" : ""}
@@ -1232,13 +1272,14 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
                     <tbody>
                         {sortedOrders.length === 0 ? (
-                            <EmptyRow colSpan={10} message="No orders for selected date range" />
+                            <EmptyRow colSpan={11} message="No orders for selected date range" />
                         ) : (
                             sortedOrders.map(order => {
                                 const orderStatus = deriveOrderStatusFromItems(order.items);
                                 return (
                                     <OrderRow
                                         key={order.id}
+                                        colSpan={11}
                                         order={order}
                                         orderStatus={orderStatus}
                                         isActive={activeOrderIds.includes(order.id)}
@@ -1249,6 +1290,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                                             setOpenMenuOrderId(prev => prev === id ? null : id);
                                         }}
                                         navigate={navigate}
+                                        setAdminData={setAdminData}
                                     />
                                 );
                             }))}

@@ -52,6 +52,8 @@ const menu = [
       { label: "Grooming", path: "/kitchen-grooming" },
       { label: "Staff Assigning", path: "/kitchen-assign" },
       { label: "Mise & Cleaning", path: "/kitchen-mise" },
+      { label: "Activity Log", path: "/kitchen-activity" },
+      { label: "Schedules", path: "/kitchen-schedules" },
       { label: "Reports", path: "/kitchen-reports" }
     ]
   },
@@ -62,6 +64,8 @@ const menu = [
       { label: "Grooming", path: "/service-grooming" },
       { label: "Staff Assigning", path: "/service-assign" },
       { label: "Mise & Cleaning", path: "/service-mise" },
+      { label: "Activity Log", path: "/service-activity" },
+      { label: "Schedules", path: "/service-schedules" },
       { label: "Tables", path: "/tables" },
       { label: "Reports", path: "/service-reports" }
     ]

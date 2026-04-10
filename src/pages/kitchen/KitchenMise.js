@@ -1,6 +1,6 @@
 import React from "react";
 import "./KitchenMise.css";
-import { getTodayFormatted } from "../../App";
+import { getTodayKey, getTodayFormatted } from "../../App";
 
 const tasks = {
   mise: ["Arrangement", "Organize", "Veg Cutting", "Meat Cutting"],
@@ -9,15 +9,20 @@ const tasks = {
 
 export default function KitchenMise({ adminData, setAdminData }) {
   const todayFormatted = getTodayFormatted();
+  const today = getTodayKey();
+  
   const toggle = async (task) => {
-    const isChecked = adminData.mise?.[task]?.verified;
+    const isChecked = adminData.mise?.[today]?.[task]?.verified;
 
     const updated = {
       ...adminData.mise,
-      [task]: {
-        ...adminData.mise?.[task],
-        verified: !isChecked,
-        time: !isChecked ? new Date().toLocaleTimeString() : ""
+      [today]: {
+        ...adminData.mise?.[today],
+        [task]: {
+          ...adminData.mise?.[today]?.[task],
+          verified: !isChecked,
+          time: !isChecked ? new Date().toLocaleTimeString() : ""
+        }
       }
     };
 
@@ -27,7 +32,6 @@ export default function KitchenMise({ adminData, setAdminData }) {
       body: JSON.stringify(updated)
     });
 
-    // 🔥 instant UI update
     setAdminData(prev => ({
       ...prev,
       mise: updated
@@ -58,24 +62,24 @@ export default function KitchenMise({ adminData, setAdminData }) {
 
               <tbody>
                 {items.map(task => {
-                  const staffAssigned = adminData.mise?.[task]?.staff;
+                  const staffAssigned = adminData.mise?.[today]?.[task]?.staff;
 
                   return (
                     <tr key={task}>
                       <td>{task}</td>
-                      <td>{adminData.mise?.[task]?.staff || "-"}</td>
+                      <td>{adminData.mise?.[today]?.[task]?.staff || "-"}</td>
 
                       <td>
                         <input
                           className="mise-table-checkbox"
                           type="checkbox"
                           disabled={!staffAssigned}
-                          checked={adminData.mise?.[task]?.verified || false}
+                          checked={adminData.mise?.[today]?.[task]?.verified || false}
                           onChange={() => toggle(task)}
                         />
                       </td>
 
-                      <td>{adminData.mise?.[task]?.time || "-"}</td>
+                      <td>{adminData.mise?.[today]?.[task]?.time || "-"}</td>
                     </tr>
                   );
                 })}

@@ -1,9 +1,9 @@
 import React from "react";
 import "./ServiceMise.css";
-import { getTodayFormatted } from "../../App";
+import { getTodayFormatted, getTodayKey } from "../../App";
 
 const tasks = {
-  mise: ["Table Setup", "Cutlery Setup", "Water Setup"],
+  mise: ["Table Setup", "Cutlery Setup", "Water Filling", "Cash Counter"],
   cleaning: [
     "Floor",
     "Table",
@@ -17,15 +17,20 @@ const tasks = {
 
 export default function ServiceMise({ adminData, setAdminData }) {
   const todayFormatted = getTodayFormatted();
+  const today = getTodayKey();
+
   const toggle = async (task) => {
-    const isChecked = adminData.serviceMise?.[task]?.verified;
+    const isChecked = adminData.serviceMise?.[today]?.[task]?.verified;
 
     const updated = {
       ...adminData.serviceMise,
-      [task]: {
-        ...adminData.serviceMise?.[task],
-        verified: !isChecked,
-        time: !isChecked ? new Date().toLocaleTimeString() : ""   // ✅ CLEAR TIME
+      [today]: {
+        ...adminData.serviceMise?.[today],
+        [task]: {
+          ...adminData.serviceMise?.[today]?.[task],
+          verified: !isChecked,
+          time: !isChecked ? new Date().toLocaleTimeString() : ""
+        }
       }
     };
 
@@ -74,14 +79,14 @@ export default function ServiceMise({ adminData, setAdminData }) {
 
               <tbody>
                 {items.map(task => {
-                  const staffAssigned = adminData.serviceMise?.[task]?.staff;
+                  const staffAssigned = adminData.serviceMise?.[today]?.[task]?.staff;
 
                   return (
                     <tr key={task}>
                       <td>{task}</td>
 
                       <td>
-                        {adminData.serviceMise?.[task]?.staff || "-"}
+                        {adminData.serviceMise?.[today]?.[task]?.staff || "-"}
                       </td>
 
                       <td>
@@ -89,13 +94,13 @@ export default function ServiceMise({ adminData, setAdminData }) {
                           className="service-mise-checkbox"
                           type="checkbox"
                           disabled={!staffAssigned}  // ✅ works now
-                          checked={adminData.serviceMise?.[task]?.verified || false}
+                          checked={adminData.serviceMise?.[today]?.[task]?.verified || false}
                           onChange={() => toggle(task)}
                         />
                       </td>
 
                       <td>
-                        {adminData.serviceMise?.[task]?.time || "-"}
+                        {adminData.serviceMise?.[today]?.[task]?.time || "-"}
                       </td>
                     </tr>
                   );

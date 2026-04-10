@@ -265,7 +265,7 @@
 }
 
 .status-placed {
-  color: #111 !important;
+  color: #fff !important;
   background-color: #be1616 !important;
 }
 
@@ -841,6 +841,11 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.priority-row {
+  border: 2px solid #ff3b3b;
+  background: #fff5f5 !important;
 }
 
 @media screen and (max-width: 768px) {

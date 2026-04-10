@@ -3,7 +3,7 @@ import "./ServiceAssign.css";
 import { getTodayKey, getTodayFormatted } from "../../App";
 
 const tasks = {
-  mise: ["Table Setup", "Cutlery Setup", "Water Filling"],
+  mise: ["Table Setup", "Cutlery Setup", "Water Filling", "Cash Counter"],
   cleaning: [
     "Floor",
     "Table",
@@ -33,12 +33,14 @@ export default function ServiceAssign({ adminData, setAdminData }) {
       }
     };
 
-    // 🔥 ALSO UPDATE MISE
     const updatedMise = {
       ...adminData.serviceMise,
-      [task]: {
-        ...adminData.serviceMise?.[task],
-        staff: staffName
+      [today]: {
+        ...adminData.serviceMise?.[today],
+        [task]: {
+          ...adminData.serviceMise?.[today]?.[task],
+          staff: staffName
+        }
       }
     };
 

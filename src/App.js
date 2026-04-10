@@ -49,13 +49,16 @@ import KitchenMise from "./pages/kitchen/KitchenMise";
 import KitchenAssign from "./pages/kitchen/KitchenAssign";
 import KitchenReports from "./pages/kitchen/KitchenReports";
 import TableManagement from "./pages/service/TableManagement";
+import KitchenActivityLog from "./pages/kitchen/KitchenActivityLog";
+import KitchenSchedules from "./pages/kitchen/KitchenSchedules";
 
 //SMS
 import ServiceAssign from "./pages/service/ServiceAssign";
 import ServiceGrooming from "./pages/service/ServiceGrooming";
 import ServiceMise from "./pages/service/ServiceMise";
 import ServiceReports from "./pages/service/ServiceReports";
-
+import ServiceActivityLog from "./pages/service/ServiceActivityLog";
+import ServiceSchedules from "./pages/service/ServiceSchedules";
 
 // Hard input limiter (chars + words)
 export const allowTextInput = (
@@ -131,10 +134,14 @@ function App() {
           groomRes,
           miseRes,
           recipeRes,
-          offerRes,
+          offerRes,              // ✅ offers FIRST
+          activityRes,           // kitchenActivity
+          schedulesRes,          // kitchenSchedules
           serviceAssignRes,
           serviceGroomRes,
           serviceMiseRes,
+          serviceActivityRes,
+          serviceSchedulesRes,
           tablesRes
         ] = await Promise.all([
           api.get("/categories"),
@@ -146,10 +153,14 @@ function App() {
           api.get("/grooming"),
           api.get("/mise"),
           api.get("/recipes"),
-          api.get("/offers"),
+          api.get("/offers"),              // ✅ HERE
+          api.get("/kitchenActivity"),     // ✅
+          api.get("/kitchenSchedules"),    // ✅
           api.get("/serviceAssign"),
           api.get("/serviceGrooming"),
           api.get("/serviceMise"),
+          api.get("/serviceActivity"),
+          api.get("/serviceSchedules"),
           api.get("/tables")
         ]);
 
@@ -163,10 +174,14 @@ function App() {
           grooming: groomRes.data || {},
           mise: miseRes.data || {},
           recipes: recipeRes.data || [],
+          kitchenActivity: activityRes.data || [],
+          kitchenSchedules: schedulesRes.data || [],
           offers: offerRes.data || [],
           serviceAssign: serviceAssignRes.data || {},
+          serviceActivity: serviceActivityRes.data || [],
           serviceGrooming: serviceGroomRes.data || {},
           serviceMise: serviceMiseRes.data || {},
+          serviceSchedules: serviceSchedulesRes.data || [],
           tables: tablesRes.data?.[0]?.list || []
         });
 
@@ -552,6 +567,21 @@ function App() {
             <Route path="/kitchen-reports" element={<KitchenReports adminData={adminData} />} />
 
             <Route
+              path="/kitchen-activity"
+              element={<KitchenActivityLog adminData={adminData} />}
+            />
+            
+            <Route
+              path="/kitchen-schedules"
+              element={
+                <KitchenSchedules
+                  adminData={adminData}
+                  setAdminData={setAdminData}
+                />
+              }
+            />
+
+            <Route
               path="/tables"
               element={
                 <TableManagement
@@ -577,6 +607,21 @@ function App() {
               <ServiceReports adminData={adminData} />
             } />
 
+            <Route
+              path="/service-activity"
+              element={<ServiceActivityLog adminData={adminData} />}
+            />
+
+            <Route
+              path="/service-schedules"
+              element={
+                <ServiceSchedules
+                  adminData={adminData}
+                  setAdminData={setAdminData}
+                />
+              }
+            />
+            
             <Route path="/offers"
               element={
                 <Offers
