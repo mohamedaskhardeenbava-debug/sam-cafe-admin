@@ -5,6 +5,7 @@ import deleteIcon from "../icon/delete-icon.png";
 import { allowTextInput } from "../App";
 import { sortArray } from "../App";
 import { EmptyRow } from "../App";
+import api from "../api";
 
 
 const EMPTY_FORM = {
@@ -29,7 +30,7 @@ const EMPTY_FORM = {
 const generateIngredientId = (name) =>
   name.trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
 
-const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase, handleSort, sortConfig }) => {
+const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCamelCase, handleSort, sortConfig }) => {
   const [showForm, setShowForm] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [imagePreview, setImagePreview] = useState("");
@@ -50,7 +51,7 @@ const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase, handle
     [adminData.ingredients, sortConfig]
   );
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const normalizedName = formData.name.trim().toLowerCase();
 
     const duplicate = adminData.ingredients.some(
@@ -81,7 +82,24 @@ const Ingredients = ({ adminData, onAdd, onUpdate, onDelete, toCamelCase, handle
     };
 
 
-    isEditMode ? onUpdate(payload.id, payload) : onAdd(payload);
+    if (isEditMode) {
+      await api.put(`/ingredients/${payload.id}`, payload);
+
+      setAdminData(prev => ({
+        ...prev,
+        ingredients: prev.ingredients.map(i =>
+          i.id === payload.id ? payload : i
+        )
+      }));
+
+    } else {
+      const res = await api.post(`/ingredients`, payload);
+
+      setAdminData(prev => ({
+        ...prev,
+        ingredients: [...prev.ingredients, res.data]
+      }));
+    }
 
     resetIngredientForm();
   };

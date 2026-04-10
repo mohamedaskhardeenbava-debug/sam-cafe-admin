@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "./KitchenGrooming.css";
+import api from "../../api";
 
 export default function KitchenGrooming({ adminData, setAdminData }) {
 
@@ -32,11 +33,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
       }
     };
 
-    await fetch("http://localhost:5000/grooming", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updated)
-    });
+    await api.put("/grooming", updated);
 
     // 🔥 instant UI update
     setAdminData(prev => ({

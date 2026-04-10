@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "./ServiceGrooming.css";
+import api from "../../api";
 
 export default function ServiceGrooming({ adminData, setAdminData }) {
 
@@ -34,11 +35,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
       }
     };
 
-    await fetch("http://localhost:5000/serviceGrooming/1", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updated)
-    });
+    await api.put("/serviceGrooming/1", updated);
 
     setAdminData(prev => ({
       ...prev,
@@ -62,11 +59,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
       }
     };
 
-    await fetch("http://localhost:5000/serviceGrooming/1", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updated)
-    });
+    await api.put("/serviceGrooming/1", updated);
 
     setAdminData(prev => ({
       ...prev,

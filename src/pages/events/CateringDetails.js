@@ -3,24 +3,11 @@ import { useEffect, useState } from "react";
 import api from "../../api";
 import "./CateringDetails.css";
 
-const CateringDetails = () => {
+const CateringDetails = ({adminData}) => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
 
-  /* ================= FETCH ================= */
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await api.get(`/cateringOrders/${id}`);
-        setData(res.data);
-      } catch (err) {
-        console.error("Failed to fetch catering details", err);
-      }
-    };
-
-    fetchData();
-  }, [id]);
+  const data = adminData?.cateringOrders?.find(i => i.id === id);
 
   if (!data) return <div className="evt-catd-page">Loading...</div>;
 

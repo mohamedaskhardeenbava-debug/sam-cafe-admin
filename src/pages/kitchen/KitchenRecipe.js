@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "./KitchenRecipe.css"; // 🔥 reuse recipe-card + modal styles
 import deleteIcon from "../../icon/delete-icon.png";
+import api from "../../api";
 
 export default function KitchenRecipe({ adminData, setAdminData }) {
 
@@ -27,11 +28,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
       ...form
     };
 
-    await fetch("http://localhost:5000/recipes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newRecipe)
-    });
+    await api.post("/recipes", newRecipe);
 
     // 🔥 instant UI update
     setAdminData(prev => ({
@@ -44,9 +41,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
   };
 
   const deleteRecipe = async (id) => {
-    await fetch(`http://localhost:5000/recipes/${id}`, {
-      method: "DELETE"
-    });
+    await api.delete(`/recipes/${id}`);
 
     // 🔥 update UI instantly
     setAdminData(prev => ({

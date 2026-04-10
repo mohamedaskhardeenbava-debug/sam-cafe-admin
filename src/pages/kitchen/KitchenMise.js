@@ -1,6 +1,7 @@
 import React from "react";
 import "./KitchenMise.css";
 import { getTodayKey, getTodayFormatted } from "../../App";
+import api from "../../api";
 
 const tasks = {
   mise: ["Arrangement", "Organize", "Veg Cutting", "Meat Cutting"],
@@ -26,11 +27,7 @@ export default function KitchenMise({ adminData, setAdminData }) {
       }
     };
 
-    await fetch("http://localhost:5000/mise", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updated)
-    });
+    await api.put("/mise", updated);
 
     setAdminData(prev => ({
       ...prev,

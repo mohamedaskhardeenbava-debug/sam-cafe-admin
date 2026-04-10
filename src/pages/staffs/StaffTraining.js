@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./StaffModules.css";
 import api from "../../api";
 
-export default function StaffTraining({ adminData }) {
+export default function StaffTraining({ adminData, setAdminData }) {
     const [trainings, setTrainings] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [selected, setSelected] = useState(null);
@@ -42,12 +42,24 @@ export default function StaffTraining({ adminData }) {
                 training: [...(staff.training || []), form]
             };
 
-            await api.put(`/staff/${form.staffId}`, updated);
+            try {
+                const res = await api.put(`/staff/${form.staffId}`, updated);
 
-            setTrainings(prev => [
-                ...prev,
-                { ...form, staffName: staff.name }
-            ]);
+                setTrainings(prev => [
+                    ...prev,
+                    { ...form, staffName: staff.name }
+                ]);
+
+                setAdminData(prev => ({
+                    ...prev,
+                    staff: prev.staff.map(s =>
+                        s.id === form.staffId ? res.data : s
+                    )
+                }));
+
+            } catch (err) {
+                console.error("Training save failed:", err);
+            }
 
             setForm({ role: "", duration: "", type: "", certificate: "" });
             setShowForm(false);

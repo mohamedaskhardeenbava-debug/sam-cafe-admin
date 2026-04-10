@@ -3,24 +3,10 @@ import { useEffect, useState } from "react";
 import api from "../../api";
 import "./PreBookingDetails.css";
 
-const PreBookingDetails = () => {
+const PreBookingDetails = ({ adminData }) => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
-
-  /* ================= FETCH ================= */
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await api.get(`/preBookings/${id}`);
-        setData(res.data);
-      } catch (err) {
-        console.error("Failed to fetch prebooking details", err);
-      }
-    };
-
-    fetchData();
-  }, [id]);
+  const data = adminData?.preBookings || [];
 
   if (!data) return <div className="evt-pbd-page">Loading...</div>;
 

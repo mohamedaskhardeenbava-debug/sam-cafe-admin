@@ -3,24 +3,11 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import "./Celebrations.css";
 
-const Celebrations = () => {
-  const [data, setData] = useState([]);
+const Celebrations = ({ adminData }) => {
   const [filterToday, setFilterToday] = useState(false);
   const navigate = useNavigate();
 
-  /* ================= FETCH ================= */
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await api.get("/celebrations");
-        setData(res.data || []);
-      } catch (err) {
-        console.error("Failed to fetch celebrations", err);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const data = adminData?.celebrations || [];
 
   /* ================= FILTER ================= */
   const filteredData = useMemo(() => {

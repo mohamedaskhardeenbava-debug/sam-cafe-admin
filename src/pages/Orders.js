@@ -12,6 +12,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { formatDisplayDate } from "../App"
 import { formatIndianTime } from "../App"
+import socket from "../socket";
 
 const SEVEN_MIN = 7 * 60 * 1000;
 const ONE_MIN = 60 * 1000;
@@ -751,13 +752,23 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
                     if (!orderChanged && newStatus === order.status) return order;
 
+                    changed = true; // 🔥 ADD THIS
+
                     const updatedOrder = {
                         ...order,
                         items,
                         status: newStatus
                     };
 
-                    persistOrder(updatedOrder);
+                    if (orderChanged || newStatus !== order.status) {
+                        persistOrder(updatedOrder);
+                    }
+
+                    socket.emit("data-change", {
+                        resource: "orders",
+                        action: "updated",
+                        payload: updatedOrder
+                    });
 
                     return updatedOrder;
                 });
@@ -768,7 +779,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
             });
 
-        }, 10000);
+        }, 3000);
 
         return () => clearInterval(interval);
 
@@ -1371,7 +1382,13 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                                                 items,
                                                 status: newStatus
                                             };
-                                            persistOrder(updated);
+                                            persistOrder(updated); socket.emit("data-change", {
+                                                resource: "orders",
+                                                action: "updated",
+                                                payload: updated
+                                            });
+
+
                                             return updated;
                                         })
                                     }));

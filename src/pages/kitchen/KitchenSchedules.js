@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./KitchenSchedules.css";
+import api from "../../api";
 
 export default function KitchenSchedules({ adminData, setAdminData }) {
 
@@ -29,11 +30,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
 
         try {
             // ✅ USE YOUR API (port 4000)
-            await fetch("http://localhost:4000/kitchenSchedules", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(newItem)
-            });
+            await api.post("/kitchenSchedules", newItem);
 
             // ✅ update UI manually
             setAdminData(prev => ({
@@ -66,17 +63,9 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
         const activity = adminData?.kitchenActivity || [];
         const updatedActivity = [...activity, ...expired];
 
-        await fetch("http://localhost:4000/kitchenActivity", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updatedActivity)
-        });
+        await api.put("/kitchenSchedules", upcoming);
 
-        await fetch("http://localhost:4000/kitchenSchedules", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(upcoming)
-        });
+        await api.put("/kitchenActivity", updatedActivity);
 
         setAdminData(prev => ({
             ...prev,

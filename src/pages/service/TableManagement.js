@@ -1,6 +1,7 @@
 import { useState } from "react";
 import api from "../../api";
 import "./TableManagement.css";
+
 import deleteIcon from "../../icon/delete-icon.png";
 import qrIcon from "../../icon/qr-icon.png"; // add icon
 import logo from "../../icon/logo.png"; // your logo

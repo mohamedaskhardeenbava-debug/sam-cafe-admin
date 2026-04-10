@@ -11,6 +11,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { formatDisplayDate } from "../App"
+import socket from "../socket";
 
 const toTwoDecimals = (value) =>
   Math.round((Number(value) + Number.EPSILON) * 100) / 100;
@@ -46,14 +47,14 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
   const [disableGlobally, setDisableGlobally] = useState(false);
   const [selectedDishToDisable, setSelectedDishToDisable] = useState("");
 
-useEffect(() => {
-        const closeDropdowns = () => {
-            setOpenDishDropdown(false);
-        };
+  useEffect(() => {
+    const closeDropdowns = () => {
+      setOpenDishDropdown(false);
+    };
 
-        window.addEventListener("click", closeDropdowns);
-        return () => window.removeEventListener("click", closeDropdowns);
-    }, []);
+    window.addEventListener("click", closeDropdowns);
+    return () => window.removeEventListener("click", closeDropdowns);
+  }, []);
 
   const dishesContainingIngredient = useMemo(() => {
     if (!selectedIngredient) return [];
@@ -210,7 +211,15 @@ useEffect(() => {
         )
       }));
 
+      // ✅ MOVE HERE
+      socket.emit("data-change", {
+        resource: "ingredients",
+        action: "updated",
+        payload: res.data
+      });
+
       closeModal();
+
     } catch (err) {
       console.error("Failed to update stock", err);
     }

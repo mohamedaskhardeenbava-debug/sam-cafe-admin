@@ -3,24 +3,11 @@ import { useEffect, useState } from "react";
 import api from "../../api";
 import "./CelebrationDetails.css";
 
-const CelebrationDetails = () => {
+const CelebrationDetails = ({ adminData }) => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
 
-  /* ================= FETCH ================= */
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await api.get(`/celebrations/${id}`);
-        setData(res.data);
-      } catch (err) {
-        console.error("Failed to fetch celebration details", err);
-      }
-    };
-
-    fetchData();
-  }, [id]);
+  const data = adminData?.celebrations || [];
 
   if (!data) return <div className="evt-clbd-page">Loading...</div>;
 

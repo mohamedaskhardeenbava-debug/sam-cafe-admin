@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./ServiceSchedules.css";
+import api from "../../api";
 
 export default function ServiceSchedules({ adminData, setAdminData }) {
 
@@ -29,11 +30,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
 
         try {
             // ✅ correct API (port 4000)
-            await fetch("http://localhost:4000/serviceSchedules", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(newItem)
-            });
+            await api.post("/serviceSchedules", newItem);
 
             setAdminData(prev => ({
                 ...prev,
@@ -67,24 +64,19 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
         const updatedActivity = [...activity, ...expired];
 
         // 👉 Update backend
-        await fetch("http://localhost:5000/serviceActivity", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updatedActivity)
-        });
+        try {
+            await api.put("/serviceActivity", updatedActivity);
+            await api.put("/serviceSchedules", upcoming);
 
-        await fetch("http://localhost:5000/serviceSchedules", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(upcoming)
-        });
+            setAdminData(prev => ({
+                ...prev,
+                serviceSchedules: upcoming,
+                serviceActivity: updatedActivity
+            }));
 
-        // 👉 Update state
-        setAdminData(prev => ({
-            ...prev,
-            serviceSchedules: upcoming,
-            serviceActivity: updatedActivity
-        }));
+        } catch (err) {
+            console.error("MOVE FAILED:", err);
+        }
     };
 
     useEffect(() => {

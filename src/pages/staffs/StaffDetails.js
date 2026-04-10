@@ -26,17 +26,22 @@ const StaffDetails = ({ adminData, setAdminData }) => {
 
     /* ================= SAVE ================= */
     const persistStaff = async (updated) => {
-        await api.put(`/staff/${staffId}`, updated);
+        try {
+            await api.put(`/staff/${staffId}`, updated);
 
-        setAdminData(prev => ({
-            ...prev,
-            staff: prev.staff.map(s =>
-                s.id === staffId ? updated : s
-            )
-        }));
+            setAdminData(prev => ({
+                ...prev,
+                staff: prev.staff.map(s =>
+                    s.id === staffId ? updated : s
+                )
+            }));
 
-        setEditSection(null);
-        setLocalStaff(updated);
+            setEditSection(null);
+            setLocalStaff(updated);
+
+        } catch (err) {
+            console.error("Update failed:", err);
+        }
     };
 
     /* ================= IMAGE ================= */

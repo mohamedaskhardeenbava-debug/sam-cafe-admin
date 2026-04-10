@@ -3,24 +3,11 @@ import { useEffect, useState } from "react";
 import api from "../../api";
 import "./ReservationDetails.css";
 
-const ReservationDetails = () => {
+const ReservationDetails = ({ adminData }) => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
 
-  /* ================= FETCH ================= */
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await api.get(`/reservations/${id}`);
-        setData(res.data);
-      } catch (err) {
-        console.error("Failed to fetch reservation details", err);
-      }
-    };
-
-    fetchData();
-  }, [id]);
+  const data = adminData?.reservations || [];
 
   if (!data) return <div className="evt-resd-page">Loading...</div>;
 

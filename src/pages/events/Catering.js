@@ -3,24 +3,10 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import "./Catering.css";
 
-const Catering = () => {
-  const [data, setData] = useState([]);
+const Catering = ({ adminData }) => {
   const [filterToday, setFilterToday] = useState(false);
   const navigate = useNavigate();
-
-  /* ================= FETCH ================= */
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await api.get("/cateringOrders");
-        setData(res.data || []);
-      } catch (err) {
-        console.error("Failed to fetch catering orders", err);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const data = adminData?.cateringOrders || [];
 
   /* ================= FILTER ================= */
   const filteredData = useMemo(() => {

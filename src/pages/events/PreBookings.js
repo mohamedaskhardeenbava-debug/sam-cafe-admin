@@ -3,24 +3,11 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import "./PreBookings.css";
 
-const PreBookings = () => {
-  const [data, setData] = useState([]);
+const PreBookings = ({ adminData }) => {
   const [filterToday, setFilterToday] = useState(false);
   const navigate = useNavigate();
 
-  /* ================= FETCH ================= */
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await api.get("/preBookings");
-        setData(res.data || []);
-      } catch (err) {
-        console.error("Failed to fetch preBookings", err);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const data = adminData?.preBookings || [];
 
   /* ================= FILTER ================= */
   const filteredData = useMemo(() => {

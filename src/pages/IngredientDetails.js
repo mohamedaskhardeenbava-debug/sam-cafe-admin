@@ -43,7 +43,7 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
     const saveIngredient = async (updated) => {
 
         const oldId = ingredient.id;   // always use actual ingredient
-        const newId = generateIdFromName(updated.name);
+        const newId = oldId;
 
         const payload = {
             ...updated,
@@ -52,27 +52,16 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
 
         try {
 
-            if (oldId !== newId) {
+            await api.put(`/ingredients/${oldId}`, {
+                ...updated,
+                id: oldId
+            });
 
-                // remove old
-                await api.delete(`/ingredients/${oldId}`);
-
-                // create new
-                await api.post(`/ingredients`, payload);
-
-            } else {
-
-                // update existing
-                await api.put(`/ingredients/${oldId}`, payload);
-
-            }
-
-            // update local state
             setAdminData(prev => ({
                 ...prev,
-                ingredients: prev.ingredients
-                    .filter(i => i.id !== oldId)
-                    .concat(payload)
+                ingredients: prev.ingredients.map(i =>
+                    i.id === oldId ? { ...updated, id: oldId } : i
+                )
             }));
 
             setLocalIngredient(payload);

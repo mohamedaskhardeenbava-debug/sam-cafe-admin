@@ -52,11 +52,11 @@ const Offers = ({ adminData, setAdminData }) => {
             offerPrice
         };
 
-        await api.post("/offers", payload);
+        const res = await api.post("/offers", payload);
 
         setAdminData(prev => ({
             ...prev,
-            offers: [...(prev.offers || []), payload]
+            offers: [...(prev.offers || []), res.data]
         }));
 
         setShowModal(false);

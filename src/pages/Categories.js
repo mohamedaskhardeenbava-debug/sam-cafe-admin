@@ -88,12 +88,11 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
     try {
       // 1. Get current menu
-      await api.post("/categories", newCategoryPayload);
+      const res = await api.post("/categories", newCategoryPayload);
 
-      // 3. Update frontend state
       setAdminData(prev => ({
         ...prev,
-        categories: [...prev.categories, newCategoryPayload]
+        categories: [...prev.categories, res.data]
       }));
 
       resetAddCategoryForm();
@@ -357,14 +356,6 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
             cat.id === existing.id ? updatedCategory : cat
           )
         }));
-
-        setAdminData(prev => ({
-          ...prev,
-          categories: prev.categories.map(cat =>
-            cat.id === editCategoryId ? updatedCategory : cat
-          )
-        }));
-
       }
 
       resetEditCategoryForm();

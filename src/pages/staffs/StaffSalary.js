@@ -52,13 +52,18 @@ export default function StaffSalary({ adminData }) {
             ]
         };
 
-        const res = await api.put(`/staff/${selected.id}`, updated);
+        try {
+            const res = await api.put(`/staff/${selected.id}`, updated);
 
-        setStaffList(prev =>
-            prev.map(s =>
-                s.id === selected.id ? res.data : s
-            )
-        );
+            setStaffList(prev =>
+                prev.map(s =>
+                    s.id === selected.id ? res.data : s
+                )
+            );
+
+        } catch (err) {
+            console.error("Salary update failed:", err);
+        }
 
         closeModal();
     };

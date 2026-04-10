@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import "./ServiceReports.css";
+import api from "../../api";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Sector,

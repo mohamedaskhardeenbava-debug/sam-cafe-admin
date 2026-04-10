@@ -12,7 +12,7 @@ const normalizeDate = (d) => {
     return `${year}-${month}-${day}`;
 };
 
-export default function StaffAttendance({ adminData }) {
+export default function StaffAttendance({ adminData, setAdminData }) {
     const getDates = () => {
         const today = new Date();
 
@@ -101,12 +101,21 @@ export default function StaffAttendance({ adminData }) {
             attendance: [...existing, { date, ...data }]
         };
 
-        const res = await api.put(`/staff/${staffId}`, updated);
+        try {
+            const res = await api.put(`/staff/${staffId}`, updated);
 
-        const updatedStaff = res.data;
+            const updatedStaff = res.data;
 
-        const index = adminData.staff.findIndex(s => s.id === staffId);
-        adminData.staff[index] = updatedStaff;
+            setAdminData(prev => ({
+                ...prev,
+                staff: prev.staff.map(s =>
+                    s.id === staffId ? updatedStaff : s
+                )
+            }));
+
+        } catch (err) {
+            console.error("Attendance save failed:", err);
+        }
 
         setAttendance(prev => ({
             ...prev,

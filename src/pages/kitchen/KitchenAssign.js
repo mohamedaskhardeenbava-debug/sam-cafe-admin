@@ -1,6 +1,7 @@
 import React from "react";
 import "./KitchenAssign.css";
 import { getTodayKey, getTodayFormatted } from "../../App";
+import api from "../../api";
 
 // ✅ Both sections
 const tasks = {
@@ -24,12 +25,7 @@ const todayFormatted = getTodayFormatted();
       }
     };
 
-    // ✅ Update backend
-    await fetch("http://localhost:5000/mise", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updated)
-    });
+    await api.put("/mise", updated);
 
     // ✅ Update UI instantly (no refresh)
     setAdminData(prev => ({

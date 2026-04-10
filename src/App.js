@@ -142,7 +142,11 @@ function App() {
           serviceMiseRes,
           serviceActivityRes,
           serviceSchedulesRes,
-          tablesRes
+          tablesRes,
+          reservationsRes,
+          celebrationsRes,
+          preBookingsRes,
+          cateringRes
         ] = await Promise.all([
           api.get("/categories"),
           api.get("/ingredients"),
@@ -161,7 +165,11 @@ function App() {
           api.get("/serviceMise"),
           api.get("/serviceActivity"),
           api.get("/serviceSchedules"),
-          api.get("/tables")
+          api.get("/tables"),
+          api.get("/reservations"),
+          api.get("/celebrations"),
+          api.get("/preBookings"),
+          api.get("/cateringOrders"),
         ]);
 
         setAdminData({
@@ -182,7 +190,11 @@ function App() {
           serviceGrooming: serviceGroomRes.data || {},
           serviceMise: serviceMiseRes.data || {},
           serviceSchedules: serviceSchedulesRes.data || [],
-          tables: tablesRes.data?.[0]?.list || []
+          tables: tablesRes.data?.[0]?.list || [],
+          reservations: reservationsRes.data || [],
+          celebrations: celebrationsRes.data || [],
+          preBookings: preBookingsRes.data || [],
+          cateringOrders: cateringRes.data || []
         });
 
       } catch (err) {
@@ -385,6 +397,7 @@ function App() {
               element={
                 <Ingredients
                   adminData={adminData}
+                  setAdminData={setAdminData}
                   onAdd={addIngredient}
                   onUpdate={updateIngredient}
                   onDelete={deleteIngredient}
@@ -472,17 +485,17 @@ function App() {
               }
             />
 
-            <Route path="/events/reservations" element={<Reservations />} />
-            <Route path="/events/reservations/:id" element={<ReservationDetails />} />
+            <Route path="/events/reservations" element={<Reservations adminData={adminData} />} />
+            <Route path="/events/reservations/:id" element={<ReservationDetails adminData={adminData} />} />
 
-            <Route path="/events/celebrations" element={<Celebrations />} />
-            <Route path="/events/celebrations/:id" element={<CelebrationDetails />} />
+            <Route path="/events/celebrations" element={<Celebrations adminData={adminData} />} />
+            <Route path="/events/celebrations/:id" element={<CelebrationDetails adminData={adminData} />} />
 
-            <Route path="/events/prebookings" element={<PreBookings />} />
-            <Route path="/events/prebookings/:id" element={<PreBookingDetails />} />
+            <Route path="/events/prebookings" element={<PreBookings adminData={adminData} />} />
+            <Route path="/events/prebookings/:id" element={<PreBookingDetails adminData={adminData} />} />
 
-            <Route path="/events/catering" element={<Catering />} />
-            <Route path="/events/catering/:id" element={<CateringDetails />} />
+            <Route path="/events/catering" element={<Catering adminData={adminData}/>} />
+            <Route path="/events/catering/:id" element={<CateringDetails adminData={adminData} />} />
 
             <Route
               path="/orders/:orderId"
@@ -536,14 +549,14 @@ function App() {
               element={
                 <StaffAttendance
                   adminData={adminData}
-                  setAdminData={setAdminData}   // ✅ ADD THIS
+                  setAdminData={setAdminData}   
                 />
               }
             />
 
             <Route path="/staff-salary" element={<StaffSalary adminData={adminData} />} />
             <Route path="/staff-career" element={<StaffCareer adminData={adminData} />} />
-            <Route path="/staff-training" element={<StaffTraining adminData={adminData} />} />
+            <Route path="/staff-training" element={<StaffTraining adminData={adminData} setAdminData={setAdminData} />} />
 
             <Route
               path="/kitchen-assign"

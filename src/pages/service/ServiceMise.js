@@ -1,6 +1,7 @@
 import React from "react";
 import "./ServiceMise.css";
 import { getTodayFormatted, getTodayKey } from "../../App";
+import api from "../../api";
 
 const tasks = {
   mise: ["Table Setup", "Cutlery Setup", "Water Filling", "Cash Counter"],
@@ -34,11 +35,17 @@ export default function ServiceMise({ adminData, setAdminData }) {
       }
     };
 
-    await fetch("http://localhost:5000/serviceMise/1", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updated)
-    });
+    try {
+      await api.put("/serviceMise/1", updated);
+
+      setAdminData(prev => ({
+        ...prev,
+        serviceMise: updated
+      }));
+
+    } catch (err) {
+      console.error("SAVE FAILED:", err);
+    }
 
     setAdminData(prev => ({
       ...prev,

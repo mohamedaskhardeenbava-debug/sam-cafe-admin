@@ -82,7 +82,7 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
     /* ---------------- SAVE TO JSON ---------------- */
     const persistDish = async (updatedDish) => {
 
-        const newDishId = generateIdFromName(updatedDish.name);
+        const newDishId = dishId;
 
         let duplicate;
 
