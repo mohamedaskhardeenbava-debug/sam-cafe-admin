@@ -1,23 +1,79 @@
-import React from "react";
+import React, { useState } from "react";
 import "./KitchenAssign.css";
-import { getTodayKey, getTodayFormatted } from "../../App";
+import { getTodayKey, getTodayFormatted, getTomorrowKey, getTomorrowFormatted } from "../../App";
 import api from "../../api";
-
-// ✅ Both sections
-const tasks = {
-  mise: ["Arrangement", "Organize", "Veg Cutting", "Meat Cutting"],
-  cleaning: ["Floor", "Working Table", "Sink", "Vessel", "Range", "Refrigerator"]
-};
+import deleteIcon from "../../icon/delete-icon.png";
 
 export default function KitchenAssign({ adminData, setAdminData }) {
-  const today = getTodayKey();
-const todayFormatted = getTodayFormatted();
+  const tasks = adminData.tasks?.kitchen;
+  const [newTask, setNewTask] = useState("");
+  const [section, setSection] = useState("mise");
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const tomorrow = getTomorrowKey();
+  const tomorrowFormatted = getTomorrowFormatted();
+
+  const handleAddTask = async () => {
+    const cleanTask = newTask.trim();
+
+    if (!cleanTask) return;
+
+    const existing = adminData.tasks?.kitchen?.[section] || [];
+
+    if (existing.includes(cleanTask)) return;
+
+    const updated = {
+      ...adminData.tasks,
+      kitchen: {
+        ...adminData.tasks.kitchen,
+        [section]: [...existing, cleanTask]
+      }
+    };
+
+    try {
+      await api.put("/tasks/1", updated);
+
+      setAdminData(prev => ({
+        ...prev,
+        tasks: updated
+      }));
+
+      setNewTask("");
+    } catch (err) {
+      console.error("ADD TASK FAILED:", err.response?.data || err.message);
+    }
+  };
+
+  const handleDelete = async (task, section) => {
+    const existing = adminData.tasks?.kitchen?.[section] || [];
+
+    const updated = {
+      ...adminData.tasks,
+      kitchen: {
+        ...adminData.tasks.kitchen,
+        [section]: existing.filter(
+          t => t && t.trim() !== "" && t !== task
+        )
+      }
+    };
+
+    try {
+      await api.put("/tasks/1", updated);
+
+      setAdminData(prev => ({
+        ...prev,
+        tasks: updated
+      }));
+    } catch (err) {
+      console.error("DELETE TASK FAILED:", err.response?.data || err.message);
+    }
+  };
 
   const handleChange = async (task, staffName) => {
     const updated = {
       ...adminData.mise,
-      [today]: {
-        ...adminData.mise?.[today],
+      [tomorrow]: {
+        ...adminData.mise?.[tomorrow],
         [task]: {
           staff: staffName,
           time: new Date().toLocaleTimeString()
@@ -27,7 +83,6 @@ const todayFormatted = getTodayFormatted();
 
     await api.put("/mise", updated);
 
-    // ✅ Update UI instantly (no refresh)
     setAdminData(prev => ({
       ...prev,
       mise: updated
@@ -38,7 +93,13 @@ const todayFormatted = getTodayFormatted();
     <div className="assign-page">
       <div className="assign-header">
         <h2 className="assign-title">Staff Assigning</h2>
-        <h2 className="assign-date">{todayFormatted}</h2>
+        <h2 className="assign-date">{tomorrowFormatted}</h2>
+        <button
+          onClick={() => setShowTaskModal(true)}
+          className="task-add-btn"
+        >
+          + Add Task
+        </button>
       </div>
 
       <div className="assign-table-wrapper">
@@ -48,17 +109,18 @@ const todayFormatted = getTodayFormatted();
               <th>Task</th>
               <th>Staff</th>
               <th>Time</th>
+              <th>Delete</th>
             </tr>
           </thead>
 
           <tbody>
-            {Object.entries(tasks).map(([section, items]) => (
+            {Object.entries(tasks || {}).map(([section, items]) => (
               <React.Fragment key={section}>
 
                 {/* ✅ Section Header */}
                 <tr>
                   <td
-                    colSpan="3"
+                    colSpan="4"
                     style={{
                       fontWeight: "bold",
                       background: "#f5f5f5"
@@ -75,7 +137,7 @@ const todayFormatted = getTodayFormatted();
 
                     <td>
                       <select
-                        value={adminData.mise?.[today]?.[task]?.staff || ""}
+                        value={adminData.mise?.[tomorrow]?.[task]?.staff ?? ""}
                         onChange={(e) =>
                           handleChange(task, e.target.value)
                         }
@@ -90,8 +152,10 @@ const todayFormatted = getTodayFormatted();
                     </td>
 
                     <td>
-                      {adminData.mise?.[today]?.[task]?.time || "-"}
+                      {adminData.mise?.[tomorrow]?.[task]?.time || "-"}
                     </td>
+
+                    <td><div onClick={() => handleDelete(task, section)}><img className="delete-icon" src={deleteIcon}/></div></td>
                   </tr>
                 ))}
 
@@ -100,6 +164,90 @@ const todayFormatted = getTodayFormatted();
           </tbody>
         </table>
       </div>
+
+      {showTaskModal && (
+        <div className="category-modal-overlay">
+          <form
+            className="category-modal"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleAddTask();
+              setShowTaskModal(false);
+            }}
+          >
+
+            {/* HEADER */}
+            <div className="category-modal-header">
+              <h3>Add Task</h3>
+              <button
+                type="button"
+                className="dish-close-btn"
+                onClick={() => setShowTaskModal(false)}
+              ></button>
+            </div>
+
+            {/* BODY */}
+            <div className="category-modal-body">
+
+              {/* TASK */}
+              <div className="form-group">
+                <label>Task Name</label>
+                <input
+                  required
+                  value={newTask}
+                  onChange={(e) => setNewTask(e.target.value)}
+                />
+              </div>
+
+              {/* SECTION */}
+              <div className="form-group">
+                <label>Section</label>
+
+                <div className="dishes-dropdown-wrapper">
+                  <button
+                    type="button"
+                    className="dishes-status-dropdown"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenDropdown(prev => prev === "section" ? null : "section");
+                    }}
+                  >
+                    {section === "mise" ? "Mise" : "Cleaning"}
+                  </button>
+
+                  {openDropdown === "section" && (
+                    <div className="dishes-dropdown-menu">
+                      {["mise", "cleaning"].map(sec => (
+                        <div
+                          key={sec}
+                          onClick={() => {
+                            setSection(sec);
+                            setOpenDropdown(null);
+                          }}
+                        >
+                          {sec.toUpperCase()}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* FOOTER */}
+            <div className="category-modal-footer">
+              <div className="form-actions">
+                <button type="submit">Add Task</button>
+                <button type="button" onClick={() => setShowTaskModal(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+
+          </form>
+        </div>
+      )}
     </div>
   );
 }

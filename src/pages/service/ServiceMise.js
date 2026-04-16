@@ -1,34 +1,28 @@
 import React from "react";
 import "./ServiceMise.css";
-import { getTodayFormatted, getTodayKey } from "../../App";
+import { getTodayFormatted, getTodayKey, getTomorrowKey } from "../../App";
 import api from "../../api";
-
-const tasks = {
-  mise: ["Table Setup", "Cutlery Setup", "Water Filling", "Cash Counter"],
-  cleaning: [
-    "Floor",
-    "Table",
-    "Sink",
-    "Cutlery & Crockery",
-    "Equipment",
-    "Refrigerator",
-    "Clothes & Laundry"
-  ]
-};
 
 export default function ServiceMise({ adminData, setAdminData }) {
   const todayFormatted = getTodayFormatted();
   const today = getTodayKey();
+  const tomorrow = getTomorrowKey();
+
+  const activeDate =
+    adminData.serviceMise?.[today]
+      ? today
+      : tomorrow;
+  const tasks = adminData.tasks?.service; 
 
   const toggle = async (task) => {
-    const isChecked = adminData.serviceMise?.[today]?.[task]?.verified;
+    const isChecked = adminData.serviceMise?.[activeDate]?.[task]?.verified;
 
     const updated = {
       ...adminData.serviceMise,
-      [today]: {
-        ...adminData.serviceMise?.[today],
+      [activeDate]: {
+        ...adminData.serviceMise?.[activeDate],
         [task]: {
-          ...adminData.serviceMise?.[today]?.[task],
+          ...adminData.serviceMise?.[activeDate]?.[task],
           verified: !isChecked,
           time: !isChecked ? new Date().toLocaleTimeString() : ""
         }
@@ -65,7 +59,7 @@ export default function ServiceMise({ adminData, setAdminData }) {
       </div>
 
       {/* SECTIONS */}
-      {Object.entries(tasks).map(([section, items]) => (
+      {Object.entries(tasks || {}).map(([section, items]) => (
         <div key={section} className="service-mise-section">
 
           <h3 className="service-mise-section-title">
@@ -86,14 +80,14 @@ export default function ServiceMise({ adminData, setAdminData }) {
 
               <tbody>
                 {items.map(task => {
-                  const staffAssigned = adminData.serviceMise?.[today]?.[task]?.staff;
+                  const staffAssigned = adminData.serviceMise?.[activeDate]?.[task]?.staff;
 
                   return (
                     <tr key={task}>
                       <td>{task}</td>
 
                       <td>
-                        {adminData.serviceMise?.[today]?.[task]?.staff || "-"}
+                        {adminData.serviceMise?.[activeDate]?.[task]?.staff || "-"}
                       </td>
 
                       <td>
@@ -101,13 +95,13 @@ export default function ServiceMise({ adminData, setAdminData }) {
                           className="service-mise-checkbox"
                           type="checkbox"
                           disabled={!staffAssigned}  // ✅ works now
-                          checked={adminData.serviceMise?.[today]?.[task]?.verified || false}
+                          checked={adminData.serviceMise?.[activeDate]?.[task]?.verified || false}
                           onChange={() => toggle(task)}
                         />
                       </td>
 
                       <td>
-                        {adminData.serviceMise?.[today]?.[task]?.time || "-"}
+                        {adminData.serviceMise?.[activeDate]?.[task]?.time || "-"}
                       </td>
                     </tr>
                   );

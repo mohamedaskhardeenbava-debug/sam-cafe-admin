@@ -105,6 +105,16 @@
   max-width: 200px;
 }
 
+.service-assign-table th:nth-child(4),
+.service-assign-table td:nth-child(4) {
+  width: 60px;
+  max-width: 60px;
+}
+
+.service-assign-table td:nth-child(4) {
+  text-align: center;
+}
+
 /* SELECT */
 .service-assign-select {
   width: 100%;
@@ -113,4 +123,18 @@
   border: 1px solid #ccc;
   background: #fff;
   cursor: pointer;
+}
+
+.task-add-btn {
+  height: 38px;
+  width: fit-content;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid #111;
+  background: #111;
+  color: #fff;
+  font-weight: 500;
+  cursor: pointer;
+  margin-left: auto;
+  font-size: 14px;
 }

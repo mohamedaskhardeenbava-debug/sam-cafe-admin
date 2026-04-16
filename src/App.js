@@ -33,6 +33,7 @@ import PreBookings from "./pages/events/PreBookings";
 import PreBookingDetails from "./pages/events/PreBookingDetails";
 import Catering from "./pages/events/Catering";
 import CateringDetails from "./pages/events/CateringDetails";
+import Events from "./pages/events/Events";
 
 // STAFFS
 import Staffs from "./pages/staffs/Staffs";
@@ -146,7 +147,10 @@ function App() {
           reservationsRes,
           celebrationsRes,
           preBookingsRes,
-          cateringRes
+          cateringRes,
+          eventsRes, 
+          bookingsRes,
+          tasksRes
         ] = await Promise.all([
           api.get("/categories"),
           api.get("/ingredients"),
@@ -170,6 +174,9 @@ function App() {
           api.get("/celebrations"),
           api.get("/preBookings"),
           api.get("/cateringOrders"),
+          api.get("/events"),
+          api.get("/eventBookings"),
+          api.get("/tasks")
         ]);
 
         setAdminData({
@@ -194,7 +201,13 @@ function App() {
           reservations: reservationsRes.data || [],
           celebrations: celebrationsRes.data || [],
           preBookings: preBookingsRes.data || [],
-          cateringOrders: cateringRes.data || []
+          cateringOrders: cateringRes.data || [],
+          events: eventsRes.data || [],
+          eventBookings: bookingsRes.data || [],
+          tasks: tasksRes.data?.[0] || {
+            kitchen: { mise: [], cleaning: [] },
+            service: { mise: [], cleaning: [] }
+          }
         });
 
       } catch (err) {
@@ -494,8 +507,18 @@ function App() {
             <Route path="/events/prebookings" element={<PreBookings adminData={adminData} />} />
             <Route path="/events/prebookings/:id" element={<PreBookingDetails adminData={adminData} />} />
 
-            <Route path="/events/catering" element={<Catering adminData={adminData}/>} />
+            <Route path="/events/catering" element={<Catering adminData={adminData} />} />
             <Route path="/events/catering/:id" element={<CateringDetails adminData={adminData} />} />
+
+            <Route
+              path="/events"
+              element={
+                <Events
+                  adminData={adminData}
+                  setAdminData={setAdminData}
+                />
+              }
+            />
 
             <Route
               path="/orders/:orderId"
@@ -549,7 +572,7 @@ function App() {
               element={
                 <StaffAttendance
                   adminData={adminData}
-                  setAdminData={setAdminData}   
+                  setAdminData={setAdminData}
                 />
               }
             />
@@ -583,7 +606,7 @@ function App() {
               path="/kitchen-activity"
               element={<KitchenActivityLog adminData={adminData} />}
             />
-            
+
             <Route
               path="/kitchen-schedules"
               element={
@@ -634,7 +657,7 @@ function App() {
                 />
               }
             />
-            
+
             <Route path="/offers"
               element={
                 <Offers
@@ -767,4 +790,18 @@ export const getTodayFull = () => {
     month: "long",
     year: "numeric"
   });
+};
+
+export const getTomorrowKey = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+export const getTomorrowFormatted = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
 };

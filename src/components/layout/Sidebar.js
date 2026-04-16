@@ -26,6 +26,7 @@ const menu = [
     label: "Events",
     icon: orderIcon,
     children: [
+      { label: "Events", path: "/events" },
       { label: "Reservations", path: "/events/reservations" },
       { label: "Celebrations", path: "/events/celebrations" },
       { label: "PreBookings", path: "/events/prebookings" },

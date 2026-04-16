@@ -3,12 +3,15 @@ import "./KitchenSchedules.css";
 import api from "../../api";
 
 export default function KitchenSchedules({ adminData, setAdminData }) {
-
+    const [openDropdown, setOpenDropdown] = useState(null);
     const [show, setShow] = useState(false);
     const [form, setForm] = useState({
         work: "",
         staff: "",
-        date: ""
+        date: "",
+        department: "",
+        status: "",
+        lastRate: ""
     });
 
     const list = adminData.kitchenSchedules || [];
@@ -23,9 +26,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
 
         const newItem = {
             id: newId,
-            work: form.work,
-            staff: form.staff,
-            date: form.date
+            ...form
         };
 
         try {
@@ -38,7 +39,14 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                 kitchenSchedules: [...(prev.kitchenSchedules || []), newItem]
             }));
 
-            setForm({ work: "", staff: "", date: "" });
+            setForm({
+                work: "",
+                staff: "",
+                date: "",
+                department: "",
+                status: "",
+                lastRate: ""
+            });
             setShow(false);
 
         } catch (err) {
@@ -47,7 +55,14 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
     };
 
     const cancel = () => {
-        setForm({ work: "", staff: "", date: "" });
+        setForm({
+            work: "",
+            staff: "",
+            date: "",
+            department: "",
+            status: "",
+            lastRate: ""
+        });
         setShow(false);
     }
 
@@ -63,9 +78,19 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
         const activity = adminData?.kitchenActivity || [];
         const updatedActivity = [...activity, ...expired];
 
-        await api.put("/kitchenSchedules", upcoming);
+        // delete all old schedules first
+        for (const item of list) {
+            await api.delete(`/kitchenSchedules/${item.id}`);
+        }
 
-        await api.put("/kitchenActivity", updatedActivity);
+        // add updated schedules
+        for (const item of upcoming) {
+            await api.post("/kitchenSchedules", item);
+        }
+
+        for (const item of expired) {
+            await api.post("/kitchenActivity", item);
+        }
 
         setAdminData(prev => ({
             ...prev,
@@ -76,6 +101,12 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
 
     useEffect(() => {
         moveExpiredSchedules();
+    }, []);
+
+    useEffect(() => {
+        const close = () => setOpenDropdown(null);
+        window.addEventListener("click", close);
+        return () => window.removeEventListener("click", close);
     }, []);
 
     const today = new Date().toISOString().split("T")[0];
@@ -98,6 +129,9 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                             <th>Work</th>
                             <th>Staff</th>
                             <th>Date</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                            <th>Last Rate</th>
                         </tr>
                     </thead>
 
@@ -114,6 +148,9 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                                     <td>{i.work}</td>
                                     <td>{i.staff}</td>
                                     <td>{i.date}</td>
+                                    <td>{i.department || "-"}</td>
+                                    <td>{i.status || "-"}</td>
+                                    <td>{i.lastRate ? `${i.lastRate} days` : "-"}</td>
                                 </tr>
                             ))
                         )}
@@ -122,40 +159,200 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
             </div>
 
             {show && (
-                <div className="modal-overlay">
-                    <div className="modal">
+                <div className="category-modal-overlay">
+                    <form
+                        className="category-modal"
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            add(); // SMS / KMS
+                        }}
+                    >
 
-                        <div className="modal-header">
+                        {/* HEADER */}
+                        <div className="category-modal-header">
                             <h3>Add Schedule</h3>
-                            <button onClick={cancel} className="dish-close-btn"></button>
+                            <button
+                                type="button"
+                                className="dish-close-btn"
+                                onClick={cancel}
+                            ></button>
                         </div>
 
-                        <div className="modal-body">
-                            <input placeholder="Work"
-                                onChange={e => setForm({ ...form, work: e.target.value })}
-                            />
+                        {/* BODY */}
+                        <div className="category-modal-body">
 
-                            <select
-                                onChange={e => setForm({ ...form, staff: e.target.value })}
-                            >
-                                <option>Select Staff</option>
-                                {adminData.staff?.map(s => (
-                                    <option key={s.id}>{s.name}</option>
-                                ))}
-                            </select>
+                            {/* WORK */}
+                            <div className="form-group">
+                                <label>Work</label>
+                                <input
+                                    required
+                                    value={form.work}
+                                    onChange={(e) =>
+                                        setForm({ ...form, work: e.target.value })
+                                    }
+                                />
+                            </div>
 
-                            <input
-                                type="date"
-                                min={today}
-                                onChange={e => setForm({ ...form, date: e.target.value })}
-                            />
+                            {/* STAFF */}
+                            <div className="form-group">
+                                <label>Staff</label>
+                                <div className="dishes-dropdown-wrapper">
+                                    <button
+                                        type="button"
+                                        className="dishes-status-dropdown"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setOpenDropdown(prev => prev === "staff" ? null : "staff");
+                                        }}
+                                    >
+                                        {form.staff || "Select Staff"}
+                                    </button>
+
+                                    {openDropdown === "staff" && (
+                                        <div className="dishes-dropdown-menu">
+                                            {adminData.staff?.map(s => (
+                                                <div
+                                                    key={s.id}
+                                                    onClick={() => {
+                                                        setForm({ ...form, staff: s.name });
+                                                        setOpenDropdown(null);
+                                                    }}
+                                                >
+                                                    {s.name}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* DATE */}
+                            <div className="form-group">
+                                <label>Date</label>
+                                <input
+                                    required
+                                    type="date"
+                                    min={today}
+                                    value={form.date}
+                                    onChange={(e) =>
+                                        setForm({ ...form, date: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            {/* DEPARTMENT */}
+                            <div className="form-group">
+                                <label>Department</label>
+                                <div className="dishes-dropdown-wrapper">
+                                    <button
+                                        type="button"
+                                        className="dishes-status-dropdown"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setOpenDropdown(prev => prev === "dept" ? null : "dept");
+                                        }}
+                                    >
+                                        {form.department || "Select Department"}
+                                    </button>
+
+                                    {openDropdown === "dept" && (
+                                        <div className="dishes-dropdown-menu">
+                                            {["Pest Control", "Maintenance", "Laundry"].map(dep => (
+                                                <div
+                                                    key={dep}
+                                                    onClick={() => {
+                                                        setForm({ ...form, department: dep });
+                                                        setOpenDropdown(null);
+                                                    }}
+                                                >
+                                                    {dep}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* STATUS */}
+                            <div className="form-group">
+                                <label>Status</label>
+                                <div className="dishes-dropdown-wrapper">
+                                    <button
+                                        type="button"
+                                        className="dishes-status-dropdown"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setOpenDropdown(prev => prev === "status" ? null : "status");
+                                        }}
+                                    >
+                                        {form.status || "Select Status"}
+                                    </button>
+
+                                    {openDropdown === "status" && (
+                                        <div className="dishes-dropdown-menu">
+                                            {["Scheduled", "Completed", "Pending"].map(st => (
+                                                <div
+                                                    key={st}
+                                                    onClick={() => {
+                                                        setForm({ ...form, status: st });
+                                                        setOpenDropdown(null);
+                                                    }}
+                                                >
+                                                    {st}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* LAST RATE */}
+                            <div className="form-group">
+                                <label>Last Rate</label>
+                                <div className="dishes-dropdown-wrapper">
+                                    <button
+                                        type="button"
+                                        className="dishes-status-dropdown"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setOpenDropdown(prev => prev === "rate" ? null : "rate");
+                                        }}
+                                    >
+                                        {form.lastRate !== ""
+                                            ? `${form.lastRate} Days`
+                                            : "Select Days"}
+                                    </button>
+
+                                    {openDropdown === "rate" && (
+                                        <div className="dishes-dropdown-menu">
+                                            {[0, 1, 2, 3].map(day => (
+                                                <div
+                                                    key={day}
+                                                    onClick={() => {
+                                                        setForm({ ...form, lastRate: String(day) });
+                                                        setOpenDropdown(null);
+                                                    }}
+                                                >
+                                                    {day} Days
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
                         </div>
 
-                        <div className="modal-footer form-actions">
-                            <button onClick={add}>Save</button>
-                            <button onClick={cancel}>Cancel</button>
+                        {/* FOOTER */}
+                        <div className="category-modal-footer">
+                            <div className="form-actions">
+                                <button type="submit">Save Schedule</button>
+                                <button type="button" onClick={cancel}>
+                                    Cancel
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    </form>
                 </div>
             )}
         </div>

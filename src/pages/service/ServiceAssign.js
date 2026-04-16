@@ -1,32 +1,82 @@
-import React from "react";
+import React, { useState } from "react";
 import "./ServiceAssign.css";
-import { getTodayKey, getTodayFormatted } from "../../App";
+import { getTodayKey, getTodayFormatted, getTomorrowKey, getTomorrowFormatted } from "../../App";
 import api from "../../api";
-
-const tasks = {
-  mise: ["Table Setup", "Cutlery Setup", "Water Filling", "Cash Counter"],
-  cleaning: [
-    "Floor",
-    "Table",
-    "Sink",
-    "Cutlery & Crockery",
-    "Equipment",
-    "Refrigerator",
-    "Clothes & Laundry"
-  ]
-};
+import deleteIcon from "../../icon/delete-icon.png";
 
 export default function ServiceAssign({ adminData, setAdminData }) {
-  const today = getTodayKey();
-  const todayFormatted = getTodayFormatted();
+  const [newTask, setNewTask] = useState("");
+  const [section, setSection] = useState("mise");
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const tasks = adminData.tasks?.service;
+  const tomorrow = getTomorrowKey();
+  const tomorrowFormatted = getTomorrowFormatted();
+
+  const handleAddTask = async () => {
+    const cleanTask = newTask.trim();
+
+    if (!cleanTask) return;
+
+    const existing = adminData.tasks?.service?.[section] || [];
+
+    // جلوگیری duplicate
+    if (existing.includes(cleanTask)) return;
+
+    const updated = {
+      ...adminData.tasks,
+      service: {
+        ...adminData.tasks.service,
+        [section]: [...existing, cleanTask]
+      }
+    };
+
+    try {
+      await api.put("/tasks/1", updated);
+
+      setAdminData(prev => ({
+        ...prev,
+        tasks: updated
+      }));
+
+      setNewTask("");
+    } catch (err) {
+      console.error("ADD TASK FAILED:", err.response?.data || err.message);
+    }
+  };
+
+  const handleDelete = async (task, section) => {
+    const existing = adminData.tasks?.service?.[section] || [];
+
+    const updated = {
+      ...adminData.tasks,
+      service: {
+        ...adminData.tasks.service,
+        [section]: existing.filter(
+          t => t && t.trim() !== "" && t !== task
+        )
+      }
+    };
+
+    try {
+      await api.put("/tasks/1", updated);
+
+      setAdminData(prev => ({
+        ...prev,
+        tasks: updated
+      }));
+    } catch (err) {
+      console.error("DELETE TASK FAILED:", err.response?.data || err.message);
+    }
+  };
 
   const handleChange = async (task, staffName) => {
 
     const updatedAssign = {
       ...adminData.serviceAssign,
 
-      [today]: {
-        ...adminData.serviceAssign?.[today],
+      [tomorrow]: {
+        ...adminData.serviceAssign?.[tomorrow],
         [task]: {
           staff: staffName,
           time: new Date().toLocaleTimeString()
@@ -36,10 +86,10 @@ export default function ServiceAssign({ adminData, setAdminData }) {
 
     const updatedMise = {
       ...adminData.serviceMise,
-      [today]: {
-        ...adminData.serviceMise?.[today],
+      [tomorrow]: {
+        ...adminData.serviceMise?.[tomorrow],
         [task]: {
-          ...adminData.serviceMise?.[today]?.[task],
+          ...adminData.serviceMise?.[tomorrow]?.[task],
           staff: staffName
         }
       }
@@ -58,13 +108,6 @@ export default function ServiceAssign({ adminData, setAdminData }) {
     } catch (err) {
       console.error("SAVE FAILED:", err.response?.data || err.message);
     }
-
-    // ✅ UPDATE UI
-    setAdminData(prev => ({
-      ...prev,
-      serviceAssign: updatedAssign,
-      serviceMise: updatedMise
-    }));
   };
 
   return (
@@ -75,7 +118,13 @@ export default function ServiceAssign({ adminData, setAdminData }) {
         <h2 className="service-assign-title">
           Service Staff Assigning
         </h2>
-        <h2 className="service-assign-date">{todayFormatted}</h2>
+        <h2 className="service-assign-date">{tomorrowFormatted}</h2>
+        <button
+          onClick={() => setShowTaskModal(true)}
+          className="task-add-btn"
+        >
+          + Add Task
+        </button>
       </div>
 
       {/* TABLE */}
@@ -87,16 +136,17 @@ export default function ServiceAssign({ adminData, setAdminData }) {
               <th>Task</th>
               <th>Staff</th>
               <th>Time</th>
+              <th>Delete</th>
             </tr>
           </thead>
 
           <tbody>
-            {Object.entries(tasks).map(([section, items]) => (
+            {Object.entries(tasks || {}).map(([section, items]) => (
               <React.Fragment key={section}>
 
                 {/* SECTION HEADER */}
                 <tr className="service-assign-section">
-                  <td colSpan="3">{section.toUpperCase()}</td>
+                  <td colSpan="4">{section.toUpperCase()}</td>
                 </tr>
 
                 {/* TASK ROWS */}
@@ -107,7 +157,7 @@ export default function ServiceAssign({ adminData, setAdminData }) {
                     <td>
                       <select
                         className="service-assign-select"
-                        value={adminData.serviceAssign?.[today]?.[task]?.staff || ""}
+                        value={adminData.serviceAssign?.[tomorrow]?.[task]?.staff ?? ""}
                         onChange={(e) =>
                           handleChange(task, e.target.value)
                         }
@@ -122,7 +172,11 @@ export default function ServiceAssign({ adminData, setAdminData }) {
                     </td>
 
                     <td>
-                      {adminData.serviceAssign?.[today]?.[task]?.time || "-"}
+                      {adminData.serviceAssign?.[tomorrow]?.[task]?.time || "-"}
+                    </td>
+
+                    <td>
+                      <div role="button" onClick={() => handleDelete(task, section)}><img className="delete-icon" src={deleteIcon}/></div>
                     </td>
                   </tr>
                 ))}
@@ -134,6 +188,89 @@ export default function ServiceAssign({ adminData, setAdminData }) {
         </table>
       </div>
 
+      {showTaskModal && (
+        <div className="category-modal-overlay">
+          <form
+            className="category-modal"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleAddTask();
+              setShowTaskModal(false);
+            }}
+          >
+
+            {/* HEADER */}
+            <div className="category-modal-header">
+              <h3>Add Task</h3>
+              <button
+                type="button"
+                className="dish-close-btn"
+                onClick={() => setShowTaskModal(false)}
+              ></button>
+            </div>
+
+            {/* BODY */}
+            <div className="category-modal-body">
+
+              {/* TASK */}
+              <div className="form-group">
+                <label>Task Name</label>
+                <input
+                  required
+                  value={newTask}
+                  onChange={(e) => setNewTask(e.target.value)}
+                />
+              </div>
+
+              {/* SECTION */}
+              <div className="form-group">
+                <label>Section</label>
+
+                <div className="dishes-dropdown-wrapper">
+                  <button
+                    type="button"
+                    className="dishes-status-dropdown"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenDropdown(prev => prev === "section" ? null : "section");
+                    }}
+                  >
+                    {section === "mise" ? "Mise" : "Cleaning"}
+                  </button>
+
+                  {openDropdown === "section" && (
+                    <div className="dishes-dropdown-menu">
+                      {["mise", "cleaning"].map(sec => (
+                        <div
+                          key={sec}
+                          onClick={() => {
+                            setSection(sec);
+                            setOpenDropdown(null);
+                          }}
+                        >
+                          {sec.toUpperCase()}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* FOOTER */}
+            <div className="category-modal-footer">
+              <div className="form-actions">
+                <button type="submit">Add Task</button>
+                <button type="button" onClick={() => setShowTaskModal(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+
+          </form>
+        </div>
+      )}
     </div>
   );
 }

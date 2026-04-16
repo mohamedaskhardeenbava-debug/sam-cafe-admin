@@ -8,7 +8,9 @@ export default function StaffSalary({ adminData }) {
     const [form, setForm] = useState({
         advance: 0,
         deduction: 0,
-        penalty: 0
+        penalty: 0,
+        bonus: 0,
+        overtime: 0
     });
 
     useEffect(() => {
@@ -18,38 +20,59 @@ export default function StaffSalary({ adminData }) {
     const openModal = (staff) => {
         setSelected(staff);
 
-        const last = (staff.remainingSalary || []).slice(-1)[0] || {};
+        const history = staff.remainingSalary || [];
+
+        const totalAdvance = history.reduce((sum, i) => sum + Number(i.advance || 0), 0);
+        const totalDeduction = history.reduce((sum, i) => sum + Number(i.deduction || 0), 0);
+        const totalPenalty = history.reduce((sum, i) => sum + Number(i.penalty || 0), 0);
+        const totalBonus = history.reduce((sum, i) => sum + Number(i.bonus || 0), 0);
+        const totalOvertime = history.reduce((sum, i) => sum + Number(i.overtime || 0), 0);
 
         setForm({
-            advance: last.advance || 0,
-            deduction: last.deduction || 0,
-            penalty: last.penalty || 0
+            advance: totalAdvance,
+            deduction: totalDeduction,
+            penalty: totalPenalty,
+            bonus: totalBonus,
+            overtime: totalOvertime
         });
     };
 
     const closeModal = () => setSelected(null);
 
     const handleSave = async () => {
-        const previousRemaining =
-            Number(selected.salaryRemaining || selected.salary);
 
-        const totalDeduction =
-            Number(form.advance) +
-            Number(form.deduction) +
-            Number(form.penalty);
+        const history = selected.remainingSalary || [];
 
-        const remaining = Math.max(0, previousRemaining - totalDeduction);
+        // 👉 add new entry FIRST
+        const newHistory = [
+            ...history,
+            {
+                ...form
+            }
+        ];
+
+        // 👉 calculate totals from FULL history
+        const totalAdvance = newHistory.reduce((sum, i) => sum + Number(i.advance || 0), 0);
+        const totalDeduction = newHistory.reduce((sum, i) => sum + Number(i.deduction || 0), 0);
+        const totalPenalty = newHistory.reduce((sum, i) => sum + Number(i.penalty || 0), 0);
+        const totalBonus = newHistory.reduce((sum, i) => sum + Number(i.bonus || 0), 0);
+        const totalOvertime = newHistory.reduce((sum, i) => sum + Number(i.overtime || 0), 0);
+
+        const remaining =
+            Number(selected.salary) +
+            totalBonus +
+            totalOvertime -
+            totalAdvance -
+            totalDeduction -
+            totalPenalty;
 
         const updated = {
             ...selected,
             salaryRemaining: remaining,
-            remainingSalary: [
-                ...(selected.remainingSalary || []),
-                {
-                    ...form,
-                    remaining
-                }
-            ]
+            remainingSalary: newHistory.map(item => ({
+                ...item,
+                remaining // optional snapshot
+            }))
         };
 
         try {
@@ -83,6 +106,8 @@ export default function StaffSalary({ adminData }) {
                             <th>Advance</th>
                             <th>Deduction</th>
                             <th>Penalty</th>
+                            <th>Bonus</th>
+                            <th>Overtime</th>
                             <th>Remaining</th>
                             <th>Edit</th>
                         </tr>
@@ -107,16 +132,32 @@ export default function StaffSalary({ adminData }) {
                                 0
                             );
 
+                            const totalBonus = (s.remainingSalary || []).reduce(
+                                (sum, item) => sum + Number(item.bonus || 0), 0
+                            );
+
+                            const totalOvertime = (s.remainingSalary || []).reduce(
+                                (sum, item) => sum + Number(item.overtime || 0), 0
+                            );
+
+                            const computedRemaining =
+                                Number(s.salary) +
+                                totalBonus +
+                                totalOvertime -
+                                totalAdvance -
+                                totalDeduction -
+                                totalPenalty;
+
                             return (
                                 <tr key={s.id}>
                                     <td>{s.name}</td>
                                     <td>₹{s.salary}</td>
-
                                     <td>₹{totalAdvance}</td>
                                     <td>₹{totalDeduction}</td>
                                     <td>₹{totalPenalty}</td>
-
-                                    <td>₹{s.salaryRemaining || s.salary}</td>
+                                    <td>₹{totalBonus}</td>
+                                    <td>₹{totalOvertime}</td>
+                                    <td>₹{computedRemaining}</td>
 
                                     <td>
                                         <button onClick={() => openModal(s)}>
@@ -169,6 +210,23 @@ export default function StaffSalary({ adminData }) {
                                 />
                             </div>
 
+                            <div className="form-group">
+                                <label>Bonus</label>
+                                <input
+                                    type="number"
+                                    value={form.bonus}
+                                    onChange={e => setForm({ ...form, bonus: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Overtime</label>
+                                <input
+                                    type="number"
+                                    value={form.overtime}
+                                    onChange={e => setForm({ ...form, overtime: e.target.value })}
+                                />
+                            </div>
                         </div>
 
                         <div className="modal-footer form-actions">
