@@ -1,206 +1,374 @@
-.groom-page {
+/* ═══════════════════════════════════════════════════════
+   KitchenGrooming.css – Enhanced modern design
+═══════════════════════════════════════════════════════ */
+
+.kgroom-page {
   width: 100%;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  gap: 16px;
 }
 
-.groom-page  textarea,
-.groom-page .category-modal-body {
-  height: 100%;
-}
-
-.groom-header {
+/* ── HEADER ──────────────────────────────────────────── */
+.kgroom-header {
   display: flex;
-  gap: 12px;
-  margin-bottom: 20px !important;
-  align-items: start !important;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.groom-block {
+.kgroom-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111;
+  margin: 0;
+}
+
+.kgroom-subtitle {
+  font-size: 13px;
+  color: #888;
+  margin: 2px 0 0;
+}
+
+.kgroom-add-btn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: none;
+  background: #111;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.kgroom-add-btn:hover {
+  background: #000;
+  transform: translateY(-1px);
+}
+
+/* ── SUMMARY ROW ─────────────────────────────────────── */
+.kgroom-summary-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.kgroom-summary-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  flex: 1;
+  min-width: 140px;
+  border: 1px solid #f0f0f0;
+  transition: transform 0.2s;
+}
+
+.kgroom-summary-card:hover {
+  transform: translateY(-2px);
+}
+
+.kgroom-sum-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kgroom-sum-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.kgroom-sum-name {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.groom-title {
-  font-size: 24px !important;
-  font-weight: 600;
-  color: #111;
-  margin: 0;
+.kgroom-sum-bar-wrap {
+  height: 5px;
+  background: #f0f0f0;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 4px;
 }
 
-.category-buttons {
-  display: grid;
-  gap: 8px;
-  overflow-x: auto;
-  grid-template-columns: repeat(8, 1fr);
+.kgroom-sum-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s;
 }
 
-.groom-title {
-  font-size: 32px;
-  font-weight: 600;
-  color: #111;
-  margin: 0;
+.kgroom-sum-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.groom-table-wrapper {
+.kgroom-sum-days {
+  font-size: 11px;
+  color: #aaa;
+}
+
+.kgroom-sum-pct {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ── TABLE WRAPPER ───────────────────────────────────── */
+.kgroom-table-wrapper {
   width: 100%;
-  max-height: calc(100vh - 175px);
-  overflow-y: auto;
-  padding: 0 10px;
+  max-height: calc(100vh - 360px);
+  overflow: auto;
   background: #e9e9e9;
-  border-radius: 20px;
+  border-radius: 16px;
+  padding: 0 10px 10px;
   box-sizing: border-box;
 }
 
-.groom-table {
+/* ── TABLE ───────────────────────────────────────────── */
+.kgroom-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0 5px;
-  /* row spacing */
-  background: transparent;
-  table-layout: fixed;
+  min-width: 500px;
 }
 
-.groom-table thead {
+.kgroom-table thead {
   position: sticky;
   top: 0;
-  z-index: 5;
-  background-color: #414141;
+  z-index: 10;
 }
 
-.groom-table th {
-  font-size: 13px;
-  font-weight: 600;
+.kgroom-staff-th {
+  padding: 12px 14px;
+  font-size: 12px;
+  font-weight: 700;
   color: #555;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   background: #e9e9e9;
   text-align: left;
+  min-width: 160px;
 }
 
-.groom-table td {
+.kgroom-date-th {
+  padding: 10px 8px;
+  background: #e9e9e9;
+  text-align: center;
+  min-width: 110px;
+}
+
+.kgroom-today-th {
+  background: #eff6ff !important;
+}
+
+.kgroom-date-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.kgroom-date-num {
   font-size: 14px;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  border-bottom: 1px solid #cacaca;
+  font-weight: 700;
+  color: #333;
 }
 
-.groom-table tbody tr:hover {
-  background-color: rgb(234, 234, 234);
+.kgroom-date-wd {
+  font-size: 10px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.groom-table tbody tr {
-  background: #ffffff !important;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
-  transition: all 0.25s ease;
+.kgroom-today-badge {
+  font-size: 9px;
+  background: #4361ee;
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-weight: 700;
+  margin-top: 2px;
 }
 
-.groom-table tbody tr td {
-  font-size: 14px;
-  border: none;
-  background: #ffffff;
+/* ROW */
+.kgroom-row {
+  background: #fff;
 }
 
-.groom-table tbody tr td:first-child {
-  border-top-left-radius: 16px;
-  border-bottom-left-radius: 16px;
+.kgroom-row:hover .kgroom-td {
+  background: #fafafe !important;
 }
 
-.groom-table tbody tr td:last-child {
-  border-top-right-radius: 16px;
-  border-bottom-right-radius: 16px;
+.kgroom-name-td {
+  padding: 10px 14px;
+  background: #fff;
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
 }
 
-.groom-table th:first-child,
-.groom-table td:first-child{
-  width: 80px;
-  max-width: 80px;
-  padding: 10px;
+.kgroom-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.groom-table th:last-child,
-.groom-table td:last-child{
-  width: 80px;
-  max-width: 80px;
-  padding: 10px;
+.kgroom-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.kitchen-groom-checkbox-group {
+.kgroom-name {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #222;
+}
+
+.kgroom-role {
+  display: block;
+  font-size: 11px;
+  color: #999;
+}
+
+.kgroom-td {
+  padding: 8px;
+  text-align: center;
+  vertical-align: middle;
+  background: #fff;
+}
+
+.kgroom-td:last-child {
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.kgroom-today-td {
+  background: #f8faff !important;
+}
+
+/* CHECKBOXES */
+.kgroom-check-group {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 12px;
+  align-items: flex-start;
 }
 
-.status-yes {
-  color: #16a34a; /* green */
-  font-weight: 600;
-}
-
-.status-no {
-  color: #dc2626; /* red */
-  font-weight: 600;
-}
-
-.groom-image,
-.groom-placeholder {
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
-}
-
-.groom-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;  
-}
-
-.groom-name {
-  font-size: 14px;
-  font-weight: 500;
-  text-transform: capitalize;
-}
-
-.icon-btn {
-  background-color: transparent;
-  cursor: pointer;
-  font-size: 14px;
-  border-radius: 6px;
-  transition: background-color 0.2s ease;
-  border: none;
-  padding: 0;
-}
-
-
-.-edit-btn {
-  color: red;
-}
-
-.delete-btn {
-  color: red;
-}
-
-.groom-header-actions {
+.kgroom-check-item {
   display: flex;
-  gap: 12px;
   align-items: center;
-}
-
-.groom-add-btn {
-  height: 38px;
-  padding: 0 16px;
-  border-radius: 999px;
-  border: 1px solid #111;
-  background: #111;
-  color: #fff;
-  font-weight: 500;
+  gap: 5px;
+  font-size: 11px;
+  color: #666;
   cursor: pointer;
-  margin-left: auto;
+  padding: 3px 6px;
+  border-radius: 6px;
+  transition: background 0.15s;
+  user-select: none;
 }
 
-.category-modal-overlay {
+.kgroom-check-item:hover {
+  background: #f5f5f5;
+}
+
+.kgroom-check-item.checked {
+  color: #4361ee;
+  font-weight: 600;
+  background: #eef0fd;
+}
+
+.kgroom-check-item input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: #4361ee;
+}
+
+.kgroom-check-icon {
+  font-size: 13px;
+}
+
+/* HISTORY */
+.kgroom-hist-td {
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.kgroom-hist-td:hover {
+  transform: scale(1.05);
+}
+
+.kgroom-good {
+  background: #f0fdf4 !important;
+}
+
+.kgroom-partial {
+  background: #fffbeb !important;
+}
+
+.kgroom-bad {
+  background: #fff5f5 !important;
+}
+
+.kgroom-hist-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+}
+
+.kgroom-tick {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.kgroom-tick.good {
+  color: #06d6a0;
+}
+
+.kgroom-tick.partial {
+  font-size: 12px;
+  color: #d97706;
+  font-weight: 800;
+}
+
+.kgroom-tick.bad {
+  color: #ef476f;
+}
+
+/* ── MODAL ───────────────────────────────────────────── */
+.kgroom-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.45);
@@ -208,164 +376,208 @@
   align-items: center;
   justify-content: center;
   z-index: 999;
+  backdrop-filter: blur(2px);
 }
 
-.groom-close-btn {
-  position: relative;
+.kgroom-modal {
+  background: #fff;
+  width: 420px;
+  max-width: 95vw;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
 
-  width: 36px;
-  height: 36px;
+.kgroom-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
 
-  border-radius: 5px;
+.kgroom-modal-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+  margin: 0;
+}
+
+.kgroom-close-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
   border: none;
-  background-color: #f2f2f2;
-
+  background: #f5f5f5;
   cursor: pointer;
-  padding: 0;
-
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  transition: background-color 0.2s ease, transform 0.15s ease;
+  transition: background 0.2s;
 }
 
-/* hover & active */
-.groom-close-btn:hover {
-  background-color: #e5e5e5;
-  transform: scale(1.05);
+.kgroom-close-btn:hover {
+  background: #eee;
 }
 
-.groom-close-btn:active {
-  transform: scale(0.95);
-}
-
-/* ✕ icon */
-.groom-close-btn::before,
-.groom-close-btn::after {
+.kgroom-close-btn::before,
+.kgroom-close-btn::after {
   content: "";
   position: absolute;
-
-  width: 18px;
+  width: 14px;
   height: 2px;
-
-  background-color: #333;
+  background: #666;
   border-radius: 2px;
 }
 
-/* first line */
-.groom-close-btn::before {
+.kgroom-close-btn::before {
   transform: rotate(45deg);
 }
 
-/* second line */
-.groom-close-btn::after {
+.kgroom-close-btn::after {
   transform: rotate(-45deg);
 }
 
-.category-modal textarea {
-  resize: none;
-  min-height: 70px;
-}
-
-.benefits-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
-
-.ingredient-form {
+.kgroom-modal-body {
+  padding: 20px;
   display: flex;
   flex-direction: column;
+  gap: 16px;
 }
 
-.ingredient-form select {
-  width: 100%;
-  padding: 8px 10px;
+.kgroom-detail-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+}
+
+.kgroom-detail-date {
+  font-size: 13px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.kgroom-detail-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kgroom-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #f0f0f0;
+}
+
+.kgroom-detail-row.pass {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.kgroom-detail-row.fail {
+  background: #fff5f5;
+  border-color: #fecaca;
+}
+
+.kgroom-detail-icon {
+  font-size: 18px;
+}
+
+.kgroom-detail-label {
+  flex: 1;
   font-size: 14px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background: #fff;
+  font-weight: 500;
+  color: #333;
 }
 
-.add-ingredient-button {
-  width: fit-content;
-  margin: 0 auto;
-  padding: 6px;
-  border-radius: 6px;
-  background-color: #111;
-  color: white;
+.kgroom-detail-status {
+  font-size: 12px;
+  font-weight: 700;
 }
 
-.ingredient-form-table {
-  width: 100%;
-  max-width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-  background-color: #ffffff;
-  margin-top: 10px;
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  table-layout: fixed;
+.kgroom-detail-row.pass .kgroom-detail-status {
+  color: #16a34a;
 }
 
-.ingredient-form-table thead {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  background-color: #414141;
+.kgroom-detail-row.fail .kgroom-detail-status {
+  color: #dc2626;
 }
 
-.ingredient-form-table th {
-  padding: 8px 10px;
-  font-size: 14px;
+.kgroom-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kgroom-form-group label {
+  font-size: 12px;
   font-weight: 600;
-  color: #ffffff;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  position: sticky;
-  top: 0;
-  z-index: 6;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.ingredient-form-table td {
-  padding: 8px 10px;
+.kgroom-form-group select,
+.kgroom-form-group textarea {
+  padding: 10px 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
   font-size: 14px;
-  color: #333333;
-  text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  border-bottom: 1px solid #e0e0e0;
+  outline: none;
+  transition: border-color 0.2s;
+  resize: none;
+  font-family: inherit;
 }
 
-.ingredient-form-table tbody tr:hover {
-  background-color: rgb(234, 234, 234);
+.kgroom-form-group select:focus,
+.kgroom-form-group textarea:focus {
+  border-color: #111;
 }
 
-.ingredient-delete-btn {
+.kgroom-modal-footer {
+  display: flex;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid #f0f0f0;
+  justify-content: flex-end;
+}
+
+.kgroom-btn-primary {
+  padding: 9px 20px;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.kgroom-btn-primary:hover {
+  background: #000;
+}
+
+.kgroom-btn-secondary {
+  padding: 9px 16px;
+  background: #f5f5f5;
+  color: #555;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
   cursor: pointer;
 }
 
-
-.ingredient-delete-btn img {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
+.kgroom-btn-secondary:hover {
+  background: #e5e7eb;
 }
 
-@media screen and (max-width: 768px) {
-  .groom-table-wrapper {
-    width: 100% !important;
-  }
-
-  .groom-table th {
-    font-size: 12px;
-  }
-
-  .groom-table td {
-    font-size: 12px;
+@media (max-width: 768px) {
+  .kgroom-summary-row {
+    flex-direction: column;
   }
 }

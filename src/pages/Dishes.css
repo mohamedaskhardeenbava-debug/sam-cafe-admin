@@ -23,11 +23,10 @@
   margin: 0;
 }
 
-.category-buttons {
-  display: grid;
-  gap: 8px;
-  overflow-x: auto;
-  grid-template-columns: repeat(8, 1fr);
+.dish-category-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .category-btn {
@@ -196,7 +195,7 @@
 
 .dish-add-btn {
   height: 38px;
-  width: 110px;
+  width: 200px;
   padding: 0 16px;
   border-radius: 999px;
   border: 1px solid #111;

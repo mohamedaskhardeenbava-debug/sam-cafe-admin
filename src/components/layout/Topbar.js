@@ -119,7 +119,7 @@ const Topbar = ({ setIsAuthenticated, orders = [], ingredients = [] }) => {
     <header className={`topbar ${scrolled ? "topbar-scrolled" : ""}`}>
       {/* LEFT */}
       <div className="topbar-left">
-        <h3 className="topbar-title">Sam Cafe Admin</h3>
+        <h3 className="topbar-title">Admin</h3>
       </div>
 
       {/* RIGHT */}

@@ -9,7 +9,7 @@ import logo from "../../icon/logo.png"; // your logo
 import { QRCodeCanvas } from "qrcode.react";
 
 const TableManagement = ({ adminData, setAdminData }) => {
-    const tables = adminData.tables || [];
+    const tables = adminData.tables?.[0]?.list || [];
     const [newTable, setNewTable] = useState("");
     const [showQRModal, setShowQRModal] = useState(false);
     const [selectedTable, setSelectedTable] = useState(null);
@@ -33,7 +33,12 @@ const TableManagement = ({ adminData, setAdminData }) => {
 
         setAdminData(prev => ({
             ...prev,
-            tables: updated
+            tables: [
+                {
+                    id: 1,
+                    list: updated
+                }
+            ]
         }));
 
         setNewTable("");
@@ -49,7 +54,12 @@ const TableManagement = ({ adminData, setAdminData }) => {
 
         setAdminData(prev => ({
             ...prev,
-            tables: updated
+            tables: [
+                {
+                    id: 1,
+                    list: updated
+                }
+            ]
         }));
     };
 

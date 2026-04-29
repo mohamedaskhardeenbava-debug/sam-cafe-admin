@@ -517,3 +517,199 @@
         width: 95%;
     }
 }
+
+/* ═══════════════════════════════════════════════
+   RICH TABLE ROW DESIGN (matching Staff Details)
+═══════════════════════════════════════════════ */
+
+/* Name cell */
+.st-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.st-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    letter-spacing: 0;
+}
+
+.st-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111;
+    line-height: 1.2;
+}
+
+.st-join {
+    font-size: 11px;
+    color: #aaa;
+    margin-top: 1px;
+}
+
+/* Role badge */
+.st-role-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: #f0f0f0;
+    color: #444;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Salary */
+.st-salary {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111;
+}
+
+/* Experience */
+.st-exp {
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+}
+
+/* Contact */
+.st-contact {
+    font-size: 13px;
+    color: #555;
+}
+
+/* Work type badge */
+.st-worktype-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.st-wt-fulltime {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.st-wt-parttime {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.st-wt-doubleshift {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+/* Action buttons */
+.st-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.st-act-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: none;
+    background: #f3f4f6;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    padding: 0 !important;
+}
+
+.st-act-btn:hover {
+    transform: scale(1.1) !important;
+    background: #e5e7eb;
+}
+
+/* ── Salary table extras ── */
+.st-neg-val {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ee5253;
+}
+
+.st-pos-val {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1dd1a1;
+}
+
+.st-zero-val {
+    font-size: 13px;
+    font-weight: 600;
+    color: #bbb;
+}
+
+.st-remain-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 90px;
+}
+
+.st-remain-val {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.st-mini-bar-track {
+    height: 5px;
+    background: #f0f0f0;
+    border-radius: 3px;
+    overflow: hidden;
+    width: 100%;
+}
+
+.st-mini-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.st-edit-btn {
+    padding: 6px 14px !important;
+    border-radius: 8px !important;
+    border: none !important;
+    background: #111 !important;
+    color: #fff !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.15s !important;
+    width: auto !important;
+}
+
+.st-edit-btn:hover {
+    background: #333 !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Ensure staff-table cols fit the new layout */
+.staff-table th:nth-child(1),
+.staff-table td:nth-child(1) {
+    width: auto !important;
+    max-width: none !important;
+}
+
+.staff-salary-table td {
+    vertical-align: middle;
+}

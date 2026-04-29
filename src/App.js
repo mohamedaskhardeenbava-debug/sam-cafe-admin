@@ -1,8 +1,8 @@
 import "./App.css";
 import { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import socket from "./socket";
 import api from "./api";
+import socket from "./socket";
 
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
@@ -148,7 +148,7 @@ function App() {
           celebrationsRes,
           preBookingsRes,
           cateringRes,
-          eventsRes, 
+          eventsRes,
           bookingsRes,
           tasksRes
         ] = await Promise.all([
@@ -197,7 +197,7 @@ function App() {
           serviceGrooming: serviceGroomRes.data || {},
           serviceMise: serviceMiseRes.data || {},
           serviceSchedules: serviceSchedulesRes.data || [],
-          tables: tablesRes.data?.[0]?.list || [],
+          tables: tablesRes.data || [],
           reservations: reservationsRes.data || [],
           celebrations: celebrationsRes.data || [],
           preBookings: preBookingsRes.data || [],
@@ -218,56 +218,101 @@ function App() {
     fetchAllData();
   }, [isAuthenticated]);
 
+  /* ---------------- SOCKET: real-time data-change listener ---------------- */
   useEffect(() => {
+    if (!isAuthenticated) return;
 
-    socket.on("data-change", ({ resource, action, payload }) => {
+    const handleDataChange = ({ resource, action, payload }) => {
+      setAdminData(prev => {
+        switch (resource) {
 
-      console.log("SYNC EVENT:", resource, action);
+          // ── Events ──────────────────────────────────────────────────────
+          case "events":
+            if (action === "created") {
+              // Avoid duplicates if our own optimistic update already added it
+              const alreadyExists = (prev.events || []).some(e => e.id === payload.id);
+              if (alreadyExists) return prev;
+              return { ...prev, events: [...(prev.events || []), payload] };
+            }
+            if (action === "updated") {
+              return {
+                ...prev,
+                events: (prev.events || []).map(e => e.id === payload.id ? payload : e),
+              };
+            }
+            if (action === "deleted") {
+              // payload is the string id from the server
+              const deletedId = String(payload);
+              return {
+                ...prev,
+                events: (prev.events || []).filter(e => String(e.id) !== deletedId),
+                eventBookings: (prev.eventBookings || []).filter(b => String(b.eventId) !== deletedId),
+              };
+            }
+            return prev;
 
-      if (resource === "orders") {
+          // ── Event Bookings ───────────────────────────────────────────────
+          case "eventBookings":
+            if (action === "created") {
+              const exists = (prev.eventBookings || []).some(b => b.id === payload.id);
+              if (exists) return prev;
+              return { ...prev, eventBookings: [...(prev.eventBookings || []), payload] };
+            }
+            if (action === "updated") {
+              return {
+                ...prev,
+                eventBookings: (prev.eventBookings || []).map(b => b.id === payload.id ? payload : b),
+              };
+            }
+            if (action === "deleted") {
+              return {
+                ...prev,
+                eventBookings: (prev.eventBookings || []).filter(b => String(b.id) !== String(payload)),
+              };
+            }
+            return prev;
 
-        setAdminData(prev => ({
-          ...prev,
-          orders:
-            action === "created"
-              ? [...prev.orders, payload]
-              : prev.orders.map(o => o.id === payload.id ? payload : o)
-        }));
+          // ── Orders (light-weight: just re-fetch since they live inside users) ──
+          case "orders":
+            if (action === "updated" || action === "created") {
+              api.get("/orders").then(r => {
+                setAdminData(p => ({ ...p, orders: r.data || [] }));
+              }).catch(() => { });
+            }
+            return prev;
 
-      }
-
-      if (resource === "ingredients") {
-
-        if (action === "created") {
-          setAdminData(prev => ({
-            ...prev,
-            ingredients: [...prev.ingredients, payload]
-          }));
+          // ── Other simple flat resources ─────────────────────────────────
+          default:
+            // For any other resource (ingredients, staff, offers…)
+            // do a targeted re-fetch of just that slice
+            const RESOURCE_KEY_MAP = {
+              ingredients: "ingredients",
+              staff: "staff",
+              offers: "offers",
+              categories: "categories",
+              reservations: "reservations",
+              celebrations: "celebrations",
+              preBookings: "preBookings",
+              cateringOrders: "cateringOrders",
+            };
+            const key = RESOURCE_KEY_MAP[resource];
+            if (key) {
+              api.get(`/${resource}`).then(r => {
+                setAdminData(p => ({ ...p, [key]: r.data || [] }));
+              }).catch(() => { });
+            }
+            return prev;
         }
+      });
+    };
 
-        if (action === "updated") {
-          setAdminData(prev => ({
-            ...prev,
-            ingredients: prev.ingredients.map(i =>
-              i.id === payload.id ? payload : i
-            )
-          }));
-        }
+    socket.on("data-change", handleDataChange);
 
-        if (action === "deleted") {
-          setAdminData(prev => ({
-            ...prev,
-            ingredients: prev.ingredients.filter(i => i.id !== payload)
-          }));
-        }
+    return () => {
+      socket.off("data-change", handleDataChange);
+    };
+  }, [isAuthenticated]);
 
-      }
-
-    });
-
-    return () => socket.off("data-change");
-
-  }, []);
   /* ---------------- INGREDIENT CRUD ---------------- */
   const addIngredient = async (ingredient) => {
     try {
@@ -498,17 +543,17 @@ function App() {
               }
             />
 
-            <Route path="/events/reservations" element={<Reservations adminData={adminData} />} />
-            <Route path="/events/reservations/:id" element={<ReservationDetails adminData={adminData} />} />
+            <Route path="/reservations" element={<Reservations adminData={adminData} setAdminData={setAdminData} />} />
+            <Route path="/reservations/:id" element={<ReservationDetails adminData={adminData} setAdminData={setAdminData} />} />
 
-            <Route path="/events/celebrations" element={<Celebrations adminData={adminData} />} />
-            <Route path="/events/celebrations/:id" element={<CelebrationDetails adminData={adminData} />} />
+            <Route path="/celebrations" element={<Celebrations adminData={adminData} />} />
+            <Route path="/celebrations/:id" element={<CelebrationDetails adminData={adminData} />} />
 
-            <Route path="/events/prebookings" element={<PreBookings adminData={adminData} />} />
-            <Route path="/events/prebookings/:id" element={<PreBookingDetails adminData={adminData} />} />
+            <Route path="/prebookings" element={<PreBookings adminData={adminData} />} />
+            <Route path="/prebookings/:id" element={<PreBookingDetails adminData={adminData} />} />
 
-            <Route path="/events/catering" element={<Catering adminData={adminData} />} />
-            <Route path="/events/catering/:id" element={<CateringDetails adminData={adminData} />} />
+            <Route path="/catering" element={<Catering adminData={adminData} />} />
+            <Route path="/catering/:id" element={<CateringDetails adminData={adminData} />} />
 
             <Route
               path="/events"

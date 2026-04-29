@@ -30,13 +30,13 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
   });
 
   useEffect(() => {
-          const closeDropdowns = () => {
-              setOpenIngredientDropdown(false);
-          };
-  
-          window.addEventListener("click", closeDropdowns);
-          return () => window.removeEventListener("click", closeDropdowns);
-      }, []);
+    const closeDropdowns = () => {
+      setOpenIngredientDropdown(false);
+    };
+
+    window.addEventListener("click", closeDropdowns);
+    return () => window.removeEventListener("click", closeDropdowns);
+  }, []);
 
   const availableIngredients = (adminData.ingredients || [])
     .filter(
@@ -85,7 +85,13 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     if (categoryId) {
       setSelectedCategoryIds([categoryId]);
     } else {
-      setSelectedCategoryIds([]);
+      // auto-select the first available category/subcategory on load
+      const firstCat = adminData.categories[0];
+      const firstId =
+        firstCat?.subCategories?.length
+          ? firstCat.subCategories[0].id
+          : firstCat?.id;
+      if (firstId) setSelectedCategoryIds([firstId]);
     }
   }, [adminData.categories, categoryId]);
 
@@ -419,7 +425,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       <div className="dish-header">
         <h2 className="dish-title">Dishes</h2>
 
-        <div className="category-buttons">
+        <div className="dish-category-buttons">
 
           {adminData.categories.flatMap(cat => {
 

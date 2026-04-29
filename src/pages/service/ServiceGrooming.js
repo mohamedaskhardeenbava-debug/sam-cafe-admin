@@ -1,286 +1,303 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import "./ServiceGrooming.css";
 import api from "../../api";
 
-export default function ServiceGrooming({ adminData, setAdminData }) {
+const GROOM_FIELDS = [
+  { key: "uniform", label: "Uniform", icon: "👔" },
+  { key: "shoes", label: "Shoes", icon: "👟" },
+  { key: "groom", label: "Groom", icon: "✂️" },
+];
 
-  // ✅ Last 7 days
+const WEEKDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/* ─── Helpers ─────────────────────────────────────────── */
+const buildGroomKey = (date) => date; // dates are already ISO strings
+
+export default function ServiceGrooming({ adminData, setAdminData }) {
   const dates = (() => {
     const arr = [];
-    const today = new Date();
-
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
-      d.setDate(today.getDate() - i);
+      d.setDate(d.getDate() - i);
       arr.push(d.toISOString().split("T")[0]);
     }
-
     return arr;
   })();
+
+  const today = dates[dates.length - 1];
 
   const [selected, setSelected] = useState(null);
   const [showMemo, setShowMemo] = useState(false);
   const [memo, setMemo] = useState({ staffId: "", text: "" });
+  const [saving, setSaving] = useState({}); // { staffId_date_field: true }
 
-  // ✅ Toggle checkbox
+  /* ─── Toggle a single grooming check ─────────────────── */
   const toggle = async (staffId, date, field) => {
-    const updated = {
-      ...adminData.serviceGrooming,
-      [staffId]: {
-        ...adminData.serviceGrooming?.[staffId],
-        [date]: {
-          ...adminData.serviceGrooming?.[staffId]?.[date],
-          [field]: !adminData.serviceGrooming?.[staffId]?.[date]?.[field]
-        }
-      }
+    const cellKey = `${staffId}_${date}_${field}`;
+    setSaving(prev => ({ ...prev, [cellKey]: true }));
+
+    const prevData = adminData.serviceGrooming || {};
+
+    const currentEntry = prevData[staffId]?.[date] || {};
+    const newVal = !currentEntry[field];
+
+    const updatedEntry = { ...currentEntry, [field]: newVal };
+
+    const updatedStaffDates = {
+      ...(prevData[staffId] || {}),
+      [date]: updatedEntry,
     };
 
-    await api.put("/serviceGrooming/1", updated);
+    const updatedGrooming = {
+      ...prevData,
+      [staffId]: updatedStaffDates,
+    };
 
-    setAdminData(prev => ({
-      ...prev,
-      serviceGrooming: updated
-    }));
+    // Optimistic UI update
+    setAdminData(prev => ({ ...prev, serviceGrooming: updatedGrooming }));
+
+    try {
+      // serviceGrooming in db.json is stored as a single document
+      // Adjust the endpoint/method to match your actual API shape.
+      // If your API is json-server with /serviceGrooming/:id, use id=1.
+      // If it stores the whole object at /serviceGrooming, use PUT /serviceGrooming.
+      await api.put("/serviceGrooming", updatedGrooming);
+    } catch (err) {
+      console.error("ServiceGrooming toggle failed:", err.message);
+      // Rollback
+      setAdminData(prev => ({ ...prev, serviceGrooming: prevData }));
+    } finally {
+      setSaving(prev => ({ ...prev, [cellKey]: false }));
+    }
   };
 
+  /* ─── Save memo ───────────────────────────────────────── */
   const saveMemo = async () => {
     if (!memo.staffId || !memo.text) return;
 
-    const today = new Date().toISOString().split("T")[0];
+    const memoToday = new Date().toISOString().split("T")[0];
+    const prevData = adminData.serviceGrooming || {};
 
     const updated = {
-      ...adminData.serviceGrooming,
+      ...prevData,
       memo: {
-        ...adminData.serviceGrooming?.memo,
+        ...(prevData.memo || {}),
         [memo.staffId]: {
-          ...adminData.serviceGrooming?.memo?.[memo.staffId],
-          [today]: memo.text
-        }
-      }
+          ...(prevData.memo?.[memo.staffId] || {}),
+          [memoToday]: memo.text,
+        },
+      },
     };
 
-    await api.put("/serviceGrooming/1", updated);
-
-    setAdminData(prev => ({
-      ...prev,
-      serviceGrooming: updated
-    }));
+    try {
+      await api.put("/serviceGrooming", updated);
+      setAdminData(prev => ({ ...prev, serviceGrooming: updated }));
+    } catch (err) {
+      console.error("Memo save failed:", err.message);
+    }
 
     setShowMemo(false);
     setMemo({ staffId: "", text: "" });
   };
 
+  /* ─── Derived: 7-day compliance per staff ─────────────── */
+  const staffStats = useMemo(() => {
+    return adminData.staff.map(s => {
+      let perfect = 0;
+      dates.forEach(d => {
+        const e = adminData.serviceGrooming?.[s.id]?.[d];
+        if (e?.uniform && e?.shoes && e?.groom) perfect++;
+      });
+      return {
+        id: s.id,
+        name: s.name,
+        role: s.role,
+        perfect,
+        pct: Math.round((perfect / dates.length) * 100),
+      };
+    });
+  }, [adminData.staff, adminData.serviceGrooming, dates]);
+
   return (
-    <div className="service-groom-page">
+    <div className="sgroom-page">
 
       {/* HEADER */}
-      <div className="service-groom-top" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h2 className="service-groom-title">Service Grooming</h2>
-
-        <button
-          className="service-groom-add-btn"
-          onClick={() => setShowMemo(true)}
-        >
-          Add Memo
-        </button>
+      <div className="sgroom-header">
+        <div>
+          <h2 className="sgroom-title">Service Grooming</h2>
+          <p className="sgroom-subtitle">Last 7 days — Uniform · Shoes · Grooming</p>
+        </div>
+        <button className="sgroom-add-btn" onClick={() => setShowMemo(true)}>+ Add Memo</button>
       </div>
 
-      <div className="service-groom-table-container">
-        <table className="service-groom-table">
+      {/* SUMMARY CARDS */}
+      <div className="sgroom-summary-row">
+        {staffStats.map((s, i) => (
+          <div key={s.id} className="sgroom-summary-card">
+            <div className="sgroom-sum-avatar" style={{ background: `hsl(${i * 55 + 200},70%,55%)` }}>
+              {s.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="sgroom-sum-info">
+              <span className="sgroom-sum-name">{s.name}</span>
+              <div className="sgroom-sum-bar-wrap">
+                <div className="sgroom-sum-bar" style={{ width: `${s.pct}%`, background: s.pct >= 80 ? "#16a34a" : s.pct >= 50 ? "#f59e0b" : "#dc2626" }} />
+              </div>
+              <span className="sgroom-sum-pct">{s.pct}% compliant</span>
+            </div>
+          </div>
+        ))}
+      </div>
 
+      {/* TABLE */}
+      <div className="sgroom-table-wrapper">
+        <table className="sgroom-table">
           <thead>
             <tr>
-              <th>Staff</th>
-              {dates.map(d => (
-                <th key={d}>{new Date(d).getDate()}</th>
-              ))}
+              <th className="sgroom-staff-th">Staff</th>
+              {dates.map(d => {
+                const dObj = new Date(d);
+                const isToday = d === today;
+                return (
+                  <th key={d} className={`sgroom-date-th ${isToday ? "sgroom-today-th" : ""}`}>
+                    <div className="sgroom-date-head">
+                      <span className="sgroom-date-num">{dObj.getDate()}</span>
+                      <span className="sgroom-date-wd">{WEEKDAY[dObj.getDay()]}</span>
+                      {isToday && <span className="sgroom-today-badge">Today</span>}
+                    </div>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
 
           <tbody>
-            {adminData.staff.map(s => (
-              <tr key={s.id}>
-                <td className="service-groom-staff">{s.name}</td>
+            {adminData.staff.map((s, si) => (
+              <tr key={s.id} className="sgroom-row">
+                <td className="sgroom-name-td">
+                  <div className="sgroom-name-wrap">
+                    <div className="sgroom-avatar" style={{ background: `hsl(${si * 55 + 200},70%,55%)` }}>
+                      {s.name.charAt(0)}
+                    </div>
+                    <div>
+                      <span className="sgroom-name">{s.name}</span>
+                      {s.role && <span className="sgroom-role">{s.role}</span>}
+                    </div>
+                  </div>
+                </td>
 
-                {dates.map((d, index) => {
+                {dates.map(d => {
                   const entry = adminData.serviceGrooming?.[s.id]?.[d];
+                  const isToday = d === today;
+                  const allGood = entry?.uniform && entry?.shoes && entry?.groom;
+                  const partial = !allGood && (entry?.uniform || entry?.shoes || entry?.groom);
+
+                  if (isToday) {
+                    return (
+                      <td key={d} className="sgroom-td sgroom-today-td">
+                        <div className="sgroom-check-group">
+                          {GROOM_FIELDS.map(f => {
+                            const ck = `${s.id}_${d}_${f.key}`;
+                            return (
+                              <label key={f.key} className={`sgroom-check-item ${entry?.[f.key] ? "checked" : ""}`}>
+                                <input
+                                  type="checkbox"
+                                  checked={entry?.[f.key] === true}
+                                  disabled={saving[ck]}
+                                  onChange={() => toggle(s.id, d, f.key)}
+                                />
+                                <span className="sgroom-check-icon">{f.icon}</span>
+                                <span>{f.label}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </td>
+                    );
+                  }
 
                   return (
                     <td
                       key={d}
-                      onClick={() => {
-                        if (index !== dates.length - 1) {
-                          setSelected({
-                            staff: s.name,
-                            date: d,
-                            entry
-                          });
-                        }
-                      }}
+                      className={`sgroom-td sgroom-hist-td ${allGood ? "sgroom-good" : partial ? "sgroom-partial" : "sgroom-bad"}`}
+                      onClick={() => setSelected({ staff: s.name, date: d, entry })}
                     >
-
-                      {/* ✅ TODAY */}
-                      {index === dates.length - 1 ? (
-                        <div className="service-groom-checkbox-group">
-
-                          <label className="checkbox-item">
-                            <input
-                              type="checkbox"
-                              checked={entry?.uniform || false}
-                              onChange={() => toggle(s.id, d, "uniform")}
-                            />
-                            Uniform
-                          </label>
-
-                          <label className="checkbox-item">
-                            <input
-                              type="checkbox"
-                              checked={entry?.shoes || false}
-                              onChange={() => toggle(s.id, d, "shoes")}
-                            />
-                            Shoes
-                          </label>
-
-                          <label className="checkbox-item">
-                            <input
-                              type="checkbox"
-                              checked={entry?.groom || false}
-                              onChange={() => toggle(s.id, d, "groom")}
-                            />
-                            Groom
-                          </label>
-
-                        </div>
-                      ) : (
-
-                        // ✅ HISTORY (✔ / ✖)
-                        <span
-                          className={
-                            entry?.uniform && entry?.shoes && entry?.groom
-                              ? "service-status-yes"
-                              : "service-status-no"
-                          }
-                        >
-                          {entry?.uniform && entry?.shoes && entry?.groom
-                            ? "✔"
-                            : "✖"}
-                        </span>
-
-                      )}
+                      <div className="sgroom-hist-cell">
+                        {allGood ? <span className="sgroom-tick good">✔</span>
+                          : partial ? <span className="sgroom-tick partial">{Object.values(entry || {}).filter(Boolean).length}/3</span>
+                            : <span className="sgroom-tick bad">✖</span>}
+                      </div>
                     </td>
                   );
                 })}
               </tr>
             ))}
           </tbody>
-
         </table>
       </div>
 
-      {/* ✅ MODAL */}
+      {/* DETAIL MODAL */}
       {selected && (
-        <div className="service-modal-overlay">
-          <div className="service-modal">
-
-            <div className="service-modal-header">
+        <div className="sgroom-overlay">
+          <div className="sgroom-modal">
+            <div className="sgroom-modal-header">
               <h3>Grooming Details</h3>
-              <button
-                className="dish-close-btn"
-                onClick={() => setSelected(null)}
-              />
+              <button className="sgroom-close-btn" onClick={() => setSelected(null)} />
             </div>
-
-            <div className="service-modal-body">
-
-              <table className="data-table">
-                <tbody>
-                  <tr>
-                    <td><b>Staff</b></td>
-                    <td>{selected.staff}</td>
-                  </tr>
-
-                  <tr>
-                    <td><b>Date</b></td>
-                    <td>{selected.date}</td>
-                  </tr>
-
-                  <tr>
-                    <td>Uniform</td>
-                    <td className={selected.entry?.uniform ? "service-status-yes" : "service-status-no"}>
-                      {selected.entry?.uniform ? "✔" : "✖"}
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td>Shoes</td>
-                    <td className={selected.entry?.shoes ? "service-status-yes" : "service-status-no"}>
-                      {selected.entry?.shoes ? "✔" : "✖"}
-                    </td>
-                  </tr>
-
-                  <tr>
-                    <td>Grooming</td>
-                    <td className={selected.entry?.groom ? "service-status-yes" : "service-status-no"}>
-                      {selected.entry?.groom ? "✔" : "✖"}
-                    </td>
-                  </tr>
-
-                </tbody>
-              </table>
-
+            <div className="sgroom-modal-body">
+              <div className="sgroom-detail-info">
+                <div className="sgroom-detail-name">{selected.staff}</div>
+                <div className="sgroom-detail-date">
+                  {new Date(selected.date).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                </div>
+              </div>
+              <div className="sgroom-detail-checks">
+                {GROOM_FIELDS.map(f => (
+                  <div key={f.key} className={`sgroom-detail-row ${selected.entry?.[f.key] ? "pass" : "fail"}`}>
+                    <span className="sgroom-detail-icon">{f.icon}</span>
+                    <span className="sgroom-detail-label">{f.label}</span>
+                    <span className="sgroom-detail-status">
+                      {selected.entry?.[f.key] ? "✔ OK" : "✖ Missing"}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* MEMO MODAL */}
       {showMemo && (
-        <div className="category-modal-overlay">
-          <div className="category-modal">
-
-            <div className="category-modal-header">
+        <div className="sgroom-overlay">
+          <div className="sgroom-modal">
+            <div className="sgroom-modal-header">
               <h3>Add Memo</h3>
-              <button
-                className="dish-close-btn"
-                onClick={() => setShowMemo(false)}
-              />
+              <button className="sgroom-close-btn" onClick={() => setShowMemo(false)} />
             </div>
-
-            <div className="category-modal-body">
-
-              <div className="form-group">
-                <label>Staff</label>
-                <select
-                  value={memo.staffId}
-                  onChange={(e) =>
-                    setMemo({ ...memo, staffId: e.target.value })
-                  }
-                >
-                  <option value="">Select</option>
+            <div className="sgroom-modal-body">
+              <div className="sgroom-form-group">
+                <label>Staff Member</label>
+                <select value={memo.staffId} onChange={(e) => setMemo({ ...memo, staffId: e.target.value })}>
+                  <option value="">Select staff…</option>
                   {adminData.staff.map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
+                    <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>
               </div>
-
-              <div className="form-group" style={{ height: "70%", boxSizing: "border-box" }}>
-                <label>Memo</label>
+              <div className="sgroom-form-group">
+                <label>Memo Note</label>
                 <textarea
                   value={memo.text}
-                  onChange={(e) =>
-                    setMemo({ ...memo, text: e.target.value })
-                  }
+                  onChange={(e) => setMemo({ ...memo, text: e.target.value })}
+                  placeholder="Write your memo here…"
+                  rows={4}
                 />
               </div>
-
             </div>
-
-            <div className="category-modal-footer form-actions">
-              <button onClick={saveMemo}>Save</button>
-              <button onClick={() => setShowMemo(false)}>Cancel</button>
+            <div className="sgroom-modal-footer">
+              <button className="sgroom-btn-primary" onClick={saveMemo}>Save Memo</button>
+              <button className="sgroom-btn-secondary" onClick={() => setShowMemo(false)}>Cancel</button>
             </div>
-
           </div>
         </div>
       )}

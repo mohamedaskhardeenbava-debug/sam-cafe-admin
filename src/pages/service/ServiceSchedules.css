@@ -112,3 +112,33 @@
     border-top-right-radius: 16px;
     border-bottom-right-radius: 16px;
 }
+
+/* STATUS BASE */
+.status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+/* Scheduled */
+.status-scheduled {
+    background: #2563eb;
+    color: #fff;
+}
+
+/* Completed */
+.status-completed {
+    background: #2e7d32;
+    color: #fff;
+}
+
+/* Pending */
+.status-pending {
+    background: #cc9200;
+    color: #fff;
+}

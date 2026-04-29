@@ -3,7 +3,7 @@ import "./Staffs.css";
 import { sortArray } from "../../App";
 import editIcon from "../../icon/edit-icon.png";
 import deleteIcon from "../../icon/delete-icon.png";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const roles = ["Chef", "Waiter", "Supervisor", "Manager", "Cleaner"];
 
@@ -51,12 +51,14 @@ export default function Staffs({
     const [formData, setFormData] = useState(EMPTY_FORM);
     const [tempExp, setTempExp] = useState({ org: "", place: "" });
     const [sameAddress, setSameAddress] = useState(false);
-    const navigate = useNavigate()
+    const navigate = useNavigate();
+    const location = useLocation();
+    const [workTypeFilter, setWorkTypeFilter] = useState(location.state?.workType || "");
 
-    const staffs = useMemo(
-        () => sortArray(adminData.staff || [], sortConfig),
-        [adminData.staff, sortConfig]
-    );
+    const staffs = useMemo(() => {
+        const sorted = sortArray(adminData.staff || [], sortConfig);
+        return workTypeFilter ? sorted.filter(s => (s.workType || "full-time") === workTypeFilter) : sorted;
+    }, [adminData.staff, sortConfig, workTypeFilter]);
 
     const resetForm = () => {
         setFormData(EMPTY_FORM);
@@ -93,6 +95,11 @@ export default function Staffs({
         <div className="staff-page">
             {/* HEADER */}
             <div className="staff-header">
+                <div className="staff-filter-pills">
+                    {[["", "All"], ["full-time", "Full-Time"], ["part-time", "Part-Time"]].map(([k, lbl]) => (
+                        <button key={k} className={`sched-pill-btn${workTypeFilter === k ? " active" : ""}`} onClick={() => setWorkTypeFilter(k)}>{lbl}</button>
+                    ))}
+                </div>
                 <h2>Staff</h2>
                 <button
                     className="staff-add-btn"
@@ -110,48 +117,62 @@ export default function Staffs({
                 <table className="staff-table">
                     <thead>
                         <tr>
-                            <th>Img</th>
-                            <th>Name</th>
+                            <th style={{ width: 200 }}>Name</th>
                             <th>Role</th>
-                            <th>Exp</th>
                             <th>Salary</th>
-                            <th>Edit</th>
-                            <th>Delete</th>
+                            <th>Exp</th>
+                            <th>Contact</th>
+                            <th>Work Type</th>
+                            <th style={{ width: 80 }}>Actions</th>
                         </tr>
                     </thead>
-
                     <tbody>
-                        {staffs.map(staff => (
-                            <tr key={staff.id}>
-                                <td className="clickable" onClick={() => navigate(`/staff/${staff.id}`)}>
-                                    <div className="staff-image">
-                                        <img src={staff.idImage} alt="" />
-                                    </div>
-                                </td>
-                                <td onClick={() => navigate(`/staff/${staff.id}`)} className="clickable">{staff.name}</td>
-                                <td>{staff.role}</td>
-                                <td>{staff.experience}</td>
-                                <td>₹{staff.salary}</td>
-
-                                <td>
-                                    <button
-                                        onClick={() => {
-                                            setFormData(staff);
-                                            setIsEditMode(true);
-                                            setShowModal(true);
-                                        }}
-                                    >
-                                        <img src={editIcon} alt="" />
-                                    </button>
-                                </td>
-
-                                <td>
-                                    <button onClick={() => onDelete(staff.id)}>
-                                        <img src={deleteIcon} alt="" />
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
+                        {staffs.map((staff, i) => {
+                            const PALETTE = ["#4361ee", "#06d6a0", "#ffd166", "#ef476f", "#7209b7", "#4cc9f0", "#f72585", "#3a0ca3", "#fb8500", "#023e8a"];
+                            const avatarBg = PALETTE[i % PALETTE.length];
+                            return (
+                                <tr key={staff.id} className="clickable" onClick={() => navigate(`/staff/${staff.id}`)}>
+                                    <td>
+                                        <div className="st-name-cell">
+                                            <div className="st-avatar" style={{ background: avatarBg }}>
+                                                {(staff.name || "?").charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <div className="st-name">{staff.name}</div>
+                                                <div className="st-join">Joined {staff.joiningDate || "—"}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span className="st-role-badge">{staff.role || "—"}</span>
+                                    </td>
+                                    <td>
+                                        <span className="st-salary">₹{Number(staff.salary || 0).toLocaleString("en-IN")}</span>
+                                    </td>
+                                    <td>
+                                        <span className="st-exp">{staff.experience ? `${staff.experience} yr` : "—"}</span>
+                                    </td>
+                                    <td>
+                                        <span className="st-contact">{staff.contact || "—"}</span>
+                                    </td>
+                                    <td>
+                                        <span className={`st-worktype-badge st-wt-${(staff.workType || "full-time").replace("-", "")}`}>
+                                            {staff.workType || "full-time"}
+                                        </span>
+                                    </td>
+                                    <td onClick={e => e.stopPropagation()}>
+                                        <div className="st-actions">
+                                            <button className="st-act-btn st-edit"
+                                                onClick={() => { setFormData(staff); setIsEditMode(true); setShowModal(true); }}
+                                                title="Edit">✏️</button>
+                                            <button className="st-act-btn st-delete"
+                                                onClick={() => onDelete(staff.id)}
+                                                title="Delete">🗑️</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>

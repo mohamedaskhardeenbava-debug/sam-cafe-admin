@@ -338,6 +338,10 @@ label {
   text-transform: capitalize !important;
 }
 
+button {
+  transition: 0.2s ease;
+}
+
 @media (max-width: 768px) {
   .page {
     padding: 10px;

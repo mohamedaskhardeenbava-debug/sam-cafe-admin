@@ -114,55 +114,50 @@ export default function StaffSalary({ adminData }) {
                     </thead>
 
                     <tbody>
-                        {staffList.map(s => {
+                        {staffList.map((s, i) => {
+                            const PALETTE = ["#4361ee", "#06d6a0", "#ffd166", "#ef476f", "#7209b7", "#4cc9f0", "#f72585", "#3a0ca3", "#fb8500", "#023e8a"];
+                            const avatarBg = PALETTE[i % PALETTE.length];
 
-                            // ✅ CALCULATE TOTALS
-                            const totalAdvance = (s.remainingSalary || []).reduce(
-                                (sum, item) => sum + Number(item.advance || 0),
-                                0
-                            );
-
-                            const totalDeduction = (s.remainingSalary || []).reduce(
-                                (sum, item) => sum + Number(item.deduction || 0),
-                                0
-                            );
-
-                            const totalPenalty = (s.remainingSalary || []).reduce(
-                                (sum, item) => sum + Number(item.penalty || 0),
-                                0
-                            );
-
-                            const totalBonus = (s.remainingSalary || []).reduce(
-                                (sum, item) => sum + Number(item.bonus || 0), 0
-                            );
-
-                            const totalOvertime = (s.remainingSalary || []).reduce(
-                                (sum, item) => sum + Number(item.overtime || 0), 0
-                            );
-
-                            const computedRemaining =
-                                Number(s.salary) +
-                                totalBonus +
-                                totalOvertime -
-                                totalAdvance -
-                                totalDeduction -
-                                totalPenalty;
+                            const totalAdvance = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.advance || 0), 0);
+                            const totalDeduction = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.deduction || 0), 0);
+                            const totalPenalty = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.penalty || 0), 0);
+                            const totalBonus = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.bonus || 0), 0);
+                            const totalOvertime = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.overtime || 0), 0);
+                            const computedRemaining = Number(s.salary) + totalBonus + totalOvertime - totalAdvance - totalDeduction - totalPenalty;
+                            const base = Number(s.salary) || 1;
+                            const remainPct = Math.max(0, Math.min(100, Math.round((computedRemaining / base) * 100)));
 
                             return (
                                 <tr key={s.id}>
-                                    <td>{s.name}</td>
-                                    <td>₹{s.salary}</td>
-                                    <td>₹{totalAdvance}</td>
-                                    <td>₹{totalDeduction}</td>
-                                    <td>₹{totalPenalty}</td>
-                                    <td>₹{totalBonus}</td>
-                                    <td>₹{totalOvertime}</td>
-                                    <td>₹{computedRemaining}</td>
-
                                     <td>
-                                        <button onClick={() => openModal(s)}>
-                                            Edit
-                                        </button>
+                                        <div className="st-name-cell">
+                                            <div className="st-avatar" style={{ background: avatarBg }}>
+                                                {(s.name || "?").charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <div className="st-name">{s.name}</div>
+                                                <div className="st-join">{s.role || "—"}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span className="st-salary">₹{Number(s.salary || 0).toLocaleString("en-IN")}</span></td>
+                                    <td><span className={totalAdvance > 0 ? "st-neg-val" : "st-zero-val"}>₹{totalAdvance.toLocaleString("en-IN")}</span></td>
+                                    <td><span className={totalDeduction > 0 ? "st-neg-val" : "st-zero-val"}>₹{totalDeduction.toLocaleString("en-IN")}</span></td>
+                                    <td><span className={totalPenalty > 0 ? "st-neg-val" : "st-zero-val"}>₹{totalPenalty.toLocaleString("en-IN")}</span></td>
+                                    <td><span className={totalBonus > 0 ? "st-pos-val" : "st-zero-val"}>₹{totalBonus.toLocaleString("en-IN")}</span></td>
+                                    <td><span className={totalOvertime > 0 ? "st-pos-val" : "st-zero-val"}>₹{totalOvertime.toLocaleString("en-IN")}</span></td>
+                                    <td>
+                                        <div className="st-remain-cell">
+                                            <span className="st-remain-val" style={{ color: remainPct >= 80 ? "#1dd1a1" : remainPct >= 50 ? "#ff9f43" : "#ee5253" }}>
+                                                ₹{computedRemaining.toLocaleString("en-IN")}
+                                            </span>
+                                            <div className="st-mini-bar-track">
+                                                <div className="st-mini-bar-fill" style={{ width: `${remainPct}%`, background: remainPct >= 80 ? "#1dd1a1" : remainPct >= 50 ? "#ff9f43" : "#ee5253" }} />
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <button className="st-edit-btn" onClick={() => openModal(s)}>Edit</button>
                                     </td>
                                 </tr>
                             );

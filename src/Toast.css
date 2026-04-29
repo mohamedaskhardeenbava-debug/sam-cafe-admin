@@ -1,0 +1,222 @@
+/* ═══════════════════════════════════════════════════════════
+   Toast.css  —  Bootstrap-style toasts, zero dependency
+   Place this file alongside useToast.js
+═══════════════════════════════════════════════════════════ */
+
+/* ── Container (top-right, like Bootstrap default) ─── */
+.bs-toast-container {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+    max-width: 360px;
+    width: calc(100vw - 32px);
+}
+
+/* ── Base Toast ──────────────────────────────────────── */
+.bs-toast {
+    pointer-events: all;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: #fff;
+    border-radius: 6px;
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06),
+        0 0 0 1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    position: relative;
+    min-height: 52px;
+
+    /* Enter animation */
+    animation: bs-slide-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Enter / Exit animations ─────────────────────────── */
+.bs-toast-enter {
+    animation: bs-slide-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.bs-toast-exit {
+    animation: bs-slide-out 0.28s ease-in both;
+}
+
+@keyframes bs-slide-in {
+    from {
+        opacity: 0;
+        transform: translateX(110%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes bs-slide-out {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+        max-height: 80px;
+        margin-bottom: 0;
+    }
+
+    to {
+        opacity: 0;
+        transform: translateX(110%);
+        max-height: 0;
+        margin-bottom: -8px;
+    }
+}
+
+/* ── Accent bar (left border stripe) ─────────────────── */
+.bs-toast-accent {
+    width: 5px;
+    align-self: stretch;
+    flex-shrink: 0;
+}
+
+/* ── Icon ────────────────────────────────────────────── */
+.bs-toast-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin: 0 10px 0 14px;
+}
+
+.bs-toast-icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* ── Message ─────────────────────────────────────────── */
+.bs-toast-body {
+    flex: 1;
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.45;
+    color: #1a1a2e;
+    padding: 14px 4px 14px 0;
+    font-family: inherit;
+}
+
+/* ── Close button ────────────────────────────────────── */
+.bs-toast-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    color: #6c757d;
+    padding: 4px 12px;
+    align-self: flex-start;
+    margin-top: 8px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+    flex-shrink: 0;
+}
+
+.bs-toast-close:hover {
+    color: #000;
+    background: rgba(0, 0, 0, 0.06);
+}
+
+/* ── Auto-dismiss progress bar ───────────────────────── */
+.bs-toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    width: 100%;
+    border-radius: 0 0 6px 6px;
+    animation: bs-progress 3.5s linear forwards;
+}
+
+@keyframes bs-progress {
+    from {
+        width: 100%;
+    }
+
+    to {
+        width: 0%;
+    }
+}
+
+/* ══════════════════════════════════════════════════════
+   TYPE VARIANTS  (Bootstrap exact palette)
+══════════════════════════════════════════════════════ */
+
+/* SUCCESS — #198754 green */
+.bs-toast-success .bs-toast-accent {
+    background: #198754;
+}
+
+.bs-toast-success .bs-toast-icon {
+    color: #198754;
+}
+
+.bs-toast-success .bs-toast-progress {
+    background: #198754;
+}
+
+.bs-toast-success {
+    border-left: none;
+}
+
+/* ERROR — #dc3545 red */
+.bs-toast-error .bs-toast-accent {
+    background: #dc3545;
+}
+
+.bs-toast-error .bs-toast-icon {
+    color: #dc3545;
+}
+
+.bs-toast-error .bs-toast-progress {
+    background: #dc3545;
+}
+
+/* WARNING — #ffc107 amber */
+.bs-toast-warning .bs-toast-accent {
+    background: #ffc107;
+}
+
+.bs-toast-warning .bs-toast-icon {
+    color: #e0a800;
+}
+
+.bs-toast-warning .bs-toast-progress {
+    background: #ffc107;
+}
+
+/* INFO — #0dcaf0 cyan */
+.bs-toast-info .bs-toast-accent {
+    background: #0dcaf0;
+}
+
+.bs-toast-info .bs-toast-icon {
+    color: #0aa2c0;
+}
+
+.bs-toast-info .bs-toast-progress {
+    background: #0dcaf0;
+}
+
+/* ── Responsive: full-width on small screens ─────────── */
+@media (max-width: 480px) {
+    .bs-toast-container {
+        top: auto;
+        bottom: 80px;
+        /* above floating bag button */
+        right: 12px;
+        left: 12px;
+        max-width: 100%;
+        width: auto;
+    }
+}

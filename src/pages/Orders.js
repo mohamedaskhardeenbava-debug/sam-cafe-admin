@@ -6,10 +6,6 @@ import * as XLSX from "xlsx";
 import { EmptyRow } from "../App";
 import { QRCodeCanvas } from "qrcode.react";
 import { createPortal } from "react-dom";
-import dayjs from "dayjs";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { formatDisplayDate } from "../App"
 import { formatIndianTime } from "../App"
 import socket from "../socket";
@@ -300,7 +296,7 @@ const ItemTimer = React.memo(({ item, order }) => {
 
     useEffect(() => {
         if (isDone) return;
-        const interval = setInterval(() => setTick(t => t + 1), 1000);
+        const interval = setInterval(() => setTick(t => t + 1), 5000);
         return () => clearInterval(interval);
     }, [isDone]);
 
@@ -491,6 +487,111 @@ const OrderRow = React.memo(({
     );
 });
 
+
+
+/* ─── Shared Custom Date Picker ─────────────────────────────────────── */
+const MONTHS_CDP = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const CustomDatePicker = ({ value, onChange, label, min, max }) => {
+    const [open, setOpen] = React.useState(false);
+    const ref = React.useRef(null);
+    const parsed = value ? new Date(value) : new Date();
+    const [view, setView] = React.useState("day");
+    const [calYear, setCalYear] = React.useState(parsed.getFullYear());
+    const [calMonth, setCalMonth] = React.useState(parsed.getMonth());
+    React.useEffect(() => {
+        const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener("mousedown", h);
+        return () => document.removeEventListener("mousedown", h);
+    }, []);
+    const todayStr = new Date().toISOString().split("T")[0];
+    const minD = min ? new Date(min) : null;
+    const maxD = max ? new Date(max) : null;
+    const isDisabled = (d) => (minD && d < minD) || (maxD && d > maxD);
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    const select = (d) => {
+        const s = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        onChange(s); setOpen(false);
+    };
+    const yearRange = Array.from({ length: 20 }, (_, i) => calYear - 10 + i);
+    const displayVal = value ? new Date(value).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+    return (
+        <div className="cdp-wrap" ref={ref}>
+            <button className="cdp-trigger" onClick={() => { setOpen(o => !o); setView("day"); if (value) { const p = new Date(value); setCalYear(p.getFullYear()); setCalMonth(p.getMonth()); } }}>
+                <span className="cdp-icon">📅</span>
+                {label && <span className="cdp-label">{label}</span>}
+                <span className="cdp-value">{displayVal}</span>
+            </button>
+            {open && (
+                <div className="cdp-popup">
+                    <div className="cdp-nav">
+                        <button
+                            className="cdp-nav-btn"
+                            onClick={() => {
+                                if (view === "day") {
+                                    if (calMonth === 0) {
+                                        setCalMonth(11);
+                                        setCalYear(y => y - 1);
+                                    } else {
+                                        setCalMonth(m => m - 1);
+                                    }
+                                }
+                            }}
+                        >‹</button>
+                        <div className="cdp-nav-center">
+                            {view === "day" && <><button className="cdp-nav-lbl" onClick={() => setView("month")}>{MONTHS_CDP[calMonth]}</button><button className="cdp-nav-lbl" onClick={() => setView("year")}>{calYear}</button></>}
+                            {view === "month" && <button className="cdp-nav-lbl" onClick={() => setView("year")}>{calYear}</button>}
+                            {view === "year" && <span className="cdp-nav-lbl">{calYear - 10} – {calYear + 9}</span>}
+                        </div>
+                        <button
+                            className="cdp-nav-btn"
+                            onClick={() => {
+                                if (view === "day") {
+                                    if (calMonth === 11) {
+                                        setCalMonth(0);
+                                        setCalYear(y => y + 1);
+                                    } else {
+                                        setCalMonth(m => m + 1);
+                                    }
+                                }
+                            }}
+                        >›</button>
+                    </div>
+                    {view === "day" && (<>
+                        <div className="cdp-weekdays">{["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => <span key={d}>{d}</span>)}</div>
+                        <div className="cdp-grid">
+                            {cells.map((d, i) => {
+                                if (!d) return <span key={i} />;
+                                const ds = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+                                const sel = ds === value; const dis = isDisabled(new Date(ds + "T00:00:00"));
+                                const tod = ds === todayStr;
+                                return <button key={i} className={`cdp-day${sel ? " cdp-sel" : ""}${dis ? " cdp-dis" : ""}${tod && !sel ? " cdp-today" : ""}`} disabled={dis} onClick={() => select(d)}>{d}</button>;
+                            })}
+                        </div>
+                    </>)}
+                    {view === "month" && (
+                        <div className="cdp-month-grid">
+                            {MONTHS_CDP.map((m, i) => (
+                                <button key={i} className={`cdp-month-btn${i === calMonth ? " cdp-sel" : ""}`} onClick={() => { setCalMonth(i); setView("day"); }}>{m.slice(0, 3)}</button>
+                            ))}
+                        </div>
+                    )}
+                    {view === "year" && (
+                        <div className="cdp-year-grid">
+                            {yearRange.map(y => (
+                                <button key={y} className={`cdp-year-btn${y === calYear ? " cdp-sel" : ""}`} onClick={() => { setCalYear(y); setView("month"); }}>{y}</button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
     const navigate = useNavigate();
     const orders = adminData.orders || [];
@@ -500,8 +601,6 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
     const [openModeDropdown, setOpenModeDropdown] = useState(false);
     const [statusFilter, setStatusFilter] = useState("all");
     const [modeFilter, setModeFilter] = useState("all");
-    const [openFrom, setOpenFrom] = useState(false);
-    const [openTo, setOpenTo] = useState(false);
     const [originalBill, setOriginalBill] = useState(null);
     const [splitPeople, setSplitPeople] = useState("");
     const [splitBills, setSplitBills] = useState("");
@@ -534,6 +633,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
     const [previewBillOrder, setPreviewBillOrder] = useState(null);
     const [editableBill, setEditableBill] = useState(null);
     const [menuPos, setMenuPos] = useState(null);
+    const [displayLimit, setDisplayLimit] = useState(50);
 
 
 
@@ -552,7 +652,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         }
     }, [location.state]);
 
-    const buildUpiUrl = (amount, orderId) => {
+    const buildUpiUrl = useCallback((amount, orderId) => {
         const upiId = "9019081708@upi";
         const name = "Sam Cafe";
 
@@ -564,7 +664,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
             `&tn=Order%20${orderId}` +
             `&tr=ORDER_${orderId}`
         );
-    };
+    }, []);
 
     /* ---------------- SAFE TOTAL RESOLUTION ---------------- */
     const resolveItemTotal = useCallback(
@@ -660,12 +760,12 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         return data;
     }, [filteredOrders, sortConfig]);
 
-    const deriveOrderStatusFromItems = (items) => {
+    const deriveOrderStatusFromItems = useCallback((items) => {
         if (items.every(i => i.status === "completed")) return "completed";
         if (items.some(i => i.status === "preparing" || i.status === "service pickup"))
             return "preparing";
         return "placed";
-    };
+    }, []);
 
     useEffect(() => {
         if (!orders.length) return;
@@ -779,11 +879,14 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
             });
 
-        }, 3000);
+        }, 5000);
 
         return () => clearInterval(interval);
 
     }, [isOrdersPage]);
+
+    // Reset display limit when any filter changes
+    useEffect(() => { setDisplayLimit(50); }, [statusFilter, modeFilter, fromDate, toDate]);
 
     useEffect(() => {
         localStorage.setItem(
@@ -889,22 +992,17 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         }
     };
 
-    const closeAllBillOverlays = () => {
+    const closeAllBillOverlays = useCallback(() => {
         setEditBillOrder(null);
         setPreviewBillOrder(null);
-
-        // 🔥 RESET BACK
-        if (originalBill) {
-            setEditableBill(originalBill);
-        }
-
+        if (originalBill) setEditableBill(originalBill);
         setOriginalBill(null);
-    };
+    }, [originalBill]);
 
-    const closeOptionsMenu = () => {
+    const closeOptionsMenu = useCallback(() => {
         setOpenMenuOrderId(null);
         setMenuPos(null);
-    };
+    }, []);
 
     const recalcOrderTotals = (order) => {
         const items = order.items.map(item => {
@@ -1038,8 +1136,6 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         setEditableBill(updatedOrder);
     };
 
-    const fromDay = useMemo(() => dayjs(fromDate), [fromDate]);
-    const toDay = useMemo(() => dayjs(toDate), [toDate]);
 
     return (
         <div className="orders-page">
@@ -1107,104 +1203,23 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                     <button
                         type="button"
                         className="orders-today-btn"
-                        onClick={() => {
-                            setFromDate(todayISO);
-                            setToDate(todayISO);
-                        }}
+                        onClick={() => { setFromDate(todayISO); setToDate(todayISO); }}
                     >
                         Today
                     </button>
-
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-
-                        {/* FROM DATE */}
-                        <div
-                            style={{ display: "inline-block" }}
-                            onClick={() => setOpenFrom(true)}
-                        >
-                            <DatePicker
-                                open={openFrom}
-                                onClose={() => setOpenFrom(false)}
-                                value={fromDay}
-                                format="DD/MM/YYYY"
-                                maxDate={dayjs(toDate)}
-                                onChange={(newValue) => {
-                                    if (!newValue) return;
-
-                                    const selected = newValue.format("YYYY-MM-DD");
-
-                                    if (selected > toDate) {
-                                        setFromDate(selected);
-                                        setToDate(selected);
-                                    } else {
-                                        setFromDate(selected);
-                                    }
-
-                                    setOpenFrom(false);
-                                }}
-                                slotProps={{
-                                    field: {
-                                        sx: {
-                                            minWidth: 140,
-                                            maxWidth: 240,
-                                            height: 38,
-                                            borderRadius: "999px",
-                                            backgroundColor: "#fff",
-                                            overflow: "hidden",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-
-                                            "&.Mui-focused": {
-                                                boxShadow: "0 0 0 3px rgba(37, 99, 235, 0.15)"
-                                            }
-                                        }
-                                    }
-                                }}
-                            />
-                        </div>
-
-                        {/* TO DATE */}
-                        <div
-                            style={{ display: "inline-block" }}
-                            onClick={() => setOpenTo(true)}
-                        >
-                            <DatePicker
-                                open={openTo}
-                                onClose={() => setOpenTo(false)}
-                                value={toDay}
-                                format="DD/MM/YYYY"
-                                minDate={dayjs(fromDate)}
-                                maxDate={dayjs()}
-                                onChange={(newValue) => {
-                                    if (!newValue) return;
-
-                                    setToDate(newValue.format("YYYY-MM-DD"));
-                                    setOpenTo(false);
-                                }}
-                                slotProps={{
-                                    field: {
-                                        sx: {
-                                            minWidth: 140,
-                                            maxWidth: 240,
-                                            height: 38,
-                                            borderRadius: "999px",
-                                            backgroundColor: "#fff",
-                                            overflow: "hidden",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-
-                                            "&.Mui-focused": {
-                                                boxShadow: "0 0 0 3px rgba(37, 99, 235, 0.15)"
-                                            }
-                                        }
-                                    }
-                                }}
-                            />
-                        </div>
-
-                    </LocalizationProvider>
+                    <CustomDatePicker
+                        label="From"
+                        value={fromDate}
+                        max={toDate}
+                        onChange={(s) => { setFromDate(s); if (s > toDate) setToDate(s); }}
+                    />
+                    <CustomDatePicker
+                        label="To"
+                        value={toDate}
+                        min={fromDate}
+                        max={todayISO}
+                        onChange={(s) => setToDate(s)}
+                    />
                 </div>
 
                 <button
@@ -1224,10 +1239,10 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                         <col />
                         <col />
                         <col />
-                        <col/>
                         <col />
-                        <col/>
-                        <col/>
+                        <col />
+                        <col />
+                        <col />
                         <col style={{ width: "120px" }} />
                         <col style={{ width: "60px" }} />
                     </colgroup>
@@ -1285,7 +1300,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                         {sortedOrders.length === 0 ? (
                             <EmptyRow colSpan={11} message="No orders for selected date range" />
                         ) : (
-                            sortedOrders.map(order => {
+                            sortedOrders.slice(0, displayLimit).map(order => {
                                 const orderStatus = deriveOrderStatusFromItems(order.items);
                                 return (
                                     <OrderRow
@@ -1308,6 +1323,16 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                     </tbody>
                 </table>
             </div>
+            {sortedOrders.length > displayLimit && (
+                <div style={{ textAlign: "center", padding: "12px 0 4px" }}>
+                    <button
+                        onClick={() => setDisplayLimit(l => l + 50)}
+                        style={{ padding: "8px 28px", borderRadius: "999px", border: "1.5px solid #ddd", background: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#333" }}
+                    >
+                        Show more ({sortedOrders.length - displayLimit} more)
+                    </button>
+                </div>
+            )}
             {pickupConfirm && (
                 <div
                     className="pickup-overlay"

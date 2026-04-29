@@ -96,8 +96,8 @@ export default function ServiceAssign({ adminData, setAdminData }) {
     };
 
     try {
-      await api.put("/serviceAssign/1", updatedAssign);
-      await api.put("/serviceMise/1", updatedMise);
+      await api.put("/serviceAssign", updatedAssign);
+      await api.put("/serviceMise", updatedMise);
 
       setAdminData(prev => ({
         ...prev,
@@ -176,7 +176,7 @@ export default function ServiceAssign({ adminData, setAdminData }) {
                     </td>
 
                     <td>
-                      <div role="button" onClick={() => handleDelete(task, section)}><img className="delete-icon" src={deleteIcon}/></div>
+                      <div role="button" onClick={() => handleDelete(task, section)}><img className="delete-icon" src={deleteIcon} /></div>
                     </td>
                   </tr>
                 ))}
@@ -243,7 +243,8 @@ export default function ServiceAssign({ adminData, setAdminData }) {
                       {["mise", "cleaning"].map(sec => (
                         <div
                           key={sec}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setSection(sec);
                             setOpenDropdown(null);
                           }}

@@ -155,7 +155,7 @@ export default function KitchenAssign({ adminData, setAdminData }) {
                       {adminData.mise?.[tomorrow]?.[task]?.time || "-"}
                     </td>
 
-                    <td><div onClick={() => handleDelete(task, section)}><img className="delete-icon" src={deleteIcon}/></div></td>
+                    <td><div onClick={() => handleDelete(task, section)}><img className="delete-icon" src={deleteIcon} /></div></td>
                   </tr>
                 ))}
 
@@ -220,7 +220,8 @@ export default function KitchenAssign({ adminData, setAdminData }) {
                       {["mise", "cleaning"].map(sec => (
                         <div
                           key={sec}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setSection(sec);
                             setOpenDropdown(null);
                           }}

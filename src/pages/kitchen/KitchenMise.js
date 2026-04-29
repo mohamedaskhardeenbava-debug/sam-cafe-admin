@@ -1,7 +1,7 @@
 import React from "react";
 import "./KitchenMise.css";
 import { getTodayKey, getTodayFormatted, getTomorrowKey } from "../../App";
-import api from "../../api"; 
+import api from "../../api";
 
 export default function KitchenMise({ adminData, setAdminData }) {
   const todayFormatted = getTodayFormatted();
@@ -12,8 +12,8 @@ export default function KitchenMise({ adminData, setAdminData }) {
     adminData.mise?.[today]
       ? today
       : tomorrow;
-  const tasks = adminData.tasks?.kitchen;  
-  
+  const tasks = adminData.tasks?.kitchen;
+
   const toggle = async (task) => {
     const isChecked = adminData.mise?.[activeDate]?.[task]?.verified;
 

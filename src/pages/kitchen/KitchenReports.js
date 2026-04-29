@@ -3,61 +3,71 @@ import "./KitchenReports.css";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Sector,
-  Line, CartesianGrid
+  CartesianGrid
 } from "recharts";
 
-/* ─── PALETTE ─────────────────────────────────────────────── */
+/* ─── Palette ─────────────────────────────────────────── */
 const K = {
-  orange: "#ff9f43",
-  amber: "#f0a500",
-  green: "#1dd1a1",
-  red: "#ee5253",
-  blue: "#54a0ff",
-  purple: "#9b59b6",
-  teal: "#1abc9c",
-  navy: "#2d3436",
-  slate: "#636e72",
-  text: "#111",
-  muted: "#777",
-  border: "#e8ecf0",
+  orange: "#ff9f43", amber: "#f0a500", green: "#1dd1a1",
+  red: "#ee5253", blue: "#54a0ff", purple: "#9b59b6",
+  teal: "#1abc9c", navy: "#2d3436", slate: "#636e72",
+  text: "#111", muted: "#777", border: "#e8ecf0",
 };
 
-/* ─── HELPERS ─────────────────────────────────────────────── */
-const groomingChecks = ["uniform", "shoes", "groom"];
-
+/* ─── Helpers ─────────────────────────────────────────── */
 const parseGroomingData = (grooming = {}, staff = []) => {
   return staff.map(s => {
     const dates = grooming[s.id] || {};
-
     let total = 0, passed = 0;
-
     Object.values(dates).forEach(checks => {
-      groomingChecks.forEach(k => {
+      if (typeof checks !== "object" || checks === null) return;
+      ["uniform", "shoes", "groom"].forEach(k => {
         total++;
         if (checks[k] === true) passed++;
       });
     });
-
-    const score = total > 0 ? Math.round((passed / total) * 100) : 0;
-
-    return {
-      name: s.name,
-      score
-    };
+    return { name: s.name, score: total > 0 ? Math.round((passed / total) * 100) : 0 };
   });
 };
 
-const parseMiseData = (mise = {}) =>
-  Object.entries(mise).map(([task, data]) => ({
+/* ─── Parse mise: picks today's entry, or most recent date entry, or legacy flat tasks ─── */
+const parseMiseData = (mise = {}) => {
+  const today = new Date().toISOString().split("T")[0];
+
+  // Separate date-keyed entries from flat task entries
+  const dateKeys = Object.keys(mise).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
+  const taskKeys = Object.keys(mise).filter(k => !/^\d{4}-\d{2}-\d{2}$/.test(k));
+
+  // Pick the best entry: today > most recent date > flat tasks
+  let taskMap = {};
+  if (today in mise) {
+    taskMap = mise[today];
+  } else if (dateKeys.length > 0) {
+    taskMap = mise[dateKeys[dateKeys.length - 1]];
+  } else {
+    // Legacy: flat task objects at top level
+    taskKeys.forEach(k => { taskMap[k] = mise[k]; });
+  }
+
+  return Object.entries(taskMap).map(([task, data]) => ({
     task,
     verified: data.verified ? 1 : 0,
     time: data.time || "—",
     staff: data.staff || "—",
-    label: data.verified ? "Done" : "Pending"
+    label: data.verified ? "Done" : "Pending",
   }));
+};
 
-const parseRecipeData = (recipes = []) =>
-  recipes.map(r => ({ name: r.name, steps: (r.description || "").split("\n").filter(Boolean).length }));
+const parseAttendanceStats = (staff = []) =>
+  staff.map(s => {
+    const att = s.attendance || [];
+    const present = att.filter(a => a.status === "present").length;
+    const leave = att.filter(a => a.status === "leave").length;
+    const absent = att.filter(a => a.status === "absent").length;
+    const total = present + leave + absent;
+    const pct = total > 0 ? Math.round((present / total) * 100) : 0;
+    return { name: s.name.split(" ")[0], present, leave, absent, pct };
+  });
 
 const parseOrderCategoryData = (orders = []) => {
   const map = {};
@@ -68,31 +78,11 @@ const parseOrderCategoryData = (orders = []) => {
       map[label] = (map[label] || 0) + (item.quantity || 1);
     });
   });
-  return Object.entries(map)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8)
-    .map(([name, qty]) => ({ name, qty }));
+  return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([name, qty]) => ({ name, qty }));
 };
 
-const parseCompletionTrend = (orders = []) => {
-  const map = {};
-  orders.forEach(o => {
-    const d = (o.date || "").slice(0, 7);
-    if (!d) return;
-    if (!map[d]) map[d] = { total: 0, completed: 0 };
-    map[d].total++;
-    if (o.status === "completed") map[d].completed++;
-  });
-  return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([month, v]) => ({
-    month: month.slice(5),
-    rate: v.total > 0 ? Math.round((v.completed / v.total) * 100) : 0,
-    total: v.total,
-    completed: v.completed
-  }));
-};
-
-/* ─── SMALL COMPONENTS ────────────────────────────────────── */
-const KpiCard = ({ label, value, sub, color = K.orange, icon }) => (
+/* ─── Sub-components ──────────────────────────────────── */
+const KpiCard = ({ label, value, sub, color = K.orange }) => (
   <div className="k-kpi-card">
     <div>
       <p className="k-kpi-label">{label}</p>
@@ -123,86 +113,56 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-/* ─── RADAR ACTIVE SHAPE ──────────────────────────────────── */
 const renderActiveShape = (props) => {
   const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, value } = props;
   return (
     <g>
-      <Sector cx={cx} cy={cy} innerRadius={innerRadius - 4} outerRadius={outerRadius + 10}
-        startAngle={startAngle} endAngle={endAngle} fill={fill}
-        style={{ filter: "drop-shadow(0 6px 12px rgba(0,0,0,0.15))" }} />
+      <Sector cx={cx} cy={cy} innerRadius={innerRadius - 4} outerRadius={outerRadius + 10} startAngle={startAngle} endAngle={endAngle} fill={fill} style={{ filter: "drop-shadow(0 6px 12px rgba(0,0,0,0.15))" }} />
       <text x={cx} y={cy - 8} textAnchor="middle" fontSize={13} fontWeight={700} fill="#111">{payload.name}</text>
       <text x={cx} y={cy + 10} textAnchor="middle" fontSize={12} fill="#777">{value} items</text>
     </g>
   );
 };
 
-/* ─── MAIN COMPONENT ──────────────────────────────────────── */
+/* ─── Main ────────────────────────────────────────────── */
 const KitchenReports = ({ adminData = {} }) => {
   const { grooming = {}, mise = {}, recipes = [], orders = [], staff = [], ingredients = [] } = adminData;
 
-  const roundTo = (value, decimals = 2) =>
-    Math.round((Number(value) + Number.EPSILON) * 10 ** decimals) /
-    10 ** decimals;
-
+  const roundTo = (v, d = 2) => Math.round((Number(v) + Number.EPSILON) * 10 ** d) / 10 ** d;
   const [activePie, setActivePie] = useState(null);
 
   /* derived */
   const groomData = useMemo(() => parseGroomingData(grooming, staff), [grooming, staff]);
   const miseData = useMemo(() => parseMiseData(mise), [mise]);
-  const recipeData = useMemo(() => parseRecipeData(recipes), [recipes]);
+  const attData = useMemo(() => parseAttendanceStats(staff), [staff]);
   const catData = useMemo(() => parseOrderCategoryData(orders), [orders]);
-  const trendData = useMemo(() => parseCompletionTrend(orders), [orders]);
 
-  const stockData = useMemo(() => {
-    return ingredients.map(ing => {
-      const remaining = roundTo(ing.stockRemaining ?? 0, 2);
-      const max = Number(ing.stockMax ?? 0);
-
-      const percent =
-        max > 0 ? Math.round((remaining / max) * 100) : 0;
-
-      return {
-        name: ing.name,
-        stock: remaining,
-        stockMax: max,
-        percent
-      };
-    })
-      .sort((a, b) => a.percent - b.percent);
-
-  }, [ingredients]);
+  const stockData = useMemo(() => ingredients.map(ing => {
+    const rem = roundTo(ing.stockRemaining ?? 0, 2);
+    const mx = Number(ing.stockMax ?? 0);
+    const pct = mx > 0 ? Math.round((rem / mx) * 100) : 0;
+    return { name: ing.name, stock: rem, stockMax: mx, percent: pct };
+  }).sort((a, b) => a.percent - b.percent), [ingredients]);
 
   /* kpi numbers */
   const totalOrders = orders.length;
   const completedOrders = orders.filter(o => o.status === "completed").length;
   const completionRate = totalOrders > 0 ? Math.round((completedOrders / totalOrders) * 100) : 0;
   const totalIngredients = ingredients.length;
-  const lowStock = ingredients.filter(i => {
-    const pct = i.stockMax > 0 ? (i.stockRemaining / i.stockMax) * 100 : 100;
-    return pct < 35;
-  }).length;
+  const lowStock = ingredients.filter(i => { const pct = i.stockMax > 0 ? (i.stockRemaining / i.stockMax) * 100 : 100; return pct < 35; }).length;
   const miseVerified = miseData.filter(m => m.verified).length;
   const misePending = miseData.filter(m => !m.verified).length;
-  const avgGroom = groomData.length
-    ? Math.round(groomData.reduce((s, g) => s + g.score, 0) / groomData.length)
-    : 0;
+  const avgGroom = groomData.length ? Math.round(groomData.reduce((s, g) => s + g.score, 0) / groomData.length) : 0;
 
-  /* pie chart for mise status */
-  const misePieData = [
-    { name: "Verified", value: miseVerified, color: K.green },
-    { name: "Pending", value: misePending, color: K.red },
-  ];
+  /* attendance summary */
+  const totalPresent = attData.reduce((s, x) => s + x.present, 0);
+  const totalLeave = attData.reduce((s, x) => s + x.leave, 0);
+  const totalAbsent = attData.reduce((s, x) => s + x.absent, 0);
 
-  /* stock criticality pie */
+  /* pies */
   const stockPie = useMemo(() => {
     let high = 0, mid = 0, low = 0;
-    ingredients.forEach(i => {
-      const pct = i.stockMax > 0 ? (i.stockRemaining / i.stockMax) * 100 : 100;
-      if (pct >= 60) high++;
-      else if (pct >= 35) mid++;
-      else low++;
-    });
+    ingredients.forEach(i => { const pct = i.stockMax > 0 ? (i.stockRemaining / i.stockMax) * 100 : 100; if (pct >= 60) high++; else if (pct >= 35) mid++; else low++; });
     return [
       { name: "Healthy (≥60%)", value: high, color: K.green },
       { name: "Warning (35–60%)", value: mid, color: K.amber },
@@ -210,53 +170,17 @@ const KitchenReports = ({ adminData = {} }) => {
     ].filter(d => d.value > 0);
   }, [ingredients]);
 
-  /* grooming radar */
-  const radarData = groomData.map(g => ({
-    subject: g.name,
-    Score: g.score,
-    fullMark: 100
-  }));
-
-  /* stock bar – bottom 14 */
-  const stockBar = useMemo(() =>
-    ingredients.map(i => {
-      const pct = i.stockMax > 0 ? Math.round((i.stockRemaining / i.stockMax) * 100) : 0;
-      return { name: i.name, pct };
-    }).sort((a, b) => a.pct - b.pct).slice(0, 14),
-    [ingredients]
-  );
-
+  const radarData = groomData.map(g => ({ subject: g.name, Score: g.score, fullMark: 100 }));
   const stockColor = (pct) => pct >= 60 ? K.green : pct >= 35 ? K.amber : K.red;
-
-  const getStockColor = (value) => {
-    if (value >= 60) return "#1dd1a1";
-    if (value >= 35) return "#ff9f43";
-    return "#ee5253";
-  };
 
   const StockTooltip = ({ active, payload }) => {
     if (!active || !payload?.length) return null;
-
     const { name, stock, stockMax, percent } = payload[0].payload;
-    const color = getStockColor(percent);
-
+    const color = stockColor(percent);
     return (
-      <div
-        className="k-tooltip"
-      >
-        <div
-          className="trend-tooltip-label"
-          style={{ color }}
-        >
-          {name}
-        </div>
-
-        <div
-          className="trend-tooltip-value"
-          style={{ color }}
-        >
-          {roundTo(stock, 2)} / {roundTo(stockMax, 2)} kg ({percent}%)
-        </div>
+      <div className="k-tooltip">
+        <div className="k-tooltip-label" style={{ color }}>{name}</div>
+        <div style={{ color, fontWeight: 700, fontSize: 14 }}>{roundTo(stock, 2)}/{roundTo(stockMax, 2)} kg ({percent}%)</div>
       </div>
     );
   };
@@ -264,15 +188,15 @@ const KitchenReports = ({ adminData = {} }) => {
   return (
     <div className="k-page">
 
-      {/* ── HEADER ── */}
+      {/* HEADER */}
       <div className="k-header">
         <div>
           <h2 className="k-title">Kitchen Management</h2>
-          <p className="k-subtitle">Operations & Performance Report</p>
+          <p className="k-subtitle">Operations &amp; Performance Report</p>
         </div>
       </div>
 
-      {/* ── KPI ROW ── */}
+      {/* KPI ROW */}
       <div className="k-kpi-row">
         <KpiCard label="Total Orders" value={totalOrders} color={K.blue} sub="all time" />
         <KpiCard label="Completion Rate" value={`${completionRate}%`} color={K.green} sub={`${completedOrders} completed`} />
@@ -282,62 +206,36 @@ const KitchenReports = ({ adminData = {} }) => {
         <KpiCard label="Recipes" value={recipes.length} color={K.amber} sub="logged recipes" />
       </div>
 
-      {/* ── ROW 2: GROOMING RADAR + MISE TABLE ── */}
+      {/* ATTENDANCE KPI ROW */}
+      <div className="k-att-kpi-row">
+        <div className="k-att-kpi present">
+          <span className="k-att-kpi-val">{totalPresent}</span>
+          <span className="k-att-kpi-label">Present Days</span>
+        </div>
+        <div className="k-att-kpi leave">
+          <span className="k-att-kpi-val">{totalLeave}</span>
+          <span className="k-att-kpi-label">Leave Days</span>
+        </div>
+        <div className="k-att-kpi absent">
+          <span className="k-att-kpi-val">{totalAbsent}</span>
+          <span className="k-att-kpi-label">Absent Days</span>
+        </div>
+      </div>
+
+      {/* GROOMING + MISE */}
       <div className="k-grid-2">
         <div className="k-card">
           <SectionTitle accent={K.purple}>Staff Grooming Compliance</SectionTitle>
           {groomData.length === 0 ? <p className="k-empty">No grooming data</p> : (
             <>
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart
-                  data={radarData}
-                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-                >
-                  {/* GRID */}
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke={K.border}
-                    vertical={false}
-                  />
-
-                  {/* X AXIS */}
-                  <XAxis
-                    dataKey="subject"
-                    tick={{ fontSize: 11, fill: K.muted }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-
-                  {/* Y AXIS */}
-                  <YAxis
-                    domain={[0, 100]}
-                    tick={{ fontSize: 11, fill: K.muted }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(v) => `${v}%`}
-                  />
-
-                  {/* TOOLTIP */}
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={radarData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={K.border} vertical={false} />
+                  <XAxis dataKey="subject" tick={{ fontSize: 11, fill: K.muted }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: K.muted }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
                   <Tooltip content={<CustomTooltip />} />
-
-                  {/* BAR */}
-                  <Bar
-                    dataKey="Score"
-                    radius={[8, 8, 0, 0]}
-                    barSize={24}
-                  >
-                    {radarData.map((entry, i) => (
-                      <Cell
-                        key={i}
-                        fill={
-                          entry.Score >= 80
-                            ? K.green
-                            : entry.Score >= 50
-                              ? K.amber
-                              : K.red
-                        }
-                      />
-                    ))}
+                  <Bar dataKey="Score" radius={[8, 8, 0, 0]} barSize={24}>
+                    {radarData.map((entry, i) => <Cell key={i} fill={entry.Score >= 80 ? K.green : entry.Score >= 50 ? K.amber : K.red} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -346,14 +244,9 @@ const KitchenReports = ({ adminData = {} }) => {
                   <div key={i} className="k-groom-row">
                     <span className="k-groom-name">{g.name}</span>
                     <div className="k-groom-track">
-                      <div className="k-groom-fill" style={{
-                        width: `${g.score}%`,
-                        background: g.score >= 80 ? K.green : g.score >= 50 ? K.amber : K.red
-                      }} />
+                      <div className="k-groom-fill" style={{ width: `${g.score}%`, background: g.score >= 80 ? K.green : g.score >= 50 ? K.amber : K.red }} />
                     </div>
-                    <span className="k-groom-score" style={{
-                      color: g.score >= 80 ? K.green : g.score >= 50 ? K.amber : K.red
-                    }}>{g.score}%</span>
+                    <span className="k-groom-score" style={{ color: g.score >= 80 ? K.green : g.score >= 50 ? K.amber : K.red }}>{g.score}%</span>
                   </div>
                 ))}
               </div>
@@ -380,23 +273,52 @@ const KitchenReports = ({ adminData = {} }) => {
         </div>
       </div>
 
+      {/* ATTENDANCE CHART */}
+      <div className="k-card k-att-chart-card">
+        <SectionTitle accent={K.blue}>Staff Attendance This Month</SectionTitle>
+        {attData.length === 0 ? <p className="k-empty">No attendance data</p> : (
+          <>
+            <ResponsiveContainer width="100%" height={170}>
+              <BarChart data={attData} margin={{ top: 4, right: 10, left: -15, bottom: 0 }}>
+                <CartesianGrid vertical={false} stroke="#f0f0f0" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: K.muted }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#bbb" }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="present" name="Present" fill={K.green} stackId="a" barSize={22} />
+                <Bar dataKey="leave" name="Leave" fill={K.orange} stackId="a" barSize={22} />
+                <Bar dataKey="absent" name="Absent" fill="#e9ecef" stackId="a" radius={[4, 4, 0, 0]} barSize={22} />
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="k-att-rows">
+              {attData.map((s, i) => (
+                <div key={i} className="k-att-row">
+                  <span className="k-att-name">{s.name}</span>
+                  <div className="k-att-track">
+                    <div className="k-att-fill" style={{ width: `${s.pct}%`, background: s.pct >= 75 ? K.green : s.pct >= 50 ? K.orange : K.red }} />
+                  </div>
+                  <div className="k-att-chips">
+                    <span className="k-att-chip present">{s.present}P</span>
+                    <span className="k-att-chip leave">{s.leave}L</span>
+                    <span className="k-att-chip absent">{s.absent}A</span>
+                    <span className="k-att-pct">{s.pct}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* STOCK */}
       <div className="k-card k-card-split">
         <div>
           <SectionTitle accent={K.red}>Stock Health Overview</SectionTitle>
           {stockPie.length === 0 ? <p className="k-empty">No stock data</p> : (
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
-                <Pie data={stockPie} dataKey="value" nameKey="name" cx="50%" cy="50%"
-
-                  innerRadius={80}
-                  outerRadius={100}
-
-                  /* ---- TRANSITION CORE ---- */
-                  animationEasing="cubic-bezier(0.4, 0, 0.2, 1)"
-
-                  activeIndex={activePie} activeShape={renderActiveShape}
-                  onMouseEnter={(_, idx) => setActivePie(idx)}
-                  onMouseLeave={() => setActivePie(null)}
+                <Pie data={stockPie} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={80} outerRadius={100}
+                  animationEasing="cubic-bezier(0.4,0,0.2,1)" activeIndex={activePie} activeShape={renderActiveShape}
+                  onMouseEnter={(_, idx) => setActivePie(idx)} onMouseLeave={() => setActivePie(null)}
                   isAnimationActive animationDuration={800}>
                   {stockPie.map((e, i) => <Cell key={i} fill={e.color} />)}
                 </Pie>
@@ -405,49 +327,26 @@ const KitchenReports = ({ adminData = {} }) => {
           )}
         </div>
 
-        <div className="k-divider"></div>
-
-        {/* ── ROW 3: STOCK STATUS ── */}
+        <div className="k-divider" />
 
         <div>
-          <SectionTitle accent={K.amber}>Ingredient Stock Levels (critical - {lowStock})</SectionTitle>
-          {stockBar.length === 0 ? <p className="k-empty">No stock data</p> : (
+          <SectionTitle accent={K.amber}>Ingredient Stock Levels (critical — {lowStock})</SectionTitle>
+          {stockData.length === 0 ? <p className="k-empty">No stock data</p> : (
             <div className="k-stock-scroll">
-              <ResponsiveContainer
-                width="100%"
-                height={Math.max(stockData.length * 20, 100)}
-              >
-                <BarChart
-                  data={stockData}
-                  layout="vertical"
-                  barCategoryGap={4}
-                >
+              <ResponsiveContainer width="100%" height={Math.max(stockData.length * 20, 100)}>
+                <BarChart data={stockData} layout="vertical" barCategoryGap={4}>
                   <XAxis type="number" />
-                  <YAxis
-                    dataKey="name"
-                    type="category"
-                    width={120}
-                    tick={{ fontSize: 10, fill: "#111" }}
-                  />
+                  <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 10, fill: "#111" }} />
                   <Tooltip content={<StockTooltip />} />
-
                   <Bar dataKey="stock" barSize={4} radius={[0, 6, 6, 0]}>
-                    {stockData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={getStockColor(entry.percent)}
-                      />
-                    ))}
+                    {stockData.map((e, i) => <Cell key={i} fill={stockColor(e.percent)} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
           )}
         </div>
-
       </div>
-
-
     </div>
   );
 };

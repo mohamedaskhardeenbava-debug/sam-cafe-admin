@@ -12,7 +12,7 @@ export default function ServiceMise({ adminData, setAdminData }) {
     adminData.serviceMise?.[today]
       ? today
       : tomorrow;
-  const tasks = adminData.tasks?.service; 
+  const tasks = adminData.tasks?.service;
 
   const toggle = async (task) => {
     const isChecked = adminData.serviceMise?.[activeDate]?.[task]?.verified;
@@ -30,7 +30,7 @@ export default function ServiceMise({ adminData, setAdminData }) {
     };
 
     try {
-      await api.put("/serviceMise/1", updated);
+      await api.put("/serviceMise", updated);
 
       setAdminData(prev => ({
         ...prev,
@@ -39,12 +39,12 @@ export default function ServiceMise({ adminData, setAdminData }) {
 
     } catch (err) {
       console.error("SAVE FAILED:", err);
+      // optimistic UI: still update locally even on error
+      setAdminData(prev => ({
+        ...prev,
+        serviceMise: updated
+      }));
     }
-
-    setAdminData(prev => ({
-      ...prev,
-      serviceMise: updated
-    }));
   };
 
   return (

@@ -1,134 +1,227 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import "./KitchenGrooming.css";
 import api from "../../api";
 
-export default function KitchenGrooming({ adminData, setAdminData }) {
+const GROOM_FIELDS = [
+  { key: "uniform", label: "Uniform", icon: "👔" },
+  { key: "shoes", label: "Shoes", icon: "👟" },
+  { key: "groom", label: "Groom", icon: "✂️" },
+];
 
+const WEEKDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const PALETTE = ["#4361ee", "#06d6a0", "#ffd166", "#ef476f", "#7209b7", "#4cc9f0", "#f72585", "#3a0ca3"];
+
+export default function KitchenGrooming({ adminData, setAdminData }) {
   const dates = (() => {
     const arr = [];
-    const today = new Date();
-
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
-      d.setDate(today.getDate() - i);
+      d.setDate(d.getDate() - i);
       arr.push(d.toISOString().split("T")[0]);
     }
-
     return arr;
   })();
+
+  const today = dates[dates.length - 1];
 
   const [selected, setSelected] = useState(null);
   const [showMemo, setShowMemo] = useState(false);
   const [memo, setMemo] = useState({ staffId: "", text: "" });
+  const [saving, setSaving] = useState({});
 
+  /* ─── Toggle a single grooming check ─────────────────── */
   const toggle = async (staffId, date, field) => {
-    const updated = {
-      ...adminData.grooming,
+    const cellKey = `${staffId}_${date}_${field}`;
+    setSaving(prev => ({ ...prev, [cellKey]: true }));
+
+    const prevData = adminData.grooming || {};
+
+    const currentEntry = prevData[staffId]?.[date] || {};
+    const newVal = !currentEntry[field];
+
+    const updatedGrooming = {
+      ...prevData,
       [staffId]: {
-        ...adminData.grooming?.[staffId],
-        [date]: {
-          ...adminData.grooming?.[staffId]?.[date],
-          [field]: !adminData.grooming?.[staffId]?.[date]?.[field]
-        }
-      }
+        ...(prevData[staffId] || {}),
+        [date]: { ...currentEntry, [field]: newVal },
+      },
     };
 
-    await api.put("/grooming", updated);
+    // Optimistic update
+    setAdminData(prev => ({ ...prev, grooming: updatedGrooming }));
 
-    // 🔥 instant UI update
-    setAdminData(prev => ({
-      ...prev,
-      grooming: updated
-    }));
+    try {
+      // json-server stores grooming as a single object at /grooming
+      // If your server uses /grooming/:id, replace with api.put("/grooming/1", updatedGrooming)
+      await api.put("/grooming", updatedGrooming);
+    } catch (err) {
+      console.error("KitchenGrooming toggle failed:", err.message);
+      // Rollback
+      setAdminData(prev => ({ ...prev, grooming: prevData }));
+    } finally {
+      setSaving(prev => ({ ...prev, [cellKey]: false }));
+    }
   };
 
+  /* ─── Save memo ───────────────────────────────────────── */
+  const saveMemo = async () => {
+    if (!memo.staffId || !memo.text) return;
+
+    const memoToday = new Date().toISOString().split("T")[0];
+    const prevData = adminData.grooming || {};
+
+    const updated = {
+      ...prevData,
+      memo: {
+        ...(prevData.memo || {}),
+        [memo.staffId]: {
+          ...(prevData.memo?.[memo.staffId] || {}),
+          [memoToday]: memo.text,
+        },
+      },
+    };
+
+    try {
+      await api.put("/grooming", updated);
+      setAdminData(prev => ({ ...prev, grooming: updated }));
+    } catch (err) {
+      console.error("Memo save failed:", err.message);
+    }
+
+    setShowMemo(false);
+    setMemo({ staffId: "", text: "" });
+  };
+
+  /* ─── Derived ─────────────────────────────────────────── */
+  const staffStats = useMemo(() => {
+    return adminData.staff.map((s, i) => {
+      let perfect = 0;
+      dates.forEach(d => {
+        const e = adminData.grooming?.[s.id]?.[d];
+        if (e?.uniform && e?.shoes && e?.groom) perfect++;
+      });
+      return {
+        id: s.id,
+        name: s.name,
+        role: s.role,
+        perfect,
+        pct: Math.round((perfect / dates.length) * 100),
+        colorIdx: i,
+      };
+    });
+  }, [adminData.staff, adminData.grooming, dates]);
+
   return (
-    <div className="groom-page">
+    <div className="kgroom-page">
 
       {/* HEADER */}
-      <div className="groom-header">
-        <h2 className="groom-title">Grooming</h2>
-
-        <button
-          className="groom-add-btn"
-          onClick={() => setShowMemo(true)}
-        >
-          + Add Memo
-        </button>
+      <div className="kgroom-header">
+        <div>
+          <h2 className="kgroom-title">Kitchen Grooming</h2>
+          <p className="kgroom-subtitle">Last 7 days — Uniform · Shoes · Grooming</p>
+        </div>
+        <button className="kgroom-add-btn" onClick={() => setShowMemo(true)}>+ Add Memo</button>
       </div>
 
-      <div className="groom-table-wrapper">
-        <table className="groom-table">
+      {/* SUMMARY */}
+      <div className="kgroom-summary-row">
+        {staffStats.map((s, i) => (
+          <div key={s.id} className="kgroom-summary-card">
+            <div className="kgroom-sum-avatar" style={{ background: PALETTE[i % PALETTE.length] }}>
+              {s.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="kgroom-sum-info">
+              <span className="kgroom-sum-name">{s.name}</span>
+              <div className="kgroom-sum-bar-wrap">
+                <div className="kgroom-sum-bar" style={{ width: `${s.pct}%`, background: s.pct >= 80 ? "#06d6a0" : s.pct >= 50 ? "#ffd166" : "#ef476f" }} />
+              </div>
+              <div className="kgroom-sum-row">
+                <span className="kgroom-sum-days">{s.perfect}/{dates.length} days</span>
+                <span className="kgroom-sum-pct" style={{ color: s.pct >= 80 ? "#06d6a0" : s.pct >= 50 ? "#f59e0b" : "#ef476f" }}>{s.pct}%</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* TABLE */}
+      <div className="kgroom-table-wrapper">
+        <table className="kgroom-table">
           <thead>
             <tr>
-              <th>Staff</th>
-              {dates.map(d => (
-                <th key={d}>{new Date(d).getDate()}</th>
-              ))}
+              <th className="kgroom-staff-th">Staff</th>
+              {dates.map(d => {
+                const dObj = new Date(d);
+                const isToday = d === today;
+                return (
+                  <th key={d} className={`kgroom-date-th ${isToday ? "kgroom-today-th" : ""}`}>
+                    <div className="kgroom-date-head">
+                      <span className="kgroom-date-num">{dObj.getDate()}</span>
+                      <span className="kgroom-date-wd">{WEEKDAY[dObj.getDay()]}</span>
+                      {isToday && <span className="kgroom-today-badge">Today</span>}
+                    </div>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
 
           <tbody>
-            {adminData.staff.map(s => (
-              <tr key={s.id}>
-                <td>{s.name}</td>
+            {adminData.staff.map((s, si) => (
+              <tr key={s.id} className="kgroom-row">
+                <td className="kgroom-name-td">
+                  <div className="kgroom-name-wrap">
+                    <div className="kgroom-avatar" style={{ background: PALETTE[si % PALETTE.length] }}>
+                      {s.name.charAt(0)}
+                    </div>
+                    <div>
+                      <span className="kgroom-name">{s.name}</span>
+                      {s.role && <span className="kgroom-role">{s.role}</span>}
+                    </div>
+                  </div>
+                </td>
 
                 {dates.map(d => {
-                  const prevDate = new Date(d);
-                  prevDate.setDate(prevDate.getDate() - 1);
-
                   const entry = adminData.grooming?.[s.id]?.[d];
+                  const isToday = d === today;
+                  const allGood = entry?.uniform && entry?.shoes && entry?.groom;
+                  const partial = !allGood && (entry?.uniform || entry?.shoes || entry?.groom);
+
+                  if (isToday) {
+                    return (
+                      <td key={d} className="kgroom-td kgroom-today-td">
+                        <div className="kgroom-check-group">
+                          {GROOM_FIELDS.map(f => {
+                            const ck = `${s.id}_${d}_${f.key}`;
+                            return (
+                              <label key={f.key} className={`kgroom-check-item ${entry?.[f.key] ? "checked" : ""}`}>
+                                <input
+                                  type="checkbox"
+                                  checked={entry?.[f.key] === true}
+                                  disabled={saving[ck]}
+                                  onChange={() => toggle(s.id, d, f.key)}
+                                />
+                                <span className="kgroom-check-icon">{f.icon}</span>
+                                <span>{f.label}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </td>
+                    );
+                  }
 
                   return (
                     <td
                       key={d}
-                      onClick={() => {
-                        if (d !== dates[dates.length - 1]) {
-                          setSelected({ staff: s.name, date: d, entry });
-                        }
-                      }}
+                      className={`kgroom-td kgroom-hist-td ${allGood ? "kgroom-good" : partial ? "kgroom-partial" : "kgroom-bad"}`}
+                      onClick={() => setSelected({ staff: s.name, date: d, entry })}
                     >
-                      {d === dates[dates.length - 1] ? (
-                        <div className="kitchen-groom-checkbox-group">
-                          <label htmlFor="" className="checkbox-item">
-                            <input
-                              type="checkbox"
-                              checked={adminData.grooming?.[s.id]?.[d]?.uniform || false}
-                              onChange={() => toggle(s.id, d, "uniform")}
-                            />
-                            Uniform
-                          </label>
-
-                          <label htmlFor="" className="checkbox-item">
-                            <input
-                              type="checkbox"
-                              checked={adminData.grooming?.[s.id]?.[d]?.shoes || false}
-                              onChange={() => toggle(s.id, d, "shoes")}
-                            />
-                            Shoes
-                          </label>
-
-                          <label htmlFor="" className="checkbox-item">
-                            <input
-                              type="checkbox"
-                              checked={adminData.grooming?.[s.id]?.[d]?.groom || false}
-                              onChange={() => toggle(s.id, d, "groom")}
-                            />
-                            Groom
-                          </label>
-
-                        </div>
-                      ) : (
-                        <span
-                          className={
-                            entry?.uniform && entry?.shoes && entry?.groom
-                              ? "status-yes"
-                              : "status-no"
-                          }
-                        >
-                          {entry?.uniform && entry?.shoes && entry?.groom ? "✔" : "✖"}
-                        </span>
-                      )}
+                      <div className="kgroom-hist-cell">
+                        {allGood ? <span className="kgroom-tick good">✔</span>
+                          : partial ? <span className="kgroom-tick partial">{Object.values(entry || {}).filter(Boolean).length}/3</span>
+                            : <span className="kgroom-tick bad">✖</span>}
+                      </div>
                     </td>
                   );
                 })}
@@ -140,51 +233,30 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
 
       {/* DETAIL MODAL */}
       {selected && (
-        <div className="category-modal-overlay">
-          <div className="category-modal">
-            <div className="category-modal-header">
-              <h3>Details</h3>
-              <button className="dish-close-btn" onClick={() => setSelected(null)} />
+        <div className="kgroom-overlay">
+          <div className="kgroom-modal">
+            <div className="kgroom-modal-header">
+              <h3>Grooming Details</h3>
+              <button className="kgroom-close-btn" onClick={() => setSelected(null)} />
             </div>
-
-            <div className="category-modal-body">
-              <table className="data-table">
-                <tr><td><b>Staff</b></td><td>{selected.staff}</td></tr>
-
-                <tr><td><b>Date</b></td><td>{selected.date}</td></tr>
-                <tr>
-                  <td>
-                    Uniform
-                  </td>
-                  <td>
-                    <span className={selected.entry?.uniform ? "status-yes" : "status-no"}>
-                      {selected.entry?.uniform ? " ✔" : " ✖"}
+            <div className="kgroom-modal-body">
+              <div className="kgroom-detail-info">
+                <div className="kgroom-detail-name">{selected.staff}</div>
+                <div className="kgroom-detail-date">
+                  {new Date(selected.date).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                </div>
+              </div>
+              <div className="kgroom-detail-checks">
+                {GROOM_FIELDS.map(f => (
+                  <div key={f.key} className={`kgroom-detail-row ${selected.entry?.[f.key] ? "pass" : "fail"}`}>
+                    <span className="kgroom-detail-icon">{f.icon}</span>
+                    <span className="kgroom-detail-label">{f.label}</span>
+                    <span className="kgroom-detail-status">
+                      {selected.entry?.[f.key] ? "✔ OK" : "✖ Missing"}
                     </span>
-                  </td>
-                </tr>
-
-                <tr>
-                  <td>
-                    Shoes
-                  </td>
-                  <td>
-                    <span className={selected.entry?.shoes ? "status-yes" : "status-no"}>
-                      {selected.entry?.shoes ? " ✔" : " ✖"}
-                    </span>
-                  </td>
-                </tr>
-
-                <tr>
-                  <td>
-                    Groom
-                  </td>
-                  <td>
-                    <span className={selected.entry?.groom ? "status-yes" : "status-no"}>
-                      {selected.entry?.groom ? " ✔" : " ✖"}
-                    </span>
-                  </td>
-                </tr>
-              </table>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -192,50 +264,36 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
 
       {/* MEMO MODAL */}
       {showMemo && (
-        <div className="category-modal-overlay">
-          <div className="category-modal">
-
-            <div className="category-modal-header">
+        <div className="kgroom-overlay">
+          <div className="kgroom-modal">
+            <div className="kgroom-modal-header">
               <h3>Add Memo</h3>
-              <button className="dish-close-btn" onClick={() => setShowMemo(false)} />
+              <button className="kgroom-close-btn" onClick={() => setShowMemo(false)} />
             </div>
-
-            <div className="category-modal-body">
-
-              <div className="form-group">
-                <label>Staff</label>
-                <select
-                  value={memo.staffId}
-                  onChange={(e) =>
-                    setMemo({ ...memo, staffId: e.target.value })
-                  }
-                >
-                  <option>Select</option>
+            <div className="kgroom-modal-body">
+              <div className="kgroom-form-group">
+                <label>Staff Member</label>
+                <select value={memo.staffId} onChange={(e) => setMemo({ ...memo, staffId: e.target.value })}>
+                  <option value="">Select staff…</option>
                   {adminData.staff.map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
+                    <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>
               </div>
-
-              <div className="form-group" style={{ height: "70%", boxSizing: "border-box" }}>
-                <label>Memo</label>
+              <div className="kgroom-form-group">
+                <label>Memo Note</label>
                 <textarea
                   value={memo.text}
-                  onChange={(e) =>
-                    setMemo({ ...memo, text: e.target.value })
-                  }
+                  onChange={(e) => setMemo({ ...memo, text: e.target.value })}
+                  placeholder="Write your memo here…"
+                  rows={4}
                 />
               </div>
-
             </div>
-
-            <div className="category-modal-footer form-actions">
-              <button onClick={() => setShowMemo(false)}>Save</button>
-              <button onClick={() => setShowMemo(false)}>Cancel</button>
+            <div className="kgroom-modal-footer">
+              <button className="kgroom-btn-primary" onClick={saveMemo}>Save Memo</button>
+              <button className="kgroom-btn-secondary" onClick={() => setShowMemo(false)}>Cancel</button>
             </div>
-
           </div>
         </div>
       )}

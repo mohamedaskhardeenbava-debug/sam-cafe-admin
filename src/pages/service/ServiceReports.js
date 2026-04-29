@@ -5,55 +5,89 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Sector,
   AreaChart, Area, CartesianGrid,
-  RadialBarChart, RadialBar, Legend
 } from "recharts";
 
-/* ─── PALETTE ─────────────────────────────────────────────── */
+/* ─── Palette ─────────────────────────────────────────── */
 const S = {
-  cyan: "#54a0ff",
-  sky: "#38bdf8",
-  indigo: "#5f27cd",
-  violet: "#9b59b6",
-  rose: "#ee5253",
-  green: "#1dd1a1",
-  amber: "#ff9f43",
-  slate: "#636e72",
-  card: "#ffffff",
-  text: "#111",
-  muted: "#777",
-  border: "#e8ecf0",
+  cyan: "#54a0ff", sky: "#38bdf8", indigo: "#5f27cd", violet: "#9b59b6",
+  rose: "#ee5253", green: "#1dd1a1", amber: "#ff9f43", slate: "#636e72",
+  card: "#ffffff", text: "#111", muted: "#777", border: "#e8ecf0",
 };
 
-/* ─── HELPERS ─────────────────────────────────────────────── */
-const parseServiceMise = (serviceMise = {}) =>
-  Object.entries(serviceMise).map(([task, data]) => ({
+/* ─── Helpers ─────────────────────────────────────────── */
+const parseServiceMise = (serviceMise = {}) => {
+  const today = new Date().toISOString().split("T")[0];
+  const dateKeys = Object.keys(serviceMise).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
+  const taskKeys = Object.keys(serviceMise).filter(k => !/^\d{4}-\d{2}-\d{2}$/.test(k));
+
+  let taskMap = {};
+  if (today in serviceMise) {
+    taskMap = serviceMise[today];
+  } else if (dateKeys.length > 0) {
+    taskMap = serviceMise[dateKeys[dateKeys.length - 1]];
+  } else {
+    taskKeys.forEach(k => { taskMap[k] = serviceMise[k]; });
+  }
+
+  return Object.entries(taskMap).map(([task, data]) => ({
     task,
     verified: data.verified === true,
     time: data.time || "—",
-    label: data.verified ? "Ready" : "Pending"
+    label: data.verified ? "Ready" : "Pending",
   }));
+};
 
-const parseServiceAssign = (serviceAssign = {}) =>
-  Object.entries(serviceAssign).map(([task, data]) => ({
+const parseServiceAssign = (serviceAssign = {}) => {
+  const today = new Date().toISOString().split("T")[0];
+  const dateKeys = Object.keys(serviceAssign).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
+
+  let taskMap = {};
+  if (today in serviceAssign) {
+    taskMap = serviceAssign[today];
+  } else if (dateKeys.length > 0) {
+    taskMap = serviceAssign[dateKeys[dateKeys.length - 1]];
+  } else {
+    // Flat structure: { taskName: { staff, time } }
+    Object.keys(serviceAssign).forEach(k => { taskMap[k] = serviceAssign[k]; });
+  }
+
+  return Object.entries(taskMap).map(([task, data]) => ({
     task,
     staff: data.staff || "—",
-    time: data.time || "—"
+    time: data.time || "—",
   }));
+};
 
 const parseServiceGrooming = (serviceGrooming = {}, staff = []) => {
   const staffMap = {};
   staff.forEach(s => { staffMap[s.id] = s.name; });
-  return Object.entries(serviceGrooming).map(([staffId, dates]) => {
-    const name = staffMap[staffId] || staffId.replace("staff_", "");
-    let total = 0, passed = 0;
-    Object.values(dates).forEach(checks => {
-      ["uniform", "shoes", "groom"].forEach(k => {
-        total++;
-        if (checks[k] === true) passed++;
+
+  return Object.entries(serviceGrooming)
+    .filter(([k]) => k !== "memo")
+    .map(([staffId, dates]) => {
+      const name = staffMap[staffId] || staffId.replace("staff_", "");
+      let total = 0, passed = 0;
+      Object.values(dates).forEach(checks => {
+        if (typeof checks !== "object" || checks === null) return;
+        ["uniform", "shoes", "groom"].forEach(k => {
+          total++;
+          if (checks[k] === true) passed++;
+        });
       });
+      const score = total > 0 ? Math.round((passed / total) * 100) : 0;
+      return { name, score, days: Object.keys(dates).length };
     });
-    const score = total > 0 ? Math.round((passed / total) * 100) : 0;
-    return { name, score, days: Object.keys(dates).length };
+};
+
+const parseAttendanceStats = (staff = []) => {
+  return staff.map(s => {
+    const att = s.attendance || [];
+    const present = att.filter(a => a.status === "present").length;
+    const leave = att.filter(a => a.status === "leave").length;
+    const absent = att.filter(a => a.status === "absent").length;
+    const total = present + leave + absent;
+    const pct = total > 0 ? Math.round((present / total) * 100) : 0;
+    return { name: s.name.split(" ")[0], present, leave, absent, pct };
   });
 };
 
@@ -66,42 +100,21 @@ const parseDineInTrend = (orders = []) => {
     const mode = (o.mode || "").toLowerCase();
     if (mode === "dine in") map[d].dineIn++;
     else map[d].takeAway++;
-    o.items?.forEach(item => {
-      map[d].revenue += (item.totalPrice || 0);
-    });
+    o.items?.forEach(item => { map[d].revenue += (item.totalPrice || 0); });
   });
   return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([month, v]) => ({
-    month: month.slice(5),
-    ...v,
-    revenue: Math.round(v.revenue)
-  }));
-};
-
-const parseTableStats = (orders = [], tables = []) => {
-  const tableMap = {};
-  orders.forEach(o => {
-    if (o.mode?.toLowerCase() === "dine in" && o.tableNo) {
-      const t = String(o.tableNo);
-      tableMap[t] = (tableMap[t] || 0) + 1;
-    }
-  });
-  return Object.entries(tableMap).sort((a, b) => Number(a[0]) - Number(b[0])).map(([table, count]) => ({
-    table: `T${table}`,
-    orders: count
+    month: month.slice(5), ...v, revenue: Math.round(v.revenue),
   }));
 };
 
 const parseOrderStatusDist = (orders = []) => {
   const map = {};
-  orders.forEach(o => {
-    const s = o.status || "unknown";
-    map[s] = (map[s] || 0) + 1;
-  });
-  const colors = { completed: S.green, preparing: S.amber, placed: S.rose, unknown: S.muted };
+  orders.forEach(o => { const s = o.status || "unknown"; map[s] = (map[s] || 0) + 1; });
+  const colors = { completed: S.green, preparing: S.amber, placed: S.rose, unknown: S.slate };
   return Object.entries(map).map(([status, count]) => ({
     name: status.charAt(0).toUpperCase() + status.slice(1),
     value: count,
-    color: colors[status] || S.indigo
+    color: colors[status] || S.indigo,
   }));
 };
 
@@ -114,8 +127,8 @@ const parseReservationStatus = (reservations = [], celebrations = [], preBooking
   ];
 };
 
-/* ─── SMALL COMPONENTS ────────────────────────────────────── */
-const KpiCard = ({ label, value, sub, color = S.cyan, icon }) => (
+/* ─── Sub-components ──────────────────────────────────── */
+const KpiCard = ({ label, value, sub, color = S.cyan }) => (
   <div className="s-kpi-card">
     <div>
       <p className="s-kpi-label">{label}</p>
@@ -138,9 +151,7 @@ const CustomTooltip = ({ active, payload, label }) => {
     <div className="s-tooltip">
       <p className="s-tooltip-label">{label}</p>
       {payload.map((p, i) => (
-        <p key={i} style={{ color: p.color || S.cyan }}>
-          {p.name}: <strong>{p.value}</strong>
-        </p>
+        <p key={i} style={{ color: p.color || S.cyan }}>{p.name}: <strong>{p.value}</strong></p>
       ))}
     </div>
   );
@@ -150,21 +161,19 @@ const renderActiveShape = (props) => {
   const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, value } = props;
   return (
     <g>
-      <Sector cx={cx} cy={cy} innerRadius={innerRadius - 4} outerRadius={outerRadius + 10}
-        startAngle={startAngle} endAngle={endAngle} fill={fill}
-        style={{ filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.18))" }} />
+      <Sector cx={cx} cy={cy} innerRadius={innerRadius - 4} outerRadius={outerRadius + 10} startAngle={startAngle} endAngle={endAngle} fill={fill} style={{ filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.18))" }} />
       <text x={cx} y={cy - 8} textAnchor="middle" fontSize={13} fontWeight={700} fill="#111">{payload.name}</text>
       <text x={cx} y={cy + 10} textAnchor="middle" fontSize={12} fill="#777">{value.toLocaleString()}</text>
     </g>
   );
 };
 
-/* ─── MAIN COMPONENT ──────────────────────────────────────── */
+/* ─── Main ────────────────────────────────────────────── */
 const ServiceReports = ({ adminData = {} }) => {
   const {
     serviceAssign = {}, serviceGrooming = {}, serviceMise = {},
     orders = [], staff = [], tables = [],
-    reservations = [], celebrations = [], preBookings = [], cateringOrders = []
+    reservations = [], celebrations = [], preBookings = [], cateringOrders = [],
   } = adminData;
 
   const [activePie, setActivePie] = useState(null);
@@ -173,56 +182,62 @@ const ServiceReports = ({ adminData = {} }) => {
   const miseData = useMemo(() => parseServiceMise(serviceMise), [serviceMise]);
   const assignData = useMemo(() => parseServiceAssign(serviceAssign), [serviceAssign]);
   const groomData = useMemo(() => parseServiceGrooming(serviceGrooming, staff), [serviceGrooming, staff]);
+  const attData = useMemo(() => parseAttendanceStats(staff), [staff]);
   const trendData = useMemo(() => parseDineInTrend(orders), [orders]);
-  const tableData = useMemo(() => parseTableStats(orders, tables), [orders, tables]);
   const statusDist = useMemo(() => parseOrderStatusDist(orders), [orders]);
   const eventData = useMemo(() => parseReservationStatus(reservations, celebrations, preBookings), [reservations, celebrations, preBookings]);
 
-  /* kpi */
+  /* kpis */
   const totalOrders = orders.length;
   const dineInOrders = orders.filter(o => o.mode?.toLowerCase() === "dine in").length;
   const takeAwayOrders = orders.filter(o => o.mode?.toLowerCase() !== "dine in").length;
-  const totalRevenue = orders.reduce((s, o) => s + o.items?.reduce((is, i) => is + (i.totalPrice || 0), 0), 0);
   const miseReady = miseData.filter(m => m.verified).length;
-  const eventTotal = (reservations.length || 0) + (celebrations.length || 0) + (preBookings.length || 0) + (cateringOrders.length || 0);
+  const eventTotal = (reservations.length) + (celebrations.length) + (preBookings.length) + (cateringOrders.length);
   const avgGroom = groomData.length ? Math.round(groomData.reduce((s, g) => s + g.score, 0) / groomData.length) : 0;
 
-  /* radial bar for event stats */
-  const radialData = [
-    { name: "Reservations", value: reservations.length, fill: S.cyan },
-    { name: "Celebrations", value: celebrations.length, fill: S.violet },
-    { name: "Pre-Bookings", value: preBookings.length, fill: S.amber },
-    { name: "Catering", value: cateringOrders.length, fill: S.green },
-  ];
+  /* attendance summary */
+  const totalPresent = attData.reduce((s, x) => s + x.present, 0);
+  const totalLeave = attData.reduce((s, x) => s + x.leave, 0);
+  const totalAbsent = attData.reduce((s, x) => s + x.absent, 0);
 
   return (
     <div className="s-page">
 
-      {/* ── HEADER ── */}
+      {/* HEADER */}
       <div className="s-header">
         <div>
           <h2 className="s-title">Service Management</h2>
-          <p className="s-subtitle">Floor Operations & Guest Experience Report</p>
+          <p className="s-subtitle">Floor Operations &amp; Guest Experience Report</p>
         </div>
       </div>
 
-      {/* ── KPI ROW ── */}
+      {/* KPI ROW */}
       <div className="s-kpi-row">
-        <KpiCard label="Total Orders" value={totalOrders.toLocaleString()} icon="📦" color={S.cyan} sub="all time" />
-        <KpiCard label="Dine In" value={dineInOrders} icon="🍽️" color={S.indigo} sub="table service" />
-        <KpiCard label="Take Away" value={takeAwayOrders} icon="🛍️" color={S.violet} sub="carry out" />
-        <KpiCard label="Table Mise" value={`${miseReady}/${miseData.length}`} icon="🪑" color={S.amber} sub="setup tasks done" />
-        <KpiCard label="Event Bookings" value={eventTotal} icon="🎉" color={S.rose} sub="total bookings" />
-        <KpiCard
-          label="Tables"
-          value={tables.length}
-          icon="🪑"
-          color={S.sky}
-          sub="available"
-        />
+        <KpiCard label="Total Orders" value={totalOrders.toLocaleString()} color={S.cyan} sub="all time" />
+        <KpiCard label="Dine In" value={dineInOrders} color={S.indigo} sub="table service" />
+        <KpiCard label="Take Away" value={takeAwayOrders} color={S.violet} sub="carry out" />
+        <KpiCard label="Table Mise" value={`${miseReady}/${miseData.length}`} color={S.amber} sub="setup tasks done" />
+        <KpiCard label="Event Bookings" value={eventTotal} color={S.rose} sub="total bookings" />
+        <KpiCard label="Tables" value={tables.length} color={S.sky} sub="available" />
       </div>
 
-      {/* ── ROW 1: DINE-IN TREND + ORDER STATUS ── */}
+      {/* ATTENDANCE KPI ROW */}
+      <div className="s-att-kpi-row">
+        <div className="s-att-kpi present">
+          <span className="s-att-kpi-val">{totalPresent}</span>
+          <span className="s-att-kpi-label">Present Days</span>
+        </div>
+        <div className="s-att-kpi leave">
+          <span className="s-att-kpi-val">{totalLeave}</span>
+          <span className="s-att-kpi-label">Leave Days</span>
+        </div>
+        <div className="s-att-kpi absent">
+          <span className="s-att-kpi-val">{totalAbsent}</span>
+          <span className="s-att-kpi-label">Absent Days</span>
+        </div>
+      </div>
+
+      {/* ROW 1: DINE-IN TREND + ORDER STATUS */}
       <div className="s-grid-2">
         <div className="s-card">
           <SectionTitle accent={S.cyan}>Monthly Dine In vs Take Away</SectionTitle>
@@ -246,11 +261,9 @@ const ServiceReports = ({ adminData = {} }) => {
             <div className="s-pie-row">
               <ResponsiveContainer width="55%" height={220}>
                 <PieChart>
-                  <Pie data={statusDist} dataKey="value" nameKey="name"
-                    cx="50%" cy="50%" innerRadius={55} outerRadius={85}
+                  <Pie data={statusDist} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={85}
                     activeIndex={activePie} activeShape={renderActiveShape}
-                    onMouseEnter={(_, i) => setActivePie(i)}
-                    onMouseLeave={() => setActivePie(null)}
+                    onMouseEnter={(_, i) => setActivePie(i)} onMouseLeave={() => setActivePie(null)}
                     isAnimationActive animationDuration={800}>
                     {statusDist.map((e, i) => <Cell key={i} fill={e.color} />)}
                   </Pie>
@@ -270,7 +283,43 @@ const ServiceReports = ({ adminData = {} }) => {
         </div>
       </div>
 
-      {/* ── ROW 3: MISE + ASSIGN + GROOMING + EVENTS ── */}
+      {/* ATTENDANCE CHART */}
+      <div className="s-card s-att-chart-card">
+        <SectionTitle accent={S.indigo}>Staff Attendance This Month</SectionTitle>
+        {attData.length === 0 ? <p className="s-empty">No attendance data</p> : (
+          <>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={attData} margin={{ top: 4, right: 10, left: -15, bottom: 0 }}>
+                <CartesianGrid vertical={false} stroke="#f0f0f0" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: S.muted }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#bbb" }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="present" name="Present" fill={S.green} stackId="a" barSize={22} />
+                <Bar dataKey="leave" name="Leave" fill={S.amber} stackId="a" barSize={22} />
+                <Bar dataKey="absent" name="Absent" fill="#e9ecef" stackId="a" radius={[4, 4, 0, 0]} barSize={22} />
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="s-att-rows">
+              {attData.map((s, i) => (
+                <div key={i} className="s-att-row">
+                  <span className="s-att-name">{s.name}</span>
+                  <div className="s-att-track">
+                    <div className="s-att-fill" style={{ width: `${s.pct}%`, background: s.pct >= 75 ? S.green : s.pct >= 50 ? S.amber : S.rose }} />
+                  </div>
+                  <div className="s-att-chips">
+                    <span className="s-att-chip present">{s.present}P</span>
+                    <span className="s-att-chip leave">{s.leave}L</span>
+                    <span className="s-att-chip absent">{s.absent}A</span>
+                    <span className="s-att-pct">{s.pct}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ROW 3: MISE + ASSIGN + GROOMING + EVENTS */}
       <div className="s-grid-3">
 
         {/* TABLE MISE */}
@@ -280,9 +329,7 @@ const ServiceReports = ({ adminData = {} }) => {
             <div className="s-mise-list">
               {miseData.map((m, i) => (
                 <div key={i} className={`s-mise-row ${m.verified ? "ok" : "no"}`}>
-                  <div className="s-mise-indicator">
-                    <div className={`s-mise-dot ${m.verified ? "ok" : "no"}`} />
-                  </div>
+                  <div className="s-mise-indicator"><div className={`s-mise-dot ${m.verified ? "ok" : "no"}`} /></div>
                   <div className="s-mise-body">
                     <p className="s-mise-task">{m.task}</p>
                     <p className="s-mise-time">{m.time}</p>
@@ -319,7 +366,7 @@ const ServiceReports = ({ adminData = {} }) => {
               <p className="s-empty">No grooming records yet</p>
               <div className="s-groom-demo">
                 <p style={{ color: S.muted, fontSize: 12 }}>Avg Score</p>
-                <div className="s-groom-circle" style={{ '--score': `${avgGroom}%`, '--color': S.violet }}>
+                <div className="s-groom-circle" style={{ "--score": `${avgGroom}%`, "--color": S.violet }}>
                   <span>{avgGroom}%</span>
                 </div>
               </div>
@@ -327,7 +374,7 @@ const ServiceReports = ({ adminData = {} }) => {
           ) : (
             <>
               <div className="s-groom-circle-wrap">
-                <div className="s-groom-circle" style={{ '--score': `${avgGroom}%`, '--color': avgGroom >= 70 ? S.green : avgGroom >= 40 ? S.amber : S.rose }}>
+                <div className="s-groom-circle" style={{ "--score": `${avgGroom}%`, "--color": avgGroom >= 70 ? S.green : avgGroom >= 40 ? S.amber : S.rose }}>
                   <span>{avgGroom}%</span>
                 </div>
                 <p className="s-groom-label">Team Average</p>
@@ -337,10 +384,7 @@ const ServiceReports = ({ adminData = {} }) => {
                   <div key={i} className="s-groom-row">
                     <span className="s-groom-name">{g.name}</span>
                     <div className="s-groom-track">
-                      <div className="s-groom-fill" style={{
-                        width: `${g.score}%`,
-                        background: g.score >= 70 ? S.green : g.score >= 40 ? S.amber : S.rose
-                      }} />
+                      <div className="s-groom-fill" style={{ width: `${g.score}%`, background: g.score >= 70 ? S.green : g.score >= 40 ? S.amber : S.rose }} />
                     </div>
                     <span className="s-groom-score">{g.score}%</span>
                   </div>
@@ -358,18 +402,9 @@ const ServiceReports = ({ adminData = {} }) => {
               <div key={i} className="s-event-card">
                 <p className="s-event-name">{e.name}</p>
                 <div className="s-event-nums">
-                  <div className="s-event-num-item">
-                    <span>{e.pending}</span>
-                    <p>Pending</p>
-                  </div>
-                  <div className="s-event-num-item">
-                    <span>{e.confirmed}</span>
-                    <p>Confirmed</p>
-                  </div>
-                  <div className="s-event-num-item">
-                    <span>{e.total}</span>
-                    <p>Total</p>
-                  </div>
+                  <div className="s-event-num-item"><span>{e.pending}</span><p>Pending</p></div>
+                  <div className="s-event-num-item"><span>{e.confirmed}</span><p>Confirmed</p></div>
+                  <div className="s-event-num-item"><span>{e.total}</span><p>Total</p></div>
                 </div>
               </div>
             ))}
