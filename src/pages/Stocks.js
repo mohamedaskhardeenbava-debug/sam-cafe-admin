@@ -6,11 +6,8 @@ import editIcon from "../icon/edit-icon.png";
 import deleteIcon from "../icon/delete-icon.png";
 import * as XLSX from "xlsx";
 import { EmptyRow } from "../App";
-import dayjs from "dayjs";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { formatDisplayDate } from "../App"
+import { CustomDatePicker } from "../components/Customdatepicker";
 import socket from "../socket";
 
 const toTwoDecimals = (value) =>
@@ -520,26 +517,11 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
               <div className="stocks-form-group">
                 <label>Expiry Date</label>
 
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <DatePicker
-                    value={expiryDate ? dayjs(expiryDate) : null}
-                    format="DD/MM/YYYY"
-                    onChange={(newValue) => {
-                      if (!newValue) {
-                        setExpiryDate("");
-                        return;
-                      }
-
-                      setExpiryDate(newValue.format("YYYY-MM-DD"));
-                    }}
-                    slotProps={{
-                      textField: {
-                        size: "small",
-                        fullWidth: true
-                      }
-                    }}
-                  />
-                </LocalizationProvider>
+                <CustomDatePicker
+                  value={expiryDate}
+                  onChange={(v) => setExpiryDate(v)}
+                  placeholder="Select expiry date"
+                />
 
               </div>
 

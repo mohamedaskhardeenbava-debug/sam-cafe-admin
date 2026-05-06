@@ -3,6 +3,7 @@ import { useState } from "react";
 import api from "../../api";
 import "./ReservationDetails.css";
 import { useToast } from "../../useToast";
+/* admin panel */
 
 const fmtTime = (t) => {
   if (!t) return "—";

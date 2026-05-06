@@ -72,6 +72,7 @@ const menu = [
     ],
   },
   { label: "Offers", path: "/offers", icon: dishIcon },
+  {label: "Theme Settings", path: "/theme-settings", icon: dishIcon}
 ];
 
 const Sidebar = ({ isOpen, setIsOpen }) => {

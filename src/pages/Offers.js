@@ -3,6 +3,7 @@ import "./Offers.css";
 import api from "../api";
 import { useNavigate } from "react-router-dom";
 import { formatDisplayDate } from "../App";
+import { CustomDatePicker, todayStr } from "../components/Customdatepicker";
 
 const Offers = ({ adminData, setAdminData }) => {
     const [showModal, setShowModal] = useState(false);
@@ -206,25 +207,21 @@ const Offers = ({ adminData, setAdminData }) => {
                                 {/* DATE RANGE */}
                                 <div className="form-group">
                                     <label>Start Date</label>
-                                    <input
-                                        required
-                                        type="date"
+                                    <CustomDatePicker
                                         value={newOffer.startDate}
-                                        onChange={(e) =>
-                                            setNewOffer({ ...newOffer, startDate: e.target.value })
-                                        }
+                                        onChange={(v) => setNewOffer({ ...newOffer, startDate: v })}
+                                        min={todayStr()}
+                                        placeholder="Select start date"
                                     />
                                 </div>
 
                                 <div className="form-group">
                                     <label>End Date</label>
-                                    <input
-                                        required
-                                        type="date"
+                                    <CustomDatePicker
                                         value={newOffer.endDate}
-                                        onChange={(e) =>
-                                            setNewOffer({ ...newOffer, endDate: e.target.value })
-                                        }
+                                        onChange={(v) => setNewOffer({ ...newOffer, endDate: v })}
+                                        min={newOffer.startDate || todayStr()}
+                                        placeholder="Select end date"
                                     />
                                 </div>
 

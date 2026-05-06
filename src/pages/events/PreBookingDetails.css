@@ -1,119 +1,92 @@
-/* PAGE */
+/* ══════════════════════════════════════════════════════
+   PreBookingDetails.css  —  Admin Panel
+══════════════════════════════════════════════════════ */
+
 .evt-pbd-page {
   width: 100%;
   display: flex;
-  justify-content: center;
+  padding: 4px 0 30px;
 }
 
-/* CONTAINER */
 .evt-pbd-container {
-  max-width: 900px;
-  width: 100%;
-  background: #ffffff;
-  border-radius: 14px;
+  background: #fff;
   padding: 24px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 900px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-/* HEADER */
+/* ── HEADER ── */
 .evt-pbd-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
-.evt-pbd-header h2 {
-  margin: 0;
-}
-
-/* BACK BUTTON */
 .evt-pbd-back-btn {
-  width: 50px;
-  height: 50px;
-  border-radius: 25px;
-  background: transparent;
-  border: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 21px;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
   cursor: pointer;
   position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+  transition: all 0.2s;
+}
+
+.evt-pbd-back-btn:hover {
+  background: #f3f4f6;
 }
 
 .evt-pbd-back-btn::after {
   content: "";
   position: absolute;
   top: 50%;
-  left: 40%;
-  width: 12px;
-  height: 12px;
-  border-left: 3px solid #111;
-  border-bottom: 3px solid #111;
+  left: 42%;
+  width: 10px;
+  height: 10px;
+  border-left: 2.5px solid #333;
+  border-bottom: 2.5px solid #333;
   transform: translateY(-50%) rotate(45deg);
 }
 
-/* SECTION */
-.evt-pbd-section {
-  margin-bottom: 22px;
+.evt-pbd-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 2px;
 }
 
-.evt-pbd-section-title {
-  font-weight: 600;
-  margin-bottom: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.evt-pbd-id {
+  font-size: 12px;
+  color: #888;
+  margin: 0;
 }
 
-/* INFO TABLE */
-.evt-pbd-info-table {
-  width: 100%;
-  border-collapse: collapse;
+.evt-pbd-id code {
+  font-size: 12px;
+  background: #f3f4f6;
+  padding: 1px 6px;
+  border-radius: 5px;
 }
 
-.evt-pbd-info-table td {
-  padding: 8px;
-  border: 1px solid #e0e0e0;
-}
-
-/* ITEMS TABLE */
-.evt-pbd-items-table {
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: collapse;
-}
-
-.evt-pbd-items-table th,
-.evt-pbd-items-table td {
-  border: 1px solid #e0e0e0;
-  padding: 8px;
-  font-size: 14px;
-}
-
-.evt-pbd-items-table th {
-  background: #f5f5f5;
-  text-align: left;
-}
-
-/* HOVER */
-.evt-pbd-items-table tbody tr:hover {
-  background-color: #f0f0f0;
-}
-
-/* TOTAL */
-.evt-pbd-total {
-  font-size: 18px;
-  font-weight: 600;
-}
-
-/* STATUS */
-.evt-pbd-status {
-  padding: 4px 10px;
+/* ── STATUS BADGE (header) ── */
+.evt-pbd-status-badge {
+  padding: 5px 14px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 700;
   text-transform: capitalize;
+  margin-left: auto;
 }
 
-/* STATUS COLORS */
 .evt-pbd-status-scheduled {
   background: #e0f2fe;
   color: #075985;
@@ -127,4 +100,335 @@
 .evt-pbd-status-completed {
   background: #d1fae5;
   color: #065f46;
+}
+
+/* ── HERO CARD ── */
+.evt-pbd-hero {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  border: 1px solid #f0f0f0;
+}
+
+.evt-pbd-hero-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff9f43, #ee5253);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.evt-pbd-hero-name {
+  font-size: 19px;
+  font-weight: 700;
+  color: #111;
+}
+
+.evt-pbd-hero-sub {
+  font-size: 13px;
+  color: #666;
+  margin-top: 3px;
+}
+
+.evt-pbd-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.evt-pbd-hero-meta span {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  background: #f3f4f6;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+/* ── SLOT BADGE IN HERO ── */
+.evt-pbd-slot-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.evt-pbd-slot-badge.slot-bf {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.evt-pbd-slot-badge.slot-br {
+  background: #ecfccb;
+  color: #3f6212;
+}
+
+.evt-pbd-slot-badge.slot-lu {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.evt-pbd-slot-badge.slot-ht {
+  background: #fce7f3;
+  color: #9d174d;
+}
+
+.evt-pbd-slot-badge.slot-di {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.evt-pbd-slot-badge.slot-any {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.evt-pbd-group-chip {
+  background: #d1fae5 !important;
+  color: #065f46 !important;
+}
+
+/* ── SECTION ── */
+.evt-pbd-section {
+  background: #fff;
+  border-radius: 16px;
+}
+
+.evt-pbd-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 14px;
+}
+
+/* ── INFO GRID ── */
+.evt-pbd-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.evt-pbd-info-cell {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #f0f0f0;
+}
+
+.evt-pbd-info-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.evt-pbd-info-label {
+  font-size: 10px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.evt-pbd-info-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+}
+
+/* ── ITEMS TABLE ── */
+.evt-pbd-items-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.evt-pbd-items-table th,
+.evt-pbd-items-table td {
+  border: 1px solid #e0e0e0;
+  padding: 9px 10px;
+  font-size: 13px;
+}
+
+.evt-pbd-items-table th {
+  background: #f5f5f5;
+  text-align: left;
+  font-weight: 600;
+}
+
+.evt-pbd-items-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+/* ── BILL ── */
+.evt-pbd-bill {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.evt-pbd-bill-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #374151;
+}
+
+.evt-pbd-bill-discount {
+  color: #065f46;
+  font-weight: 600;
+}
+
+.evt-pbd-bill-total {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
+  padding-top: 8px;
+  border-top: 1px dashed #e5e7eb;
+  margin-top: 2px;
+}
+
+.evt-pbd-total-val {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* ── STATUS BUTTONS ── */
+.evt-pbd-status-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.evt-pbd-status-btn {
+  flex: 1;
+  min-width: 100px;
+  height: 42px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #f3f4f6;
+  color: #555;
+  font-family: inherit;
+}
+
+.evt-pbd-status-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.evt-pbd-status-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
+.evt-pbd-sb-scheduled.active {
+  background: #e0f2fe;
+  color: #075985;
+  border-color: #7dd3fc;
+}
+
+.evt-pbd-sb-preparing.active {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fcd34d;
+}
+
+.evt-pbd-sb-completed.active {
+  background: #d1fae5;
+  color: #065f46;
+  border-color: #6ee7b7;
+}
+
+/* ── REMINDER ── */
+.evt-pbd-reminder {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-left: 4px solid #2980b9;
+}
+
+.evt-pbd-reminder-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.evt-pbd-reminder-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.evt-pbd-reminder-num {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+  margin-top: 2px;
+}
+
+.evt-pbd-call-btn {
+  margin-left: auto;
+  padding: 9px 22px;
+  border-radius: 999px;
+  background: #2980b9;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.evt-pbd-call-btn:hover {
+  background: #1a6fa8;
+  transform: scale(1.04);
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 640px) {
+  .evt-pbd-info-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .evt-pbd-status-row {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 400px) {
+  .evt-pbd-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .evt-pbd-container {
+    padding: 16px;
+  }
 }

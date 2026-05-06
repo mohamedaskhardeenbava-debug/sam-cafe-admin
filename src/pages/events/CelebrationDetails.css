@@ -1,113 +1,94 @@
-/* PAGE */
+/* ══════════════════════════════════════════════════════
+   CelebrationDetails.css  —  Admin Panel
+   Matches ReservationDetails.css style exactly
+══════════════════════════════════════════════════════ */
+
 .evt-clbd-page {
   width: 100%;
   display: flex;
-  justify-content: center;
+  padding: 4px 0 30px;
 }
 
-/* CONTAINER */
 .evt-clbd-container {
+  background: #fff;
+  padding: 24px;
+  border-radius: 14px;
   max-width: 900px;
   width: 100%;
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 24px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
-/* HEADER */
+/* ── HEADER ── */
 .evt-clbd-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
 }
 
-.evt-clbd-header h2 {
-  margin: 0;
-}
-
-/* BACK BUTTON */
 .evt-clbd-back-btn {
-  width: 50px;
-  height: 50px;
-  border-radius: 25px;
-  background: transparent;
-  border: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 21px;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
   cursor: pointer;
   position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+  transition: all 0.2s;
+}
+
+.evt-clbd-back-btn:hover {
+  background: #f3f4f6;
 }
 
 .evt-clbd-back-btn::after {
   content: "";
   position: absolute;
   top: 50%;
-  left: 40%;
-  width: 12px;
-  height: 12px;
-  border-left: 3px solid #111;
-  border-bottom: 3px solid #111;
+  left: 42%;
+  width: 10px;
+  height: 10px;
+  border-left: 2.5px solid #333;
+  border-bottom: 2.5px solid #333;
   transform: translateY(-50%) rotate(45deg);
 }
 
-/* SECTION */
-.evt-clbd-section {
-  margin-bottom: 22px;
+.evt-clbd-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 2px;
 }
 
-.evt-clbd-section-title {
-  font-weight: 600;
-  margin-bottom: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.evt-clbd-id {
+  font-size: 12px;
+  color: #888;
+  margin: 0;
 }
 
-/* INFO TABLE */
-.evt-clbd-info-table {
-  width: 100%;
-  border-collapse: collapse;
+.evt-clbd-id code {
+  font-size: 12px;
+  background: #f3f4f6;
+  padding: 1px 6px;
+  border-radius: 5px;
 }
 
-.evt-clbd-info-table td {
-  padding: 8px;
-  border: 1px solid #e0e0e0;
-}
-
-/* ITEMS TABLE */
-.evt-clbd-items-table {
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: collapse;
-}
-
-.evt-clbd-items-table th,
-.evt-clbd-items-table td {
-  border: 1px solid #e0e0e0;
-  padding: 8px;
-  font-size: 14px;
-}
-
-.evt-clbd-items-table th {
-  background: #f5f5f5;
-  text-align: left;
-}
-
-/* HOVER */
-.evt-clbd-items-table tbody tr:hover {
-  background-color: #f0f0f0;
-}
-
-/* STATUS */
-.evt-clbd-status {
-  padding: 4px 10px;
+/* ── STATUS BADGE ── */
+.evt-clbd-status-badge {
+  padding: 5px 14px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 700;
   text-transform: capitalize;
+  margin-left: auto;
 }
 
-/* STATUS COLORS */
 .evt-clbd-status-pending {
   background: #fef3c7;
   color: #92400e;
@@ -121,4 +102,382 @@
 .evt-clbd-status-completed {
   background: #e0e7ff;
   color: #3730a3;
+}
+
+.evt-clbd-status-cancelled {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* ── HERO CARD ── */
+.evt-clbd-hero {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px 0 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+
+.evt-clbd-hero-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff9f43, #ee5253);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.evt-clbd-hero-name {
+  font-size: 19px;
+  font-weight: 700;
+  color: #111;
+}
+
+.evt-clbd-hero-sub {
+  font-size: 13px;
+  color: #666;
+  margin-top: 3px;
+}
+
+.evt-clbd-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.evt-clbd-hero-meta span {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  background: #f3f4f6;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+/* ── SECTION ── */
+.evt-clbd-section {
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.evt-clbd-section:last-of-type {
+  border-bottom: none;
+}
+
+.evt-clbd-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 14px;
+}
+
+/* ── INFO GRID ── */
+.evt-clbd-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.evt-clbd-info-cell {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #f0f0f0;
+}
+
+.evt-clbd-info-label {
+  font-size: 10px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.evt-clbd-info-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+}
+
+/* ── EXTRAS GRID ── */
+.evt-clbd-extras-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.evt-clbd-extra-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+
+.evt-clbd-extra-item.selected {
+  background: rgba(29, 209, 161, 0.06);
+  border-color: rgba(29, 209, 161, 0.3);
+  color: #111;
+}
+
+.evt-clbd-extra-item.not-selected {
+  background: #f9fafb;
+  border-color: #f0f0f0;
+  color: #bbb;
+}
+
+.evt-clbd-extra-label {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.evt-clbd-extra-check {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.evt-clbd-extra-item.selected .evt-clbd-extra-check {
+  color: #16a34a;
+}
+
+/* ── SPECIAL MENTION BOX ── */
+.evt-clbd-mention-box {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 10px;
+}
+
+.evt-clbd-mention-text {
+  font-size: 13px;
+  color: #1e40af;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── PRICING CARD ── */
+.evt-clbd-pricing-card {
+  border-radius: 12px;
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+}
+
+.evt-clbd-pricing-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.evt-clbd-pricing-row:last-child {
+  border-bottom: none;
+}
+
+.evt-clbd-pricing-label {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+
+.evt-clbd-pricing-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+}
+
+.evt-clbd-pricing-total {
+  background: #f8fafc;
+  border-top: 2px solid #e5e7eb;
+}
+
+.evt-clbd-pricing-total .evt-clbd-pricing-label {
+  font-weight: 700;
+  color: #111;
+}
+
+.evt-clbd-pricing-total .evt-clbd-pricing-val {
+  font-size: 15px;
+  font-weight: 800;
+  color: #111;
+}
+
+.evt-clbd-deco-badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.evt-clbd-menu-badge {
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: #ecfdf5;
+  color: #065f46;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* ── NOTES ── */
+.evt-clbd-notes-box {
+  background: #fffbea;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: #78350f;
+  line-height: 1.6;
+}
+
+/* ── STATUS BUTTONS ── */
+.evt-clbd-status-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.evt-clbd-status-btn {
+  flex: 1;
+  min-width: 90px;
+  height: 42px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #f3f4f6;
+  color: #555;
+  font-family: inherit;
+}
+
+.evt-clbd-status-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.evt-clbd-status-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
+.evt-clbd-sb-pending.active {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fcd34d;
+}
+
+.evt-clbd-sb-confirmed.active {
+  background: #d1fae5;
+  color: #065f46;
+  border-color: #6ee7b7;
+}
+
+.evt-clbd-sb-completed.active {
+  background: #e0e7ff;
+  color: #3730a3;
+  border-color: #a5b4fc;
+}
+
+.evt-clbd-sb-cancelled.active {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+/* ── REMINDER / CALL ── */
+.evt-clbd-reminder {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.evt-clbd-reminder-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.evt-clbd-reminder-num {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+  margin-top: 2px;
+}
+
+.evt-clbd-call-btn {
+  margin-left: auto;
+  padding: 9px 22px;
+  border-radius: 999px;
+  background: #ee5253;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: none;
+}
+
+.evt-clbd-call-btn:hover {
+  background: #c0392b;
+  transform: scale(1.04);
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 640px) {
+
+  .evt-clbd-info-grid,
+  .evt-clbd-extras-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 400px) {
+
+  .evt-clbd-info-grid,
+  .evt-clbd-extras-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .evt-clbd-status-row {
+    flex-direction: column;
+  }
+
+  .evt-clbd-reminder {
+    flex-wrap: wrap;
+  }
+
+  .evt-clbd-call-btn {
+    margin-left: 0;
+  }
 }

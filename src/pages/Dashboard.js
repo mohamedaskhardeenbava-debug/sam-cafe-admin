@@ -528,9 +528,13 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
             </div>
           )}
         </div>
+        <div className="chart-card sc-card sc-schedules-card">
+          <div className="sc-card-head">
+            <h4>Schedules Overview</h4>
+          </div>
+          <ScheduleSection adminData={adminData} navigate={navigate} />
+        </div>
       </div>
-
-      <ScheduleSection adminData={adminData} navigate={navigate} />
     </div>
   );
 };

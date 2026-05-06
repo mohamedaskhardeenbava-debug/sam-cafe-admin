@@ -1,0 +1,376 @@
+/* ═══════════════════════════════════════════
+   CustomDatePicker.css
+   Single source of truth for all date picker
+   styles across the application.
+═══════════════════════════════════════════ */
+
+/* ── Wrapper ── */
+.cdp-wrap {
+    position: relative;
+    display: block;
+    width: 100%;
+}
+
+/* ── Trigger button ── */
+.cdp-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #111;
+    text-align: left;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+    min-height: 36px;
+}
+
+.cdp-trigger:hover {
+    border-color: #9ca3af;
+}
+
+.cdp-trigger:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* Calendar icon */
+.cdp-cal-icon {
+    flex-shrink: 0;
+    color: #888;
+}
+
+/* Label prefix */
+.cdp-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #888;
+    white-space: nowrap;
+    flex-shrink: 0;
+    letter-spacing: 0.03em;
+}
+
+/* Date value */
+.cdp-value {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: #111;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cdp-placeholder {
+    color: #aaa;
+    font-weight: 400;
+}
+
+/* Chevron */
+.cdp-arrow {
+    margin-left: auto;
+    font-size: 10px;
+    color: #aaa;
+    flex-shrink: 0;
+}
+
+/* ── Popup ── */
+.cdp-popup {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 9999;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
+    padding: 12px;
+    width: 260px;
+    animation: cdpFadeIn 0.12s ease;
+}
+
+@keyframes cdpFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Navigation row ── */
+.cdp-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    gap: 4px;
+}
+
+.cdp-nav-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: #f3f4f6;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    transition: background 0.15s;
+    flex-shrink: 0;
+}
+
+.cdp-nav-btn:hover {
+    background: #e5e7eb;
+}
+
+.cdp-nav-center {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex: 1;
+    justify-content: center;
+}
+
+.cdp-nav-lbl {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    color: #111;
+    padding: 4px 8px;
+    border-radius: 5px;
+    transition: background 0.15s;
+}
+
+.cdp-nav-lbl:hover {
+    background: #f3f4f6;
+}
+
+/* ── Weekday headers ── */
+.cdp-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 4px;
+}
+
+.cdp-weekdays span {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: #aaa;
+    padding: 2px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* ── Day grid ── */
+.cdp-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.cdp-day {
+    width: 100%;
+    aspect-ratio: 1;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: #222;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s, color 0.12s;
+}
+
+.cdp-day:hover:not(.cdp-dis) {
+    background: #f3f4f6;
+}
+
+/* Today highlight */
+.cdp-today {
+    background: #eff6ff;
+    color: #2563eb;
+    font-weight: 700;
+}
+
+/* Selected */
+.cdp-sel {
+    background: #111 !important;
+    color: #fff !important;
+    font-weight: 700;
+}
+
+/* Disabled */
+.cdp-dis {
+    color: #d1d5db;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* ── Month grid ── */
+.cdp-month-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+}
+
+.cdp-month-btn {
+    padding: 8px 4px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: #333;
+    text-align: center;
+    transition: background 0.12s;
+}
+
+.cdp-month-btn:hover {
+    background: #f3f4f6;
+}
+
+.cdp-month-btn.cdp-sel {
+    background: #111;
+    color: #fff;
+    font-weight: 700;
+}
+
+/* ── Year grid ── */
+.cdp-year-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.cdp-year-btn {
+    padding: 7px 2px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    color: #333;
+    text-align: center;
+    transition: background 0.12s;
+}
+
+.cdp-year-btn:hover {
+    background: #f3f4f6;
+}
+
+.cdp-year-btn.cdp-sel {
+    background: #111;
+    color: #fff;
+    font-weight: 700;
+}
+
+/* ── Filter-bar variant (used in Schedule pages) ── */
+.cdp-trigger.cdp-filter-trigger {
+    width: auto;
+    min-width: 150px;
+    border-radius: 8px;
+    border-color: #e5e7eb;
+    background: #fff;
+    font-size: 13px;
+}
+
+/* ── Search input (used alongside pickers in schedule filter bars) ── */
+.cdp-search-input {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    min-width: 180px;
+}
+
+.cdp-search-input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* ── Preset buttons (Today / This Week / All) ── */
+.cdp-preset-btn {
+    padding: 7px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.cdp-preset-btn:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+.cdp-preset-btn.active {
+    background: #111;
+    color: #fff;
+    border-color: #111;
+}
+
+/* ── Schedule filter bar layout ── */
+.sched-filter-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.sched-status-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.sched-pill-btn {
+    padding: 6px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.sched-pill-btn:hover {
+    background: #f3f4f6;
+}
+
+.sched-pill-btn.active {
+    background: #111;
+    color: #fff;
+    border-color: #111;
+}

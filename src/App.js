@@ -1,4 +1,4 @@
-import "./App.css";
+import "./App.css"; //admon panel
 import { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import api from "./api";
@@ -60,6 +60,9 @@ import ServiceMise from "./pages/service/ServiceMise";
 import ServiceReports from "./pages/service/ServiceReports";
 import ServiceActivityLog from "./pages/service/ServiceActivityLog";
 import ServiceSchedules from "./pages/service/ServiceSchedules";
+
+import ThemeSettings from "./ThemeSettings";
+
 
 // Hard input limiter (chars + words)
 export const allowTextInput = (
@@ -547,7 +550,7 @@ function App() {
             <Route path="/reservations/:id" element={<ReservationDetails adminData={adminData} setAdminData={setAdminData} />} />
 
             <Route path="/celebrations" element={<Celebrations adminData={adminData} />} />
-            <Route path="/celebrations/:id" element={<CelebrationDetails adminData={adminData} />} />
+            <Route path="/celebrations/:id" element={<CelebrationDetails adminData={adminData} setAdminData={setAdminData} />} />
 
             <Route path="/prebookings" element={<PreBookings adminData={adminData} />} />
             <Route path="/prebookings/:id" element={<PreBookingDetails adminData={adminData} />} />
@@ -720,6 +723,8 @@ function App() {
                 />
               }
             />
+
+            <Route path="/theme-settings" element={<ThemeSettings />} />
 
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

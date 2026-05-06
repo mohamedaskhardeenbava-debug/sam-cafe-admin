@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { CustomDatePicker } from "../../components/Customdatepicker";
 import "./Staffs.css";
 import { sortArray } from "../../App";
 import editIcon from "../../icon/edit-icon.png";
@@ -230,12 +231,10 @@ export default function Staffs({
 
                                             <div className="form-group">
                                                 <label>Joining Date</label>
-                                                <input required
-                                                    type="date"
+                                                <CustomDatePicker
                                                     value={formData.joiningDate}
-                                                    onChange={(e) =>
-                                                        setFormData({ ...formData, joiningDate: e.target.value })
-                                                    }
+                                                    onChange={(v) => setFormData({ ...formData, joiningDate: v })}
+                                                    placeholder="Select joining date"
                                                 />
                                             </div>
                                         </div>
@@ -292,12 +291,11 @@ export default function Staffs({
                                             <div className="horizontal-form-group">
                                                 <div className="form-group">
                                                     <label>Date of Birth</label>
-                                                    <input required
-                                                        type="date"
+                                                    <CustomDatePicker
                                                         value={formData.dob}
-                                                        onChange={(e) =>
-                                                            setFormData({ ...formData, dob: e.target.value })
-                                                        }
+                                                        onChange={(v) => setFormData({ ...formData, dob: v })}
+                                                        placeholder="Select date of birth"
+                                                        max={new Date().toISOString().split("T")[0]}
                                                     />
                                                 </div>
 

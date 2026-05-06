@@ -1195,3 +1195,315 @@
     flex-direction: column;
   }
 }
+
+/* ══════════════════════════════════════════════════
+   NEW ADDITIONS – call history, pref manager, dates
+══════════════════════════════════════════════════ */
+
+/* ── "Table Preferences" management button ── */
+.evt-res-pref-manage-btn {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #555;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.evt-res-pref-manage-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+/* ── Pref manager rows inside modal ── */
+.evt-res-pref-manage-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #f0f0f0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+.evt-res-pref-remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #ef4444;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  transition: background 0.15s;
+}
+
+.evt-res-pref-remove-btn:hover {
+  background: #fee2e2;
+}
+
+/* ── Call button wrapper + tooltip ── */
+.evt-res-call-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.evt-res-call-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: #fff;
+  color: #111;
+  border-radius: 10px;
+  padding: 10px 12px;
+  z-index: 9999;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  border: 1px solid #f0f0f0;
+  pointer-events: none;
+  animation: callTipFade 0.15s ease;
+}
+
+@keyframes callTipFade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.evt-res-call-tooltip::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  right: 14px;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #111;
+}
+
+.evt-res-call-tooltip-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #222;
+  margin-bottom: 6px;
+}
+
+.evt-res-call-tooltip-row {
+  font-size: 12px;
+  color: #555;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.evt-res-call-tooltip-row:last-child {
+  border-bottom: none;
+}
+
+/* ── Filter date picker inside filter bar ── */
+.evt-res-filter-bar .res-trigger {
+  min-height: 32px;
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 8px;
+}
+
+/* ── Form section label ── */
+.evt-res-form-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin: 12px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* ══════════════════════════════════════════════
+   NEW: All 5 Slot badge colours
+══════════════════════════════════════════════ */
+.evt-res-slot-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.evt-res-slot-badge.slot-bf {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.evt-res-slot-badge.slot-br {
+  background: #ecfccb;
+  color: #3f6212;
+}
+
+.evt-res-slot-badge.slot-lu {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.evt-res-slot-badge.slot-ht {
+  background: #fce7f3;
+  color: #9d174d;
+}
+
+.evt-res-slot-badge.slot-di {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.evt-res-slot-badge.slot-any {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* ── Slot chip grid in create form ── */
+.evt-res-slot-grid {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.evt-res-slot-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fafafa;
+  cursor: pointer;
+  transition: all .15s ease;
+  font-size: 13px;
+}
+
+.evt-res-slot-chip:hover {
+  background: #f0f0f0;
+  border-color: #ccc;
+}
+
+.evt-res-slot-chip.active {
+  background: #1dd1a1;
+  border-color: #1dd1a1;
+  color: #fff;
+}
+
+.evt-res-slot-chip-label {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.evt-res-slot-chip-time {
+  font-size: 10px;
+  opacity: .7;
+}
+
+/* ── Table preference image thumbnail in table row ── */
+.evt-res-tpref-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.evt-res-tpref-thumb {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+/* ── Avatar with image ── */
+.evt-res-avatar-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid #e5e7eb;
+}
+
+/* ── Upload image button ── */
+.evt-res-upload-img-btn {
+  padding: 5px 10px;
+  border: 1.5px dashed #a3e4d7;
+  border-radius: 8px;
+  background: #f0fdf9;
+  color: #0d9488;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s ease;
+}
+
+.evt-res-upload-img-btn:hover {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+}
+
+/* ── Pref image upload row in create form ── */
+.evt-res-pref-img-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: #f8fffe;
+  border-radius: 10px;
+  border: 1px dashed #a3e4d7;
+}
+
+/* ── Pref manage row preview ── */
+.evt-res-pref-manage-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #fafafa;
+  border-radius: 10px;
+  border: 1px solid #f0f0f0;
+}
+
+.evt-res-pref-manage-preview {
+  flex-shrink: 0;
+}
+
+.evt-res-pref-thumb-sm {
+  width: 42px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid #e5e7eb;
+  display: block;
+}
+
+.evt-res-pref-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  font-size: 14px;
+}

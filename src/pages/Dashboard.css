@@ -363,6 +363,19 @@
   margin-bottom: 18px;
 }
 
+/* 4th card: schedules — spans full width of its cell, 
+   inner ScheduleSection lays out its own pie charts in a row */
+.sc-schedules-card {
+  overflow: visible;
+}
+
+.sc-schedules-card>.schedule-section-inner,
+.sc-schedules-card>div>.dashboard-schedpie {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 /* ── Enhanced chart card wrapper ── */
 .chart-card.sc-card {
   padding: 16px 18px;
@@ -1285,4 +1298,21 @@
   max-height: 420px;
   display: flex;
   flex-direction: column;
+}
+
+/* ── Schedules inside staff-charts-grid card ── */
+.sc-schedules-card .schedule-section,
+.sc-schedules-card>div:not(.sc-card-head) {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px;
+  flex: 1;
+}
+
+.sc-schedules-card .dashboard-schedpie,
+.sc-schedules-card .chart-card {
+  flex: 1;
+  min-width: 180px;
+  max-height: none;
 }

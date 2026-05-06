@@ -4,6 +4,7 @@ import api from "../../api";
 import editIcon from "../../icon/edit-icon.png";
 import deleteIcon from "../../icon/delete-icon.png";
 import "./StaffDetails.css";
+import { CustomDatePicker } from "../../components/Customdatepicker";
 
 const StaffDetails = ({ adminData, setAdminData }) => {
     const { staffId } = useParams();
@@ -264,15 +265,10 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                             {editSection === "joiningdate" ? (
                                 <div className="form-group">
                                     <label htmlFor="">Date of Joining</label>
-                                    <input
-                                        type="date"
+                                    <CustomDatePicker
                                         value={localStaff.joiningDate || ""}
-                                        onChange={(e) =>
-                                            setLocalStaff({
-                                                ...localStaff,
-                                                joiningDate: e.target.value
-                                            })
-                                        }
+                                        onChange={(v) => setLocalStaff({ ...localStaff, joiningDate: v })}
+                                        placeholder="Select joining date"
                                     />
                                     <div className="actions">
                                         <button onClick={() => persistStaff(localStaff)}>Save</button>
@@ -297,8 +293,12 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                         <div className="form-group">
                             <div className="form-group">
                                 <label htmlFor="">DOB</label>
-                                <input type="date" value={localStaff.dob}
-                                    onChange={(e) => setLocalStaff({ ...localStaff, dob: e.target.value })} />
+                                <CustomDatePicker
+                                    value={localStaff.dob || ""}
+                                    onChange={(v) => setLocalStaff({ ...localStaff, dob: v })}
+                                    placeholder="Select date of birth"
+                                    max={new Date().toISOString().split("T")[0]}
+                                />
                             </div>
                             <div className="form-group">
                                 <label htmlFor="">Educational Qualification</label>
