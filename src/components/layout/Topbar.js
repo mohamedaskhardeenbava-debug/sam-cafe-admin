@@ -3,16 +3,24 @@ import { useNavigate } from "react-router-dom";
 import "./Topbar.css";
 import human from "../../icon/human.png";
 import notification from "../../icon/notification.png";
+import bellSound from "../../assets/sounds/bell.mp3"; // same bell asset as user panel
+import socket from "../../socket";
 
 const Topbar = ({ setIsAuthenticated, orders = [], ingredients = [] }) => {
   const [scrolled, setScrolled] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [readOrderIds, setReadOrderIds] = useState([]);
+
+  // Map of tableNo → true for every active bell call
+  const [activeBells, setActiveBells] = useState({});
+
   const navigate = useNavigate();
 
   const notifRef = useRef(null);
   const profileRef = useRef(null);
+  const bellAudioRef = useRef(new Audio(bellSound));
+  const bellLoopRef = useRef(null);
 
   /*Sticky shadow on scroll*/
   useEffect(() => {
@@ -27,23 +35,16 @@ const Topbar = ({ setIsAuthenticated, orders = [], ingredients = [] }) => {
   /*  Click outside close*/
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (
-        notifRef.current &&
-        !notifRef.current.contains(e.target)
-      ) {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
         setShowNotifications(false);
       }
-      if (
-        profileRef.current &&
-        !profileRef.current.contains(e.target)
-      ) {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
         setShowProfile(false);
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-    return () =>
-      document.removeEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -55,6 +56,92 @@ const Topbar = ({ setIsAuthenticated, orders = [], ingredients = [] }) => {
       )
     );
   }, [orders]);
+
+  /* ──────────────────────────────────────────────────────────────────
+     🔔 Bell audio helpers
+  ────────────────────────────────────────────────────────────────── */
+  const startBellAudio = () => {
+    const audio = bellAudioRef.current;
+    if (!audio || bellLoopRef.current) return; // already looping
+
+    const loop = () => {
+      audio.currentTime = 0;
+      audio.play().catch(() => { });
+    };
+
+    audio.addEventListener("ended", loop);
+    bellLoopRef.current = loop;
+
+    audio.currentTime = 0;
+    audio.play().catch(() => { });
+  };
+
+  const stopBellAudio = () => {
+    const audio = bellAudioRef.current;
+    if (!audio) return;
+
+    if (bellLoopRef.current) {
+      audio.removeEventListener("ended", bellLoopRef.current);
+      bellLoopRef.current = null;
+    }
+
+    audio.pause();
+    audio.currentTime = 0;
+  };
+
+  /* ──────────────────────────────────────────────────────────────────
+     🔔 Socket listeners — bell events
+  ────────────────────────────────────────────────────────────────── */
+  useEffect(() => {
+    // Server syncs active bells when admin panel first connects
+    const handleSync = (bells) => {
+      setActiveBells(bells || {});
+      if (Object.keys(bells || {}).length > 0) startBellAudio();
+    };
+
+    // A user rang the bell
+    const handleBellRing = ({ tableNo }) => {
+      setActiveBells(prev => {
+        const next = { ...prev, [tableNo]: true };
+        return next;
+      });
+      startBellAudio();
+    };
+
+    // Admin (or server) turned off a bell
+    const handleBellOff = ({ tableNo }) => {
+      setActiveBells(prev => {
+        const next = { ...prev };
+        delete next[tableNo];
+        if (Object.keys(next).length === 0) stopBellAudio();
+        return next;
+      });
+    };
+
+    socket.on("bell-sync", handleSync);
+    socket.on("bell-ring", handleBellRing);
+    socket.on("bell-off", handleBellOff);
+
+    return () => {
+      socket.off("bell-sync", handleSync);
+      socket.off("bell-ring", handleBellRing);
+      socket.off("bell-off", handleBellOff);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ──────────────────────────────────────────────────────────────────
+     🔕 Admin dismisses a bell call
+  ────────────────────────────────────────────────────────────────── */
+  const handleDismissBell = (tableNo) => {
+    socket.emit("bell-off", { tableNo });
+    // Optimistic local update
+    setActiveBells(prev => {
+      const next = { ...prev };
+      delete next[tableNo];
+      if (Object.keys(next).length === 0) stopBellAudio();
+      return next;
+    });
+  };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
@@ -115,6 +202,8 @@ const Topbar = ({ setIsAuthenticated, orders = [], ingredients = [] }) => {
   const displayCount =
     notificationCount > 9 ? "9+" : notificationCount;
 
+  const bellTableList = Object.keys(activeBells);
+
   return (
     <header className={`topbar ${scrolled ? "topbar-scrolled" : ""}`}>
       {/* LEFT */}
@@ -124,6 +213,18 @@ const Topbar = ({ setIsAuthenticated, orders = [], ingredients = [] }) => {
 
       {/* RIGHT */}
       <div className="topbar-right">
+
+        {/* ── BELL CALL BUTTONS (one per active ringing table) ── */}
+        {bellTableList.map(tableNo => (
+          <button
+            key={tableNo}
+            className="bell-call-btn blinking"
+            onClick={() => handleDismissBell(tableNo)}
+            title={`Table ${tableNo} is calling. Click to dismiss.`}
+          >
+            🔔 Table {tableNo}
+          </button>
+        ))}
 
         {/* NOTIFICATIONS */}
         <div className="topbar-icon-wrapper" ref={notifRef}>

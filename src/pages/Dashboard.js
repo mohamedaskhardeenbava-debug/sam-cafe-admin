@@ -12,100 +12,10 @@ import {
   CartesianGrid, Area
 } from "recharts";
 import { format } from "date-fns";
+import { CustomDatePicker } from "../components/CustomDatePicker";
 
 const COLORS = ["#ff9f43", "#54a0ff", "#FFD700", "#1dd1a1", "#00FFFF", "#e93c3c", "#FFFF00", "#FF8AFF"];
 const STAFF_PALETTE = ["#4361ee", "#06d6a0", "#ffd166", "#ef476f", "#7209b7", "#4cc9f0", "#f72585", "#3a0ca3"];
-
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-const CustomDatePicker = ({ value, onChange, label, min, max }) => {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  const parsed = value ? new Date(value) : new Date();
-  const [view, setView] = React.useState("day");
-  const [calYear, setCalYear] = React.useState(parsed.getFullYear());
-  const [calMonth, setCalMonth] = React.useState(parsed.getMonth());
-
-  React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const minD = min ? new Date(min) : null;
-  const maxD = max ? new Date(max) : null;
-  const isDisabled = (d) => (minD && d < minD) || (maxD && d > maxD);
-
-  const firstDay = new Date(calYear, calMonth, 1).getDay();
-  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-  const cells = [];
-  for (let i = 0; i < firstDay; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-
-  const select = (d) => {
-    const s = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-    onChange(s); setOpen(false);
-  };
-
-  const yearRange = Array.from({ length: 20 }, (_, i) => calYear - 10 + i);
-
-  return (
-    <div className="cdp-wrap" ref={ref}>
-      <button className="cdp-trigger" onClick={() => { setOpen(o => !o); setView("day"); setCalYear(parsed.getFullYear()); setCalMonth(parsed.getMonth()); }}>
-        <span className="cdp-label">{label}</span>
-        <span className="cdp-value">{value ? new Date(value).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</span>
-      </button>
-      {open && (
-        <div className="cdp-popup">
-          <div className="cdp-nav">
-            <button className="cdp-nav-btn" onClick={() => {
-              if (view === "day") { if (calMonth === 0) { setCalMonth(11); setCalYear((y) => y - 1); } else { setCalMonth((m) => m - 1); } }
-              else if (view === "year") { setCalYear((y) => y - 20); }
-            }}>‹</button>
-            <div className="cdp-nav-center">
-              {view === "day" && (<>
-                <button className="cdp-nav-lbl" onClick={() => setView("month")}>{MONTHS[calMonth]}</button>
-                <button className="cdp-nav-lbl" onClick={() => setView("year")}>{calYear}</button>
-              </>)}
-              {view === "month" && (<button className="cdp-nav-lbl" onClick={() => setView("year")}>{calYear}</button>)}
-              {view === "year" && (<span className="cdp-nav-lbl">{calYear - 10} – {calYear + 9}</span>)}
-            </div>
-            <button className="cdp-nav-btn" onClick={() => {
-              if (view === "day") { if (calMonth === 11) { setCalMonth(0); setCalYear((y) => y + 1); } else { setCalMonth((m) => m + 1); } }
-              else if (view === "year") { setCalYear((y) => y + 20); }
-            }}>›</button>
-          </div>
-          {view === "day" && (<>
-            <div className="cdp-weekdays">{["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => <span key={d}>{d}</span>)}</div>
-            <div className="cdp-grid">
-              {cells.map((d, i) => {
-                if (!d) return <span key={i} />;
-                const ds = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-                const sel = ds === value; const dis = isDisabled(new Date(ds));
-                const tod = ds === format(new Date(), "yyyy-MM-dd");
-                return <button key={i} className={`cdp-day${sel ? " cdp-sel" : ""}${dis ? " cdp-dis" : ""}${tod && !sel ? " cdp-today" : ""}`} disabled={dis} onClick={() => select(d)}>{d}</button>;
-              })}
-            </div>
-          </>)}
-          {view === "month" && (
-            <div className="cdp-month-grid">
-              {MONTHS.map((m, i) => (
-                <button key={i} className={`cdp-month-btn${i === calMonth ? " cdp-sel" : ""}`} onClick={() => { setCalMonth(i); setView("day"); }}>{m.slice(0, 3)}</button>
-              ))}
-            </div>
-          )}
-          {view === "year" && (
-            <div className="cdp-year-grid">
-              {yearRange.map(y => (
-                <button key={y} className={`cdp-year-btn${y === calYear ? " cdp-sel" : ""}`} onClick={() => { setCalYear(y); setView("month"); }}>{y}</button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
 
 const renderActiveShape = (props) => {
   const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, value } = props;

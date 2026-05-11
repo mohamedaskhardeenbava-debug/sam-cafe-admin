@@ -1,93 +1,8 @@
 import React, { useState, useMemo } from "react";
 import { format } from "date-fns";
+import * as XLSX from "xlsx";
 import "./ServiceActivityLog.css";
-
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-/* ─── CustomDatePicker — identical to Dashboard.js ────────────── */
-const CustomDatePicker = ({ value, onChange, label, min, max }) => {
-    const [open, setOpen] = React.useState(false);
-    const ref = React.useRef(null);
-    const parsed = value ? new Date(value) : new Date();
-    const [view, setView] = React.useState("day");
-    const [calYear, setCalYear] = React.useState(parsed.getFullYear());
-    const [calMonth, setCalMonth] = React.useState(parsed.getMonth());
-
-    React.useEffect(() => {
-        const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-        document.addEventListener("mousedown", h);
-        return () => document.removeEventListener("mousedown", h);
-    }, []);
-
-    const minD = min ? new Date(min) : null;
-    const maxD = max ? new Date(max) : null;
-    const isDisabled = (d) => (minD && d < minD) || (maxD && d > maxD);
-
-    const firstDay = new Date(calYear, calMonth, 1).getDay();
-    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-    const cells = [];
-    for (let i = 0; i < firstDay; i++) cells.push(null);
-    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-
-    const select = (d) => {
-        const s = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-        onChange(s); setOpen(false);
-    };
-    const yearRange = Array.from({ length: 20 }, (_, i) => calYear - 10 + i);
-    const todayFmt = format(new Date(), "yyyy-MM-dd");
-
-    return (
-        <div className="cdp-wrap" ref={ref}>
-            <button className="cdp-trigger" onClick={() => { setOpen(o => !o); setView("day"); setCalYear(parsed.getFullYear()); setCalMonth(parsed.getMonth()); }}>
-                <span className="cdp-icon">📅</span>
-                <span className="cdp-label">{label}</span>
-                <span className="cdp-value">{value ? new Date(value).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</span>
-            </button>
-            {open && (
-                <div className="cdp-popup">
-                    <div className="cdp-nav">
-                        <button className="cdp-nav-btn" onClick={() => {
-                            if (view === "day") { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); } else { setCalMonth(m => m - 1); } }
-                            else if (view === "year") setCalYear(y => y - 20);
-                        }}>‹</button>
-                        <div className="cdp-nav-center">
-                            {view === "day" && <><button className="cdp-nav-lbl" onClick={() => setView("month")}>{MONTHS[calMonth]}</button><button className="cdp-nav-lbl" onClick={() => setView("year")}>{calYear}</button></>}
-                            {view === "month" && <button className="cdp-nav-lbl" onClick={() => setView("year")}>{calYear}</button>}
-                            {view === "year" && <span className="cdp-nav-lbl">{calYear - 10} – {calYear + 9}</span>}
-                        </div>
-                        <button className="cdp-nav-btn" onClick={() => {
-                            if (view === "day") { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); } else { setCalMonth(m => m + 1); } }
-                            else if (view === "year") setCalYear(y => y + 20);
-                        }}>›</button>
-                    </div>
-                    {view === "day" && (<>
-                        <div className="cdp-weekdays">{["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => <span key={d}>{d}</span>)}</div>
-                        <div className="cdp-grid">
-                            {cells.map((d, i) => {
-                                if (!d) return <span key={i} />;
-                                const ds = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-                                const sel = ds === value;
-                                const dis = isDisabled(new Date(ds));
-                                const tod = ds === todayFmt;
-                                return <button key={i} className={`cdp-day${sel ? " cdp-sel" : ""}${dis ? " cdp-dis" : ""}${tod && !sel ? " cdp-today" : ""}`} disabled={dis} onClick={() => select(d)}>{d}</button>;
-                            })}
-                        </div>
-                    </>)}
-                    {view === "month" && (
-                        <div className="cdp-month-grid">
-                            {MONTHS.map((m, i) => <button key={i} className={`cdp-month-btn${i === calMonth ? " cdp-sel" : ""}`} onClick={() => { setCalMonth(i); setView("day"); }}>{m.slice(0, 3)}</button>)}
-                        </div>
-                    )}
-                    {view === "year" && (
-                        <div className="cdp-year-grid">
-                            {yearRange.map(y => <button key={y} className={`cdp-year-btn${y === calYear ? " cdp-sel" : ""}`} onClick={() => { setCalYear(y); setView("month"); }}>{y}</button>)}
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-};
+import { CustomDatePicker } from "../../components/CustomDatePicker";
 
 const PRESETS = [
     { label: "Today", getRange: () => { const t = format(new Date(), "yyyy-MM-dd"); return [t, t]; } },
@@ -119,10 +34,27 @@ export default function ServiceActivityLog({ adminData }) {
         setActivePreset(preset.label);
     };
 
+    const exportToExcel = () => {
+        if (!filtered.length) { alert("No activity data to export"); return; }
+        const rows = filtered.map(item => ({
+            Work: item.work || "—",
+            Staff: item.staff || "—",
+            Date: item.date || "—",
+        }));
+        const sheet = XLSX.utils.json_to_sheet(rows);
+        sheet["!cols"] = Object.keys(rows[0]).map(key => ({
+            wch: Math.max(key.length, ...rows.map(r => String(r[key] ?? "").length)) + 2
+        }));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, sheet, "Service Activity");
+        XLSX.writeFile(wb, `service_activity_${fromDate}_to_${toDate}.xlsx`);
+    };
+
     return (
         <div className="activity-page">
             <div className="activity-header">
                 <h2 className="activity-title">Service Activity Log</h2>
+                <button className="orders-export-btn" onClick={exportToExcel}>Export</button>
             </div>
 
             <div className="activity-filter-bar">

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { format } from "date-fns";
+import * as XLSX from "xlsx";
 import "./KitchenSchedules.css";
 import api from "../../api";
-import { CustomDatePicker } from "../../components/Customdatepicker";
+import { CustomDatePicker } from "../../components/CustomDatePicker";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -68,11 +69,33 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
     useEffect(() => { moveExpiredSchedules(); }, []);
     useEffect(() => { const close = () => setOpenDropdown(null); window.addEventListener("click", close); return () => window.removeEventListener("click", close); }, []);
 
+    const exportToExcel = () => {
+        if (!filteredList.length) { alert("No schedule data to export"); return; }
+        const rows = filteredList.map(item => ({
+            Work: item.work || "—",
+            Staff: item.staff || "—",
+            Date: item.date || "—",
+            Department: item.department || "—",
+            Status: item.status || "—",
+            "Response (Days)": item.lastRate !== "" && item.lastRate != null ? `${item.lastRate} days` : "—",
+        }));
+        const sheet = XLSX.utils.json_to_sheet(rows);
+        sheet["!cols"] = Object.keys(rows[0]).map(key => ({
+            wch: Math.max(key.length, ...rows.map(r => String(r[key] ?? "").length)) + 2
+        }));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, sheet, "Kitchen Schedules");
+        XLSX.writeFile(wb, `kitchen_schedules_${fromDate}_to_${toDate}.xlsx`);
+    };
+
     return (
         <div className="schedule-page">
             <div className="schedule-header">
                 <h2>Kitchen Schedules</h2>
-                <button onClick={() => setShow(true)}>+ Add Schedule</button>
+                <div style={{ display: "flex", gap: "8px" }}>
+                    <button className="orders-export-btn" onClick={exportToExcel}>Export</button>
+                    <button onClick={() => setShow(true)}>+ Add Schedule</button>
+                </div>
             </div>
 
             <div className="sched-filter-bar">

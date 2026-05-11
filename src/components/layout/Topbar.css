@@ -33,6 +33,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-wrap: nowrap;
 }
 
 .topbar-icon-wrapper {
@@ -68,6 +69,7 @@
     transform: scale(0.6);
     opacity: 0;
   }
+
   100% {
     transform: scale(1);
     opacity: 1;
@@ -173,7 +175,7 @@
   list-style: none;
   padding: 0;
   margin: 0;
-  max-height: 260px; /* ~5 items */
+  max-height: 260px;
   overflow-y: auto;
 }
 
@@ -247,4 +249,68 @@
 
 .logout-btn:hover {
   background: #d32f2f;
+}
+
+/* ─────────────────────────────────────────
+   🔔 BELL CALL BUTTON  (admin topbar)
+───────────────────────────────────────── */
+.bell-call-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 2px solid #e53935;
+  background: #fff3f3;
+  color: #c62828;
+
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+
+  /* entrance */
+  animation: bellBtnPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.bell-call-btn:hover {
+  background: #ffebee;
+}
+
+/* Blinking border + text */
+.bell-call-btn.blinking {
+  animation:
+    bellBtnPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    bellBlink 0.9s ease-in-out infinite;
+}
+
+@keyframes bellBtnPop {
+  0% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes bellBlink {
+
+  0%,
+  100% {
+    background: #fff3f3;
+    border-color: #e53935;
+    color: #c62828;
+    box-shadow: none;
+  }
+
+  50% {
+    background: #e53935;
+    border-color: #e53935;
+    color: #fff;
+    box-shadow: 0 0 0 4px rgba(229, 57, 53, 0.25);
+  }
 }

@@ -7,7 +7,7 @@ import deleteIcon from "../icon/delete-icon.png";
 import * as XLSX from "xlsx";
 import { EmptyRow } from "../App";
 import { formatDisplayDate } from "../App"
-import { CustomDatePicker } from "../components/Customdatepicker";
+import { CustomDatePicker } from "../components/CustomDatePicker";
 import socket from "../socket";
 
 const toTwoDecimals = (value) =>

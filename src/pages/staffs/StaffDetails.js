@@ -4,7 +4,7 @@ import api from "../../api";
 import editIcon from "../../icon/edit-icon.png";
 import deleteIcon from "../../icon/delete-icon.png";
 import "./StaffDetails.css";
-import { CustomDatePicker } from "../../components/Customdatepicker";
+import { CustomDatePicker } from "../../components/CustomDatePicker";
 
 const StaffDetails = ({ adminData, setAdminData }) => {
     const { staffId } = useParams();

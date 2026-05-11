@@ -1,302 +1,434 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { format } from "date-fns";
 import "./StaffAttendance.css";
 import api from "../../api";
-import { useToast } from "../../useToast";
-import { CustomDatePicker } from "../../components/Customdatepicker";
+import editIcon from "../../icon/edit-icon.png";
+import { CustomTimePicker } from "../../components/CustomTimePicker";
+import { CustomDatePicker } from "../../components/CustomDatePicker";
 
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-const fmt = (d) => {
-    const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");
+/* ─── Helpers ─────────────────────────────────────────────────── */
+const normalizeDate = (d) => {
+    const date = new Date(d);
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
     return `${y}-${m}-${day}`;
 };
 
-const PRESETS = [
-    {
-        label: "Today",
-        fn: () => { const t = format(new Date(), "yyyy-MM-dd"); return [t, t]; }
-    },
-    {
-        label: "This Week",
-        fn: () => {
-            const now = new Date();
-            // Sunday = 0, Saturday = 6
-            const sunday = new Date(now);
-            sunday.setDate(now.getDate() - now.getDay());
-            const saturday = new Date(sunday);
-            saturday.setDate(sunday.getDate() + 6);
-            return [fmt(sunday), fmt(saturday)];
-        }
-    },
-    {
-        label: "This Month",
-        fn: () => {
-            const now = new Date();
-            const first = new Date(now.getFullYear(), now.getMonth(), 1);
-            const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-            return [fmt(first), fmt(last)];
-        }
-    },
-    { label: "All", fn: () => ["2000-01-01", "2099-12-31"] },
-];
+const WEEKDAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-const EMPTY_FORM = { work: "", staff: "", date: "", department: "", status: "", lastRate: "" };
-
-const SORT_KEYS = ["date", "work", "staff", "department", "status"];
-
-export default function ServiceSchedules({ adminData, setAdminData }) {
+/* ─── Component ─────────────────────────────────────────────────── */
+export default function StaffAttendance({ adminData, setAdminData }) {
     const location = useLocation();
-    const { toast } = useToast();
-    const [openDropdown, setOpenDropdown] = useState(null);
-    const [statusFilter, setStatusFilter] = useState(location.state?.status || "");
-    const [searchText, setSearchText] = useState("");
-    const [fromDate, setFromDate] = useState("2000-01-01");
-    const [toDate, setToDate] = useState("2099-12-31");
-    const [activePreset, setActivePreset] = useState("All");
-    const [show, setShow] = useState(false);
-    const [form, setForm] = useState(EMPTY_FORM);
-    const [sortKey, setSortKey] = useState("date");
-    const [sortDir, setSortDir] = useState("asc");
-    const today = format(new Date(), "yyyy-MM-dd");
 
-    const list = adminData.serviceSchedules || [];
-
-    const filteredList = useMemo(() => {
-        const base = list.filter(item => {
-            const matchStatus = !statusFilter || (item.status || "").toLowerCase() === statusFilter.toLowerCase();
-            const q = searchText.toLowerCase();
-            const matchSearch = !q || (item.work || "").toLowerCase().includes(q) || (item.staff || "").toLowerCase().includes(q);
-            const d = item.date || "";
-            const matchDate = d >= fromDate && d <= toDate;
-            return matchStatus && matchSearch && matchDate;
-        });
-
-        return [...base].sort((a, b) => {
-            const aVal = (a[sortKey] || "").toString().toLowerCase();
-            const bVal = (b[sortKey] || "").toString().toLowerCase();
-            return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-        });
-    }, [list, statusFilter, searchText, fromDate, toDate, sortKey, sortDir]);
-
-    const toggleSort = (key) => {
-        if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
-        else { setSortKey(key); setSortDir("asc"); }
+    const getDates = () => {
+        const today = new Date();
+        const start = new Date(today.getFullYear(), today.getMonth(), 1);
+        const dates = [];
+        for (let d = new Date(start); d <= today; d.setDate(d.getDate() + 1)) {
+            dates.push(normalizeDate(d));
+        }
+        return dates;
     };
 
-    const SortIcon = ({ col }) => {
-        if (sortKey !== col) return <span style={{ color: "#bbb", fontSize: 11 }}>⇅</span>;
-        return <span style={{ fontSize: 11 }}>{sortDir === "asc" ? "↑" : "↓"}</span>;
-    };
+    const dates = getDates();
+    const todayStr = normalizeDate(new Date());
 
-    const applyPreset = (p) => { const [f, t] = p.fn(); setFromDate(f); setToDate(t); setActivePreset(p.label); };
+    const [localAttendance, setLocalAttendance] = useState({});   // optimistic UI overrides
+    const [editMode, setEditMode] = useState({});
+    const [holidays, setHolidays] = useState({});
+    const [loadingHolidays, setLoadingHolidays] = useState(true);
+    const [showHolidayModal, setShowHolidayModal] = useState(false);
+    const [columnEdit, setColumnEdit] = useState({});
+    const [holidayForm, setHolidayForm] = useState({ date: "", reason: "" });
+    const [savingCells, setSavingCells] = useState({});   // { staffId_date: true } while saving
+    const autoAbsentRan = useRef(false);  // guard: run auto-absent only once
 
-    const add = async () => {
-        if (!form.work || !form.staff || !form.date) return;
-        // Use string-based IDs to avoid lodash-id issues with json-server
-        const newId = `ss_${Date.now()}`;
-        const newItem = { id: newId, ...form };
+    /* ── Load holidays ── */
+    const fetchHolidays = async () => {
         try {
-            await api.post("/serviceSchedules", newItem);
-            setAdminData(prev => ({ ...prev, serviceSchedules: [...(prev.serviceSchedules || []), newItem] }));
-            setForm(EMPTY_FORM);
-            setShow(false);
-            toast.success("Schedule added successfully.");
+            const res = await api.get("/holidays");
+            const map = {};
+            res.data.forEach(h => { if (h.date) map[normalizeDate(h.date)] = h.reason; });
+            setHolidays(map);
         } catch (err) {
-            console.error("Failed to add schedule", err);
-            toast.error("Failed to add schedule. Please try again.");
+            console.error("Holiday load failed", err);
+        } finally {
+            setLoadingHolidays(false);
         }
     };
 
-    const cancel = () => { setForm(EMPTY_FORM); setShow(false); };
+    useEffect(() => { fetchHolidays(); }, []);
 
-    // FIX: Only delete expired items, not all. Use string IDs for new items.
-    // For old numeric-id items that fail deletion, skip gracefully.
-    const moveExpiredSchedules = async () => {
-        const expired = list.filter(item => item.date < today);
-        const upcoming = list.filter(item => item.date >= today);
-        if (!expired.length) return;
+    /* ═══════════════════════════════════════════════════════════════
+       AUTO-ABSENT: on page load, for every past date in this month
+       where a staff member has NO attendance record at all, write
+       status="absent" to the database (fire-and-forget per staff).
+       Runs once per session (uses a ref-based guard).
+    ═══════════════════════════════════════════════════════════════ */
+    useEffect(() => {
+        if (loadingHolidays) return;           // wait for holidays
+        if (!adminData.staff?.length) return;
+        if (autoAbsentRan.current) return;     // run ONCE per mount only
+        autoAbsentRan.current = true;
 
-        const activity = adminData?.serviceActivity || [];
-        const deletedIds = [];
+        const autoAbsent = async () => {
+            // Only current-month past dates (not today) — full history comes from db
+            const pastDates = dates.filter(d => d < todayStr);
 
-        for (const item of expired) {
-            try {
-                await api.delete(`/serviceSchedules/${item.id}`);
-                deletedIds.push(item.id);
-            } catch (err) {
-                console.warn(`Could not delete schedule ${item.id}:`, err.response?.status);
-                // Still move it to activity even if delete failed
-                deletedIds.push(item.id);
+            for (const staff of adminData.staff) {
+                const existingDates = new Set((staff.attendance || []).map(a => a.date));
+                const missingDates = pastDates.filter(d => !existingDates.has(d) && !holidays[d]);
+
+                if (missingDates.length === 0) continue;
+
+                const newEntries = missingDates.map(d => ({ date: d, status: "absent", reason: "Auto-marked absent" }));
+                const updatedAtt = [...(staff.attendance || []), ...newEntries];
+                const updatedStaff = { ...staff, attendance: updatedAtt };
+
+                try {
+                    const res = await api.put(`/staff/${staff.id}`, updatedStaff);
+                    setAdminData(prev => ({
+                        ...prev,
+                        staff: prev.staff.map(s => s.id === staff.id ? res.data : s)
+                    }));
+                } catch (err) {
+                    console.warn(`Auto-absent failed for ${staff.name}:`, err.message);
+                }
             }
-        }
+        };
 
-        for (const item of expired) {
-            try {
-                await api.post("/serviceActivity", item);
-            } catch (err) {
-                console.warn("Could not archive schedule:", err);
-            }
-        }
+        autoAbsent();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [loadingHolidays]);
 
-        // Remove expired from local state regardless of API delete outcome
-        setAdminData(prev => ({
-            ...prev,
-            serviceSchedules: (prev.serviceSchedules || []).filter(i => !deletedIds.includes(i.id)),
-            serviceActivity: [...activity, ...expired]
-        }));
+    /* ── Toggle checkbox ── */
+    const handleToggle = (staffId, date, checked) => {
+        if (checked) {
+            // Mark present immediately
+            saveAttendance(staffId, date, { status: "present", reason: "" });
+        } else {
+            // Open leave reason input
+            setEditMode(prev => ({ ...prev, [staffId]: { ...prev[staffId], [date]: true } }));
+        }
     };
 
-    useEffect(() => { moveExpiredSchedules(); }, []);
-    useEffect(() => { const close = () => setOpenDropdown(null); window.addEventListener("click", close); return () => window.removeEventListener("click", close); }, []);
+    /* ── Save attendance to DB ── */
+    const saveAttendance = useCallback(async (staffId, date, data) => {
+        const cellKey = `${staffId}_${date}`;
+        setSavingCells(prev => ({ ...prev, [cellKey]: true }));
+
+        // Optimistic UI update
+        setLocalAttendance(prev => ({ ...prev, [staffId]: { ...prev[staffId], [date]: data } }));
+        setEditMode(prev => ({ ...prev, [staffId]: { ...prev[staffId], [date]: false } }));
+
+        const staffMember = adminData.staff.find(s => s.id === staffId);
+        if (!staffMember) { setSavingCells(prev => ({ ...prev, [cellKey]: false })); return; }
+
+        const existing = (staffMember.attendance || []).filter(a => a.date !== date);
+        const updated = { ...staffMember, attendance: [...existing, { date, ...data }] };
+
+        try {
+            const res = await api.put(`/staff/${staffId}`, updated);
+            setAdminData(prev => ({
+                ...prev,
+                staff: prev.staff.map(s => s.id === staffId ? res.data : s)
+            }));
+        } catch (err) {
+            console.error("Attendance save failed:", err);
+            // rollback optimistic
+            setLocalAttendance(prev => {
+                const copy = { ...prev };
+                if (copy[staffId]) delete copy[staffId][date];
+                return copy;
+            });
+        } finally {
+            setSavingCells(prev => ({ ...prev, [cellKey]: false }));
+        }
+    }, [adminData.staff, setAdminData]);
+
+    /* ── Add / Remove holiday ── */
+    const addHoliday = async () => {
+        if (!holidayForm.date || !holidayForm.reason) { alert("Fill in date and reason"); return; }
+        await api.post("/holidays", { id: Date.now(), ...holidayForm });
+        setHolidays(prev => ({ ...prev, [holidayForm.date]: holidayForm.reason }));
+        setShowHolidayModal(false);
+        setHolidayForm({ date: "", reason: "" });
+    };
+
+    const removeHoliday = async (date) => {
+        try {
+            const normalized = normalizeDate(date);
+            const res = await api.get("/holidays");
+            const holiday = res.data.find(h => normalizeDate(h.date) === normalized);
+            if (holiday) await api.delete(`/holidays/${holiday.id}`);
+            setHolidays(prev => { const u = { ...prev }; delete u[normalized]; return u; });
+            setColumnEdit(prev => ({ ...prev, [normalized]: true }));
+        } catch (err) {
+            console.error("Remove holiday failed:", err);
+        }
+    };
+
+    /* ── Get resolved status for a cell ── */
+    const getRecord = (staffId, date) => {
+        // Optimistic local override takes priority
+        if (localAttendance[staffId]?.[date]) return localAttendance[staffId][date];
+        const staffMember = adminData.staff.find(s => s.id === staffId);
+        return staffMember?.attendance?.find(a => a.date === date) || null;
+    };
+
+    /* ── Stats row ── */
+    const staffStats = useMemo(() => {
+        return adminData.staff.map(s => {
+            const att = s.attendance || [];
+            const presentDays = att.filter(a => a.status === "present").length;
+            const leaveDays = att.filter(a => a.status === "leave").length;
+            const absentDays = att.filter(a => a.status === "absent").length;
+            const pct = dates.length > 0 ? Math.round((presentDays / dates.length) * 100) : 0;
+            return { id: s.id, name: s.name, presentDays, leaveDays, absentDays, pct };
+        });
+    }, [adminData.staff, dates]);
+
+    if (loadingHolidays) return <div className="att-page"><div className="att-loading"><div className="att-spinner" />Loading attendance…</div></div>;
+
+    const monthName = new Date().toLocaleString("default", { month: "long", year: "numeric" });
+
+    /* ── today's date string for max constraint on holiday picker ── */
+    const maxDateStr = todayStr;
 
     return (
-        <div className="schedule-page">
-            <div className="schedule-header">
-                <h2>Service Schedules</h2>
-                <button onClick={() => setShow(true)}>+ Add Schedule</button>
+        <div className="att-page">
+            {/* HEADER */}
+            <div className="att-header">
+                <div>
+                    <h2 className="att-title">Attendance Sheet</h2>
+                    <p className="att-subtitle">{monthName} · {adminData.staff.length} staff members</p>
+                </div>
+                <div className="att-header-actions">
+                    <div className="att-summary-chips">
+                        <div className="att-chip att-chip-present"><span className="att-chip-dot" />Present</div>
+                        <div className="att-chip att-chip-leave"><span className="att-chip-dot" />Leave</div>
+                        <div className="att-chip att-chip-absent"><span className="att-chip-dot" />Absent</div>
+                        <div className="att-chip att-chip-holiday"><span className="att-chip-dot" />Holiday</div>
+                    </div>
+                    <button className="att-add-btn" onClick={() => setShowHolidayModal(true)}>+ Add Holiday</button>
+                </div>
             </div>
 
-            <div className="sched-filter-bar">
-                <input className="cdp-search-input" placeholder="Search work / staff…" value={searchText} onChange={e => setSearchText(e.target.value)} />
-                <div className="sched-status-pills">
-                    {["", "Scheduled", "Completed", "Pending"].map(s => (
-                        <button key={s} className={`cdp-preset-btn${statusFilter === s ? " active" : ""}`} onClick={() => setStatusFilter(s)}>
-                            {s || "All"}
-                        </button>
-                    ))}
-                </div>
-                <CustomDatePicker label="From" value={fromDate} max={toDate}
-                    onChange={s => { setFromDate(s); if (s > toDate) setToDate(s); setActivePreset("custom"); }} />
-                <CustomDatePicker label="To" value={toDate} min={fromDate}
-                    onChange={s => { setToDate(s); setActivePreset("custom"); }} />
-                {PRESETS.map(p => (
-                    <button key={p.label} className={`cdp-preset-btn${activePreset === p.label ? " active" : ""}`} onClick={() => applyPreset(p)}>
-                        {p.label}
-                    </button>
+            {/* STATS ROW */}
+            <div className="att-stats-row">
+                {staffStats.map((s, i) => (
+                    <div key={s.id} className="att-stat-card">
+                        <div className="att-stat-avatar">{s.name.charAt(0).toUpperCase()}</div>
+                        <div className="att-stat-info">
+                            <span className="att-stat-name">{s.name}</span>
+                            <div className="att-stat-bar-wrap">
+                                <div className="att-stat-bar" style={{ width: `${s.pct}%`, background: s.pct >= 75 ? "#16a34a" : s.pct >= 50 ? "#f59e0b" : "#dc2626" }} />
+                            </div>
+                            <div className="att-stat-nums">
+                                <span className="att-present-num">✓ {s.presentDays}</span>
+                                <span className="att-leave-num">L {s.leaveDays}</span>
+                                <span className="att-absent-num">✕ {s.absentDays}</span>
+                                <span className="att-pct-num">{s.pct}%</span>
+                            </div>
+                        </div>
+                    </div>
                 ))}
             </div>
 
-            <div className="schedule-table-wrapper">
-                <table className="schedule-table">
-                    <thead>
-                        <tr>
-                            <th onClick={() => toggleSort("work")} style={{ cursor: "pointer" }}>Work <SortIcon col="work" /></th>
-                            <th onClick={() => toggleSort("staff")} style={{ cursor: "pointer" }}>Staff <SortIcon col="staff" /></th>
-                            <th onClick={() => toggleSort("date")} style={{ cursor: "pointer" }}>Date <SortIcon col="date" /></th>
-                            <th onClick={() => toggleSort("department")} style={{ cursor: "pointer" }}>Department <SortIcon col="department" /></th>
-                            <th onClick={() => toggleSort("status")} style={{ cursor: "pointer" }}>Status <SortIcon col="status" /></th>
-                            <th>Response</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredList.length === 0 ? (
-                            <tr><td colSpan="6" style={{ textAlign: "center", color: "#aaa" }}>No schedules found</td></tr>
-                        ) : (
-                            filteredList.map(i => (
-                                <tr key={i.id}>
-                                    <td>{i.work}</td>
-                                    <td>{i.staff}</td>
-                                    <td>{i.date}</td>
-                                    <td>{i.department || "—"}</td>
-                                    <td>{i.status ? <span className={`status status-${i.status.toLowerCase().replace(/\s+/g, "-")}`}>{i.status}</span> : "—"}</td>
-                                    <td>{i.lastRate ? `${i.lastRate} days` : "—"}</td>
+            {/* TABLE */}
+            <div className="att-table-wrapper">
+                <div className="att-table-scroll">
+                    <table className="att-table">
+                        <thead>
+                            <tr>
+                                <th className="att-sticky-col att-name-col">{monthName}</th>
+                                {dates.map(date => {
+                                    const d = new Date(date);
+                                    const isSunday = d.getDay() === 0;
+                                    const isHoliday = !!holidays[date];
+                                    const isToday = date === todayStr;
+                                    return (
+                                        <th key={date} className={`att-date-th ${isSunday ? "att-sunday" : ""} ${isHoliday ? "att-holiday-col" : ""} ${isToday ? "att-today-col" : ""}`}>
+                                            <div className="att-date-head">
+                                                <span className="att-date-day">{d.getDate()}</span>
+                                                <span className="att-date-weekday">{WEEKDAY_NAMES[d.getDay()]}</span>
+                                            </div>
+                                            {isHoliday && (
+                                                <div className="att-holiday-tag">
+                                                    <span>{holidays[date]}</span>
+                                                    <input type="checkbox" className="att-remove-holiday" onChange={() => removeHoliday(date)} title="Remove holiday" />
+                                                </div>
+                                            )}
+                                            {isToday && <div className="att-today-dot" />}
+                                        </th>
+                                    );
+                                })}
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {adminData.staff.map((staff) => (
+                                <tr key={staff.id} className="att-row">
+                                    <td className="att-sticky-col att-name-cell">
+                                        <div className="att-name-wrap">
+                                            <div className="att-avatar">{staff.name.charAt(0).toUpperCase()}</div>
+                                            <span>{staff.name}</span>
+                                        </div>
+                                    </td>
+
+                                    {dates.map(date => {
+                                        const isColumnEditing = columnEdit[date];
+                                        const saved = getRecord(staff.id, date);
+                                        const d = new Date(date);
+                                        const isSunday = d.getDay() === 0;
+                                        const isHoliday = holidays[date] && !isColumnEditing;
+                                        const isToday = date === todayStr;
+                                        const cellKey = `${staff.id}_${date}`;
+                                        const isSaving = savingCells[cellKey];
+
+                                        if (isHoliday) {
+                                            return <td key={date} className="att-td att-holiday-cell"><span className="att-holiday-label">{holidays[date]}</span></td>;
+                                        }
+
+                                        if (isSunday && !isColumnEditing) {
+                                            return <td key={date} className="att-td att-sunday-cell"><span>Off</span></td>;
+                                        }
+
+                                        const editing = editMode[staff.id]?.[date];
+
+                                        if (isColumnEditing || editing) {
+                                            return (
+                                                <td key={date} className={`att-td att-editing-td ${isToday ? "att-today-td" : ""}`}>
+                                                    <div className="att-edit-block">
+                                                        <label className="att-checkbox-label">
+                                                            <input type="checkbox" checked={saved?.status === "present"} onChange={(e) => handleToggle(staff.id, date, e.target.checked)} className="att-checkbox" />
+                                                            <span className={`att-check-custom ${saved?.status === "present" ? "checked" : ""}`} />
+                                                        </label>
+                                                        {editing && (
+                                                            <>
+                                                                <input
+                                                                    className="att-reason-input"
+                                                                    placeholder="Reason…"
+                                                                    onChange={(e) => setLocalAttendance(prev => ({ ...prev, [staff.id]: { ...prev[staff.id], [date]: { status: "leave", reason: e.target.value } } }))}
+                                                                />
+                                                                <button className="att-save-mini" onClick={() => {
+                                                                    const data = localAttendance[staff.id]?.[date];
+                                                                    if (!data?.reason) { alert("Enter reason"); return; }
+                                                                    saveAttendance(staff.id, date, data);
+                                                                }}>Save</button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            );
+                                        }
+
+                                        if (saved?.status === "leave") {
+                                            return (
+                                                <td key={date} className="att-td att-leave-td">
+                                                    <div className="att-leave-cell">
+                                                        <span className="att-leave-icon">L</span>
+                                                        <span className="att-leave-reason">{saved.reason}</span>
+                                                        <button className="att-edit-btn" onClick={() => setEditMode(prev => ({ ...prev, [staff.id]: { ...prev[staff.id], [date]: true } }))}>
+                                                            <img src={editIcon} alt="edit" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            );
+                                        }
+
+                                        if (saved?.status === "absent") {
+                                            return (
+                                                <td key={date} className={`att-td att-absent-td ${isToday ? "att-today-td" : ""}`}>
+                                                    <div className="att-absent-cell">
+                                                        <span className="att-absent-icon">✕</span>
+                                                        <button className="att-edit-btn" title="Override" onClick={() => setEditMode(prev => ({ ...prev, [staff.id]: { ...prev[staff.id], [date]: true } }))}>
+                                                            <img src={editIcon} alt="edit" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            );
+                                        }
+
+                                        if (saved?.status === "present") {
+                                            return (
+                                                <td key={date} className={`att-td att-present-td ${isToday ? "att-today-td" : ""}`}>
+                                                    <label className="att-checkbox-label">
+                                                        <input type="checkbox" checked onChange={(e) => handleToggle(staff.id, date, e.target.checked)} className="att-checkbox" disabled={isSaving} />
+                                                        <span className="att-check-custom checked" />
+                                                    </label>
+                                                </td>
+                                            );
+                                        }
+
+                                        /* No record yet — render checkbox for today, absent icon for past */
+                                        if (!isToday) {
+                                            return (
+                                                <td key={date} className="att-td att-absent-td">
+                                                    <div className="att-absent-cell">
+                                                        <span className="att-absent-icon">✕</span>
+                                                        <button className="att-edit-btn" title="Override" onClick={() => setEditMode(prev => ({ ...prev, [staff.id]: { ...prev[staff.id], [date]: true } }))}>
+                                                            <img src={editIcon} alt="edit" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            );
+                                        }
+
+                                        return (
+                                            <td key={date} className={`att-td att-empty-td att-today-td`}>
+                                                <label className="att-checkbox-label">
+                                                    <input type="checkbox" checked={false} onChange={(e) => handleToggle(staff.id, date, e.target.checked)} className="att-checkbox" />
+                                                    <span className="att-check-custom" />
+                                                </label>
+                                            </td>
+                                        );
+                                    })}
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            {show && (
-                <div className="category-modal-overlay">
-                    <form className="category-modal" onSubmit={e => { e.preventDefault(); add(); }}>
-                        <div className="category-modal-header">
-                            <h3>Add Schedule</h3>
-                            <button type="button" className="dish-close-btn" onClick={cancel}></button>
+            {/* ── HOLIDAY MODAL ── */}
+            {showHolidayModal && (
+                <div className="att-modal-overlay">
+                    <div className="att-modal">
+                        <div className="att-modal-header">
+                            <h3>Add Holiday</h3>
+                            <button className="att-modal-close" onClick={() => setShowHolidayModal(false)} />
                         </div>
-                        <div className="category-modal-body">
-                            <div className="form-group">
-                                <label>Department</label>
-                                <div className="dishes-dropdown-wrapper">
-                                    <button type="button" className="dishes-status-dropdown" onClick={e => { e.stopPropagation(); setOpenDropdown(p => p === "dept" ? null : "dept"); }}>
-                                        {form.department || "Select Department"}
-                                    </button>
-                                    {openDropdown === "dept" && (
-                                        <div className="dishes-dropdown-menu">
-                                            {["Pest Control", "Maintenance", "Laundry"].map(dep => (
-                                                <div key={dep} onClick={e => { e.stopPropagation(); setForm({ ...form, department: dep }); setOpenDropdown(null); }}>{dep}</div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label>Work</label>
-                                <input required value={form.work} onChange={e => setForm({ ...form, work: e.target.value })} />
-                            </div>
-                            <div className="form-group">
-                                <label>Staff</label>
-                                <div className="dishes-dropdown-wrapper">
-                                    <button type="button" className="dishes-status-dropdown" onClick={e => { e.stopPropagation(); setOpenDropdown(p => p === "staff" ? null : "staff"); }}>
-                                        {form.staff || "Select Staff"}
-                                    </button>
-                                    {openDropdown === "staff" && (
-                                        <div className="dishes-dropdown-menu">
-                                            {adminData.staff?.map(s => (
-                                                <div key={s.id} onClick={e => { e.stopPropagation(); setForm({ ...form, staff: s.name }); setOpenDropdown(null); }}>{s.name}</div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="form-group">
+
+                        <div className="att-modal-body">
+                            {/* Date — CustomDatePicker matching Dashboard style */}
+                            <div className="att-form-group">
                                 <label>Date</label>
                                 <CustomDatePicker
-                                    value={form.date}
-                                    onChange={(v) => setForm({ ...form, date: v })}
-                                    placeholder="Select date"
+                                    value={holidayForm.date}
+                                    onChange={(val) => setHolidayForm(prev => ({ ...prev, date: val }))}
+                                    placeholder="Select holiday date"
+                                    max={maxDateStr}
                                 />
                             </div>
-                            <div className="form-group">
-                                <label>Status</label>
-                                <div className="dishes-dropdown-wrapper">
-                                    <button type="button" className="dishes-status-dropdown" onClick={e => { e.stopPropagation(); setOpenDropdown(p => p === "status" ? null : "status"); }}>
-                                        {form.status || "Select Status"}
-                                    </button>
-                                    {openDropdown === "status" && (
-                                        <div className="dishes-dropdown-menu">
-                                            {["Scheduled", "Completed", "Pending"].map(st => (
-                                                <div key={st} onClick={e => { e.stopPropagation(); setForm({ ...form, status: st }); setOpenDropdown(null); }}>{st}</div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label>Response (Days)</label>
-                                <div className="dishes-dropdown-wrapper">
-                                    <button type="button" className="dishes-status-dropdown" onClick={e => { e.stopPropagation(); setOpenDropdown(p => p === "rate" ? null : "rate"); }}>
-                                        {form.lastRate !== "" ? `${form.lastRate} Days` : "Select Days"}
-                                    </button>
-                                    {openDropdown === "rate" && (
-                                        <div className="dishes-dropdown-menu">
-                                            {[0, 1, 2, 3].map(day => (
-                                                <div key={day} onClick={e => { e.stopPropagation(); setForm({ ...form, lastRate: String(day) }); setOpenDropdown(null); }}>{day} Days</div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+
+                            {/* Reason */}
+                            <div className="att-form-group">
+                                <label>Reason / Name</label>
+                                <input
+                                    placeholder="e.g. Diwali, Republic Day…"
+                                    value={holidayForm.reason}
+                                    onChange={(e) => setHolidayForm(prev => ({ ...prev, reason: e.target.value }))}
+                                />
                             </div>
                         </div>
-                        <div className="category-modal-footer">
-                            <div className="form-actions">
-                                <button type="submit">Save Schedule</button>
-                                <button type="button" onClick={cancel}>Cancel</button>
-                            </div>
+
+                        <div className="att-modal-footer">
+                            <button className="att-btn-primary" onClick={addHoliday}>Save Holiday</button>
+                            <button className="att-btn-secondary" onClick={() => setShowHolidayModal(false)}>Cancel</button>
                         </div>
-                    </form>
+                    </div>
                 </div>
             )}
         </div>

@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import "./Celebrations.css";
 import { useToast } from "../../useToast";
+import { CustomTimePicker } from "../../components/CustomTimePicker";
+import { CustomDatePicker } from "../../components/CustomDatePicker";
 
 const pad = (n) => String(n).padStart(2, "0");
 const todayStr = () => new Date().toISOString().split("T")[0];
@@ -36,123 +38,6 @@ const DECORATION_PRICES = { normal: 1500, elegant: 3000, luxury: 5000 };
 const SOURCE_OPTIONS = ["User App", "WhatsApp", "Phone", "In Person"];
 
 
-/* ══════════════════════════════════════
-   Clock Time Picker (reused from Reservations)
-══════════════════════════════════════ */
-const ClockTimePicker = ({ value, onChange, disabled }) => {
-  const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState("hour");
-  const ref = useRef(null);
-  const svgRef = useRef(null);
-
-  const parseTime = (v) => {
-    if (!v) return { h: 12, m: 0, ampm: "PM" };
-    const [hh, mm] = v.split(":").map(Number);
-    return { h: hh % 12 || 12, m: mm, ampm: hh >= 12 ? "PM" : "AM" };
-  };
-  const selRef = useRef(parseTime(value));
-  const [sel, setSel] = useState(parseTime(value));
-  const lastEmitted = useRef(value);
-  useEffect(() => {
-    if (value && value !== lastEmitted.current) { const p = parseTime(value); selRef.current = p; setSel(p); }
-  }, [value]);
-  const to24 = (h, m, ampm) => { let hh = ampm === "PM" ? (h === 12 ? 12 : h + 12) : (h === 12 ? 0 : h); return `${pad(hh)}:${pad(m)}`; };
-  useEffect(() => {
-    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) { setOpen(false); setMode("hour"); } };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, []);
-
-  const CLOCK_R = 100, CENTER = 110, HOUR_R = 78, MIN_R = 78;
-  const hours12 = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-  const minutes = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
-  const hourAngle = (h) => ((h % 12) / 12) * 360 - 90;
-  const minAngle = (m) => (m / 60) * 360 - 90;
-  const polarToXY = (angle, r) => ({ x: CENTER + r * Math.cos((angle * Math.PI) / 180), y: CENTER + r * Math.sin((angle * Math.PI) / 180) });
-  const emit = (ns) => { const v = to24(ns.h, ns.m, ns.ampm); lastEmitted.current = v; onChange(v); };
-  const selectHour = (h) => { const ns = { ...selRef.current, h }; selRef.current = ns; setSel(ns); emit(ns); setTimeout(() => setMode("minute"), 200); };
-  const selectMinute = (m) => { const ns = { ...selRef.current, m }; selRef.current = ns; setSel(ns); emit(ns); setTimeout(() => { setOpen(false); setMode("hour"); }, 200); };
-  const toggleAmpm = (ap) => { const ns = { ...selRef.current, ampm: ap }; selRef.current = ns; setSel(ns); emit(ns); };
-  const isDragging = useRef(false);
-  const modeRef = useRef(mode);
-  useEffect(() => { modeRef.current = mode; }, [mode]);
-
-  const getAngleFromEvent = (e) => {
-    if (!svgRef.current) return null;
-    const rect = svgRef.current.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    const angle = Math.atan2(clientY - rect.top - CENTER, clientX - rect.left - CENTER) * (180 / Math.PI) + 90;
-    return ((angle % 360) + 360) % 360;
-  };
-
-  const applyAngle = (norm) => {
-    if (modeRef.current === "hour") {
-      const h = Math.round(norm / 30) % 12 || 12;
-      const ns = { ...selRef.current, h }; selRef.current = ns; setSel(ns); emit(ns);
-    } else {
-      const snapped = Math.round(Math.round(norm / 6) % 60 / 5) * 5 % 60;
-      const ns = { ...selRef.current, m: snapped }; selRef.current = ns; setSel(ns); emit(ns);
-    }
-  };
-
-  const handleSvgMouseDown = (e) => { e.preventDefault(); isDragging.current = true; const n = getAngleFromEvent(e); if (n !== null) applyAngle(n); };
-  const handleSvgTouchStart = (e) => { isDragging.current = true; const n = getAngleFromEvent(e); if (n !== null) applyAngle(n); };
-
-  useEffect(() => {
-    const onMM = (e) => { if (!isDragging.current) return; const n = getAngleFromEvent(e); if (n !== null) applyAngle(n); };
-    const onMU = () => { if (!isDragging.current) return; isDragging.current = false; if (modeRef.current === "hour") setTimeout(() => setMode("minute"), 150); else setTimeout(() => { setOpen(false); setMode("hour"); }, 150); };
-    const onTM = (e) => { if (!isDragging.current) return; e.preventDefault(); const n = getAngleFromEvent(e); if (n !== null) applyAngle(n); };
-    const onTE = () => { if (!isDragging.current) return; isDragging.current = false; if (modeRef.current === "hour") setTimeout(() => setMode("minute"), 150); else setTimeout(() => { setOpen(false); setMode("hour"); }, 150); };
-    window.addEventListener("mousemove", onMM);
-    window.addEventListener("mouseup", onMU);
-    window.addEventListener("touchmove", onTM, { passive: false });
-    window.addEventListener("touchend", onTE);
-    return () => { window.removeEventListener("mousemove", onMM); window.removeEventListener("mouseup", onMU); window.removeEventListener("touchmove", onTM); window.removeEventListener("touchend", onTE); };
-  }, []);
-  const displayVal = value ? (() => { const [hh, mm] = value.split(":").map(Number); return `${hh % 12 || 12}:${pad(mm)} ${hh >= 12 ? "PM" : "AM"}`; })() : "Select time";
-  const handAngle = mode === "hour" ? hourAngle(sel.h) : minAngle(sel.m);
-  const handTip = polarToXY(handAngle, mode === "hour" ? HOUR_R - 14 : MIN_R - 14);
-
-  return (
-    <div className="ctp-wrap" ref={ref}>
-      <button type="button" className={`ctp-trigger${disabled ? " ctp-disabled" : ""}`} onClick={() => !disabled && setOpen(o => !o)}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-        <span className={`ctp-val${!value ? " ctp-placeholder" : ""}`}>{displayVal}</span>
-        <span style={{ marginLeft: "auto", opacity: .4, fontSize: 11 }}>▾</span>
-      </button>
-      {open && !disabled && (
-        <div className="ctp-popup">
-          <div className="ctp-header">
-            <div className="ctp-ampm-col">
-              <button type="button" className={`ctp-ampm-btn${sel.ampm === "AM" ? " active" : ""}`} onClick={() => toggleAmpm("AM")}>AM</button>
-              <button type="button" className={`ctp-ampm-btn${sel.ampm === "PM" ? " active" : ""}`} onClick={() => toggleAmpm("PM")}>PM</button>
-            </div>
-            <div className="ctp-time-display">
-              <span className={`ctp-hm-btn${mode === "hour" ? " active" : ""}`} onClick={() => setMode("hour")}>{pad(sel.h)}</span>
-              <span className="ctp-colon">:</span>
-              <span className={`ctp-hm-btn${mode === "minute" ? " active" : ""}`} onClick={() => setMode("minute")}>{pad(sel.m)}</span>
-            </div>
-          </div>
-          <svg ref={svgRef} width={CENTER * 2} height={CENTER * 2} className="ctp-clock-svg"
-            onMouseDown={handleSvgMouseDown} onTouchStart={handleSvgTouchStart} style={{ touchAction: "none", cursor: "crosshair" }}>
-            <circle cx={CENTER} cy={CENTER} r={CLOCK_R} fill="#f8f9fa" stroke="#e5e7eb" strokeWidth="1.5" />
-            <line x1={CENTER} y1={CENTER} x2={handTip.x} y2={handTip.y} stroke="#1dd1a1" strokeWidth="2.5" strokeLinecap="round" />
-            <circle cx={CENTER} cy={CENTER} r="4" fill="#1dd1a1" />
-            <circle cx={handTip.x} cy={handTip.y} r="16" fill="#1dd1a1" opacity="0.18" />
-            <circle cx={handTip.x} cy={handTip.y} r="4" fill="#1dd1a1" />
-            {mode === "hour" && hours12.map(h => { const ang = hourAngle(h); const pos = polarToXY(ang, HOUR_R); const isSel = sel.h === h; return (<g key={h} onClick={() => selectHour(h)} style={{ cursor: "pointer" }}><circle cx={pos.x} cy={pos.y} r="16" fill={isSel ? "#1dd1a1" : "transparent"} /><text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central" fontSize="13" fontWeight={isSel ? "700" : "400"} fill={isSel ? "#fff" : "#333"}>{h}</text></g>); })}
-            {mode === "minute" && minutes.map(m => { const ang = minAngle(m); const pos = polarToXY(ang, MIN_R); const isSel = sel.m === m; return (<g key={m} onClick={() => selectMinute(m)} style={{ cursor: "pointer" }}><circle cx={pos.x} cy={pos.y} r="16" fill={isSel ? "#1dd1a1" : "transparent"} /><text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight={isSel ? "700" : "400"} fill={isSel ? "#fff" : "#333"}>{pad(m)}</text></g>); })}
-          </svg>
-          <div className="ctp-footer">
-            <button type="button" className="ctp-cancel-btn" onClick={() => { setOpen(false); setMode("hour"); }}>Cancel</button>
-            <button type="button" className="ctp-ok-btn" onClick={() => { onChange(to24(sel.h, sel.m, sel.ampm)); setOpen(false); setMode("hour"); }}>OK</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 const EMPTY_FORM = {
   type: "birthday",
@@ -169,117 +54,6 @@ const EMPTY_FORM = {
   specialNote: "",
   source: "Phone",
   status: "pending",
-};
-
-/* ══════════════════════════════════════
-   Custom Date Picker
-══════════════════════════════════════ */
-const MONTHS_CDP = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-const CustomDatePicker = ({ value, onChange, min, placeholder = "Select date" }) => {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  const parsed = value ? new Date(value) : new Date();
-  const [view, setView] = useState("day");
-  const [calYear, setCalYear] = useState(parsed.getFullYear());
-  const [calMonth, setCalMonth] = useState(parsed.getMonth());
-
-  useEffect(() => {
-    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, []);
-
-  useEffect(() => {
-    if (value) { const p = new Date(value); setCalYear(p.getFullYear()); setCalMonth(p.getMonth()); }
-  }, [value]);
-
-  const minD = min ? new Date(min + "T00:00:00") : null;
-  const firstDay = new Date(calYear, calMonth, 1).getDay();
-  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-  const cells = [];
-  for (let i = 0; i < firstDay; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-
-  const select = (d) => { onChange(`${calYear}-${pad(calMonth + 1)}-${pad(d)}`); setOpen(false); };
-  const isDisabled = (d) => {
-    if (!minD) return false;
-    return new Date(`${calYear}-${pad(calMonth + 1)}-${pad(d)}T00:00:00`) < minD;
-  };
-  const displayVal = value
-    ? new Date(value).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
-    : placeholder;
-  const yearRange = Array.from({ length: 20 }, (_, i) => calYear - 5 + i);
-
-  return (
-    <div className="res-wrap" ref={ref} style={{ position: "relative", display: "block" }}>
-      <button type="button" className="res-trigger evt-res-res-trigger"
-        onClick={() => { setOpen(o => !o); setView("day"); }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" />
-          <line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-        </svg>
-        <span className="res-val">{displayVal}</span>
-        <span style={{ marginLeft: "auto", opacity: .4, fontSize: 11 }}>▾</span>
-      </button>
-      {open && (
-        <div className="res-popup" style={{ zIndex: 9999 }}>
-          <div className="res-nav">
-            <button type="button" className="res-nav-btn" onClick={() => {
-              if (view === "day") { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); } else setCalMonth(m => m - 1); }
-              else if (view === "year") setCalYear(y => y - 20);
-            }}>‹</button>
-            <div className="res-nav-center">
-              {view === "day" && (<>
-                <button type="button" className="res-nav-lbl" onClick={() => setView("month")}>{MONTHS_CDP[calMonth]}</button>
-                <button type="button" className="res-nav-lbl" onClick={() => setView("year")}>{calYear}</button>
-              </>)}
-              {view === "month" && <button type="button" className="res-nav-lbl" onClick={() => setView("year")}>{calYear}</button>}
-              {view === "year" && <span className="res-nav-lbl">{calYear - 5} – {calYear + 14}</span>}
-            </div>
-            <button type="button" className="res-nav-btn" onClick={() => {
-              if (view === "day") { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); } else setCalMonth(m => m + 1); }
-              else if (view === "year") setCalYear(y => y + 20);
-            }}>›</button>
-          </div>
-          {view === "day" && (<>
-            <div className="res-weekdays">{["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => <span key={d}>{d}</span>)}</div>
-            <div className="res-grid">
-              {cells.map((d, i) => {
-                if (!d) return <span key={i} />;
-                const ds = `${calYear}-${pad(calMonth + 1)}-${pad(d)}`;
-                const sel = ds === value, dis = isDisabled(d), tod = ds === todayStr();
-                return (
-                  <button type="button" key={i}
-                    className={`res-day${sel ? " res-sel" : ""}${dis ? " res-dis" : ""}${tod && !sel ? " res-today" : ""}`}
-                    disabled={dis} onClick={() => select(d)}>{d}
-                  </button>
-                );
-              })}
-            </div>
-          </>)}
-          {view === "month" && (
-            <div className="res-month-grid">
-              {MONTHS_CDP.map((m, i) => (
-                <button type="button" key={i}
-                  className={`res-month-btn${i === calMonth ? " res-sel" : ""}`}
-                  onClick={() => { setCalMonth(i); setView("day"); }}>{m.slice(0, 3)}</button>
-              ))}
-            </div>
-          )}
-          {view === "year" && (
-            <div className="res-year-grid">
-              {yearRange.map(y => (
-                <button type="button" key={y}
-                  className={`res-year-btn${y === calYear ? " res-sel" : ""}`}
-                  onClick={() => { setCalYear(y); setView("month"); }}>{y}</button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
 };
 
 /* ══════════════════════════════════════
@@ -673,7 +447,7 @@ const Celebrations = ({ adminData, setAdminData }) => {
                 </div>
                 <div className="form-group" style={{ flex: 1 }}>
                   <label>Time <span className="evt-res-req">*</span></label>
-                  <ClockTimePicker value={form.time} onChange={v => setF("time", v)} />
+                  <CustomTimePicker value={form.time} onChange={v => setF("time", v)} />
                   {formErrors.time && <span className="evt-res-form-error">{formErrors.time}</span>}
                 </div>
               </div>

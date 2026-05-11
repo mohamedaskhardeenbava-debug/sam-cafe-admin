@@ -3,7 +3,7 @@ import "./Offers.css";
 import api from "../api";
 import { useNavigate } from "react-router-dom";
 import { formatDisplayDate } from "../App";
-import { CustomDatePicker, todayStr } from "../components/Customdatepicker";
+import { CustomDatePicker, todayStr } from "../components/CustomDatePicker";
 
 const Offers = ({ adminData, setAdminData }) => {
     const [showModal, setShowModal] = useState(false);

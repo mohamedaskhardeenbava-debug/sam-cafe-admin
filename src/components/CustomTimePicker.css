@@ -1,0 +1,241 @@
+/* ═══════════════════════════════════════════════════════
+   CustomTimePicker.css
+   Clock-face time picker — styled to match CelebrationForm
+   (var(--color-red) accent, clp-style popup + header)
+═══════════════════════════════════════════════════════ */
+
+/* ── Wrapper ── */
+.ctp-wrap {
+    position: relative;
+    display: block;
+    width: 100%;
+}
+
+/* ── Trigger button — matches .clp-cdp-trigger ── */
+.ctp-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    height: 44px;
+    padding: 0 14px;
+    border-radius: 10px;
+    border: 1.5px solid #e5e7eb;
+    background: #f9f9f9;
+    font-size: 14px;
+    color: var(--text-primary, #111);
+    cursor: pointer;
+    transition: all 0.18s;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.ctp-trigger:hover:not(.ctp-disabled) {
+    border-color: #111;
+    background: #fff;
+}
+
+.ctp-trigger:focus:not(.ctp-disabled) {
+    outline: none;
+    border-color: var(--color-red, #e74c3c);
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+    background: #fff;
+}
+
+.ctp-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Value / placeholder text */
+.ctp-val {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary, #111);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ctp-ph {
+    color: #aaa;
+    font-weight: 400;
+}
+
+/* Chevron */
+.ctp-arrow {
+    margin-left: auto;
+    font-size: 12px;
+    opacity: 0.4;
+    flex-shrink: 0;
+}
+
+/* ── Popup ── */
+.ctp-popup {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 9999;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+    padding: 0 0 12px;
+    width: 260px;
+    overflow: hidden;
+    animation: ctpFadeIn 0.18s ease;
+}
+
+@keyframes ctpFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Header — red background, matches .clp-ctp-header ── */
+.ctp-header {
+    background: var(--color-red, #e74c3c);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* AM / PM column */
+.ctp-ampm-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ctp-ampm-btn {
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    letter-spacing: 0.3px;
+}
+
+.ctp-ampm-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    color: #fff;
+}
+
+.ctp-ampm-btn.active {
+    background: rgba(255, 255, 255, 0.4);
+    color: #fff;
+}
+
+/* Digital time display */
+.ctp-time-display {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 auto 0 8px;
+}
+
+.ctp-hm {
+    font-size: 30px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 8px;
+    transition: all 0.15s;
+    line-height: 1;
+}
+
+.ctp-hm.active {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.ctp-hm:hover {
+    color: #fff;
+}
+
+.ctp-colon {
+    font-size: 28px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1;
+}
+
+/* ── Slot hint strip (below header, above clock) ── */
+.ctp-slot-hint {
+    font-size: 11px;
+    color: #888;
+    background: #f8f8f8;
+    border-bottom: 1px solid #f0f0f0;
+    padding: 5px 16px;
+    text-align: center;
+    font-weight: 500;
+}
+
+/* ── SVG clock face ── */
+.ctp-clock {
+    display: block;
+    margin: 8px auto 0;
+    cursor: crosshair;
+}
+
+/* ── Footer — matches .clp-ctp-footer ── */
+.ctp-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 8px 16px 0;
+}
+
+.ctp-cancel {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: none;
+    background: #f0f0f0;
+    color: #666;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: inherit;
+}
+
+.ctp-cancel:hover {
+    background: #e5e5e5;
+}
+
+.ctp-ok {
+    padding: 6px 18px;
+    border-radius: 8px;
+    border: none;
+    background: var(--color-red, #e74c3c);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: inherit;
+}
+
+.ctp-ok:hover {
+    background: color-mix(in srgb, var(--color-red, #e74c3c) 85%, #000);
+    filter: brightness(0.92);
+}
+
+/* ── Error wrapper ── */
+.cdp-error-wrap .ctp-trigger {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}

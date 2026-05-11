@@ -2,6 +2,8 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import "./Events.css";
 import api from "../../api";
 import { useToast } from "../../useToast";
+import { CustomTimePicker } from "../../components/CustomTimePicker";
+import { CustomDatePicker } from "../../components/CustomDatePicker";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const generateId = (name) =>
@@ -13,6 +15,11 @@ const formatDate = (iso) => {
         day: "2-digit", month: "short", year: "numeric",
     });
 };
+
+const buildAddress = (f) => [
+    f.addrDoorNo, f.addrStreet, f.addrArea,
+    f.addrLandmark, f.addrCity, f.addrState, f.addrPincode,
+].filter(Boolean).join(", ");
 
 const STATUS_COLORS = {
     upcoming: "#2563eb",
@@ -56,6 +63,7 @@ const EMPTY_FORM = {
     isPublished: true,
     highlights: [],
     dishes: [],
+    dishQty: {},
     selectedCategory: "",
 };
 
@@ -65,6 +73,13 @@ const EMPTY_SPEC_FORM = {
     date: "",
     time: "",
     venue: "",
+    addrDoorNo: "",
+    addrStreet: "",
+    addrArea: "",
+    addrLandmark: "",
+    addrCity: "",
+    addrState: "",
+    addrPincode: "",
     guests: 100,
     selectedCategory: "",
     description: "",
@@ -74,6 +89,7 @@ const EMPTY_SPEC_FORM = {
     tags: [],
     highlights: [],
     dishes: [],
+    dishQty: {},
     status: "upcoming",
     isPublished: true,
 };
@@ -90,173 +106,6 @@ const EVENT_CATEGORIES = [
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const pad = (n) => String(n).padStart(2, "0");
 const todayStr = () => new Date().toISOString().split("T")[0];
-const MONTHS_CDP = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-// ─── CustomDatePicker ────────────────────────────────────────────────────────
-const CustomDatePicker = ({ value, onChange, min, max, label }) => {
-    const [open, setOpen] = React.useState(false);
-    const ref = React.useRef(null);
-    const parsed = value ? new Date(value) : new Date();
-    const [view, setView] = React.useState("day");
-    const [calYear, setCalYear] = React.useState(parsed.getFullYear());
-    const [calMonth, setCalMonth] = React.useState(parsed.getMonth());
-    
-    useEffect(() => {
-        const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-        document.addEventListener("mousedown", h);
-        return () => document.removeEventListener("mousedown", h);
-    }, []);
-    const minD = min ? new Date(min) : null;
-    const maxD = max ? new Date(max) : null;
-    const firstDay = new Date(calYear, calMonth, 1).getDay();
-    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-    const cells = [];
-    for (let i = 0; i < firstDay; i++) cells.push(null);
-    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-    const select = (d) => {
-        const s = `${calYear}-${pad(calMonth + 1)}-${pad(d)}`;
-        onChange(s); setOpen(false);
-    };
-    const isDisabled = (d) => {
-        const ds = new Date(`${calYear}-${pad(calMonth + 1)}-${pad(d)}T00:00:00`);
-        if (minD && ds < minD) return true;
-        if (maxD && ds > maxD) return true;
-        return false;
-    };
-    const displayVal = value
-        ? new Date(value).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
-        : label || "Select date";
-    const yearRange = Array.from({ length: 20 }, (_, i) => calYear - 5 + i);
-    return (
-        <div className="evt-wrap" ref={ref} style={{ position: "relative", display: "block" }}>
-            <button type="button" className="evt-trigger evt-res-evt-trigger" onClick={() => { setOpen(o => !o); setView("day"); if (value) { const p = new Date(value); setCalYear(p.getFullYear()); setCalMonth(p.getMonth()); } }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
-                <span className="evt-val">{displayVal}</span>
-                <span style={{ marginLeft: "auto", opacity: .4, fontSize: 11 }}>▾</span>
-            </button>
-            {open && (
-                <div className="evt-popup" style={{ zIndex: 9999 }}>
-                    <div className="evt-nav">
-                        <button type="button" className="evt-nav-btn" onClick={() => { if (view === "day") { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); } else setCalMonth(m => m - 1); } else if (view === "year") setCalYear(y => y - 20); }}>‹</button>
-                        <div className="evt-nav-center">
-                            {view === "day" && <><button type="button" className="evt-nav-lbl" onClick={() => setView("month")}>{MONTHS_CDP[calMonth]}</button><button type="button" className="evt-nav-lbl" onClick={() => setView("year")}>{calYear}</button></>}
-                            {view === "month" && <button type="button" className="evt-nav-lbl" onClick={() => setView("year")}>{calYear}</button>}
-                            {view === "year" && <span className="evt-nav-lbl">{calYear - 5} – {calYear + 14}</span>}
-                        </div>
-                        <button type="button" className="evt-nav-btn" onClick={() => { if (view === "day") { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); } else setCalMonth(m => m + 1); } else if (view === "year") setCalYear(y => y + 20); }}>›</button>
-                    </div>
-                    {view === "day" && (<>
-                        <div className="evt-weekdays">{["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => <span key={d}>{d}</span>)}</div>
-                        <div className="evt-grid">
-                            {cells.map((d, i) => {
-                                if (!d) return <span key={i} />;
-                                const ds = `${calYear}-${pad(calMonth + 1)}-${pad(d)}`;
-                                const sel = ds === value, dis = isDisabled(d), tod = ds === todayStr();
-                                return <button type="button" key={i} className={`evt-day${sel ? " evt-sel" : ""}${dis ? " evt-dis" : ""}${tod && !sel ? " evt-today" : ""}`} disabled={dis} onClick={() => select(d)}>{d}</button>;
-                            })}
-                        </div>
-                    </>)}
-                    {view === "month" && (
-                        <div className="evt-month-grid">
-                            {MONTHS_CDP.map((m, i) => <button type="button" key={i} className={`evt-month-btn${i === calMonth ? " evt-sel" : ""}`} onClick={() => { setCalMonth(i); setView("day"); }}>{m.slice(0, 3)}</button>)}
-                        </div>
-                    )}
-                    {view === "year" && (
-                        <div className="evt-year-grid">
-                            {yearRange.map(y => <button type="button" key={y} className={`evt-year-btn${y === calYear ? " evt-sel" : ""}`} onClick={() => { setCalYear(y); setView("month"); }}>{y}</button>)}
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-};
-
-// ─── ClockTimePicker ─────────────────────────────────────────────────────────
-const ClockTimePicker = ({ value, onChange, disabled }) => {
-    const [open, setOpen] = React.useState(false);
-    const [mode, setMode] = React.useState("hour");
-    const ref = React.useRef(null);
-    const svgRef = React.useRef(null);
-    const parseTime = (v) => {
-        if (!v) return { h: 12, m: 0, ampm: "PM" };
-        const [hh, mm] = v.split(":").map(Number);
-        return { h: hh % 12 || 12, m: mm, ampm: hh >= 12 ? "PM" : "AM" };
-    };
-    const [sel, setSel] = React.useState(parseTime(value));
-    useEffect(() => { if (value) setSel(parseTime(value)); }, [value]);
-    const to24 = (h, m, ampm) => {
-        let hh = ampm === "PM" ? (h === 12 ? 12 : h + 12) : (h === 12 ? 0 : h);
-        return `${pad(hh)}:${pad(m)}`;
-    };
-    useEffect(() => {
-        const h = (e) => { if (ref.current && !ref.current.contains(e.target)) { setOpen(false); setMode("hour"); } };
-        document.addEventListener("mousedown", h);
-        return () => document.removeEventListener("mousedown", h);
-    }, []);
-    const CLOCK_R = 100; const CENTER = 110; const HOUR_R = 78; const MIN_R = 78;
-    const hours12 = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-    const minutes = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
-    const hourAngle = (h) => ((h % 12) / 12) * 360 - 90;
-    const minAngle = (m) => (m / 60) * 360 - 90;
-    const polarToXY = (angle, r) => ({ x: CENTER + r * Math.cos((angle * Math.PI) / 180), y: CENTER + r * Math.sin((angle * Math.PI) / 180) });
-    const selectHour = (h) => { setSel(p => { const ns = { ...p, h }; onChange(to24(ns.h, ns.m, ns.ampm)); return ns; }); setTimeout(() => setMode("minute"), 200); };
-    const selectMinute = (m) => { setSel(p => { const ns = { ...p, m }; onChange(to24(ns.h, ns.m, ns.ampm)); return ns; }); setTimeout(() => { setOpen(false); setMode("hour"); }, 200); };
-    const toggleAmpm = (ap) => { setSel(p => { const ns = { ...p, ampm: ap }; onChange(to24(ns.h, ns.m, ns.ampm)); return ns; }); };
-    const handleSvgDrag = (e) => {
-        const svg = svgRef.current; if (!svg) return;
-        const rect = svg.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        const x = clientX - rect.left - CENTER; const y = clientY - rect.top - CENTER;
-        const angle = Math.atan2(y, x) * (180 / Math.PI) + 90;
-        const norm = ((angle % 360) + 360) % 360;
-        if (mode === "hour") { const h = Math.round(norm / 30) % 12 || 12; setSel(p => { const ns = { ...p, h }; onChange(to24(ns.h, ns.m, ns.ampm)); return ns; }); }
-        else { const m = Math.round(norm / 6) % 60; const snapped = Math.round(m / 5) * 5 % 60; setSel(p => { const ns = { ...p, m: snapped }; onChange(to24(ns.h, ns.m, ns.ampm)); return ns; }); }
-    };
-    const displayVal = value ? (() => { const [hh, mm] = value.split(":").map(Number); return `${hh % 12 || 12}:${pad(mm)} ${hh >= 12 ? "PM" : "AM"}`; })() : "Select time";
-    const handAngle = mode === "hour" ? hourAngle(sel.h) : minAngle(sel.m);
-    const handR = mode === "hour" ? HOUR_R - 14 : MIN_R - 14;
-    const handTip = polarToXY(handAngle, handR);
-    return (
-        <div className="ctp-wrap" ref={ref}>
-            <button type="button" className={`ctp-trigger${disabled ? " ctp-disabled" : ""}`} onClick={() => !disabled && setOpen(o => !o)}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                <span className={`ctp-val${!value ? " ctp-placeholder" : ""}`}>{displayVal}</span>
-                <span style={{ marginLeft: "auto", opacity: .4, fontSize: 11 }}>▾</span>
-            </button>
-            {open && !disabled && (
-                <div className="ctp-popup">
-                    <div className="ctp-header">
-                        <div className="ctp-ampm-col">
-                            <button type="button" className={`ctp-ampm-btn${sel.ampm === "AM" ? " active" : ""}`} onClick={() => toggleAmpm("AM")}>AM</button>
-                            <button type="button" className={`ctp-ampm-btn${sel.ampm === "PM" ? " active" : ""}`} onClick={() => toggleAmpm("PM")}>PM</button>
-                        </div>
-                        <div className="ctp-time-display">
-                            <span className={`ctp-hm-btn${mode === "hour" ? " active" : ""}`} onClick={() => setMode("hour")}>{pad(sel.h)}</span>
-                            <span className="ctp-colon">:</span>
-                            <span className={`ctp-hm-btn${mode === "minute" ? " active" : ""}`} onClick={() => setMode("minute")}>{pad(sel.m)}</span>
-                        </div>
-                    </div>
-                    <svg ref={svgRef} width={CENTER * 2} height={CENTER * 2} className="ctp-clock-svg"
-                        onMouseMove={(e) => e.buttons === 1 && handleSvgDrag(e)} onTouchMove={handleSvgDrag} style={{ touchAction: "none" }}>
-                        <circle cx={CENTER} cy={CENTER} r={CLOCK_R} fill="#f8f9fa" stroke="#e5e7eb" strokeWidth="1.5" />
-                        <line x1={CENTER} y1={CENTER} x2={handTip.x} y2={handTip.y} stroke="#1dd1a1" strokeWidth="2.5" strokeLinecap="round" />
-                        <circle cx={CENTER} cy={CENTER} r="4" fill="#1dd1a1" />
-                        <circle cx={handTip.x} cy={handTip.y} r="16" fill="#1dd1a1" opacity="0.18" />
-                        <circle cx={handTip.x} cy={handTip.y} r="4" fill="#1dd1a1" />
-                        {mode === "hour" && hours12.map((h) => { const ang = hourAngle(h); const pos = polarToXY(ang, HOUR_R); const isSel = sel.h === h; return (<g key={h} onClick={() => selectHour(h)} style={{ cursor: "pointer" }}><circle cx={pos.x} cy={pos.y} r="16" fill={isSel ? "#1dd1a1" : "transparent"} /><text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central" fontSize="13" fontWeight={isSel ? "700" : "400"} fill={isSel ? "#fff" : "#333"}>{h}</text></g>); })}
-                        {mode === "minute" && minutes.map((m) => { const ang = minAngle(m); const pos = polarToXY(ang, MIN_R); const isSel = sel.m === m; return (<g key={m} onClick={() => selectMinute(m)} style={{ cursor: "pointer" }}><circle cx={pos.x} cy={pos.y} r="16" fill={isSel ? "#1dd1a1" : "transparent"} /><text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight={isSel ? "700" : "400"} fill={isSel ? "#fff" : "#333"}>{pad(m)}</text></g>); })}
-                    </svg>
-                    <div className="ctp-footer">
-                        <button type="button" className="ctp-cancel-btn" onClick={() => { setOpen(false); setMode("hour"); }}>Cancel</button>
-                        <button type="button" className="ctp-ok-btn" onClick={() => { onChange(to24(sel.h, sel.m, sel.ampm)); setOpen(false); setMode("hour"); }}>OK</button>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 const Events = ({ adminData, setAdminData }) => {
@@ -586,18 +435,44 @@ const Events = ({ adminData, setAdminData }) => {
         if (isSpec) {
             setSpecFormData(p => {
                 const dishes = p.dishes || [];
-                return { ...p, dishes: dishes.includes(dishId) ? dishes.filter(d => d !== dishId) : [...dishes, dishId] };
+                const dishQty = { ...(p.dishQty || {}) };
+                if (dishes.includes(dishId)) {
+                    delete dishQty[dishId];
+                    return { ...p, dishes: dishes.filter(d => d !== dishId), dishQty };
+                }
+                dishQty[dishId] = 1;
+                return { ...p, dishes: [...dishes, dishId], dishQty };
             });
         } else {
             setFormData(p => {
                 const dishes = p.dishes || [];
-                return { ...p, dishes: dishes.includes(dishId) ? dishes.filter(d => d !== dishId) : [...dishes, dishId] };
+                const dishQty = { ...(p.dishQty || {}) };
+                if (dishes.includes(dishId)) {
+                    delete dishQty[dishId];
+                    return { ...p, dishes: dishes.filter(d => d !== dishId), dishQty };
+                }
+                dishQty[dishId] = 1;
+                return { ...p, dishes: [...dishes, dishId], dishQty };
+            });
+        }
+    };
+
+    const changeDishQty = (dishId, delta, isSpec = false) => {
+        if (isSpec) {
+            setSpecFormData(p => {
+                const qty = Math.max(1, ((p.dishQty || {})[dishId] || 1) + delta);
+                return { ...p, dishQty: { ...(p.dishQty || {}), [dishId]: qty } };
+            });
+        } else {
+            setFormData(p => {
+                const qty = Math.max(1, ((p.dishQty || {})[dishId] || 1) + delta);
+                return { ...p, dishQty: { ...(p.dishQty || {}), [dishId]: qty } };
             });
         }
     };
 
     // ── Category-based Dish Selector ──
-    const DishSelector = ({ selectedDishes, onToggle, activeCat, onCatChange, isSpec = false }) => {
+    const DishSelector = ({ selectedDishes, onToggle, activeCat, onCatChange, isSpec = false, hideSelectedTable = false, dishQty = {}, onQtyChange }) => {
         const categories = adminData?.categories || [];
         const catObj = categories.find(c => c.id === activeCat);
         let catDishes = [];
@@ -608,40 +483,68 @@ const Events = ({ adminData, setAdminData }) => {
                 });
             }
             (catObj.dishes || []).forEach(d => catDishes.push({ ...d, subCat: catObj.name }));
+        } else {
+            // No category selected → show all dishes across all categories
+            categories.forEach(cat => {
+                if (cat.subCategories?.length) {
+                    cat.subCategories.forEach(sub => {
+                        (sub.dishes || []).forEach(d => catDishes.push({ ...d, subCat: sub.name }));
+                    });
+                }
+                (cat.dishes || []).forEach(d => catDishes.push({ ...d, subCat: cat.name }));
+            });
         }
         const selectedDetails = (selectedDishes || []).map(id => allDishes.find(d => d.id === id)).filter(Boolean);
-        const dishesTotalPrice = selectedDetails.reduce((sum, d) => sum + Number(d.basePrice || 0), 0);
+        const dishesTotalPrice = selectedDetails.reduce((sum, d) => sum + Number(d.basePrice || 0) * (dishQty[d.id] || 1), 0);
+
+        const isSelected = (id) => (selectedDishes || []).includes(id);
 
         return (
             <div className="ae-dish-selector-v2">
-                <div className="ae-cat-checkbox-row">
-                    {categories.map(cat => (
-                        <label
-                            key={cat.id}
-                            className={`ae-cat-checkbox-btn ${activeCat === cat.id ? "active" : ""}`}
-                            onClick={() => onCatChange(cat.id)}
-                        >
-                            <input type="radio" name={isSpec ? "spec-dish-cat" : "dish-cat"} checked={activeCat === cat.id} onChange={() => onCatChange(cat.id)} style={{ display: "none" }} />
-                            {cat.name}
-                        </label>
-                    ))}
+                <div className="ae-cat-dropdown-wrap">
+                    <select
+                        className="ae-cat-dropdown"
+                        value={activeCat}
+                        onChange={e => onCatChange(e.target.value)}
+                    >
+                        <option value="">All Categories</option>
+                        {categories.map(cat => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                    </select>
+                    <span className="ae-cat-dropdown-arrow">▾</span>
                 </div>
 
-                {activeCat && catDishes.length > 0 && (
-                    <div className="ae-dish-list-v2">
-                        {catDishes.map(dish => (
-                            <label key={dish.id} className={`ae-dish-item ${(selectedDishes || []).includes(dish.id) ? "selected" : ""}`}>
-                                <input type="checkbox" checked={(selectedDishes || []).includes(dish.id)} onChange={() => onToggle(dish.id)} />
-                                <span className="ae-dish-name">{dish.name}</span>
-                                <span className="ae-dish-cat-tag">{dish.subCat}</span>
-                                <span className="ae-dish-price">₹{dish.basePrice}</span>
-                            </label>
-                        ))}
+                {catDishes.length > 0 && (
+                    <div className="act-dish-grid">
+                        {catDishes.map(dish => {
+                            const sel = isSelected(dish.id);
+                            const qty = dishQty[dish.id] || 1;
+                            return (
+                                <div key={dish.id} className={`act-dish-card${sel ? " selected" : ""}`}>
+                                    <div className="act-dish-info">
+                                        <span className="act-dish-name">{dish.name}</span>
+                                        {dish.subCat && <span className="act-dish-cat">{dish.subCat}</span>}
+                                        <span className="act-dish-price">₹{dish.basePrice}</span>
+                                    </div>
+                                    {sel ? (
+                                        <div className="act-dish-stepper">
+                                            <button type="button" onClick={() => onQtyChange(dish.id, -1)}>−</button>
+                                            <span>{qty}</span>
+                                            <button type="button" onClick={() => onQtyChange(dish.id, 1)}>+</button>
+
+                                        </div>
+                                    ) : (
+                                        <button type="button" className="act-dish-add-btn" onClick={() => onToggle(dish.id)}>+ Add</button>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
-                {activeCat && catDishes.length === 0 && <p className="ae-dish-empty">No dishes in this category.</p>}
+                {catDishes.length === 0 && <p className="ae-dish-empty" style={{ textAlign: "center", padding: "24px 0" }}>No dishes available.</p>}
 
-                {selectedDetails.length > 0 && (
+                {selectedDetails.length > 0 && !hideSelectedTable && (
                     <div className="ae-selected-dishes-table">
                         <div className="ae-sdt-header">
                             <span>Selected Menu Dishes</span>
@@ -649,7 +552,7 @@ const Events = ({ adminData, setAdminData }) => {
                         </div>
                         <table className="ae-sdt">
                             <thead>
-                                <tr><th>#</th><th>Dish</th><th>Category</th><th>Price</th><th></th></tr>
+                                <tr><th>#</th><th>Dish</th><th>Category</th><th>Qty</th><th>Price</th><th></th></tr>
                             </thead>
                             <tbody>
                                 {selectedDetails.map((d, i) => (
@@ -657,12 +560,13 @@ const Events = ({ adminData, setAdminData }) => {
                                         <td>{i + 1}</td>
                                         <td><div className="ae-sdt-dish"><span>{d.name}</span></div></td>
                                         <td className="ae-sdt-cat">{d.subCat || d.cat || "—"}</td>
-                                        <td className="ae-sdt-price">₹{Number(d.basePrice || 0).toLocaleString("en-IN")}</td>
+                                        <td style={{ textAlign: "center" }}>{dishQty[d.id] || 1}</td>
+                                        <td className="ae-sdt-price">₹{(Number(d.basePrice || 0) * (dishQty[d.id] || 1)).toLocaleString("en-IN")}</td>
                                         <td><button type="button" className="ae-sdt-remove" onClick={() => onToggle(d.id)} title="Remove">×</button></td>
                                     </tr>
                                 ))}
                                 <tr className="ae-sdt-total-row">
-                                    <td colSpan="3"><strong>Food Total</strong></td>
+                                    <td colSpan="4"><strong>Food Total</strong></td>
                                     <td colSpan="2"><strong>₹{dishesTotalPrice.toLocaleString("en-IN")}</strong></td>
                                 </tr>
                             </tbody>
@@ -924,7 +828,7 @@ const Events = ({ adminData, setAdminData }) => {
                                 </div>
                                 <div className="form-group">
                                     <label>Time</label>
-                                    <ClockTimePicker value={formData.time} onChange={(v) => setFormData((p) => ({ ...p, time: v }))} />
+                                    <CustomTimePicker value={formData.time} onChange={(v) => setFormData((p) => ({ ...p, time: v }))} />
                                 </div>
                             </div>
 
@@ -1008,7 +912,7 @@ const Events = ({ adminData, setAdminData }) => {
 
                             <div className="form-group">
                                 <label>Menu Dishes for this Event</label>
-                                <DishSelector selectedDishes={formData.dishes} onToggle={(id) => toggleDish(id, false)} activeCat={formData.selectedCategory || ""} onCatChange={(id) => setFormData(p => ({ ...p, selectedCategory: id }))} isSpec={false} />
+                                <DishSelector selectedDishes={formData.dishes} onToggle={(id) => toggleDish(id, false)} activeCat={formData.selectedCategory || ""} onCatChange={(id) => setFormData(p => ({ ...p, selectedCategory: id }))} isSpec={false} dishQty={formData.dishQty || {}} onQtyChange={(id, delta) => changeDishQty(id, delta, false)} />
                             </div>
 
                             <div className="form-group ae-publish-toggle">
@@ -1039,7 +943,7 @@ const Events = ({ adminData, setAdminData }) => {
                             <div>
                                 <h3>Create Event</h3>
                                 <div className="ae-spec-steps">
-                                    {["Event Details", "Packages & Add-ons", "Dishes & Summary"].map((s, i) => (
+                                    {["Event Details", "Packages & Add-ons", "Dishes", "Summary & Preview"].map((s, i) => (
                                         <button key={i} className={`ae-spec-step ${specFormStep === i + 1 ? "active" : ""} ${specFormStep > i + 1 ? "done" : ""}`} onClick={() => setSpecFormStep(i + 1)}>
                                             <span className="ae-step-num">{specFormStep > i + 1 ? "✓" : i + 1}</span>
                                             <span className="ae-step-label">{s}</span>
@@ -1050,7 +954,7 @@ const Events = ({ adminData, setAdminData }) => {
                             <button className="ingredient-close-btn" onClick={resetSpecForm} aria-label="Close" />
                         </div>
 
-                        <div className="event-modal-body ae-spec-form-body">
+                        <div className={`event-modal-body ae-spec-form-body${specFormStep === 3 ? " ae-spec-form-body--split" : ""}`}>
                             {/* STEP 1 */}
                             {specFormStep === 1 && (
                                 <>
@@ -1078,46 +982,42 @@ const Events = ({ adminData, setAdminData }) => {
                                         </div>
                                         <div className="form-group">
                                             <label>Time</label>
-                                            <ClockTimePicker value={specFormData.time} onChange={(v) => setSpecFormData(p => ({ ...p, time: v }))} />
+                                            <CustomTimePicker value={specFormData.time} onChange={(v) => setSpecFormData(p => ({ ...p, time: v }))} />
                                         </div>
                                     </div>
 
                                     <div className="form-group">
                                         <label>Venue / Address</label>
-
-                                        {/* Current Location Checkbox */}
-                                        <div style={{ marginBottom: "6px" }}>
-                                            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="checkbox"
-                                                    checked={useCurrentLocation}
-                                                    onChange={(e) => {
-                                                        const checked = e.target.checked;
-                                                        setUseCurrentLocation(checked);
-
-                                                        if (checked) {
-                                                            setSpecFormData(p => ({
-                                                                ...p,
-                                                                venue: "Sam Cafe, Lavanya complex"
-                                                            }));
-                                                        }
-                                                    }}
-                                                />
-                                                Use Current Location
-                                            </label>
+                                        <div className="ae-addr-grid">
+                                            <div className="ae-addr-field">
+                                                <label>Door No. <span className="ae-req">*</span></label>
+                                                <input type="text" value={specFormData.addrDoorNo} placeholder="Door / Flat No." onChange={e => { const v = e.target.value; setSpecFormData(p => ({ ...p, addrDoorNo: v, venue: buildAddress({ ...p, addrDoorNo: v }) })); }} />
+                                            </div>
+                                            <div className="ae-addr-field">
+                                                <label>Street <span className="ae-req">*</span></label>
+                                                <input type="text" value={specFormData.addrStreet} placeholder="Street / Road name" onChange={e => { const v = e.target.value; setSpecFormData(p => ({ ...p, addrStreet: v, venue: buildAddress({ ...p, addrStreet: v }) })); }} />
+                                            </div>
+                                            <div className="ae-addr-field">
+                                                <label>Area <span className="ae-req">*</span></label>
+                                                <input type="text" value={specFormData.addrArea} placeholder="Area / Locality" onChange={e => { const v = e.target.value; setSpecFormData(p => ({ ...p, addrArea: v, venue: buildAddress({ ...p, addrArea: v }) })); }} />
+                                            </div>
+                                            <div className="ae-addr-field">
+                                                <label>Landmark <span style={{ fontSize: 10, color: "#aaa" }}>(optional)</span></label>
+                                                <input type="text" value={specFormData.addrLandmark} placeholder="Near / opposite…" onChange={e => { const v = e.target.value; setSpecFormData(p => ({ ...p, addrLandmark: v, venue: buildAddress({ ...p, addrLandmark: v }) })); }} />
+                                            </div>
+                                            <div className="ae-addr-field">
+                                                <label>City <span className="ae-req">*</span></label>
+                                                <input type="text" value={specFormData.addrCity} placeholder="City" onChange={e => { const v = e.target.value; setSpecFormData(p => ({ ...p, addrCity: v, venue: buildAddress({ ...p, addrCity: v }) })); }} />
+                                            </div>
+                                            <div className="ae-addr-field">
+                                                <label>State <span className="ae-req">*</span></label>
+                                                <input type="text" value={specFormData.addrState} placeholder="State" onChange={e => { const v = e.target.value; setSpecFormData(p => ({ ...p, addrState: v, venue: buildAddress({ ...p, addrState: v }) })); }} />
+                                            </div>
+                                            <div className="ae-addr-field">
+                                                <label>Pincode <span className="ae-req">*</span></label>
+                                                <input type="text" value={specFormData.addrPincode} placeholder="6-digit pincode" maxLength={6} onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 6); setSpecFormData(p => ({ ...p, addrPincode: v, venue: buildAddress({ ...p, addrPincode: v }) })); }} />
+                                            </div>
                                         </div>
-
-                                        {/* Venue Input */}
-                                        <input
-                                            type="text"
-                                            value={specFormData.venue}
-                                            disabled={useCurrentLocation}
-                                            onChange={(e) =>
-                                                setSpecFormData(p => ({ ...p, venue: e.target.value }))
-                                            }
-                                            placeholder="Venue / Address"
-                                        />
                                     </div>
 
                                     <div className="ae-form-row">
@@ -1247,21 +1147,81 @@ const Events = ({ adminData, setAdminData }) => {
                                 </div>
                             )}
 
-                            {/* STEP 3 */}
+                            {/* STEP 3 — Dishes (two-column) */}
                             {specFormStep === 3 && (
-                                <div className="event-package-body">
-                                    <div className="form-group event-package-body-div1">
-                                        <label>Menu Dishes for this Event</label>
-                                        <DishSelector selectedDishes={specFormData.dishes} onToggle={(id) => toggleDish(id, true)} activeCat={specFormData.selectedCategory || ""} onCatChange={(id) => setSpecFormData(p => ({ ...p, selectedCategory: id }))} isSpec={true} />
+                                <div className="ae-dishes-split">
+                                    {/* LEFT: category + dish picker */}
+                                    <div className="ae-dishes-split-left">
+                                        <div className="form-group" style={{ marginBottom: 0 }}>
+                                            <label style={{ fontWeight: 600, fontSize: 13, marginBottom: 8, display: "block" }}>Select Menu Dishes</label>
+                                            <DishSelector
+                                                selectedDishes={specFormData.dishes}
+                                                onToggle={(id) => toggleDish(id, true)}
+                                                activeCat={specFormData.selectedCategory || ""}
+                                                onCatChange={(id) => setSpecFormData(p => ({ ...p, selectedCategory: id }))}
+                                                isSpec={true}
+                                                hideSelectedTable={true}
+                                                dishQty={specFormData.dishQty || {}}
+                                                onQtyChange={(id, delta) => changeDishQty(id, delta, true)}
+                                            />
+                                        </div>
                                     </div>
+                                    {/* RIGHT: selected dishes list */}
+                                    <div className="ae-dishes-split-right">
+                                        <div className="ae-dishes-right-header">
+                                            Selected Dishes
+                                            {specFormData.dishes?.length > 0 && (
+                                                <span style={{ fontSize: 11, fontWeight: 500, color: "#888", marginLeft: 6 }}>
+                                                    ({specFormData.dishes.length})
+                                                </span>
+                                            )}
+                                        </div>
+                                        {(!specFormData.dishes || specFormData.dishes.length === 0) ? (
+                                            <div className="ae-dishes-empty-right">No dishes selected yet.<br />Pick dishes from the left panel.</div>
+                                        ) : (
+                                            <>
+                                                <div className="ae-dishes-right-list">
+                                                    {specFormData.dishes.map(id => {
+                                                        const d = allDishes.find(x => x.id === id);
+                                                        if (!d) return null;
+                                                        const qty = (specFormData.dishQty || {})[id] || 1;
+                                                        return (
+                                                            <div key={id} className="ae-dishes-right-item">
+                                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                                    <div style={{ fontWeight: 600, fontSize: 13, color: "#111", lineHeight: 1.3 }}>{d.name}</div>
+                                                                    <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>{d.subCat || d.cat || "—"} · qty: {qty}</div>
+                                                                </div>
+                                                                <div style={{ fontWeight: 700, fontSize: 13, color: "#7c3aed", flexShrink: 0 }}>₹{(Number(d.basePrice || 0) * qty).toLocaleString("en-IN")}</div>
+                                                                <button type="button" className="ae-sdt-remove" onClick={() => toggleDish(id, true)} title="Remove">×</button>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                                {/* Total at bottom-right */}
+                                                <div className="ae-dishes-right-total">
+                                                    <span>Food Total</span>
+                                                    <span>₹{specFormData.dishes.reduce((sum, id) => {
+                                                        const d = allDishes.find(x => x.id === id);
+                                                        const qty = (specFormData.dishQty || {})[id] || 1;
+                                                        return sum + Number(d?.basePrice || 0) * qty;
+                                                    }, 0).toLocaleString("en-IN")}</span>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
 
-                                    <div className="ae-spec-summary-card event-package-body-div2">
+                            {/* STEP 4 — Summary & Preview */}
+                            {specFormStep === 4 && (
+                                <div className="event-package-body">
+                                    <div className="ae-spec-summary-card event-package-body-div2" style={{ flex: 1 }}>
                                         <h4>Event Summary</h4>
                                         <div className="ae-spec-summary-grid">
                                             <div><span>Event</span><strong>{specFormData.title || "—"}</strong></div>
                                             <div><span>Category</span><strong>{EVENT_CATEGORIES.find(c => c.id === specFormData.eventCategory)?.label || "—"}</strong></div>
                                             <div><span>Date</span><strong>{specFormData.date ? formatDate(specFormData.date) : "—"}</strong></div>
-                                            <div><span>Venue</span><strong>{specFormData.venue || "—"}</strong></div>
+                                            <div><span>Venue</span><strong style={{ wordBreak: "break-word" }}>{specFormData.venue || "—"}</strong></div>
                                             <div><span>Guests</span><strong>{specFormData.guests}</strong></div>
                                             <div><span>Package</span><strong>{SPECIALIZED_PACKAGES.find(p => p.id === specFormData.selectedPackage)?.label || "—"}</strong></div>
                                             <div><span>Add-ons</span><strong>{Object.keys(specFormData.selectedAddons).filter(k => specFormData.selectedAddons[k]).length} selected</strong></div>
@@ -1282,7 +1242,7 @@ const Events = ({ adminData, setAdminData }) => {
                                 {specFormStep > 1 && (
                                     <button type="button" className="ae-step-prev-btn" onClick={() => setSpecFormStep(s => s - 1)}>← Back</button>
                                 )}
-                                {specFormStep < 3 ? (
+                                {specFormStep < 4 ? (
                                     <button type="button" className="btn-primary" onClick={() => setSpecFormStep(s => s + 1)}>Next →</button>
                                 ) : (
                                     <button type="button" className="btn-primary" onClick={handleSpecSave}>Create Event</button>

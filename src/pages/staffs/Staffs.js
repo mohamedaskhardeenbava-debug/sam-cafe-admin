@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { CustomDatePicker } from "../../components/Customdatepicker";
+import { CustomDatePicker } from "../../components/CustomDatePicker";
 import "./Staffs.css";
 import { sortArray } from "../../App";
 import editIcon from "../../icon/edit-icon.png";

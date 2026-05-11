@@ -1,7 +1,14 @@
 import { io } from "socket.io-client";
 
-/* const socket = io("http://localhost:4000");*/
+// Switch between local dev and production (Render)
+const SERVER_URL =
+    process.env.REACT_APP_SERVER_URL || "http://localhost:4000";
 
-const socket = io("https://samcafedata.onrender.com");
+const socket = io(SERVER_URL, {
+    // Keeps the connection alive through Render's idle timeouts
+    transports: ["websocket", "polling"],
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
+});
 
 export default socket;

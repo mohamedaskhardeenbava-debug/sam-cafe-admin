@@ -1,104 +1,68 @@
-/* ═══════════════════════════════════════════
-   CustomDatePicker.css
-   Single source of truth for all date picker
-   styles across the application.
-═══════════════════════════════════════════ */
-
-/* ── Wrapper ── */
+/* ═══════════════════════════════════════════════════════
+   CUSTOM DATE PICKER
+═══════════════════════════════════════════════════════ */
 .cdp-wrap {
     position: relative;
-    display: block;
-    width: 100%;
+    display: inline-block;
 }
 
-/* ── Trigger button ── */
 .cdp-trigger {
-    width: 100%;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
+    height: 38px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1.5px solid #e0e0e0;
     background: #fff;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
     cursor: pointer;
-    font-size: 14px;
-    color: #111;
-    text-align: left;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    box-sizing: border-box;
-    min-height: 36px;
+    font-size: 13px;
+    color: #333;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .cdp-trigger:hover {
-    border-color: #9ca3af;
+    border-color: #111;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.cdp-trigger:focus {
-    outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+.cdp-icon {
+    font-size: 15px;
 }
 
-/* Calendar icon */
-.cdp-cal-icon {
-    flex-shrink: 0;
-    color: #888;
-}
-
-/* Label prefix */
 .cdp-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: #888;
-    white-space: nowrap;
-    flex-shrink: 0;
-    letter-spacing: 0.03em;
-}
-
-/* Date value */
-.cdp-value {
-    flex: 1;
-    font-size: 13px;
-    font-weight: 500;
-    color: #111;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.cdp-placeholder {
-    color: #aaa;
-    font-weight: 400;
-}
-
-/* Chevron */
-.cdp-arrow {
-    margin-left: auto;
     font-size: 10px;
+    font-weight: 700;
     color: #aaa;
-    flex-shrink: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
 }
 
-/* ── Popup ── */
+.cdp-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111;
+}
+
 .cdp-popup {
     position: absolute;
-    top: calc(100% + 6px);
+    top: calc(100% + 8px);
     left: 0;
-    z-index: 9999;
+    z-index: 999;
     background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
-    padding: 12px;
-    width: 260px;
-    animation: cdpFadeIn 0.12s ease;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    padding: 16px;
+    width: 280px;
+    animation: cdpFadeIn 0.18s ease;
 }
 
 @keyframes cdpFadeIn {
     from {
         opacity: 0;
-        transform: translateY(-4px);
+        transform: translateY(-6px);
     }
 
     to {
@@ -107,77 +71,70 @@
     }
 }
 
-/* ── Navigation row ── */
 .cdp-nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 10px;
-    gap: 4px;
+    margin-bottom: 12px;
 }
 
 .cdp-nav-btn {
-    width: 28px;
-    height: 28px;
-    border: none;
-    background: #f3f4f6;
-    border-radius: 6px;
-    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1.5px solid #f0f0f0;
+    background: #fff;
     font-size: 16px;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.15s;
     color: #555;
-    transition: background 0.15s;
-    flex-shrink: 0;
 }
 
 .cdp-nav-btn:hover {
-    background: #e5e7eb;
+    background: #f5f5f5;
+    border-color: #ddd;
 }
 
 .cdp-nav-center {
     display: flex;
     gap: 4px;
     align-items: center;
-    flex: 1;
-    justify-content: center;
 }
 
 .cdp-nav-lbl {
     background: none;
     border: none;
-    cursor: pointer;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
     color: #111;
+    cursor: pointer;
     padding: 4px 8px;
-    border-radius: 5px;
+    border-radius: 6px;
     transition: background 0.15s;
 }
 
 .cdp-nav-lbl:hover {
-    background: #f3f4f6;
+    background: #f5f5f5;
 }
 
-/* ── Weekday headers ── */
 .cdp-weekdays {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    margin-bottom: 4px;
+    text-align: center;
+    margin-bottom: 6px;
 }
 
 .cdp-weekdays span {
-    text-align: center;
     font-size: 10px;
     font-weight: 700;
-    color: #aaa;
-    padding: 2px 0;
+    color: #bbb;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    padding: 4px 0;
 }
 
-/* ── Day grid ── */
 .cdp-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -185,191 +142,97 @@
 }
 
 .cdp-day {
-    width: 100%;
-    aspect-ratio: 1;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
     border: none;
     background: transparent;
-    border-radius: 6px;
+    font-size: 13px;
+    color: #333;
     cursor: pointer;
-    font-size: 12px;
-    font-weight: 500;
-    color: #222;
+    transition: all 0.15s;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.12s, color 0.12s;
+}
+
+.cdp-day.cdp-dis {
+    cursor: not-allowed;
+    color: #979797;
 }
 
 .cdp-day:hover:not(.cdp-dis) {
-    background: #f3f4f6;
+    background: #f0f4ff;
+    color: #4361ee;
 }
 
-/* Today highlight */
-.cdp-today {
-    background: #eff6ff;
-    color: #2563eb;
+.cdp-day.cdp-today {
     font-weight: 700;
+    color: #4361ee;
 }
 
-/* Selected */
-.cdp-sel {
+.cdp-day.cdp-sel {
     background: #111 !important;
     color: #fff !important;
     font-weight: 700;
+    border-radius: 10px;
 }
 
-/* Disabled */
-.cdp-dis {
-    color: #d1d5db;
-    cursor: not-allowed;
-    pointer-events: none;
-}
-
-/* ── Month grid ── */
 .cdp-month-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
+    gap: 6px;
+    padding: 4px 0;
 }
 
 .cdp-month-btn {
-    padding: 8px 4px;
-    border: none;
-    background: transparent;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 12px;
+    padding: 10px 4px;
+    border-radius: 10px;
+    border: 1.5px solid #f0f0f0;
+    background: #fff;
+    font-size: 13px;
     font-weight: 500;
     color: #333;
-    text-align: center;
-    transition: background 0.12s;
+    cursor: pointer;
+    transition: all 0.15s;
 }
 
 .cdp-month-btn:hover {
-    background: #f3f4f6;
+    background: #f0f4ff;
+    border-color: #c7d2fe;
 }
 
 .cdp-month-btn.cdp-sel {
     background: #111;
     color: #fff;
-    font-weight: 700;
-}
-
-/* ── Year grid ── */
-.cdp-year-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 4px;
-    max-height: 160px;
-    overflow-y: auto;
-}
-
-.cdp-year-btn {
-    padding: 7px 2px;
-    border: none;
-    background: transparent;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 11px;
-    font-weight: 500;
-    color: #333;
-    text-align: center;
-    transition: background 0.12s;
-}
-
-.cdp-year-btn:hover {
-    background: #f3f4f6;
-}
-
-.cdp-year-btn.cdp-sel {
-    background: #111;
-    color: #fff;
-    font-weight: 700;
-}
-
-/* ── Filter-bar variant (used in Schedule pages) ── */
-.cdp-trigger.cdp-filter-trigger {
-    width: auto;
-    min-width: 150px;
-    border-radius: 8px;
-    border-color: #e5e7eb;
-    background: #fff;
-    font-size: 13px;
-}
-
-/* ── Search input (used alongside pickers in schedule filter bars) ── */
-.cdp-search-input {
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 14px;
-    outline: none;
-    transition: border-color 0.2s;
-    min-width: 180px;
-}
-
-.cdp-search-input:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-/* ── Preset buttons (Today / This Week / All) ── */
-.cdp-preset-btn {
-    padding: 7px 14px;
-    border: 1px solid #e5e7eb;
-    border-radius: 999px;
-    background: #fff;
-    font-size: 12px;
-    font-weight: 600;
-    color: #555;
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
-}
-
-.cdp-preset-btn:hover {
-    background: #f3f4f6;
-    border-color: #d1d5db;
-}
-
-.cdp-preset-btn.active {
-    background: #111;
-    color: #fff;
     border-color: #111;
 }
 
-/* ── Schedule filter bar layout ── */
-.sched-filter-bar {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 16px;
-}
-
-.sched-status-pills {
-    display: flex;
+.cdp-year-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: 6px;
-    flex-wrap: wrap;
+    padding: 4px 0;
 }
 
-.sched-pill-btn {
-    padding: 6px 14px;
-    border: 1px solid #e5e7eb;
-    border-radius: 999px;
+.cdp-year-btn {
+    padding: 10px 4px;
+    border-radius: 10px;
+    border: 1.5px solid #f0f0f0;
     background: #fff;
     font-size: 12px;
-    font-weight: 600;
-    color: #555;
+    font-weight: 500;
+    color: #333;
     cursor: pointer;
     transition: all 0.15s;
 }
 
-.sched-pill-btn:hover {
-    background: #f3f4f6;
+.cdp-year-btn:hover {
+    background: #f0f4ff;
+    border-color: #c7d2fe;
 }
 
-.sched-pill-btn.active {
+.cdp-year-btn.cdp-sel {
     background: #111;
     color: #fff;
     border-color: #111;
