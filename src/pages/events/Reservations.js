@@ -852,13 +852,13 @@ const Reservations = ({ adminData, setAdminData }) => {
 
       {/* ══ Table Preference Manager Modal ══ */}
       {showPrefModal && (
-        <div className="ingredient-modal-overlay" onClick={() => setShowPrefModal(false)}>
-          <div className="ingredient-modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
-            <div className="ingredient-modal-header">
+        <div className="event-modal-overlay" onClick={() => setShowPrefModal(false)}>
+          <div className="event-modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
+            <div className="event-modal-header">
               <h3>Table Preferences</h3>
               <button className="ingredient-close-btn" onClick={() => setShowPrefModal(false)} />
             </div>
-            <div className="ingredient-modal-body" style={{ padding: "16px 0" }}>
+            <div className="event-modal-body" style={{ padding: "16px 0" }}>
               <p style={{ fontSize: 13, color: "#666", margin: "0 0 14px" }}>
                 Manage seating preference options shown in the reservation form. Changes are saved to the database when you click <strong>Save &amp; Close</strong>.
               </p>
@@ -957,7 +957,7 @@ const Reservations = ({ adminData, setAdminData }) => {
                 )}
               </div>
             </div>
-            <div className="ingredient-modal-footer">
+            <div className="event-modal-footer">
               <div className="form-actions">
                 <button onClick={handleSavePrefs} disabled={prefSaving} style={{ background: "#1dd1a1", color: "#fff", fontWeight: 700 }}>
                   {prefSaving ? "Saving..." : "💾 Save & Close"}
@@ -970,9 +970,9 @@ const Reservations = ({ adminData, setAdminData }) => {
       )}
 
       {showCreate && (
-        <div className="ingredient-modal-overlay" onClick={() => setShowCreate(false)}>
-          <div className="ingredient-modal" style={{ width: 620 }} onClick={e => e.stopPropagation()}>
-            <div className="ingredient-modal-header">
+        <div className="event-modal-overlay" onClick={() => setShowCreate(false)}>
+          <div className="event-modal" style={{ width: 620 }} onClick={e => e.stopPropagation()}>
+            <div className="event-modal-header">
               <div style={{ display: "flex", flexDirection: "column" }}>
                 <h3>Add Reservation</h3>
                 <div className="ae-spec-steps">
@@ -989,7 +989,7 @@ const Reservations = ({ adminData, setAdminData }) => {
               <button className="ingredient-close-btn" onClick={() => setShowCreate(false)} />
             </div>
 
-            <div className="ingredient-modal-body" style={{ padding: "8px 0" }}>
+            <div className="event-modal-body" style={{ padding: "8px 0" }}>
 
               {/* ── TAB 0: Guest Information ── */}
               {createTab === 0 && (
@@ -1221,7 +1221,7 @@ const Reservations = ({ adminData, setAdminData }) => {
               })()}
             </div>
 
-            <div className="ingredient-modal-footer">
+            <div className="event-modal-footer">
               <div className="form-actions ae-spec-footer">
                 {createTab === 0 ? (
                   <button type="button" className="btn-primary" onClick={handleResNext}>Preview →</button>

@@ -587,9 +587,9 @@ const Celebrations = ({ adminData, setAdminData }) => {
       )}
 
       {showCreate && (
-        <div className="ingredient-modal-overlay" onClick={() => setShowCreate(false)}>
-          <div className="ingredient-modal" style={{ width: 640 }} onClick={e => e.stopPropagation()}>
-            <div className="ingredient-modal-header">
+        <div className="event-modal-overlay" onClick={() => setShowCreate(false)}>
+          <div className="event-modal" style={{ width: 640 }} onClick={e => e.stopPropagation()}>
+            <div className="event-modal-header">
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                 <h3>Add Celebration</h3>
                 <div className="ae-spec-steps">
@@ -606,7 +606,7 @@ const Celebrations = ({ adminData, setAdminData }) => {
               <button className="ingredient-close-btn" onClick={() => setShowCreate(false)} />
             </div>
 
-            <div className="ingredient-modal-body" style={{ padding: "8px 0" }}>
+            <div className="event-modal-body" style={{ padding: "8px 0" }}>
 
               {/* ── TAB 0: Event Type & Add-ons ── */}
               {createTab === 0 && (
@@ -887,7 +887,7 @@ const Celebrations = ({ adminData, setAdminData }) => {
               })()}
             </div>
 
-            <div className="ingredient-modal-footer">
+            <div className="event-modal-footer">
               <div className="form-actions ae-spec-footer">
                 {createTab === 0 ? (
                   <button type="button" className="btn-primary" onClick={handleCreateNext}>Preview →</button>
