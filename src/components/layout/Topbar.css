@@ -1,4 +1,6 @@
-/* Topbar Base*/
+/* ─────────────────────────────────────────
+   Topbar Base
+───────────────────────────────────────── */
 .topbar {
   position: sticky;
   top: 0;
@@ -32,35 +34,33 @@
 .topbar-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
   flex-wrap: nowrap;
+  /* No overflow-x: auto here — it would clip absolute/fixed dropdowns */
+  max-width: calc(100vw - 160px);
+  overflow: visible;
 }
 
 .topbar-icon-wrapper {
   position: relative;
+  flex-shrink: 0;
 }
 
 .notification-badge {
   position: absolute;
   top: -2px;
   right: -2px;
-
   width: 20px !important;
   height: 20px;
-
   background: linear-gradient(135deg, #ff5252, #e53935);
   color: #fff;
-
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   box-shadow: 0 4px 10px rgba(229, 57, 53, 0.35);
-  transform: scale(1);
   animation: badgePop 0.25s ease;
 }
 
@@ -76,7 +76,7 @@
   }
 }
 
-/*Icon Buttons */
+/* Icon Buttons */
 .notification-icon-btn {
   position: relative;
   background: none;
@@ -84,11 +84,27 @@
   font-size: 20px;
   cursor: pointer;
   padding: 6px;
+  color: #444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.notification-icon-btn:hover {
+  background: #f3f4f6;
 }
 
 .notification-icon-btn img {
   width: 24px;
   height: 24px;
+}
+
+.phone-icon-svg {
+  display: flex;
+  align-items: center;
+  color: #374151;
 }
 
 .notif-dot {
@@ -101,7 +117,7 @@
   border-radius: 50%;
 }
 
-/*Profile Button */
+/* Profile Button */
 .profile-btn {
   display: flex;
   align-items: center;
@@ -131,6 +147,8 @@
 .profile-avatar.large {
   width: 48px;
   height: 48px;
+  background: #4f46e5;
+  font-size: 18px;
 }
 
 .profile-name {
@@ -139,17 +157,20 @@
   color: #333;
 }
 
-/* Dropdown Base */
+/* ─────────────────────────────────────────
+   Dropdown Base
+───────────────────────────────────────── */
 .dropdown {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  width: 280px;
+  width: 300px;
   background: #fff;
-  border-radius: 10px;
+  border-radius: 12px;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
   padding: 14px;
   animation: dropdownFade 0.2s ease;
+  z-index: 100;
 }
 
 @keyframes dropdownFade {
@@ -164,11 +185,12 @@
   }
 }
 
-/* Notification Dropdown*/
+/* Notification Dropdown */
 .dropdown-title {
   font-size: 15px;
   font-weight: 600;
   margin-bottom: 10px;
+  color: #111;
 }
 
 .notification-list {
@@ -212,7 +234,7 @@
   font-weight: 500;
 }
 
-/*Profile Dropdown*/
+/* Profile Dropdown */
 .profile-info {
   display: flex;
   align-items: center;
@@ -252,25 +274,22 @@
 }
 
 /* ─────────────────────────────────────────
-   🔔 BELL CALL BUTTON  (admin topbar)
+   🔔 BELL CALL BUTTON
 ───────────────────────────────────────── */
 .bell-call-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-
   padding: 6px 14px;
   border-radius: 999px;
   border: 2px solid #e53935;
   background: #fff3f3;
   color: #c62828;
-
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-
-  /* entrance */
+  flex-shrink: 0;
   animation: bellBtnPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
@@ -278,7 +297,6 @@
   background: #ffebee;
 }
 
-/* Blinking border + text */
 .bell-call-btn.blinking {
   animation:
     bellBtnPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both,
@@ -313,4 +331,273 @@
     color: #fff;
     box-shadow: 0 0 0 4px rgba(229, 57, 53, 0.25);
   }
+}
+
+/* ─────────────────────────────────────────
+   ⏱️ TODAY COUNTDOWN CHIPS
+───────────────────────────────────────── */
+.today-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--chip-color, #7c3aed);
+  background: color-mix(in srgb, var(--chip-color, #7c3aed) 8%, #fff);
+  color: var(--chip-color, #7c3aed);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s, box-shadow 0.15s;
+  animation: chipPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.today-chip:hover {
+  background: color-mix(in srgb, var(--chip-color, #7c3aed) 16%, #fff);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--chip-color, #7c3aed) 25%, transparent);
+}
+
+.today-chip--past {
+  animation:
+    chipPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    chipPulse 1.2s ease-in-out infinite;
+}
+
+.today-chip__emoji {
+  font-size: 13px;
+}
+
+.today-chip__label {
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.today-chip__countdown {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+@keyframes chipPop {
+  0% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes chipPulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--chip-color) 40%, transparent);
+  }
+
+  50% {
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--chip-color) 10%, transparent);
+  }
+}
+
+/* ─────────────────────────────────────────
+   📞 PHONE DROPDOWN
+───────────────────────────────────────── */
+.phone-dropdown {
+  /* fixed so it escapes overflow:hidden/auto on any ancestor (topbar, topbar-right) */
+  position: fixed !important;
+  top: 68px;
+  /* just below the 64px topbar */
+  right: 16px;
+  width: 340px;
+  max-height: 540px;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.phone-section {
+  margin-bottom: 14px;
+}
+
+.phone-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #888;
+  margin: 0 0 8px;
+}
+
+.phone-empty {
+  font-size: 12px;
+  color: #aaa;
+  margin: 0;
+  padding: 6px 0;
+}
+
+/* Phone list */
+.phone-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.phone-list__item {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.phone-list__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.phone-list__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.phone-list__badge--sm {
+  padding: 2px 6px;
+  font-size: 12px;
+}
+
+.phone-list__timer {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+}
+
+.phone-list__timer--now {
+  color: #dc2626;
+  animation: timerPulse 1s ease-in-out infinite;
+}
+
+@keyframes timerPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.phone-list__name {
+  font-weight: 600;
+  color: #111;
+  margin: 0 0 2px;
+}
+
+.phone-list__phone {
+  font-size: 12px;
+  color: #555;
+  margin: 0 0 8px;
+}
+
+.phone-list__actions {
+  display: flex;
+  gap: 6px;
+}
+
+.phone-action-btn {
+  flex: 1;
+  padding: 6px 0;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.phone-action-btn--call {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.phone-action-btn--call:hover {
+  background: #a7f3d0;
+}
+
+.phone-action-btn--view {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.phone-action-btn--view:hover {
+  background: #d1d5db;
+}
+
+/* Compact list */
+.phone-list--compact .phone-list__item--compact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.phone-list--compact .phone-list__item--compact:hover {
+  background: #f3f4f6;
+}
+
+.phone-list__compact-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.phone-list__compact-info strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #111;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.phone-list__compact-info span {
+  font-size: 11px;
+  color: #777;
+}
+
+.phone-list__phone-sm {
+  font-size: 11px;
+  color: #555;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.phone-list__phone-sm--time {
+  font-size: 10px;
+  color: #888;
+}
+
+.phone-list__item--log {
+  opacity: 0.85;
 }

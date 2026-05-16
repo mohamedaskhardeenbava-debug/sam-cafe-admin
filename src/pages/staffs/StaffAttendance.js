@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import * as XLSX from "xlsx";
 import { useLocation } from "react-router-dom";
 import "./StaffAttendance.css";
 import api from "../../api";
@@ -42,6 +43,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
     const [columnEdit, setColumnEdit] = useState({});
     const [holidayForm, setHolidayForm] = useState({ date: "", reason: "" });
     const [savingCells, setSavingCells] = useState({});   // { staffId_date: true } while saving
+    const [statsOpen, setStatsOpen] = useState(false);   // collapsible stats row
     const autoAbsentRan = useRef(false);  // guard: run auto-absent only once
 
     /* ── Load holidays ── */
@@ -177,17 +179,29 @@ export default function StaffAttendance({ adminData, setAdminData }) {
         return staffMember?.attendance?.find(a => a.date === date) || null;
     };
 
-    /* ── Stats row ── */
+    /* ── Stats row — month-wise (only current-month dates) ── */
     const staffStats = useMemo(() => {
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth(); // 0-indexed
+
         return adminData.staff.map(s => {
-            const att = s.attendance || [];
+            const att = (s.attendance || []).filter(a => {
+                const d = new Date(a.date);
+                return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+            });
             const presentDays = att.filter(a => a.status === "present").length;
             const leaveDays = att.filter(a => a.status === "leave").length;
             const absentDays = att.filter(a => a.status === "absent").length;
-            const pct = dates.length > 0 ? Math.round((presentDays / dates.length) * 100) : 0;
-            return { id: s.id, name: s.name, presentDays, leaveDays, absentDays, pct };
+            // Denominator = working days this month (excludes Sundays & holidays)
+            const workingDays = dates.filter(d => {
+                const day = new Date(d).getDay();
+                return day !== 0 && !holidays[d];
+            }).length;
+            const pct = workingDays > 0 ? Math.round((presentDays / workingDays) * 100) : 0;
+            return { id: s.id, name: s.name, presentDays, leaveDays, absentDays, pct, workingDays };
         });
-    }, [adminData.staff, dates]);
+    }, [adminData.staff, dates, holidays]);
 
     if (loadingHolidays) return <div className="att-page"><div className="att-loading"><div className="att-spinner" />Loading attendance…</div></div>;
 
@@ -195,6 +209,47 @@ export default function StaffAttendance({ adminData, setAdminData }) {
 
     /* ── today's date string for max constraint on holiday picker ── */
     const maxDateStr = todayStr;
+
+    const exportAttendance = () => {
+        if (!adminData.staff.length) { alert("No staff data to export"); return; }
+        const rows = adminData.staff.map(s => {
+            const att = s.attendance || [];
+            const present = att.filter(a => a.status === "present").length;
+            const leave = att.filter(a => a.status === "leave").length;
+            const absent = att.filter(a => a.status === "absent").length;
+            const total = dates.length;
+            const pct = total > 0 ? Math.round((present / total) * 100) : 0;
+            // Per-date columns
+            const dateCols = {};
+            dates.forEach(date => {
+                const rec = getRecord(s.id, date);
+                const d = new Date(date);
+                const isSun = d.getDay() === 0;
+                const isHol = !!holidays[date];
+                const key = `${date}`;
+                if (isHol) dateCols[key] = "Holiday";
+                else if (isSun) dateCols[key] = "Off";
+                else dateCols[key] = rec?.status === "present" ? "P" : rec?.status === "leave" ? `L(${rec.reason || ""})` : "A";
+            });
+            return {
+                Name: s.name || "—",
+                Role: s.role || "—",
+                Present: present,
+                Leave: leave,
+                Absent: absent,
+                "Total Days": total,
+                "Attendance %": `${pct}%`,
+                ...dateCols,
+            };
+        });
+        const sheet = XLSX.utils.json_to_sheet(rows);
+        sheet["!cols"] = Object.keys(rows[0]).map(k => ({
+            wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2,
+        }));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, sheet, "Attendance");
+        XLSX.writeFile(wb, `attendance_${new Date().toISOString().slice(0, 7)}.xlsx`);
+    };
 
     return (
         <div className="att-page">
@@ -211,29 +266,39 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                         <div className="att-chip att-chip-absent"><span className="att-chip-dot" />Absent</div>
                         <div className="att-chip att-chip-holiday"><span className="att-chip-dot" />Holiday</div>
                     </div>
+                    <button
+                        className={`sched-pill-btn${statsOpen ? " active" : ""}`}
+                        onClick={() => setStatsOpen(v => !v)}
+                        title={statsOpen ? "Hide summary" : "Show summary"}
+                    >
+                        {statsOpen ? "▲ Hide Stats" : "▼ Show Stats"}
+                    </button>
+                    <button className="orders-export-btn" onClick={exportAttendance}>Export</button>
                     <button className="att-add-btn" onClick={() => setShowHolidayModal(true)}>+ Add Holiday</button>
                 </div>
             </div>
 
-            {/* STATS ROW */}
-            <div className="att-stats-row">
-                {staffStats.map((s, i) => (
-                    <div key={s.id} className="att-stat-card">
-                        <div className="att-stat-avatar">{s.name.charAt(0).toUpperCase()}</div>
-                        <div className="att-stat-info">
-                            <span className="att-stat-name">{s.name}</span>
-                            <div className="att-stat-bar-wrap">
-                                <div className="att-stat-bar" style={{ width: `${s.pct}%`, background: s.pct >= 75 ? "#16a34a" : s.pct >= 50 ? "#f59e0b" : "#dc2626" }} />
-                            </div>
-                            <div className="att-stat-nums">
-                                <span className="att-present-num">✓ {s.presentDays}</span>
-                                <span className="att-leave-num">L {s.leaveDays}</span>
-                                <span className="att-absent-num">✕ {s.absentDays}</span>
-                                <span className="att-pct-num">{s.pct}%</span>
+            {/* STATS ROW — collapsible */}
+            <div className={`att-stats-collapsible${statsOpen ? " att-stats-open" : ""}`}>
+                <div className="att-stats-row">
+                    {staffStats.map((s) => (
+                        <div key={s.id} className="att-stat-card">
+                            <div className="att-stat-avatar">{s.name.charAt(0).toUpperCase()}</div>
+                            <div className="att-stat-info">
+                                <span className="att-stat-name">{s.name}</span>
+                                <div className="att-stat-bar-wrap">
+                                    <div className="att-stat-bar" style={{ width: `${s.pct}%`, background: s.pct >= 75 ? "#16a34a" : s.pct >= 50 ? "#f59e0b" : "#dc2626" }} />
+                                </div>
+                                <div className="att-stat-nums">
+                                    <span className="att-present-num">✓ {s.presentDays}</span>
+                                    <span className="att-leave-num">L {s.leaveDays}</span>
+                                    <span className="att-absent-num">✕ {s.absentDays}</span>
+                                    <span className="att-pct-num">{s.pct}% <span style={{ fontWeight: 400, color: "#bbb" }}>/ {s.workingDays}d</span></span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
             </div>
 
             {/* TABLE */}

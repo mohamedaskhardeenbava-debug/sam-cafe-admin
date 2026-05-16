@@ -17,6 +17,7 @@
     "dayjs": "^1.11.19",
     "framer-motion": "^12.23.26",
     "json-server": "^0.17.4",
+    "qrcode": "^1.5.4",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.3",
     "react-confetti": "^6.4.0",

@@ -9,9 +9,9 @@ import { CustomDatePicker } from "../../components/CustomDatePicker";
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 const PRESETS = [
+    { label: "All", fn: () => ["2000-01-01", "2099-12-31"] },
     { label: "Today", fn: () => { const t = format(new Date(), "yyyy-MM-dd"); return [t, t]; } },
     { label: "This Month", fn: () => { const d = new Date(); return [format(new Date(d.getFullYear(), d.getMonth(), 1), "yyyy-MM-dd"), format(d, "yyyy-MM-dd")]; } },
-    { label: "All", fn: () => ["2000-01-01", "2099-12-31"] },
 ];
 
 const EMPTY_FORM = { work: "", staff: "", date: "", department: "", status: "", lastRate: "" };
@@ -21,12 +21,12 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
     const [openDropdown, setOpenDropdown] = useState(null);
     const [statusFilter, setStatusFilter] = useState(location.state?.status || "");
     const [searchText, setSearchText] = useState("");
-    const [fromDate, setFromDate] = useState("2000-01-01");
-    const [toDate, setToDate] = useState("2099-12-31");
-    const [activePreset, setActivePreset] = useState("All");
+    const today = format(new Date(), "yyyy-MM-dd");
+    const [fromDate, setFromDate] = useState(today);
+    const [toDate, setToDate] = useState(today);
+    const [activePreset, setActivePreset] = useState("Today");
     const [show, setShow] = useState(false);
     const [form, setForm] = useState(EMPTY_FORM);
-    const today = format(new Date(), "yyyy-MM-dd");
 
     const list = adminData.kitchenSchedules || [];
 
@@ -98,11 +98,11 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                 </div>
             </div>
 
-            <div className="sched-filter-bar">
+            <div className="ssched-filter-bar">
                 <input className="cdp-search-input" placeholder="🔍 Search work / staff…" value={searchText} onChange={e => setSearchText(e.target.value)} />
                 <div className="sched-status-pills">
                     {["", "Scheduled", "Completed", "Pending"].map(s => (
-                        <button key={s} className={`cdp-preset-btn${statusFilter === s ? " active" : ""}`} onClick={() => setStatusFilter(s)}>
+                        <button key={s} className={`ssch-pill-btn${statusFilter === s ? " active" : ""}`} onClick={() => setStatusFilter(s)}>
                             {s || "All"}
                         </button>
                     ))}
@@ -112,7 +112,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                 <CustomDatePicker label="To" value={toDate} min={fromDate}
                     onChange={s => { setToDate(s); setActivePreset("custom"); }} />
                 {PRESETS.map(p => (
-                    <button key={p.label} className={`cdp-preset-btn${activePreset === p.label ? " active" : ""}`} onClick={() => applyPreset(p)}>
+                    <button key={p.label} className={`sact-pill-btn${activePreset === p.label ? " active" : ""}`} onClick={() => applyPreset(p)}>
                         {p.label}
                     </button>
                 ))}

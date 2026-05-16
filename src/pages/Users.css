@@ -7,7 +7,7 @@
   display: flex;
   justify-content: space-between;
   align-items: start;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 
 .users-title {
@@ -103,13 +103,13 @@
 }
 
 .users-table th:nth-child(1),
-.users-table td:nth-child(1){
+.users-table td:nth-child(1) {
   width: 20px !important;
   max-width: 20px !important;
 }
 
 .users-table th:nth-child(2),
-.users-table td:nth-child(2){
+.users-table td:nth-child(2) {
   width: 200px;
   max-width: 400px;
 }
@@ -143,4 +143,82 @@
   .users-table td {
     font-size: 12px;
   }
+}
+
+/* ── Users filter bar ── */
+.users-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px 12px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0f0f0;
+  margin-bottom: 12px;
+}
+
+.users-search {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #ddd;
+  background: #f9f9f9;
+  font-size: 13px;
+  outline: none;
+  width: 100%;
+  max-width: 280px;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.users-search:focus {
+  border-color: #111;
+  background: #fff;
+}
+
+/* ── Shared utilities ── */
+.orders-export-btn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1.5px solid #e5e7eb;
+  background: #f9fafb;
+  color: #555;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.orders-export-btn:hover {
+  border-color: #111;
+  background: #111;
+  color: #fff;
+}
+
+.ae-clear-filter {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1.5px solid #fca5a5;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.ae-clear-filter:hover {
+  background: #fecaca;
+}
+
+.ae-result-count {
+  font-size: 12px;
+  color: #888;
+  font-weight: 500;
+  white-space: nowrap;
 }

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import * as XLSX from "xlsx";
 import "./Events.css";
 import api from "../../api";
 import { useToast } from "../../useToast";
@@ -26,6 +27,12 @@ const STATUS_COLORS = {
     ongoing: "#16a34a",
     completed: "#6b7280",
     cancelled: "#dc2626",
+};
+
+const RESTAURANT_ADDRESS = {
+    addrDoorNo: "12, Sam Cafe", addrStreet: "GR Nagar", addrArea: "GR Nagar",
+    addrLandmark: "Near Andavar Meat Shop", addrCity: "Madurai",
+    addrDistrict: "Madurai", addrState: "Tamil Nadu", addrPincode: "625001",
 };
 
 const SPECIALIZED_PACKAGES = [
@@ -138,11 +145,20 @@ const Events = ({ adminData, setAdminData }) => {
     const [activeTab, setActiveTab] = useState("events");
     const [filterEventId, setFilterEventId] = useState("all");
     const [filterStatus, setFilterStatus] = useState("all");
+    const [filterFromDate, setFilterFromDate] = useState("");
+    const [filterToDate, setFilterToDate] = useState("");
     const [viewBooking, setViewBooking] = useState(null);
+
+    // Events tab filters
+    const [evtSearch, setEvtSearch] = useState("");
+    const [evtFilterStatus, setEvtFilterStatus] = useState("all");
+    const [evtFilterType, setEvtFilterType] = useState("all");
+    const [evtFilterPublish, setEvtFilterPublish] = useState("all"); // "all" | "live" | "draft"
     const [addGuestCount, setAddGuestCount] = useState(1);
     const [addGuestSaving, setAddGuestSaving] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [useCurrentLocation, setUseCurrentLocation] = useState(false);
+    const [useRestaurantAddrSpec, setUseRestaurantAddrSpec] = useState(false);
 
     // Booking table sorting
     const [bookSortKey, setBookSortKey] = useState("bookedAt");
@@ -155,6 +171,14 @@ const Events = ({ adminData, setAdminData }) => {
         let list = bookings;
         if (filterEventId !== "all") list = list.filter((b) => b.eventId === filterEventId);
         if (filterStatus !== "all") list = list.filter((b) => b.status === filterStatus);
+        if (filterFromDate) list = list.filter((b) => {
+            const d = (b.bookedAt || b.date || "").slice(0, 10);
+            return d >= filterFromDate;
+        });
+        if (filterToDate) list = list.filter((b) => {
+            const d = (b.bookedAt || b.date || "").slice(0, 10);
+            return d <= filterToDate;
+        });
         if (searchQuery.trim())
             list = list.filter(
                 (b) =>
@@ -168,11 +192,84 @@ const Events = ({ adminData, setAdminData }) => {
             const bVal = String(b[bookSortKey] ?? "").toLowerCase();
             return bookSortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
         });
-    }, [bookings, filterEventId, filterStatus, searchQuery, bookSortKey, bookSortDir]);
+    }, [bookings, filterEventId, filterStatus, filterFromDate, filterToDate, searchQuery, bookSortKey, bookSortDir]);
 
     const toggleBookSort = (key) => {
         if (bookSortKey === key) setBookSortDir(d => d === "asc" ? "desc" : "asc");
         else { setBookSortKey(key); setBookSortDir("asc"); }
+    };
+
+    const filteredEvents = useMemo(() => {
+        let list = events;
+        if (evtSearch.trim()) {
+            const q = evtSearch.toLowerCase();
+            list = list.filter(e =>
+                (e.title || "").toLowerCase().includes(q) ||
+                (e.venue || "").toLowerCase().includes(q) ||
+                (e.categoryLabel || e.eventType || "").toLowerCase().includes(q)
+            );
+        }
+        if (evtFilterStatus !== "all") list = list.filter(e => e.status === evtFilterStatus);
+        if (evtFilterType !== "all") list = list.filter(e => (e.eventType || "") === evtFilterType || (e.categoryLabel || "").toLowerCase() === evtFilterType);
+        if (evtFilterPublish === "live") list = list.filter(e => e.isPublished);
+        if (evtFilterPublish === "draft") list = list.filter(e => !e.isPublished);
+        return list;
+    }, [events, evtSearch, evtFilterStatus, evtFilterType, evtFilterPublish]);
+
+    const exportEvents = () => {
+        if (!filteredEvents.length) { alert("No events to export"); return; }
+        const rows = filteredEvents.map(evt => {
+            const stats = statsForEvent(evt.id);
+            return {
+                Title: evt.title || "—",
+                Type: evt.categoryLabel || evt.eventType || "—",
+                Date: evt.date || "—",
+                Time: evt.time || "—",
+                Venue: evt.venue || "—",
+                "Max Capacity": evt.maxCapacity || 0,
+                "Price (₹)": evt.price || 0,
+                "Total Bookings": stats.total,
+                Confirmed: stats.confirmed,
+                Pending: stats.pending,
+                Status: evt.status || "—",
+                Published: evt.isPublished ? "Live" : "Draft",
+                Specialized: evt.isSpecialized ? "Yes" : "No",
+            };
+        });
+        const sheet = XLSX.utils.json_to_sheet(rows);
+        sheet["!cols"] = Object.keys(rows[0]).map(k => ({
+            wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2,
+        }));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, sheet, "Events");
+        XLSX.writeFile(wb, `events_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    };
+
+    const exportBookings = () => {
+        if (!filteredBookings.length) { alert("No bookings to export"); return; }
+        const rows = filteredBookings.map((b) => {
+            const evt = events.find((e) => e.id === b.eventId);
+            return {
+                Name: b.name || "—",
+                Email: b.email || "—",
+                Phone: b.phone || "—",
+                Event: evt?.title || b.eventId || "—",
+                "Booked On": (b.bookedAt || b.date || "—").slice(0, 10),
+                Guests: b.guests ?? "—",
+                Amount: b.totalAmount ? `₹${Number(b.totalAmount).toLocaleString("en-IN")}` : "—",
+                Status: b.status || "—",
+            };
+        });
+        const sheet = XLSX.utils.json_to_sheet(rows);
+        sheet["!cols"] = Object.keys(rows[0]).map(k => ({
+            wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2,
+        }));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, sheet, "Event Bookings");
+        const suffix = filterFromDate && filterToDate
+            ? `${filterFromDate}_to_${filterToDate}`
+            : new Date().toISOString().slice(0, 10);
+        XLSX.writeFile(wb, `event_bookings_${suffix}.xlsx`);
     };
 
     const BookSortIcon = ({ col }) => {
@@ -214,6 +311,7 @@ const Events = ({ adminData, setAdminData }) => {
         setSpecFormStep(1);
         setSpecTagInput("");
         setSpecHighlightInput("");
+        setUseRestaurantAddrSpec(false);
     };
 
     const openAdd = () => { resetForm(); setShowForm(true); };
@@ -622,13 +720,84 @@ const Events = ({ adminData, setAdminData }) => {
             {/* EVENTS TAB */}
             {activeTab === "events" && (
                 <>
-                    {events.length === 0 ? (
+                    {/* EVENTS FILTER BAR */}
+                    <div className="ae-events-filter-bar">
+                        <div className="ae-events-filter-top">
+                            <input
+                                className="ae-events-search"
+                                placeholder="🔍 Search title, venue, type…"
+                                value={evtSearch}
+                                onChange={e => setEvtSearch(e.target.value)}
+                            />
+                            <button className="orders-export-btn" onClick={exportEvents}>Export</button>
+                        </div>
+                        <div className="ae-events-filter-groups">
+                            {/* Status */}
+                            <div className="ae-events-filter-group">
+                                <span className="ae-filter-group-label">Status</span>
+                                {[
+                                    ["all", "All"],
+                                    ["upcoming", "Upcoming"],
+                                    ["ongoing", "Ongoing"],
+                                    ["completed", "Completed"],
+                                    ["cancelled", "Cancelled"],
+                                ].map(([val, label]) => (
+                                    <button key={val}
+                                        className={`ae-filter-pill${evtFilterStatus === val ? " active" : ""}`}
+                                        style={evtFilterStatus === val && val !== "all" ? { background: STATUS_COLORS[val], borderColor: STATUS_COLORS[val], color: "#fff" } : {}}
+                                        onClick={() => setEvtFilterStatus(val)}>
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+                            {/* Type */}
+                            <div className="ae-events-filter-group">
+                                <span className="ae-filter-group-label">Type</span>
+                                {[
+                                    ["all", "All"],
+                                    ["dining", "Dining"],
+                                    ["special", "Special"],
+                                    ["private", "Private"],
+                                    ["seasonal", "Seasonal"],
+                                    ["live", "Live"],
+                                    ["workshop", "Workshop"],
+                                ].map(([val, label]) => (
+                                    <button key={val}
+                                        className={`ae-filter-pill${evtFilterType === val ? " active" : ""}`}
+                                        onClick={() => setEvtFilterType(val)}>
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+                            {/* Publish */}
+                            <div className="ae-events-filter-group">
+                                <span className="ae-filter-group-label">Publish</span>
+                                {[["all", "All"], ["live", "Live"], ["draft", "Draft"]].map(([val, label]) => (
+                                    <button key={val}
+                                        className={`ae-filter-pill${evtFilterPublish === val ? " active" : ""}`}
+                                        onClick={() => setEvtFilterPublish(val)}>
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+                            {/* Clear + count */}
+                            {(evtSearch || evtFilterStatus !== "all" || evtFilterType !== "all" || evtFilterPublish !== "all") && (
+                                <button className="ae-clear-filter" onClick={() => {
+                                    setEvtSearch(""); setEvtFilterStatus("all");
+                                    setEvtFilterType("all"); setEvtFilterPublish("all");
+                                }}>Clear</button>
+                            )}
+                            <span className="ae-result-count">{filteredEvents.length} event(s)</span>
+                        </div>
+                    </div>
+
+                    {filteredEvents.length === 0 ? (
                         <div className="ae-empty-state">
-                            <p>No events yet. Create your first event!</p>
+                            <p>{events.length === 0 ? "No events yet. Create your first event!" : "No events match the current filters."}</p>
                         </div>
                     ) : (
                         <div className="ae-events-grid">
-                            {events.map((evt) => {
+                            {filteredEvents.map((evt) => {
                                 const stats = statsForEvent(evt.id);
                                 const pct = evt.maxCapacity
                                     ? Math.min(100, Math.round((stats.confirmed / evt.maxCapacity) * 100))
@@ -713,21 +882,60 @@ const Events = ({ adminData, setAdminData }) => {
             {activeTab === "bookings" && (
                 <div className="ae-bookings-section">
                     <div className="ae-booking-filters">
-                        <input type="text" placeholder="Search by name, email or phone…" className="ae-search-input" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                        <select className="ae-filter-select" value={filterEventId} onChange={(e) => setFilterEventId(e.target.value)}>
-                            <option value="all">All Events</option>
-                            {events.map((e) => (<option key={e.id} value={e.id}>{e.title}</option>))}
-                        </select>
-                        <select className="ae-filter-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-                            <option value="all">All Statuses</option>
-                            <option value="pending">Pending</option>
-                            <option value="confirmed">Confirmed</option>
-                            <option value="cancelled">Cancelled</option>
-                        </select>
-                        {(filterEventId !== "all" || filterStatus !== "all" || searchQuery) && (
-                            <button className="ae-clear-filter" onClick={() => { setFilterEventId("all"); setFilterStatus("all"); setSearchQuery(""); }}>Clear</button>
-                        )}
-                        <span className="ae-result-count">{filteredBookings.length} result(s)</span>
+                        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                            <input type="text" placeholder="Search by name, email or phone…" className="ae-search-input" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+
+                            {/* Date range */}
+                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <span className="ae-filter-group-label">From</span>
+                                <div style={{ minWidth: 150 }}>
+                                    <CustomDatePicker value={filterFromDate} onChange={(v) => { setFilterFromDate(v); if (filterToDate && v > filterToDate) setFilterToDate(v); }} placeholder="Start date" />
+                                </div>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <span className="ae-filter-group-label">To</span>
+                                <div style={{ minWidth: 150 }}>
+                                    <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={setFilterToDate} placeholder="End date" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", alignItems: "center", marginTop: 8 }}>
+                            {/* Event filter */}
+                            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                <span className="ae-filter-group-label">Event</span>
+                                <select className="ae-filter-select" value={filterEventId} onChange={(e) => setFilterEventId(e.target.value)}>
+                                    <option value="all">All Events</option>
+                                    {events.map((e) => (<option key={e.id} value={e.id}>{e.title}</option>))}
+                                </select>
+                            </div>
+
+                            {/* Status pills */}
+                            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                <span className="ae-filter-group-label">Status</span>
+                                {[
+                                    ["all", "All"],
+                                    ["pending", "Pending"],
+                                    ["confirmed", "Confirmed"],
+                                    ["cancelled", "Cancelled"],
+                                ].map(([val, label]) => (
+                                    <button key={val}
+                                        className={`ae-filter-pill${filterStatus === val ? " active" : ""}`}
+                                        onClick={() => setFilterStatus(val)}>
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {(filterEventId !== "all" || filterStatus !== "all" || searchQuery || filterFromDate || filterToDate) && (
+                                <button className="ae-clear-filter" onClick={() => {
+                                    setFilterEventId("all"); setFilterStatus("all");
+                                    setSearchQuery(""); setFilterFromDate(""); setFilterToDate("");
+                                }}>Clear</button>
+                            )}
+                            <span className="ae-result-count">{filteredBookings.length} result(s)</span>
+                            <button className="orders-export-btn" onClick={exportBookings} style={{ marginLeft: "auto" }}>Export</button>
+                        </div>
                     </div>
 
                     <div className="ae-booking-table-wrapper">
@@ -987,36 +1195,56 @@ const Events = ({ adminData, setAdminData }) => {
                                     </div>
 
                                     <div className="form-group">
-                                        <label>Venue / Address</label>
+                                        <label style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+                                            <span>Venue / Address</span>
+                                            <button
+                                                type="button"
+                                                className={`use-restaurant-loc-toggle${useRestaurantAddrSpec ? " active" : ""}`}
+                                                onClick={() => {
+                                                    const next = !useRestaurantAddrSpec;
+                                                    setUseRestaurantAddrSpec(next);
+                                                    if (next) {
+                                                        setSpecFormData(p => {
+                                                            const updated = { ...p, ...RESTAURANT_ADDRESS };
+                                                            updated.venue = buildAddress(updated);
+                                                            return updated;
+                                                        });
+                                                    }
+                                                }}
+                                            >
+                                                {useRestaurantAddrSpec ? "✓ " : ""}Use restaurant location
+                                            </button>
+                                        </label>
+
                                         <div className="ae-addr-grid">
-                                            <div className="ae-addr-field">
-                                                <label>Door No. <span className="ae-req">*</span></label>
-                                                <input type="text" value={specFormData.addrDoorNo} placeholder="Door / Flat No." onChange={e => { const v = e.target.value; setSpecFormData(p => ({ ...p, addrDoorNo: v, venue: buildAddress({ ...p, addrDoorNo: v }) })); }} />
-                                            </div>
-                                            <div className="ae-addr-field">
-                                                <label>Street <span className="ae-req">*</span></label>
-                                                <input type="text" value={specFormData.addrStreet} placeholder="Street / Road name" onChange={e => { const v = e.target.value; setSpecFormData(p => ({ ...p, addrStreet: v, venue: buildAddress({ ...p, addrStreet: v }) })); }} />
-                                            </div>
-                                            <div className="ae-addr-field">
-                                                <label>Area <span className="ae-req">*</span></label>
-                                                <input type="text" value={specFormData.addrArea} placeholder="Area / Locality" onChange={e => { const v = e.target.value; setSpecFormData(p => ({ ...p, addrArea: v, venue: buildAddress({ ...p, addrArea: v }) })); }} />
-                                            </div>
-                                            <div className="ae-addr-field">
-                                                <label>Landmark <span style={{ fontSize: 10, color: "#aaa" }}>(optional)</span></label>
-                                                <input type="text" value={specFormData.addrLandmark} placeholder="Near / opposite…" onChange={e => { const v = e.target.value; setSpecFormData(p => ({ ...p, addrLandmark: v, venue: buildAddress({ ...p, addrLandmark: v }) })); }} />
-                                            </div>
-                                            <div className="ae-addr-field">
-                                                <label>City <span className="ae-req">*</span></label>
-                                                <input type="text" value={specFormData.addrCity} placeholder="City" onChange={e => { const v = e.target.value; setSpecFormData(p => ({ ...p, addrCity: v, venue: buildAddress({ ...p, addrCity: v }) })); }} />
-                                            </div>
-                                            <div className="ae-addr-field">
-                                                <label>State <span className="ae-req">*</span></label>
-                                                <input type="text" value={specFormData.addrState} placeholder="State" onChange={e => { const v = e.target.value; setSpecFormData(p => ({ ...p, addrState: v, venue: buildAddress({ ...p, addrState: v }) })); }} />
-                                            </div>
-                                            <div className="ae-addr-field">
-                                                <label>Pincode <span className="ae-req">*</span></label>
-                                                <input type="text" value={specFormData.addrPincode} placeholder="6-digit pincode" maxLength={6} onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 6); setSpecFormData(p => ({ ...p, addrPincode: v, venue: buildAddress({ ...p, addrPincode: v }) })); }} />
-                                            </div>
+                                            {[
+                                                { key: "addrDoorNo", label: "Door No.", placeholder: "Door / Flat No.", req: true },
+                                                { key: "addrStreet", label: "Street", placeholder: "Street / Road name", req: true },
+                                                { key: "addrArea", label: "Area", placeholder: "Area / Locality", req: true },
+                                                { key: "addrLandmark", label: "Landmark", placeholder: "Near / opposite…", req: false },
+                                                { key: "addrCity", label: "City", placeholder: "City", req: true },
+                                                { key: "addrState", label: "State", placeholder: "State", req: true },
+                                                { key: "addrPincode", label: "Pincode", placeholder: "6-digit pincode", req: true },
+                                            ].map(field => (
+                                                <div key={field.key} className="ae-addr-field">
+                                                    <label>{field.label} {field.req && <span className="ae-req">*</span>}</label>
+                                                    <input
+                                                        type="text"
+                                                        value={specFormData[field.key]}
+                                                        placeholder={field.placeholder}
+                                                        maxLength={field.key === "addrPincode" ? 6 : undefined}
+                                                        readOnly={useRestaurantAddrSpec}
+                                                        style={useRestaurantAddrSpec ? { background: "#f3f4f6", cursor: "not-allowed", color: "#888" } : {}}
+                                                        onChange={e => {
+                                                            if (useRestaurantAddrSpec) return;
+                                                            const v = field.key === "addrPincode"
+                                                                ? e.target.value.replace(/\D/g, "").slice(0, 6)
+                                                                : e.target.value;
+                                                            setSpecFormData(p => ({ ...p, [field.key]: v, venue: buildAddress({ ...p, [field.key]: v }) }));
+                                                        }}
+                                                    />
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
 

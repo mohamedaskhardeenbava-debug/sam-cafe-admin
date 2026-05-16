@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from "react";
+import * as XLSX from "xlsx";
 import "./KitchenGrooming.css";
 import api from "../../api";
+import { CustomDatePicker } from "../../components/CustomDatePicker";
 
 const GROOM_FIELDS = [
   { key: "uniform", label: "Uniform", icon: "👔" },
@@ -28,6 +30,52 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
   const [showMemo, setShowMemo] = useState(false);
   const [memo, setMemo] = useState({ staffId: "", text: "" });
   const [saving, setSaving] = useState({});
+  const [groomSearch, setGroomSearch] = useState("");
+  const [groomFromDate, setGroomFromDate] = useState("");
+  const [groomToDate, setGroomToDate] = useState("");
+  const [showSummary, setShowSummary] = useState(false);
+
+  // Filtered date columns based on date range
+  const visibleDates = useMemo(() => {
+    return dates.filter(d => {
+      if (groomFromDate && d < groomFromDate) return false;
+      if (groomToDate && d > groomToDate) return false;
+      return true;
+    });
+  }, [dates, groomFromDate, groomToDate]);
+
+  // Filtered staff by search
+  const visibleStaff = useMemo(() => {
+    const q = groomSearch.toLowerCase();
+    return adminData.staff.filter(s =>
+      !q || (s.name || "").toLowerCase().includes(q) || (s.role || "").toLowerCase().includes(q)
+    );
+  }, [adminData.staff, groomSearch]);
+
+  const exportGrooming = () => {
+    if (!visibleStaff.length) { alert("No data to export"); return; }
+    const rows = visibleStaff.map(s => {
+      const row = { Name: s.name || "—", Role: s.role || "—" };
+      let perfect = 0;
+      visibleDates.forEach(d => {
+        const e = adminData.grooming?.[s.id]?.[d];
+        const val = e?.uniform && e?.shoes && e?.groom ? "✔ All" :
+          (e?.uniform || e?.shoes || e?.groom)
+            ? `${[e?.uniform && "Uniform", e?.shoes && "Shoes", e?.groom && "Groom"].filter(Boolean).join(", ")}`
+            : "✖ None";
+        row[d] = val;
+        if (e?.uniform && e?.shoes && e?.groom) perfect++;
+      });
+      row["Perfect Days"] = perfect;
+      row["Score %"] = visibleDates.length > 0 ? `${Math.round((perfect / visibleDates.length) * 100)}%` : "0%";
+      return row;
+    });
+    const sheet = XLSX.utils.json_to_sheet(rows);
+    sheet["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, sheet, "Grooming");
+    XLSX.writeFile(wb, `kitchen_grooming_${groomFromDate || dates[0]}_to_${groomToDate || today}.xlsx`);
+  };
 
   /* ─── Toggle a single grooming check ─────────────────── */
   const toggle = async (staffId, date, field) => {
@@ -94,9 +142,9 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
 
   /* ─── Derived ─────────────────────────────────────────── */
   const staffStats = useMemo(() => {
-    return adminData.staff.map((s, i) => {
+    return visibleStaff.map((s, i) => {
       let perfect = 0;
-      dates.forEach(d => {
+      visibleDates.forEach(d => {
         const e = adminData.grooming?.[s.id]?.[d];
         if (e?.uniform && e?.shoes && e?.groom) perfect++;
       });
@@ -105,11 +153,11 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
         name: s.name,
         role: s.role,
         perfect,
-        pct: Math.round((perfect / dates.length) * 100),
+        pct: visibleDates.length > 0 ? Math.round((perfect / visibleDates.length) * 100) : 0,
         colorIdx: i,
       };
     });
-  }, [adminData.staff, adminData.grooming, dates]);
+  }, [visibleStaff, adminData.grooming, visibleDates]);
 
   return (
     <div className="kgroom-page">
@@ -118,30 +166,63 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
       <div className="kgroom-header">
         <div>
           <h2 className="kgroom-title">Kitchen Grooming</h2>
-          <p className="kgroom-subtitle">Last 7 days — Uniform · Shoes · Grooming</p>
+          <p className="kgroom-subtitle">Uniform · Shoes · Grooming</p>
         </div>
-        <button className="kgroom-add-btn" onClick={() => setShowMemo(true)}>+ Add Memo</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="orders-export-btn" onClick={exportGrooming}>Export</button>
+          <button className="kgroom-add-btn" onClick={() => setShowMemo(true)}>+ Add Memo</button>
+        </div>
+      </div>
+
+      {/* FILTER BAR */}
+      <div className="kgroom-filter-bar">
+        <input
+          className="kgroom-search"
+          placeholder="🔍 Search staff or role…"
+          value={groomSearch}
+          onChange={e => setGroomSearch(e.target.value)}
+        />
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span className="kgroom-filter-label">From</span>
+          <CustomDatePicker value={groomFromDate} onChange={v => { setGroomFromDate(v); if (groomToDate && v > groomToDate) setGroomToDate(v); }} placeholder="Start date" />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span className="kgroom-filter-label">To</span>
+          <CustomDatePicker value={groomToDate} min={groomFromDate} max={today} onChange={setGroomToDate} placeholder="End date" />
+        </div>
+        {(groomSearch || groomFromDate || groomToDate) && (
+          <button className="ae-clear-filter" onClick={() => { setGroomSearch(""); setGroomFromDate(""); setGroomToDate(""); }}>Clear</button>
+        )}
+        <span className="ae-result-count">{visibleDates.length} day(s) · {visibleStaff.length} staff</span>
+        <button
+          className={`sched-pill-btn kgroom-summary-toggle ${showSummary ? "active" : ""}`}
+          onClick={() => setShowSummary(v => !v)}
+        >
+          📊 Staff Overview
+        </button>
       </div>
 
       {/* SUMMARY */}
-      <div className="kgroom-summary-row">
-        {staffStats.map((s, i) => (
-          <div key={s.id} className="kgroom-summary-card">
-            <div className="kgroom-sum-avatar" style={{ background: PALETTE[i % PALETTE.length] }}>
-              {s.name.charAt(0).toUpperCase()}
-            </div>
-            <div className="kgroom-sum-info">
-              <span className="kgroom-sum-name">{s.name}</span>
-              <div className="kgroom-sum-bar-wrap">
-                <div className="kgroom-sum-bar" style={{ width: `${s.pct}%`, background: s.pct >= 80 ? "#06d6a0" : s.pct >= 50 ? "#ffd166" : "#ef476f" }} />
+      <div className={`kgroom-summary-collapsible ${showSummary ? "kgroom-summary-open" : ""}`}>
+        <div className="kgroom-summary-row">
+          {staffStats.map((s, i) => (
+            <div key={s.id} className="kgroom-summary-card">
+              <div className="kgroom-sum-avatar" style={{ background: PALETTE[i % PALETTE.length] }}>
+                {s.name.charAt(0).toUpperCase()}
               </div>
-              <div className="kgroom-sum-row">
-                <span className="kgroom-sum-days">{s.perfect}/{dates.length} days</span>
-                <span className="kgroom-sum-pct" style={{ color: s.pct >= 80 ? "#06d6a0" : s.pct >= 50 ? "#f59e0b" : "#ef476f" }}>{s.pct}%</span>
+              <div className="kgroom-sum-info">
+                <span className="kgroom-sum-name">{s.name}</span>
+                <div className="kgroom-sum-bar-wrap">
+                  <div className="kgroom-sum-bar" style={{ width: `${s.pct}%`, background: s.pct >= 80 ? "#06d6a0" : s.pct >= 50 ? "#ffd166" : "#ef476f" }} />
+                </div>
+                <div className="kgroom-sum-row">
+                  <span className="kgroom-sum-days">{s.perfect}/{visibleDates.length} days</span>
+                  <span className="kgroom-sum-pct" style={{ color: s.pct >= 80 ? "#06d6a0" : s.pct >= 50 ? "#f59e0b" : "#ef476f" }}>{s.pct}%</span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* TABLE */}
@@ -150,7 +231,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
           <thead>
             <tr>
               <th className="kgroom-staff-th">Staff</th>
-              {dates.map(d => {
+              {visibleDates.map(d => {
                 const dObj = new Date(d);
                 const isToday = d === today;
                 return (
@@ -167,7 +248,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
           </thead>
 
           <tbody>
-            {adminData.staff.map((s, si) => (
+            {visibleStaff.map((s, si) => (
               <tr key={s.id} className="kgroom-row">
                 <td className="kgroom-name-td">
                   <div className="kgroom-name-wrap">
@@ -181,7 +262,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
                   </div>
                 </td>
 
-                {dates.map(d => {
+                {visibleDates.map(d => {
                   const entry = adminData.grooming?.[s.id]?.[d];
                   const isToday = d === today;
                   const allGood = entry?.uniform && entry?.shoes && entry?.groom;

@@ -15,6 +15,8 @@ const fmt = (d) => {
 };
 
 const PRESETS = [
+
+    { label: "All", fn: () => ["2000-01-01", "2099-12-31"] },
     {
         label: "Today",
         fn: () => { const t = format(new Date(), "yyyy-MM-dd"); return [t, t]; }
@@ -40,7 +42,6 @@ const PRESETS = [
             return [fmt(first), fmt(last)];
         }
     },
-    { label: "All", fn: () => ["2000-01-01", "2099-12-31"] },
 ];
 
 const EMPTY_FORM = { work: "", staff: "", date: "", department: "", status: "", lastRate: "" };
@@ -53,14 +54,15 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
     const [openDropdown, setOpenDropdown] = useState(null);
     const [statusFilter, setStatusFilter] = useState(location.state?.status || "");
     const [searchText, setSearchText] = useState("");
-    const [fromDate, setFromDate] = useState("2000-01-01");
-    const [toDate, setToDate] = useState("2099-12-31");
-    const [activePreset, setActivePreset] = useState("All");
+    const today = format(new Date(), "yyyy-MM-dd");
+
+    const [fromDate, setFromDate] = useState(today);
+    const [toDate, setToDate] = useState(today);
+    const [activePreset, setActivePreset] = useState("Today");
     const [show, setShow] = useState(false);
     const [form, setForm] = useState(EMPTY_FORM);
     const [sortKey, setSortKey] = useState("date");
     const [sortDir, setSortDir] = useState("asc");
-    const today = format(new Date(), "yyyy-MM-dd");
 
     const list = adminData.serviceSchedules || [];
 
@@ -181,11 +183,11 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
                 </div>
             </div>
 
-            <div className="sched-filter-bar">
+            <div className="ssched-filter-bar">
                 <input className="cdp-search-input" placeholder="Search work / staff…" value={searchText} onChange={e => setSearchText(e.target.value)} />
                 <div className="sched-status-pills">
                     {["", "Scheduled", "Completed", "Pending"].map(s => (
-                        <button key={s} className={`cdp-preset-btn${statusFilter === s ? " active" : ""}`} onClick={() => setStatusFilter(s)}>
+                        <button key={s} className={`ssch-pill-btn${statusFilter === s ? " active" : ""}`} onClick={() => setStatusFilter(s)}>
                             {s || "All"}
                         </button>
                     ))}
@@ -195,7 +197,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
                 <CustomDatePicker label="To" value={toDate} min={fromDate}
                     onChange={s => { setToDate(s); setActivePreset("custom"); }} />
                 {PRESETS.map(p => (
-                    <button key={p.label} className={`cdp-preset-btn${activePreset === p.label ? " active" : ""}`} onClick={() => applyPreset(p)}>
+                    <button key={p.label} className={`ssch-pill-btn${activePreset === p.label ? " active" : ""}`} onClick={() => applyPreset(p)}>
                         {p.label}
                     </button>
                 ))}

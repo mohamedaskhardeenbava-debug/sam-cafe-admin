@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from "react";
+import * as XLSX from "xlsx";
 import "./ServiceGrooming.css";
 import api from "../../api";
+import { CustomDatePicker } from "../../components/CustomDatePicker";
 
 const GROOM_FIELDS = [
   { key: "uniform", label: "Uniform", icon: "👔" },
@@ -29,7 +31,48 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
   const [selected, setSelected] = useState(null);
   const [showMemo, setShowMemo] = useState(false);
   const [memo, setMemo] = useState({ staffId: "", text: "" });
-  const [saving, setSaving] = useState({}); // { staffId_date_field: true }
+  const [saving, setSaving] = useState({});
+  const [sgroomSearch, setSgroomSearch] = useState("");
+  const [sgroomFrom, setSgroomFrom] = useState("");
+  const [sgroomTo, setSgroomTo] = useState("");
+  const [showSummary, setShowSummary] = useState(false);
+
+  const visibleDates = useMemo(() => dates.filter(d => {
+    if (sgroomFrom && d < sgroomFrom) return false;
+    if (sgroomTo && d > sgroomTo) return false;
+    return true;
+  }), [dates, sgroomFrom, sgroomTo]);
+
+  const visibleStaff = useMemo(() => {
+    const q = sgroomSearch.toLowerCase();
+    return adminData.staff.filter(s =>
+      !q || (s.name || "").toLowerCase().includes(q) || (s.role || "").toLowerCase().includes(q)
+    );
+  }, [adminData.staff, sgroomSearch]);
+
+  const exportGrooming = () => {
+    if (!visibleStaff.length) { alert("No data to export"); return; }
+    const rows = visibleStaff.map(s => {
+      const row = { Name: s.name || "—", Role: s.role || "—" };
+      let perfect = 0;
+      visibleDates.forEach(d => {
+        const e = adminData.serviceGrooming?.[s.id]?.[d];
+        row[d] = e?.uniform && e?.shoes && e?.groom ? "✔ All"
+          : (e?.uniform || e?.shoes || e?.groom)
+            ? [e?.uniform && "Uniform", e?.shoes && "Shoes", e?.groom && "Groom"].filter(Boolean).join(", ")
+            : "✖ None";
+        if (e?.uniform && e?.shoes && e?.groom) perfect++;
+      });
+      row["Perfect Days"] = perfect;
+      row["Score %"] = visibleDates.length > 0 ? `${Math.round((perfect / visibleDates.length) * 100)}%` : "0%";
+      return row;
+    });
+    const sheet = XLSX.utils.json_to_sheet(rows);
+    sheet["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, sheet, "Service Grooming");
+    XLSX.writeFile(wb, `service_grooming_${sgroomFrom || dates[0]}_to_${sgroomTo || today}.xlsx`);
+  };
 
   /* ─── Toggle a single grooming check ─────────────────── */
   const toggle = async (staffId, date, field) => {
@@ -102,21 +145,18 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
 
   /* ─── Derived: 7-day compliance per staff ─────────────── */
   const staffStats = useMemo(() => {
-    return adminData.staff.map(s => {
+    return visibleStaff.map(s => {
       let perfect = 0;
-      dates.forEach(d => {
+      visibleDates.forEach(d => {
         const e = adminData.serviceGrooming?.[s.id]?.[d];
         if (e?.uniform && e?.shoes && e?.groom) perfect++;
       });
       return {
-        id: s.id,
-        name: s.name,
-        role: s.role,
-        perfect,
-        pct: Math.round((perfect / dates.length) * 100),
+        id: s.id, name: s.name, role: s.role, perfect,
+        pct: visibleDates.length > 0 ? Math.round((perfect / visibleDates.length) * 100) : 0,
       };
     });
-  }, [adminData.staff, adminData.serviceGrooming, dates]);
+  }, [visibleStaff, adminData.serviceGrooming, visibleDates]);
 
   return (
     <div className="sgroom-page">
@@ -125,36 +165,67 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
       <div className="sgroom-header">
         <div>
           <h2 className="sgroom-title">Service Grooming</h2>
-          <p className="sgroom-subtitle">Last 7 days — Uniform · Shoes · Grooming</p>
+          <p className="sgroom-subtitle">Uniform · Shoes · Grooming</p>
         </div>
-        <button className="sgroom-add-btn" onClick={() => setShowMemo(true)}>+ Add Memo</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="orders-export-btn" onClick={exportGrooming}>Export</button>
+          <button className="sgroom-add-btn" onClick={() => setShowMemo(true)}>+ Add Memo</button>
+        </div>
+      </div>
+
+      {/* FILTER BAR */}
+      <div className="sgroom-filter-bar">
+        <input
+          className="sgroom-search"
+          placeholder="🔍 Search staff or role…"
+          value={sgroomSearch}
+          onChange={e => setSgroomSearch(e.target.value)}
+        />
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span className="sgroom-filter-label">From</span>
+          <CustomDatePicker value={sgroomFrom} onChange={v => { setSgroomFrom(v); if (sgroomTo && v > sgroomTo) setSgroomTo(v); }} placeholder="Start date" />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span className="sgroom-filter-label">To</span>
+          <CustomDatePicker value={sgroomTo} min={sgroomFrom} max={today} onChange={setSgroomTo} placeholder="End date" />
+        </div>
+        {(sgroomSearch || sgroomFrom || sgroomTo) && (
+          <button className="ae-clear-filter" onClick={() => { setSgroomSearch(""); setSgroomFrom(""); setSgroomTo(""); }}>Clear</button>
+        )}
+        <span className="ae-result-count">{visibleDates.length} day(s) · {visibleStaff.length} staff</span>
+        <button
+          className={`sched-pill-btn sgroom-summary-toggle ${showSummary ? "active" : ""}`}
+          onClick={() => setShowSummary(v => !v)}
+        >
+          📊 Staff Overview
+        </button>
       </div>
 
       {/* SUMMARY CARDS */}
-      <div className="sgroom-summary-row">
-        {staffStats.map((s, i) => (
-          <div key={s.id} className="sgroom-summary-card">
-            <div className="sgroom-sum-avatar" style={{ background: `hsl(${i * 55 + 200},70%,55%)` }}>
-              {s.name.charAt(0).toUpperCase()}
-            </div>
-            <div className="sgroom-sum-info">
-              <span className="sgroom-sum-name">{s.name}</span>
-              <div className="sgroom-sum-bar-wrap">
-                <div className="sgroom-sum-bar" style={{ width: `${s.pct}%`, background: s.pct >= 80 ? "#16a34a" : s.pct >= 50 ? "#f59e0b" : "#dc2626" }} />
+      <div className={`sgroom-summary-collapsible ${showSummary ? "sgroom-summary-open" : ""}`}>
+        <div className="sgroom-summary-row">
+          {staffStats.map((s, i) => (
+            <div key={s.id} className="sgroom-summary-card">
+              <div className="sgroom-sum-avatar" style={{ background: `hsl(${i * 55 + 200},70%,55%)` }}>
+                {s.name.charAt(0).toUpperCase()}
               </div>
-              <span className="sgroom-sum-pct">{s.pct}% compliant</span>
+              <div className="sgroom-sum-info">
+                <span className="sgroom-sum-name">{s.name}</span>
+                <div className="sgroom-sum-bar-wrap">
+                  <div className="sgroom-sum-bar" style={{ width: `${s.pct}%`, background: s.pct >= 80 ? "#16a34a" : s.pct >= 50 ? "#f59e0b" : "#dc2626" }} />
+                </div>
+                <span className="sgroom-sum-pct">{s.pct}% compliant</span>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {/* TABLE */}
+          ))}
+        </div>
+      </div>      {/* TABLE */}
       <div className="sgroom-table-wrapper">
         <table className="sgroom-table">
           <thead>
             <tr>
               <th className="sgroom-staff-th">Staff</th>
-              {dates.map(d => {
+              {visibleDates.map(d => {
                 const dObj = new Date(d);
                 const isToday = d === today;
                 return (
@@ -171,7 +242,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
           </thead>
 
           <tbody>
-            {adminData.staff.map((s, si) => (
+            {visibleStaff.map((s, si) => (
               <tr key={s.id} className="sgroom-row">
                 <td className="sgroom-name-td">
                   <div className="sgroom-name-wrap">
@@ -185,7 +256,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
                   </div>
                 </td>
 
-                {dates.map(d => {
+                {visibleDates.map(d => {
                   const entry = adminData.serviceGrooming?.[s.id]?.[d];
                   const isToday = d === today;
                   const allGood = entry?.uniform && entry?.shoes && entry?.groom;

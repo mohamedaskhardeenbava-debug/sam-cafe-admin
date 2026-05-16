@@ -1,7 +1,10 @@
 import React, { useMemo, useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
+import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import "./PreBookings.css";
+import "./PreviewModal.css";
 import { useToast } from "../../useToast";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
@@ -49,12 +52,104 @@ const fmtDateTime = (iso) => {
 const EMPTY_FORM = { name: "", mobile: "", email: "", guests: 1, date: todayStr(), time: "", slotGroup: "", notes: "", source: "Phone" };
 const SOURCE_OPTIONS = ["Phone", "WhatsApp", "In Person", "User App"];
 
+/* ── Dish Picker for admin pre-booking (all dishes, no qty, price × guests) ── */
+const PreDishPicker = ({ menuData, selectedItems, setSelectedItems, guests }) => {
+  const { categories, dishes } = React.useMemo(() => {
+    if (!menuData) return { categories: [], dishes: [] };
+    const rawCats = Array.isArray(menuData) ? menuData : (menuData.categories || []);
+    const flatCats = [];
+    const flatDishes = [];
+    rawCats.forEach(topCat => {
+      const subs = topCat.subCategories || [];
+      if (subs.length > 0) {
+        subs.forEach(sub => {
+          flatCats.push({ id: sub.id, name: sub.name });
+          (sub.dishes || []).forEach(d => flatDishes.push({
+            ...d, price: d.basePrice || d.price || 0, categoryId: sub.id, category: sub.name,
+          }));
+        });
+      } else {
+        flatCats.push({ id: topCat.id, name: topCat.name });
+        (topCat.dishes || []).forEach(d => flatDishes.push({
+          ...d, price: d.basePrice || d.price || 0, categoryId: topCat.id, category: topCat.name,
+        }));
+      }
+    });
+    return { categories: flatCats, dishes: flatDishes };
+  }, [menuData]);
+
+  const [activeCat, setActiveCat] = useState("");
+  const guestCount = Math.max(1, parseInt(guests, 10) || 1);
+
+  const filteredDishes = activeCat ? dishes.filter(d => d.categoryId === activeCat) : dishes;
+
+  const toggle = (dish) => {
+    setSelectedItems(prev => {
+      const exists = prev.find(i => i.id === dish.id);
+      if (exists) return prev.filter(i => i.id !== dish.id);
+      return [...prev, { ...dish, unitPrice: dish.price, totalPrice: dish.price * guestCount }];
+    });
+  };
+
+  useEffect(() => {
+    setSelectedItems(prev => prev.map(i => ({
+      ...i, totalPrice: (i.unitPrice || i.price || 0) * guestCount,
+    })));
+  }, [guestCount]);
+
+  const isSelected = (id) => selectedItems.some(i => i.id === id);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, height: "100%" }}>
+      <select style={{ padding: "7px 10px", borderRadius: 8, border: "1.5px solid #e5e7eb", fontSize: 13, fontFamily: "inherit" }}
+        value={activeCat} onChange={e => setActiveCat(e.target.value)}>
+        <option value="">All Categories</option>
+        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+      </select>
+      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4, border: "1px solid #e5e7eb", borderRadius: 8, padding: 6 }}>
+        {filteredDishes.length === 0
+          ? <div style={{ textAlign: "center", color: "#aaa", padding: 20, fontSize: 13 }}>No dishes</div>
+          : filteredDishes.map(dish => {
+            const sel = isSelected(dish.id);
+            return (
+              <div key={dish.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 8, background: sel ? "#fff5f5" : "transparent", cursor: "pointer" }}
+                onClick={() => toggle(dish)}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 13, color: "#111" }}>{dish.name}</div>
+                  <div style={{ fontSize: 11, color: "#888" }}>₹{dish.price}/person × {guestCount} = <strong style={{ color: "#e74c3c" }}>₹{(dish.price * guestCount).toLocaleString()}</strong></div>
+                </div>
+                <button type="button"
+                  style={{ padding: "3px 10px", borderRadius: 6, border: sel ? "1.5px solid #e74c3c" : "1.5px solid #e74c3c", background: sel ? "#fee2e2" : "transparent", color: "#e74c3c", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                  {sel ? "✓" : "+ Add"}
+                </button>
+              </div>
+            );
+          })
+        }
+      </div>
+    </div>
+  );
+};
+
 const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [menuData, setMenuData] = useState(null);
+  const [tab, setTab] = useState(0); // 0=Details, 1=Dishes, 2=Preview
+
+  useEffect(() => {
+    api.get("/categories").then(res => setMenuData(res.data)).catch(() => setMenuData([]));
+  }, []);
 
   const setF = (k, v) => { setForm(p => ({ ...p, [k]: v })); setErrors(p => ({ ...p, [k]: "" })); };
+
+  const guestCount = Math.max(1, parseInt(form.guests, 10) || 1);
+  const isGroupDiscount = guestCount > 8;
+  const subtotal = selectedItems.reduce((s, i) => s + (i.totalPrice || 0), 0);
+  const discount = isGroupDiscount ? Math.round(subtotal * 0.1) : 0;
+  const totalAmount = subtotal - discount;
 
   const validate = () => {
     const err = {};
@@ -62,7 +157,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
     const mob = form.mobile.replace(/\D/g, "");
     if (!mob || mob.length !== 10) err.mobile = true;
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) err.email = true;
-    if (!form.guests || parseInt(form.guests, 10) < 1) err.guests = true;
+    if (!form.guests || guestCount < 1) err.guests = true;
     if (!form.date) err.date = true;
     if (!form.time) err.time = true;
     return err;
@@ -70,25 +165,17 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
 
   const handleSave = async () => {
     const ve = validate();
-    if (Object.keys(ve).length > 0) { setErrors(ve); return; }
+    if (Object.keys(ve).length > 0) { setErrors(ve); setTab(0); return; }
     setSaving(true);
     try {
       const newId = `pre_${Date.now()}`;
       const body = {
         id: newId,
-        name: form.name,
-        mobile: form.mobile,
-        email: form.email || "",
-        guests: parseInt(form.guests, 10) || 1,
-        date: form.date,
-        time: form.time,
-        slotGroup: form.slotGroup || "",
-        notes: form.notes || "",
+        name: form.name, mobile: form.mobile, email: form.email || "",
+        guests: guestCount, date: form.date, time: form.time,
+        slotGroup: form.slotGroup || "", notes: form.notes || "",
         source: form.source || "Phone",
-        items: [],
-        subtotal: 0,
-        discount: 0,
-        totalAmount: 0,
+        items: selectedItems, subtotal, discount, totalAmount,
         status: "scheduled",
         createdAt: new Date().toISOString(),
       };
@@ -103,139 +190,256 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
     }
   };
 
+  const slotLabel = SLOT_GROUPS.find(s => s.key === form.slotGroup)?.label || "—";
+
   return (
     <div className="ingredient-modal-overlay" onClick={onClose}>
-      <div className="ingredient-modal" onClick={e => e.stopPropagation()}>
+      <div className="ingredient-modal" style={{ width: 680, maxWidth: "96vw" }} onClick={e => e.stopPropagation()}>
 
-        {/* Header */}
         <div className="ingredient-modal-header">
-          <h3>Add PreBooking</h3>
+          <div>
+            <h3>Add PreBooking</h3>
+            <div className="ae-spec-steps">
+              {["Details", "Dishes", "Preview"].map((t, i) => (
+                <button key={i}
+                  className={`ae-spec-step${tab === i ? " active" : ""}${tab > i ? " done" : ""}`}
+                  onClick={() => i < tab && setTab(i)}>
+                  <span className="ae-step-num">{tab > i ? "✓" : i + 1}</span>
+                  <span className="ae-step-label">{t}</span>
+                </button>
+              ))}
+            </div>
+          </div>
           <button className="ingredient-close-btn" onClick={onClose}></button>
         </div>
 
-        <div className="ingredient-modal-body">
+        <div className="ingredient-modal-body" style={{ minHeight: 360 }}>
 
-          {/* Name + Guests */}
-          <div className="evt-pre-modal-row">
-            <div className="evt-pre-modal-group">
-              <label>Name <span className="evt-pre-req">*</span></label>
-              <input
-                className={`evt-pre-modal-input${errors.name ? " error" : ""}`}
-                placeholder="Guest name"
-                value={form.name}
-                onChange={e => setF("name", e.target.value)}
-              />
-            </div>
-            <div className="evt-pre-modal-group" style={{ flex: "0 0 130px" }}>
-              <label>Guests <span className="evt-pre-req">*</span></label>
-              <div className={`evt-pre-modal-stepper${errors.guests ? " error" : ""}`}>
-                <button type="button" onClick={() => setF("guests", Math.max(1, form.guests - 1))}>−</button>
-                <span>{form.guests}</span>
-                <button type="button" onClick={() => setF("guests", Math.min(50, form.guests + 1))}>+</button>
+          {/* TAB 0: Details */}
+          {tab === 0 && (
+            <>
+              <div className="evt-pre-modal-row">
+                <div className="form-group">
+                  <label>Name <span className="evt-pre-req">*</span></label>
+                  <input className={`evt-pre-modal-input${errors.name ? " error" : ""}`} placeholder="Guest name"
+                    value={form.name} onChange={e => setF("name", e.target.value)} />
+                </div>
+                <div className="form-group" style={{ flex: "0 0 130px" }}>
+                  <label>Guests <span className="evt-pre-req">*</span></label>
+                  <div className={`evt-pre-modal-stepper${errors.guests ? " error" : ""}`}>
+                    <button type="button" onClick={() => setF("guests", Math.max(1, form.guests - 1))}>−</button>
+                    <span>{form.guests}</span>
+                    <button type="button" onClick={() => setF("guests", Math.min(500, form.guests + 1))}>+</button>
+                  </div>
+                  {isGroupDiscount && <span style={{ fontSize: 10, color: "#065f46", marginTop: 2, display: "block" }}>🎉 &gt;8 guests — 10% off</span>}
+                </div>
+              </div>
+
+              <div className="evt-pre-modal-row">
+                <div className="form-group">
+                  <label>Mobile <span className="evt-pre-req">*</span></label>
+                  <input className={`evt-pre-modal-input${errors.mobile ? " error" : ""}`} placeholder="10-digit number" type="tel"
+                    value={form.mobile} onChange={e => setF("mobile", e.target.value.replace(/\D/g, "").slice(0, 10))} />
+                </div>
+                <div className="form-group">
+                  <label>Email <span className="evt-pre-opt">(optional)</span></label>
+                  <input className={`evt-pre-modal-input${errors.email ? " error" : ""}`} placeholder="email@example.com" type="email"
+                    value={form.email} onChange={e => setF("email", e.target.value)} />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Dining Slot <span className="evt-pre-opt">(optional)</span></label>
+                <div className="evt-pre-modal-slots">
+                  {SLOT_GROUPS.map(sg => (
+                    <button key={sg.key} type="button"
+                      className={`evt-pre-modal-slot-chip${form.slotGroup === sg.key ? " active" : ""}`}
+                      onClick={() => { const next = form.slotGroup === sg.key ? "" : sg.key; setF("slotGroup", next); setF("time", ""); }}>
+                      {sg.label}
+                      <span className="evt-pre-modal-slot-time">{sg.start}–{sg.end}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="evt-pre-modal-row">
+                <div className="form-group">
+                  <label>Date <span className="evt-pre-req">*</span></label>
+                  <CustomDatePicker value={form.date} min={todayStr()} onChange={v => setF("date", v)} hasError={!!errors.date} />
+                </div>
+                <div className="form-group">
+                  <label>Time <span className="evt-pre-req">*</span>{!form.slotGroup && <span className="evt-pre-opt"> (select slot first)</span>}</label>
+                  <CustomTimePicker value={form.time} onChange={v => setF("time", v)}
+                    slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
+                    slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
+                    disabled={!form.slotGroup} />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Source</label>
+                <div className="evt-pre-modal-source-row">
+                  {SOURCE_OPTIONS.map(s => (
+                    <button key={s} type="button"
+                      className={`evt-pre-modal-source-btn${form.source === s ? " active" : ""}`}
+                      onClick={() => setF("source", s)}>{s}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Notes <span className="evt-pre-opt">(optional)</span></label>
+                <textarea className="evt-pre-modal-textarea" rows={2} placeholder="Special requests..."
+                  value={form.notes} onChange={e => setF("notes", e.target.value)} />
+              </div>
+            </>
+          )}
+
+          {/* TAB 1: Dishes */}
+          {tab === 1 && (
+            <div style={{ display: "flex", gap: 12, height: 340 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <PreDishPicker menuData={menuData} selectedItems={selectedItems} setSelectedItems={setSelectedItems} guests={form.guests} />
+              </div>
+              <div style={{ width: 200, display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ fontWeight: 600, fontSize: 13, color: "#111", paddingBottom: 6, borderBottom: "1px solid #f0f0f0" }}>
+                  Selected ({selectedItems.length})
+                </div>
+                <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+                  {selectedItems.length === 0
+                    ? <div style={{ fontSize: 12, color: "#aaa", padding: "12px 0", textAlign: "center" }}>No dishes yet</div>
+                    : selectedItems.map(item => (
+                      <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, gap: 4 }}>
+                        <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }}>{item.name}</span>
+                        <span style={{ fontWeight: 700, color: "#e74c3c", flexShrink: 0 }}>₹{item.totalPrice}</span>
+                        <button type="button" onClick={() => setSelectedItems(p => p.filter(x => x.id !== item.id))}
+                          style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 14, padding: "0 2px" }}>×</button>
+                      </div>
+                    ))
+                  }
+                </div>
+                {subtotal > 0 && (
+                  <div style={{ borderTop: "1px solid #f0f0f0", paddingTop: 8, fontSize: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}><span>Subtotal</span><span>₹{subtotal.toLocaleString()}</span></div>
+                    {isGroupDiscount && <div style={{ display: "flex", justifyContent: "space-between", color: "#065f46" }}><span>Discount 10%</span><span>−₹{discount}</span></div>}
+                    <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 13, marginTop: 4 }}><span>Total</span><span>₹{totalAmount.toLocaleString()}</span></div>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Mobile + Email */}
-          <div className="evt-pre-modal-row">
-            <div className="evt-pre-modal-group">
-              <label>Mobile <span className="evt-pre-req">*</span></label>
-              <input
-                className={`evt-pre-modal-input${errors.mobile ? " error" : ""}`}
-                placeholder="10-digit number"
-                type="tel"
-                value={form.mobile}
-                onChange={e => setF("mobile", e.target.value.replace(/\D/g, "").slice(0, 10))}
-              />
-            </div>
-            <div className="evt-pre-modal-group">
-              <label>Email <span className="evt-pre-opt">(optional)</span></label>
-              <input
-                className={`evt-pre-modal-input${errors.email ? " error" : ""}`}
-                placeholder="email@example.com"
-                type="email"
-                value={form.email}
-                onChange={e => setF("email", e.target.value)}
-              />
-            </div>
-          </div>
+          {/* TAB 2: Preview */}
+          {tab === 2 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {/* Summary header */}
+              <div style={{ background: "linear-gradient(135deg,#f8fafc,#fef3c7)", borderRadius: 12, padding: "12px 16px", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 42, height: 42, borderRadius: "50%", background: "linear-gradient(135deg,#f59e0b,#ef4444)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18 }}>
+                  {(form.name || "?").charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: "#111" }}>{form.name || "—"}</div>
+                  <div style={{ fontSize: 12, color: "#666" }}>{form.mobile || "—"} {form.email ? `· ${form.email}` : ""}</div>
+                </div>
+                <div style={{ marginLeft: "auto", display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {form.slotGroup && <span className={`evt-pre-slot-badge slot-${form.slotGroup.toLowerCase()}`} style={{ fontSize: 12, padding: "3px 10px", borderRadius: 999, fontWeight: 600 }}>{slotLabel}</span>}
+                  <span className="prv-status-badge scheduled">scheduled</span>
+                </div>
+              </div>
 
-          {/* Slot chips */}
-          <div className="evt-pre-modal-group">
-            <label>Dining Slot <span className="evt-pre-opt">(optional)</span></label>
-            <div className="evt-pre-modal-slots">
-              {SLOT_GROUPS.map(sg => (
-                <button key={sg.key} type="button"
-                  className={`evt-pre-modal-slot-chip${form.slotGroup === sg.key ? " active" : ""}`}
-                  onClick={() => { const next = form.slotGroup === sg.key ? "" : sg.key; setF("slotGroup", next); setF("time", ""); }}>
-                  {sg.label}
-                  <span className="evt-pre-modal-slot-time">{sg.start}–{sg.end}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+              <div className="prv-section">
+                <div className="prv-section-title">Booking Details</div>
+                <div className="prv-grid">
+                  {[
+                    ["Date", form.date || "—"],
+                    ["Time", fmtTime(form.time)],
+                    ["Slot", slotLabel],
+                    ["Guests", form.guests ?? "—"],
+                    ["Source", form.source || "—"],
+                    ["Status", "scheduled"],
+                  ].map(([l, v]) => (
+                    <div key={l} className="prv-cell"><div className="prv-cell-label">{l}</div><div className="prv-cell-val" style={{ textTransform: "capitalize" }}>{v}</div></div>
+                  ))}
+                </div>
+              </div>
 
-          {/* Date + Time */}
-          <div className="evt-pre-modal-row">
-            <div className="evt-pre-modal-group">
-              <label>Date <span className="evt-pre-req">*</span></label>
-              <CustomDatePicker
-                value={form.date}
-                min={todayStr()}
-                onChange={v => setF("date", v)}
-                hasError={!!errors.date}
-              />
-            </div>
-            <div className="evt-pre-modal-group">
-              <label>
-                Time <span className="evt-pre-req">*</span>
-                {!form.slotGroup && <span className="evt-pre-opt"> (select slot first)</span>}
-              </label>
-              <CustomTimePicker
-                value={form.time}
-                onChange={v => setF("time", v)}
-                slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
-                slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
-                disabled={!form.slotGroup}
-              />
-            </div>
-          </div>
+              {selectedItems.length > 0 && (
+                <div className="prv-section">
+                  <div className="prv-section-title">Pre-ordered Dishes ({selectedItems.length})</div>
+                  <table className="prv-table">
+                    <thead><tr><th>#</th><th>Dish</th><th>Unit Price</th><th>Guests</th><th>Total</th></tr></thead>
+                    <tbody>
+                      {selectedItems.map((dish, idx) => (
+                        <tr key={idx}>
+                          <td style={{ color: "#aaa", fontSize: 12 }}>{idx + 1}</td>
+                          <td style={{ fontWeight: 600 }}>{dish.name}</td>
+                          <td>₹{dish.unitPrice || dish.price || 0}</td>
+                          <td style={{ textAlign: "center", fontWeight: 700 }}>{guestCount}</td>
+                          <td style={{ fontWeight: 700 }}>₹{dish.totalPrice || 0}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr><td colSpan="4">Subtotal</td><td>₹{subtotal.toLocaleString()}</td></tr>
+                      {isGroupDiscount && <tr><td colSpan="4" style={{ color: "#065f46" }}>Group Discount (10%)</td><td style={{ color: "#065f46" }}>−₹{discount.toLocaleString()}</td></tr>}
+                      <tr><td colSpan="4" style={{ fontWeight: 800 }}>Total</td><td style={{ fontWeight: 800 }}>₹{totalAmount.toLocaleString()}</td></tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
 
-          {/* Source */}
-          <div className="evt-pre-modal-group">
-            <label>Source</label>
-            <div className="evt-pre-modal-source-row">
-              {SOURCE_OPTIONS.map(s => (
-                <button key={s} type="button"
-                  className={`evt-pre-modal-source-btn${form.source === s ? " active" : ""}`}
-                  onClick={() => setF("source", s)}>
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
+              {selectedItems.length === 0 && (
+                <div className="prv-section">
+                  <div className="prv-section-title">Pre-ordered Dishes</div>
+                  <div className="prv-empty">No dishes selected — guest will order on arrival</div>
+                </div>
+              )}
 
-          {/* Notes */}
-          <div className="evt-pre-modal-group">
-            <label>Notes <span className="evt-pre-opt">(optional)</span></label>
-            <textarea
-              className="evt-pre-modal-textarea"
-              rows={2}
-              placeholder="Special requests..."
-              value={form.notes}
-              onChange={e => setF("notes", e.target.value)}
-            />
-          </div>
+              {form.notes && (
+                <div className="prv-section">
+                  <div className="prv-section-title">Notes</div>
+                  <div className="prv-notes">{form.notes}</div>
+                </div>
+              )}
+
+              {totalAmount > 0 && (
+                <div className="prv-total-bar">
+                  <span className="prv-total-label">Total Amount</span>
+                  <span className="prv-total-val">₹{totalAmount.toLocaleString()}</span>
+                </div>
+              )}
+
+              {Object.keys(validate()).length > 0 && (
+                <div style={{ padding: "10px 14px", background: "#fef3c7", borderRadius: 10, border: "1px solid #fcd34d", fontSize: 13, color: "#92400e" }}>
+                  ⚠️ Required fields missing — please go back and fill: Name, Mobile, Date, Time.
+                </div>
+              )}
+            </div>
+          )}
 
         </div>
 
-        {/* Footer */}
         <div className="ingredient-modal-footer form-actions">
-          <button type="button" onClick={handleSave} disabled={saving}>
-            Add PreBooking
-          </button>
-          <button type="button" onClick={onClose}>Cancel</button>
-
+          {tab > 0 && (
+            <button type="button" className="ae-step-prev-btn" onClick={() => setTab(t => t - 1)}>← Back</button>
+          )}
+          {tab < 2 ? (
+            <button type="button" className="evt-res-create-btn"
+              onClick={() => {
+                if (tab === 0) {
+                  const ve = validate();
+                  if (Object.keys(ve).length > 0) { setErrors(ve); return; }
+                }
+                setTab(t => t + 1);
+              }}>
+              Next →
+            </button>
+          ) : (
+            <button type="button" className="evt-res-create-btn" disabled={saving} onClick={handleSave}>
+              {saving ? "Saving..." : "Create PreBooking"}
+            </button>
+          )}
+          <button type="button" className="orders-export-btn" onClick={onClose}>Cancel</button>
         </div>
 
       </div>
@@ -256,8 +460,9 @@ const PreBookings = ({ adminData, setAdminData }) => {
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState("date");
   const [sortDir, setSortDir] = useState("asc");
-  const [callHistory, setCallHistory] = useState({});
   const [callTooltipId, setCallTooltipId] = useState(null);
+  const [callTooltipPos, setCallTooltipPos] = useState({ top: 0, left: 0 });
+  const callWrapRefs = useRef({});
   const [showAddModal, setShowAddModal] = useState(false);
 
   const data = adminData?.preBookings || [];
@@ -323,11 +528,35 @@ const PreBookings = ({ adminData, setAdminData }) => {
     }
   };
 
-  /* call logging */
-  const handleCall = (e, id) => {
+  /* call logging — persisted to JSON */
+  const handleCall = async (e, id) => {
     e.stopPropagation();
-    setCallHistory(prev => ({ ...prev, [id]: [...(prev[id] || []), new Date().toISOString()] }));
-    toast.success("Call logged!");
+    const prev = (adminData?.preBookings || []).find(r => r.id === id);
+    if (!prev) return;
+    const newEntry = new Date().toISOString();
+    const updatedHistory = [...(prev.callHistory || []), newEntry];
+    /* optimistic update */
+    if (typeof setAdminData === "function") {
+      setAdminData(p => ({
+        ...p,
+        preBookings: (p.preBookings || []).map(r =>
+          r.id === id ? { ...r, callHistory: updatedHistory } : r
+        ),
+      }));
+    }
+    try {
+      try { await api.patch(`/preBookings/${id}`, { callHistory: updatedHistory }); }
+      catch { await api.put(`/preBookings/${id}`, { ...prev, callHistory: updatedHistory }); }
+      toast.success("Call logged!");
+    } catch {
+      if (typeof setAdminData === "function") {
+        setAdminData(p => ({
+          ...p,
+          preBookings: (p.preBookings || []).map(r => r.id === id ? prev : r),
+        }));
+      }
+      toast.error("Failed to log call");
+    }
   };
 
   /* modal saved callback */
@@ -338,6 +567,30 @@ const PreBookings = ({ adminData, setAdminData }) => {
   };
 
   const activeFilters = filterDate || filterSlots.size > 0 || filterStatuses.size > 0 || search.trim();
+
+  const exportToExcel = () => {
+    if (!sortedData.length) { alert("No pre-bookings to export"); return; }
+    const rows = sortedData.map(item => ({
+      Name: item.name || "—",
+      Mobile: item.mobile || "—",
+      Email: item.email || "—",
+      Date: item.date || "—",
+      Slot: item.slotGroup || "—",
+      Time: item.time || "—",
+      Guests: item.guests ?? "—",
+      Items: (item.items || []).length,
+      "Total Amount": item.totalAmount ? `₹${Number(item.totalAmount).toLocaleString("en-IN")}` : "—",
+      Status: item.status || "—",
+      Source: item.source || "—",
+    }));
+    const sheet = XLSX.utils.json_to_sheet(rows);
+    sheet["!cols"] = Object.keys(rows[0]).map(k => ({
+      wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2,
+    }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, sheet, "PreBookings");
+    XLSX.writeFile(wb, `prebookings_${filterDate || "all"}.xlsx`);
+  };
 
   const SortTh = ({ field, children }) => (
     <th onClick={() => handleSort(field)} style={{ cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}>
@@ -357,9 +610,12 @@ const PreBookings = ({ adminData, setAdminData }) => {
           <h2 className="evt-pre-title">PreBookings</h2>
           <p className="evt-pre-subtitle">Manage pre-orders &amp; advance bookings</p>
         </div>
-        <button className="evt-pre-add-btn" onClick={() => setShowAddModal(true)}>
-          + Add PreBooking
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="orders-export-btn" onClick={exportToExcel}>Export</button>
+          <button className="evt-pre-add-btn" onClick={() => setShowAddModal(true)}>
+            + Add PreBooking
+          </button>
+        </div>
       </div>
 
       {/* KPI STRIP */}
@@ -452,7 +708,7 @@ const PreBookings = ({ adminData, setAdminData }) => {
                 const status = item.status || "scheduled";
                 const slotKey = resolveSlotKey(item);
                 const slotLabel = SLOT_GROUPS.find(s => s.key === slotKey)?.label || "—";
-                const history = callHistory[item.id] || [];
+                const history = item.callHistory || [];
 
                 return (
                   <tr key={item.id} className="evt-pre-row clickable"
@@ -522,19 +778,21 @@ const PreBookings = ({ adminData, setAdminData }) => {
                     {/* Actions */}
                     <td onClick={e => e.stopPropagation()}>
                       <div className="evt-pre-call-wrap"
-                        onMouseEnter={() => history.length > 0 && setCallTooltipId(item.id)}
+                        ref={el => { callWrapRefs.current[item.id] = el; }}
+                        onMouseEnter={() => {
+                          if (history.length > 0) {
+                            const el = callWrapRefs.current[item.id];
+                            if (el) {
+                              const r = el.getBoundingClientRect();
+                              setCallTooltipPos({ top: r.top, left: r.left, width: r.width });
+                            }
+                            setCallTooltipId(item.id);
+                          }
+                        }}
                         onMouseLeave={() => setCallTooltipId(null)}>
                         <button className="evt-pre-act-btn" onClick={e => handleCall(e, item.id)}>
                           📞 Call{history.length > 0 ? ` (${history.length})` : ""}
                         </button>
-                        {callTooltipId === item.id && history.length > 0 && (
-                          <div className="evt-pre-call-tooltip">
-                            <div className="evt-pre-call-tooltip-title">📞 Call History</div>
-                            {history.map((ts, i) => (
-                              <div key={i} className="evt-pre-call-tooltip-row">{fmtDateTime(ts)}</div>
-                            ))}
-                          </div>
-                        )}
                       </div>
                     </td>
 
@@ -545,6 +803,35 @@ const PreBookings = ({ adminData, setAdminData }) => {
           </tbody>
         </table>
       </div>
+
+
+      {/* ── Call History Portal Tooltip ── */}
+      {callTooltipId && createPortal(
+        (() => {
+          const histItem = (adminData?.preBookings || []).find(x => x.id === callTooltipId);
+          const hist = histItem?.callHistory || [];
+          if (!hist.length) return null;
+          return (
+            <div
+              className="evt-pre-call-tooltip"
+              style={{
+                position: "fixed",
+                top: callTooltipPos.top,
+                left: callTooltipPos.left - 20,
+                transform: "translate(-50%, calc(-100% - 10px))",
+                zIndex: 99999,
+                pointerEvents: "none",
+              }}
+            >
+              <div className="evt-pre-call-tooltip-title">📞 Call History</div>
+              {hist.map((ts, i) => (
+                <div key={i} className="evt-pre-call-tooltip-row">{fmtDateTime(ts)}</div>
+              ))}
+            </div>
+          );
+        })(),
+        document.body
+      )}
 
       {/* ADD MODAL */}
       {showAddModal && (

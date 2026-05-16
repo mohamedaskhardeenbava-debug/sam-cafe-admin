@@ -1255,43 +1255,30 @@
   display: inline-block;
 }
 
+/* Portal tooltip — position:fixed set inline via JS, so no position here */
 .evt-res-call-tooltip {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  right: 0;
   min-width: 200px;
   background: #fff;
   color: #111;
   border-radius: 10px;
   padding: 10px 12px;
-  z-index: 9999;
+  z-index: 99999;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
   border: 1px solid #f0f0f0;
   pointer-events: none;
-  animation: callTipFade 0.15s ease;
 }
 
 @keyframes callTipFade {
   from {
     opacity: 0;
-    transform: translateY(4px);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
-.evt-res-call-tooltip::after {
-  content: "";
-  position: absolute;
-  bottom: -6px;
-  right: 14px;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid #111;
-}
+/* old bottom-arrow removed — portal uses left-pointing arrow */
 
 .evt-res-call-tooltip-title {
   font-size: 11px;
@@ -1506,4 +1493,77 @@
   justify-content: center;
   background: #f3f4f6;
   font-size: 14px;
+}
+
+/* ══════════════════════════════════════════════
+   MODAL TAB BAR — Reservations
+   (same visual style as PreBookings prv-tab-bar)
+══════════════════════════════════════════════ */
+/* ── Step bar (matches Events page ae-spec-steps) ── */
+.ae-spec-steps {
+  display: flex;
+  gap: 0;
+  margin-top: 10px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.ae-spec-step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #f9f9f9;
+  border: none;
+  border-right: 1px solid #e5e7eb;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: #888;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.ae-spec-step:last-child {
+  border-right: none;
+}
+
+.ae-spec-step.active {
+  background: #111;
+  color: #fff;
+}
+
+.ae-spec-step.done {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.ae-step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.ae-spec-step.active .ae-step-num {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.ae-spec-step.done .ae-step-num {
+  background: #16a34a;
+  color: #fff;
+}
+
+.ae-step-label {
+  font-size: 12px;
+  white-space: nowrap;
 }

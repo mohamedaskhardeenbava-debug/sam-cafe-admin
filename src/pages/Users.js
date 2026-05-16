@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 import { sortArray } from "../App";
@@ -7,11 +8,40 @@ import { EmptyRow } from "../App";
 
 const Users = ({ handleSort, sortConfig, users }) => {
     const navigate = useNavigate();
+    const [userSearch, setUserSearch] = useState("");
 
     const sortedUsers = useMemo(
         () => sortArray(users, sortConfig),
         [users, sortConfig]
     );
+
+    const filteredUsers = useMemo(() => {
+        const q = userSearch.toLowerCase();
+        return q
+            ? sortedUsers.filter(u =>
+                (u.name || "").toLowerCase().includes(q) ||
+                (u.mobile || "").includes(q)
+            )
+            : sortedUsers;
+    }, [sortedUsers, userSearch]);
+
+    const exportUsers = () => {
+        if (!filteredUsers.length) { alert("No users to export"); return; }
+        const rows = filteredUsers.map((u, i) => ({
+            "#": i + 1,
+            Name: u.name || "—",
+            Mobile: u.mobile || "—",
+            "Total Orders": u.orders?.length || 0,
+            "Total Dishes Ordered": getTotalItemsOrdered(u),
+        }));
+        const sheet = XLSX.utils.json_to_sheet(rows);
+        sheet["!cols"] = Object.keys(rows[0]).map(k => ({
+            wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2,
+        }));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, sheet, "Users");
+        XLSX.writeFile(wb, `users_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    };
 
     const sendCampaignToAllUsers = () => {
         const message =
@@ -42,9 +72,24 @@ const Users = ({ handleSort, sortConfig, users }) => {
         <div className="users-page">
             <div className="users-header">
                 <h2 className="users-title">Users</h2>
-                <button className="campaign-btn" onClick={sendCampaignToAllUsers}>
-                    Campaign
-                </button>
+                <div style={{ display: "flex", gap: 8 }}>
+                    <button className="orders-export-btn" onClick={exportUsers}>Export</button>
+                    <button className="campaign-btn" onClick={sendCampaignToAllUsers}>Campaign</button>
+                </div>
+            </div>
+
+            {/* FILTER BAR */}
+            <div className="users-filter-bar">
+                <input
+                    className="users-search"
+                    placeholder="🔍 Search name or mobile…"
+                    value={userSearch}
+                    onChange={e => setUserSearch(e.target.value)}
+                />
+                {userSearch && (
+                    <button className="ae-clear-filter" onClick={() => setUserSearch("")}>Clear</button>
+                )}
+                <span className="ae-result-count">{filteredUsers.length} user(s)</span>
             </div>
 
             <div className="users-table-wrapper">
@@ -52,51 +97,38 @@ const Users = ({ handleSort, sortConfig, users }) => {
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th
-                                onClick={() => handleSort("name")}
-                                className={sortConfig.key === "name" ? "sorted" : ""}
-                            >
+                            <th onClick={() => handleSort("name")} className={sortConfig.key === "name" ? "sorted" : ""}>
                                 <span className="th-content sort-th">
                                     <span>User Name</span>
-                                    <span className="sort-arrow">
-                                        {sortConfig.direction === "asc" ? "▲" : "▼"}
-                                    </span>
+                                    <span className="sort-arrow">{sortConfig.direction === "asc" ? "▲" : "▼"}</span>
                                 </span>
                             </th>
-                            <th
-                                onClick={() => handleSort("mobile")}
-                                className={sortConfig.key === "mobile" ? "sorted" : ""}
-                            >
+                            <th onClick={() => handleSort("mobile")} className={sortConfig.key === "mobile" ? "sorted" : ""}>
                                 <span className="th-content sort-th">
                                     <span>Mobile Number</span>
-                                    <span className="sort-arrow">
-                                        {sortConfig.direction === "asc" ? "▲" : "▼"}
-                                    </span>
+                                    <span className="sort-arrow">{sortConfig.direction === "asc" ? "▲" : "▼"}</span>
                                 </span>
                             </th>
                             <th>Total Orders</th>
                             <th>Total Dishes Ordered</th>
                         </tr>
                     </thead>
-
                     <tbody>
-                        {sortedUsers.length === 0 ? (
+                        {filteredUsers.length === 0 ? (
                             <EmptyRow colSpan={5} message="No users found" />
                         ) : (
-                            sortedUsers.map((user, index) => (
+                            filteredUsers.map((user, index) => (
                                 <tr key={user.id}>
                                     <td>{index + 1}</td>
-                                    <td
-                                        className="clickable"
-                                        onClick={() => navigate(`/users/${user.id}`)}
-                                    >
+                                    <td className="clickable" onClick={() => navigate(`/users/${user.id}`)}>
                                         {user.name}
                                     </td>
                                     <td>{user.mobile}</td>
                                     <td>{user.orders?.length || 0}</td>
                                     <td>{getTotalItemsOrdered(user)}</td>
                                 </tr>
-                            )))}
+                            ))
+                        )}
                     </tbody>
                 </table>
             </div>

@@ -20,6 +20,8 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     image: "",
     basePrice: "",
     description: "",
+    isVeg: true,
+    isEventFood: false,
     benefits: {
       calories: "",
       protein: "",
@@ -58,6 +60,8 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       image: "",
       basePrice: "",
       description: "",
+      isVeg: true,
+      isEventFood: false,
       benefits: {
         calories: "",
         protein: "",
@@ -213,6 +217,8 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
       name: newDish.name,
       image: newDish.image,
+      isVeg: newDish.isVeg,
+      isEventFood: newDish.isEventFood,
 
       basePrice: Number(newDish.basePrice),
 
@@ -503,6 +509,8 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                     </span>
                   </span>
                 </th>
+                <th>Type</th>
+                <th>Event Food</th>
                 <th>Base Price</th>
                 <th>Delete</th>
               </tr>
@@ -530,6 +538,18 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                     {dish.name}
                   </td>
 
+                  <td>
+                    <span className={`veg-badge ${dish.isVeg === false ? "non-veg" : "veg"}`}>
+                      {dish.isVeg === false ? "Non-Veg" : "Veg"}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span className={`veg-badge ${dish.isEventFood ? "veg" : "non-veg"}`}>
+                      {dish.isEventFood ? "Yes" : "No"}
+                    </span>
+                  </td>
+
                   <td>{dish.basePrice}
                   </td>
 
@@ -547,7 +567,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               ))}
 
               {sortedDishes.length === 0 && (
-                <EmptyRow colSpan={4} message="No dishes available" />
+                <EmptyRow colSpan={5} message="No dishes available" />
               )}
             </tbody>
           </table>
@@ -657,6 +677,46 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                     setNewDish({ ...newDish, description: e.target.value })
                   }
                 />
+              </div>
+
+              <div className="form-group">
+                <label>Type</label>
+                <div className="veg-toggle-group">
+                  <button
+                    type="button"
+                    className={`veg-toggle-btn${newDish.isVeg ? " active-veg" : ""}`}
+                    onClick={() => setNewDish({ ...newDish, isVeg: true })}
+                  >
+                    <span className="veg-dot veg" /> Veg
+                  </button>
+                  <button
+                    type="button"
+                    className={`veg-toggle-btn${!newDish.isVeg ? " active-non-veg" : ""}`}
+                    onClick={() => setNewDish({ ...newDish, isVeg: false })}
+                  >
+                    <span className="veg-dot non-veg" /> Non-Veg
+                  </button>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Event Food</label>
+                <div className="veg-toggle-group">
+                  <button
+                    type="button"
+                    className={`veg-toggle-btn${newDish.isEventFood ? " active-veg" : ""}`}
+                    onClick={() => setNewDish({ ...newDish, isEventFood: true })}
+                  >
+                    <span className="veg-dot veg" /> Yes
+                  </button>
+                  <button
+                    type="button"
+                    className={`veg-toggle-btn${!newDish.isEventFood ? " active-non-veg" : ""}`}
+                    onClick={() => setNewDish({ ...newDish, isEventFood: false })}
+                  >
+                    <span className="veg-dot non-veg" /> No
+                  </button>
+                </div>
               </div>
               <div className="form-group">
                 <label htmlFor="">Nutrition</label>

@@ -1,7 +1,10 @@
 import React, { useMemo, useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
+import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import "./Reservations.css";
+import "./PreviewModal.css";
 import { useToast } from "../../useToast";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
@@ -165,8 +168,9 @@ const Reservations = ({ adminData, setAdminData }) => {
   const [sortDir, setSortDir] = useState("asc");
 
   // ── Call history ──
-  const [callHistory, setCallHistory] = useState({});
   const [callTooltipId, setCallTooltipId] = useState(null);
+  const [callTooltipPos, setCallTooltipPos] = useState({ top: 0, left: 0 });
+  const callWrapRefs = useRef({});
 
   // ── Table preference management ──
   const [showPrefModal, setShowPrefModal] = useState(false);
@@ -212,6 +216,9 @@ const Reservations = ({ adminData, setAdminData }) => {
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [formErrors, setFormErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [createTab, setCreateTab] = useState(0);
+
+  const CREATE_TABS = ["All Details", "Preview"];
 
   // ── Table pref image upload inside create form ──
   const [tablePrefImageFile, setTablePrefImageFile] = useState(null); // { label, dataURL }
@@ -326,13 +333,54 @@ const Reservations = ({ adminData, setAdminData }) => {
     }
   };
 
-  const handleCall = (e, id) => {
+  /* call logging — persisted to JSON */
+  const handleCall = async (e, id) => {
     e.stopPropagation();
-    setCallHistory(prev => ({ ...prev, [id]: [...(prev[id] || []), new Date().toISOString()] }));
-    toast.success("Call logged!");
+    const prev = (adminData?.reservations || []).find(r => r.id === id);
+    if (!prev) return;
+    const newEntry = new Date().toISOString();
+    const updatedHistory = [...(prev.callHistory || []), newEntry];
+    /* optimistic update */
+    if (typeof setAdminData === "function") {
+      setAdminData(p => ({
+        ...p,
+        reservations: (p.reservations || []).map(r =>
+          r.id === id ? { ...r, callHistory: updatedHistory } : r
+        ),
+      }));
+    }
+    try {
+      try { await api.patch(`/reservations/${id}`, { callHistory: updatedHistory }); }
+      catch { await api.put(`/reservations/${id}`, { ...prev, callHistory: updatedHistory }); }
+      toast.success("Call logged!");
+    } catch {
+      if (typeof setAdminData === "function") {
+        setAdminData(p => ({
+          ...p,
+          reservations: (p.reservations || []).map(r => r.id === id ? prev : r),
+        }));
+      }
+      toast.error("Failed to log call");
+    }
   };
 
   const setF = (key, val) => { setForm(p => ({ ...p, [key]: val })); setFormErrors(e => ({ ...e, [key]: "" })); };
+
+  const validateResTab = () => {
+    const e = {};
+    if (!form.name.trim() || form.name.trim().length < 2) e.name = "Enter a valid name";
+    const cleanMobile = form.mobile.replace(/\D/g, "");
+    if (!cleanMobile || cleanMobile.length !== 10) e.mobile = "Enter a valid 10-digit number";
+    if (!form.date) e.date = "Pick a date";
+    if (!form.time) e.time = "Pick a time";
+    setFormErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleResNext = () => {
+    if (!validateResTab()) return;
+    setCreateTab(1);
+  };
 
   const validateForm = () => {
     const e = {};
@@ -479,6 +527,33 @@ const Reservations = ({ adminData, setAdminData }) => {
 
   const activeFilters = filterDate || filterSlots.size > 0 || filterStatuses.size > 0 || filterSources.size > 0 || search.trim();
 
+  const exportToExcel = () => {
+    if (!sortedData.length) { alert("No reservations to export"); return; }
+    const rows = sortedData.map(r => ({
+      Name: r.name || "—",
+      Mobile: r.mobile || "—",
+      Email: r.email || "—",
+      "Reserved Date": r.date || "—",
+      "Booked On": r.bookedDate || r.reservedDate || "—",
+      Slot: r.slotGroup || "—",
+      Time: r.time || "—",
+      Guests: r.guests ?? "—",
+      Table: r.tableNo || "—",
+      "Table Pref": r.tablePref || "—",
+      Incharge: r.inchargePerson || "—",
+      Source: r.source || "—",
+      Status: r.status || "—",
+      Notes: r.notes || "",
+    }));
+    const sheet = XLSX.utils.json_to_sheet(rows);
+    sheet["!cols"] = Object.keys(rows[0]).map(k => ({
+      wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2,
+    }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, sheet, "Reservations");
+    XLSX.writeFile(wb, `reservations_${filterDate || "all"}.xlsx`);
+  };
+
   const SortTh = ({ field, children }) => (
     <th onClick={() => handleSort(field)} style={{ cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}>
       {children}
@@ -507,11 +582,12 @@ const Reservations = ({ adminData, setAdminData }) => {
           <p className="evt-res-subtitle">Manage table bookings</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
+          <button className="orders-export-btn" onClick={exportToExcel}>Export</button>
           <button className="evt-res-pref-manage-btn" onClick={() => setShowPrefModal(true)}>
             🪑 Table Preferences
           </button>
           <button className="evt-res-create-btn"
-            onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setTablePrefImageFile(null); }}>
+            onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setTablePrefImageFile(null); setCreateTab(0); }}>
             + Add Reservation
           </button>
         </div>
@@ -604,7 +680,6 @@ const Reservations = ({ adminData, setAdminData }) => {
             <tr>
               <SortTh field="name">Guest Name</SortTh>
               <th>Contact</th>
-              <th>Source</th>
               <SortTh field="date">Reserved Date</SortTh>
               <th>Booked On</th>
               <th>Slot</th>
@@ -635,7 +710,7 @@ const Reservations = ({ adminData, setAdminData }) => {
                   if (item.tableNo && String(item.tableNo) === tStr) return true;
                   return !assignedForDate.has(tStr);
                 });
-                const history = callHistory[item.id] || [];
+                const history = item.callHistory || [];
 
                 return (
                   <tr key={item.id} className="evt-res-row clickable"
@@ -662,9 +737,6 @@ const Reservations = ({ adminData, setAdminData }) => {
                         {item.email && <span className="evt-res-email">{item.email}</span>}
                       </div>
                     </td>
-
-                    {/* Source */}
-                    <td><span className="evt-res-source">{item.source || "—"}</span></td>
 
                     {/* Reserved date */}
                     <td style={{ fontWeight: 600 }}>{item.reservedDate || item.date || "—"}</td>
@@ -724,20 +796,22 @@ const Reservations = ({ adminData, setAdminData }) => {
                     {/* Actions */}
                     <td onClick={e => e.stopPropagation()}>
                       <div className="evt-res-call-wrap"
-                        onMouseEnter={() => history.length > 0 && setCallTooltipId(item.id)}
+                        ref={el => { callWrapRefs.current[item.id] = el; }}
+                        onMouseEnter={() => {
+                          if (history.length > 0) {
+                            const el = callWrapRefs.current[item.id];
+                            if (el) {
+                              const r = el.getBoundingClientRect();
+                              setCallTooltipPos({ top: r.top, left: r.left });
+                            }
+                            setCallTooltipId(item.id);
+                          }
+                        }}
                         onMouseLeave={() => setCallTooltipId(null)}>
                         <button className="evt-res-act-btn evt-res-act-remind"
                           onClick={e => handleCall(e, item.id)} title="Log a call">
                           📞 Call{history.length > 0 ? ` (${history.length})` : ""}
                         </button>
-                        {callTooltipId === item.id && history.length > 0 && (
-                          <div className="evt-res-call-tooltip">
-                            <div className="evt-res-call-tooltip-title">📞 Call History</div>
-                            {history.map((ts, i) => (
-                              <div key={i} className="evt-res-call-tooltip-row">{fmtDateTime(ts)}</div>
-                            ))}
-                          </div>
-                        )}
                       </div>
                     </td>
                   </tr>
@@ -747,6 +821,34 @@ const Reservations = ({ adminData, setAdminData }) => {
           </tbody>
         </table>
       </div>
+
+      {/* ══ Call History Tooltip — rendered via portal to escape overflow clipping ══ */}
+      {callTooltipId && createPortal(
+        (() => {
+          const histItem = (adminData?.reservations || []).find(x => x.id === callTooltipId);
+          const hist = histItem?.callHistory || [];
+          if (!hist.length) return null;
+          return (
+            <div
+              className="evt-res-call-tooltip evt-res-call-tooltip--portal"
+              style={{
+                position: "fixed",
+                top: callTooltipPos.top,
+                left: callTooltipPos.left - 20,
+                transform: "translate(-50%, calc(-100% - 10px))",
+                zIndex: 99999,
+                pointerEvents: "none",
+              }}
+            >
+              <div className="evt-res-call-tooltip-title">📞 Call History</div>
+              {hist.map((ts, i) => (
+                <div key={i} className="evt-res-call-tooltip-row">{fmtDateTime(ts)}</div>
+              ))}
+            </div>
+          );
+        })(),
+        document.body
+      )}
 
       {/* ══ Table Preference Manager Modal ══ */}
       {showPrefModal && (
@@ -867,222 +969,270 @@ const Reservations = ({ adminData, setAdminData }) => {
         </div>
       )}
 
-      {/* ══ Create Reservation Modal ══ */}
       {showCreate && (
         <div className="ingredient-modal-overlay" onClick={() => setShowCreate(false)}>
           <div className="ingredient-modal" style={{ width: 620 }} onClick={e => e.stopPropagation()}>
             <div className="ingredient-modal-header">
-              <h3>Add Reservation</h3>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <h3>Add Reservation</h3>
+                <div className="ae-spec-steps">
+                  {CREATE_TABS.map((t, i) => (
+                    <button key={i}
+                      className={`ae-spec-step${createTab === i ? " active" : ""}${createTab > i ? " done" : ""}`}
+                      onClick={() => setCreateTab(i)}>
+                      <span className="ae-step-num">{createTab > i ? "✓" : i + 1}</span>
+                      <span className="ae-step-label">{t}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
               <button className="ingredient-close-btn" onClick={() => setShowCreate(false)} />
             </div>
 
             <div className="ingredient-modal-body" style={{ padding: "8px 0" }}>
 
-              {/* ── Guest Information ── */}
-              <div className="evt-res-form-section-label">Guest Information</div>
-
-              <div className="horizontal-form-group">
-                <div className="form-group" style={{ flex: 1.4 }}>
-                  <label>Name <span className="evt-res-req">*</span></label>
-                  <input className={formErrors.name ? "error" : ""}
-                    placeholder="Guest name" value={form.name}
-                    onChange={e => setF("name", e.target.value)} />
-                  {formErrors.name && <span className="evt-res-form-error">{formErrors.name}</span>}
-                </div>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label>Guests</label>
-                  <div className="evt-res-stepper">
-                    <button type="button" onClick={() => setF("guests", Math.max(1, form.guests - 1))}>−</button>
-                    <span>{form.guests}</span>
-                    <button type="button" onClick={() => setF("guests", Math.min(30, form.guests + 1))}>+</button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="horizontal-form-group">
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label>Mobile <span className="evt-res-req">*</span></label>
-                  <input className={formErrors.mobile ? "error" : ""}
-                    placeholder="10-digit number" type="tel"
-                    value={form.mobile}
-                    onChange={e => setF("mobile", e.target.value.replace(/\D/g, "").slice(0, 10))} />
-                  {formErrors.mobile && <span className="evt-res-form-error">{formErrors.mobile}</span>}
-                </div>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label>Email</label>
-                  <input placeholder="email@example.com"
-                    value={form.email} onChange={e => setF("email", e.target.value)} />
-                </div>
-              </div>
-
-              {/* ── Booking Dates ── */}
-              <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>Booking Dates</div>
-
-              <div className="horizontal-form-group">
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label>
-                    Booked On
-                    <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>
-                      (date reservation was made)
-                    </span>
-                  </label>
-                  <CustomDatePicker
-                    value={form.bookedDate}
-                    onChange={v => setF("bookedDate", v)}
-                    placeholder="Booking date"
-                  />
-                </div>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label>
-                    Reserved For <span className="evt-res-req">*</span>
-                    <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>
-                      (table reservation date)
-                    </span>
-                  </label>
-                  <CustomDatePicker
-                    value={form.reservedDate}
-                    min={todayStr()}
-                    onChange={v => { setF("reservedDate", v); setF("date", v); }}
-                    placeholder="Reserved date"
-                  />
-                  {formErrors.date && <span className="evt-res-form-error">{formErrors.date}</span>}
-                </div>
-              </div>
-
-              {/* ── Booking Details ── */}
-              <div className="evt-res-form-section-label" style={{ marginTop: 4 }}>Booking Details</div>
-
-              {/* Slot FIRST — constrains the time picker */}
-              <div className="form-group">
-                <label>Dining Slot <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400 }}>(select to restrict time picker)</span></label>
-                <div className="evt-res-slot-grid">
-                  {SLOT_GROUPS.map(sg => (
-                    <button key={sg.key} type="button"
-                      className={`evt-res-slot-chip ${form.slotGroup === sg.key ? "active" : ""}`}
-                      onClick={() => { setF("slotGroup", sg.key); setF("time", ""); }}>
-                      <span className="evt-res-slot-chip-label">{sg.label}</span>
-                      <span className="evt-res-slot-chip-time">{sg.start}–{sg.end}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="horizontal-form-group">
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label>
-                    Time <span className="evt-res-req">*</span>
-                    {form.slotGroup && (() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()}
-                  </label>
-                  <CustomTimePicker
-                    value={form.time}
-                    onChange={v => setF("time", v)}
-                    slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
-                    slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
-                    isToday={form.reservedDate === todayStr()}
-                  />
-                  {formErrors.time && <span className="evt-res-form-error">{formErrors.time}</span>}
-                </div>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label>
-                    Table No.
-                    <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(available)</span>
-                  </label>
-                  <select value={form.tableNo} onChange={e => setF("tableNo", e.target.value)}>
-                    <option value="">— No table —</option>
-                    {availableTablesForForm.map(t => <option key={t} value={t}>Table {t}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {/* ── Table Preference with Image Upload ── */}
-              <div className="form-group">
-                <label>Table Preference</label>
-                <div className="evt-res-pref-grid">
-                  {PREF_OPTIONS.map(p => (
-                    <button key={p.label} type="button"
-                      className={`evt-res-pref-card ${form.tablePref === p.label ? "active" : ""}`}
-                      onClick={() => setF("tablePref", p.label)}>
-                      <div className="evt-res-pref-visual">{p.svg}</div>
-                      <span className="evt-res-pref-label">{p.label}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Upload a custom image for this reservation's table pref */}
-                <div className="evt-res-pref-img-upload-row">
-                  <span style={{ fontSize: 12, color: "#555" }}>Attach table preference photo:</span>
-                  <input type="file" accept="image/*" ref={createImgRef} style={{ display: "none" }}
-                    onChange={e => { const f = e.target.files?.[0]; if (f) handleCreateTablePrefImage(f); }} />
-                  <button type="button" className="evt-res-upload-img-btn"
-                    onClick={() => createImgRef.current?.click()}>
-                    📷 {tablePrefImageFile ? "✓ Image attached" : "Upload Image"}
-                  </button>
-                  {tablePrefImageFile && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <img src={tablePrefImageFile} alt="preview"
-                        style={{ height: 40, borderRadius: 6, objectFit: "cover", border: "1px solid #e5e7eb" }} />
-                      <button type="button" className="evt-res-pref-remove-btn"
-                        onClick={() => setTablePrefImageFile(null)}>✕</button>
+              {/* ── TAB 0: Guest Information ── */}
+              {createTab === 0 && (
+                <>
+                  <div className="evt-res-form-section-label">Guest Information</div>
+                  <div className="horizontal-form-group">
+                    <div className="form-group" style={{ flex: 1.4 }}>
+                      <label>Name <span className="evt-res-req">*</span></label>
+                      <input className={formErrors.name ? "error" : ""}
+                        placeholder="Guest name" value={form.name}
+                        onChange={e => setF("name", e.target.value)} />
+                      {formErrors.name && <span className="evt-res-form-error">{formErrors.name}</span>}
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* ── Staff & Source ── */}
-              <div className="evt-res-form-section-label" style={{ marginTop: 4 }}>Staff &amp; Source</div>
-
-              <div className="horizontal-form-group">
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label>Source</label>
-                  <div className="evt-res-source-chips">
-                    {SOURCE_OPTIONS.map(s => (
-                      <button key={s.label} type="button"
-                        className={`evt-res-source-chip ${form.source === s.label ? "active" : ""}`}
-                        onClick={() => setF("source", s.label)}>
-                        {s.label}
-                      </button>
-                    ))}
+                    <div className="form-group" style={{ flex: 1 }}>
+                      <label>Guests</label>
+                      <div className="evt-res-stepper">
+                        <button type="button" onClick={() => setF("guests", Math.max(1, form.guests - 1))}>−</button>
+                        <span>{form.guests}</span>
+                        <button type="button" onClick={() => setF("guests", Math.min(30, form.guests + 1))}>+</button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label>Status</label>
-                  <div className="evt-res-source-chips">
-                    {["pending", "confirmed"].map(s => (
-                      <button key={s} type="button"
-                        className={`evt-res-source-chip ${form.status === s ? "active status-" + s : ""}`}
-                        onClick={() => setF("status", s)}>
-                        {s.charAt(0).toUpperCase() + s.slice(1)}
-                      </button>
-                    ))}
+
+                  <div className="horizontal-form-group">
+                    <div className="form-group" style={{ flex: 1 }}>
+                      <label>Mobile <span className="evt-res-req">*</span></label>
+                      <input className={formErrors.mobile ? "error" : ""}
+                        placeholder="10-digit number" type="tel"
+                        value={form.mobile}
+                        onChange={e => setF("mobile", e.target.value.replace(/\D/g, "").slice(0, 10))} />
+                      {formErrors.mobile && <span className="evt-res-form-error">{formErrors.mobile}</span>}
+                    </div>
+                    <div className="form-group" style={{ flex: 1 }}>
+                      <label>Email</label>
+                      <input placeholder="email@example.com"
+                        value={form.email} onChange={e => setF("email", e.target.value)} />
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="form-group">
-                <label>Staff Incharge</label>
-                {staff.length > 0 ? (
-                  <select value={form.inchargePerson} onChange={e => setF("inchargePerson", e.target.value)}>
-                    <option value="">— Assign staff —</option>
-                    {staff.map(s => <option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ""}</option>)}
-                  </select>
-                ) : (
-                  <input placeholder="Staff name" value={form.inchargePerson}
-                    onChange={e => setF("inchargePerson", e.target.value)} />
-                )}
-              </div>
+                  <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>Staff & Source</div>
+                  <div className="horizontal-form-group">
+                    <div className="form-group" style={{ flex: 1 }}>
+                      <label>Source</label>
+                      <div className="evt-res-source-chips">
+                        {SOURCE_OPTIONS.map(s => (
+                          <button key={s.label} type="button"
+                            className={`evt-res-source-chip ${form.source === s.label ? "active" : ""}`}
+                            onClick={() => setF("source", s.label)}>
+                            {s.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="form-group" style={{ flex: 1 }}>
+                      <label>Status</label>
+                      <div className="evt-res-source-chips">
+                        {["pending", "confirmed"].map(s => (
+                          <button key={s} type="button"
+                            className={`evt-res-source-chip ${form.status === s ? "active status-" + s : ""}`}
+                            onClick={() => setF("status", s)}>
+                            {s.charAt(0).toUpperCase() + s.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
 
-              <div className="form-group">
-                <label>Notes</label>
-                <textarea rows={2} placeholder="Special requests, dietary restrictions..."
-                  value={form.notes} onChange={e => setF("notes", e.target.value)} />
-              </div>
+                  <div className="form-group">
+                    <label>Staff Incharge</label>
+                    {staff.length > 0 ? (
+                      <select value={form.inchargePerson} onChange={e => setF("inchargePerson", e.target.value)}>
+                        <option value="">— Assign staff —</option>
+                        {staff.map(s => <option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ""}</option>)}
+                      </select>
+                    ) : (
+                      <input placeholder="Staff name" value={form.inchargePerson}
+                        onChange={e => setF("inchargePerson", e.target.value)} />
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label>Notes</label>
+                    <textarea rows={2} placeholder="Special requests, dietary restrictions..."
+                      value={form.notes} onChange={e => setF("notes", e.target.value)} />
+                  </div>
+
+                  <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>Booking Dates</div>
+                  <div className="horizontal-form-group">
+                    <div className="form-group" style={{ flex: 1 }}>
+                      <label>Booked On <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(date reservation was made)</span></label>
+                      <CustomDatePicker value={form.bookedDate} onChange={v => setF("bookedDate", v)} placeholder="Booking date" />
+                    </div>
+                    <div className="form-group" style={{ flex: 1 }}>
+                      <label>Reserved For <span className="evt-res-req">*</span> <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(table reservation date)</span></label>
+                      <CustomDatePicker value={form.reservedDate} min={todayStr()} onChange={v => { setF("reservedDate", v); setF("date", v); }} placeholder="Reserved date" />
+                      {formErrors.date && <span className="evt-res-form-error">{formErrors.date}</span>}
+                    </div>
+                  </div>
+
+                  <div className="evt-res-form-section-label" style={{ marginTop: 4 }}>Booking Details</div>
+                  <div className="form-group">
+                    <label>Dining Slot <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400 }}>(select to restrict time picker)</span></label>
+                    <div className="evt-res-slot-grid">
+                      {SLOT_GROUPS.map(sg => (
+                        <button key={sg.key} type="button"
+                          className={`evt-res-slot-chip ${form.slotGroup === sg.key ? "active" : ""}`}
+                          onClick={() => { setF("slotGroup", sg.key); setF("time", ""); }}>
+                          <span className="evt-res-slot-chip-label">{sg.label}</span>
+                          <span className="evt-res-slot-chip-time">{sg.start}–{sg.end}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="horizontal-form-group">
+                    <div className="form-group" style={{ flex: 1 }}>
+                      <label>Time <span className="evt-res-req">*</span>
+                        {form.slotGroup && (() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()}
+                      </label>
+                      <CustomTimePicker value={form.time} onChange={v => setF("time", v)}
+                        slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
+                        slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
+                        isToday={form.reservedDate === todayStr()} />
+                      {formErrors.time && <span className="evt-res-form-error">{formErrors.time}</span>}
+                    </div>
+                    <div className="form-group" style={{ flex: 1 }}>
+                      <label>Table No. <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(available)</span></label>
+                      <select value={form.tableNo} onChange={e => setF("tableNo", e.target.value)}>
+                        <option value="">— No table —</option>
+                        {availableTablesForForm.map(t => <option key={t} value={t}>Table {t}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Table Preference</label>
+                    <div className="evt-res-pref-grid">
+                      {PREF_OPTIONS.map(p => (
+                        <button key={p.label} type="button"
+                          className={`evt-res-pref-card ${form.tablePref === p.label ? "active" : ""}`}
+                          onClick={() => setF("tablePref", p.label)}>
+                          <div className="evt-res-pref-visual">{p.svg}</div>
+                          <span className="evt-res-pref-label">{p.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="evt-res-pref-img-upload-row">
+                      <span style={{ fontSize: 12, color: "#555" }}>Attach table preference photo:</span>
+                      <input type="file" accept="image/*" ref={createImgRef} style={{ display: "none" }}
+                        onChange={e => { const f = e.target.files?.[0]; if (f) handleCreateTablePrefImage(f); }} />
+                      <button type="button" className="evt-res-upload-img-btn"
+                        onClick={() => createImgRef.current?.click()}>
+                        📷 {tablePrefImageFile ? "✓ Image attached" : "Upload Image"}
+                      </button>
+                      {tablePrefImageFile && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <img src={tablePrefImageFile} alt="preview"
+                            style={{ height: 40, borderRadius: 6, objectFit: "cover", border: "1px solid #e5e7eb" }} />
+                          <button type="button" className="evt-res-pref-remove-btn"
+                            onClick={() => setTablePrefImageFile(null)}>✕</button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ── TAB 1: Preview ── */}
+              {createTab === 1 && (() => {
+                const slotKey = form.slotGroup;
+                const slotLabel = SLOT_GROUPS.find(s => s.key === slotKey)?.label || "—";
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {/* Summary header */}
+                    <div style={{ background: "linear-gradient(135deg,#f8fafc,#eef2ff)", borderRadius: 12, padding: "12px 16px", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", gap: 12 }}>
+                      {tablePrefImageFile
+                        ? <img src={tablePrefImageFile} alt="pref" style={{ width: 42, height: 42, borderRadius: "50%", objectFit: "cover" }} />
+                        : <div style={{ width: 42, height: 42, borderRadius: "50%", background: "linear-gradient(135deg,#667eea,#764ba2)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18 }}>
+                          {(form.name || "?").charAt(0).toUpperCase()}
+                        </div>
+                      }
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 15, color: "#111" }}>{form.name || "—"}</div>
+                        <div style={{ fontSize: 12, color: "#666" }}>{form.mobile || "—"} {form.email ? `· ${form.email}` : ""}</div>
+                      </div>
+                      <div style={{ marginLeft: "auto", display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {slotKey && <span className={`evt-res-slot-badge slot-${slotKey.toLowerCase()}`} style={{ fontSize: 12, padding: "3px 10px", borderRadius: 999, fontWeight: 600 }}>{slotLabel}</span>}
+                        <span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, background: form.status === "confirmed" ? "#d1fae5" : "#fef3c7", color: form.status === "confirmed" ? "#065f46" : "#92400e" }}>{form.status}</span>
+                      </div>
+                    </div>
+
+                    <div className="prv-section">
+                      <div className="prv-section-title">Reservation Details</div>
+                      <div className="prv-grid">
+                        {[
+                          ["Reserved For", form.reservedDate || form.date || "—"],
+                          ["Booked On", form.bookedDate || "—"],
+                          ["Time", fmtTime(form.time)],
+                          ["Slot", slotLabel],
+                          ["Guests", form.guests ?? "—"],
+                          ["Table", form.tableNo ? `T-${form.tableNo}` : "Not assigned"],
+                          ["Table Pref", form.tablePref || "—"],
+                          ["Incharge", form.inchargePerson || "—"],
+                          ["Source", form.source || "—"],
+                        ].map(([l, v]) => (
+                          <div key={l} className="prv-cell"><div className="prv-cell-label">{l}</div><div className="prv-cell-val">{v}</div></div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {form.notes && (
+                      <div className="prv-section">
+                        <div className="prv-section-title">Notes</div>
+                        <div className="prv-notes">{form.notes}</div>
+                      </div>
+                    )}
+
+                    {(!form.name.trim() || !form.mobile || !form.date || !form.time) && (
+                      <div style={{ padding: "10px 14px", background: "#fef3c7", borderRadius: 10, border: "1px solid #fcd34d", fontSize: 13, color: "#92400e" }}>
+                        ⚠️ Required fields missing:{" "}
+                        {!form.name.trim() && "Name, "}
+                        {(!form.mobile || form.mobile.replace(/\D/g, "").length !== 10) && "Mobile, "}
+                        {!form.date && "Reserved Date, "}
+                        {!form.time && "Time "}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="ingredient-modal-footer">
-              <div className="form-actions">
-                <button onClick={handleCreate} disabled={saving}>
-                  {saving ? "Saving..." : "Create Reservation"}
-                </button>
+              <div className="form-actions ae-spec-footer">
+                {createTab === 0 ? (
+                  <button type="button" className="btn-primary" onClick={handleResNext}>Preview →</button>
+                ) : (
+                  <>
+                    <button type="button" className="ae-step-prev-btn" onClick={() => setCreateTab(0)}>← Edit</button>
+                    <button onClick={handleCreate} disabled={saving}>
+                      {saving ? "Saving..." : "Create Reservation"}
+                    </button>
+                  </>
+                )}
                 <button onClick={() => setShowCreate(false)}>Cancel</button>
               </div>
             </div>

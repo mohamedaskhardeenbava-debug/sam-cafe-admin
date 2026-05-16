@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
+import * as XLSX from "xlsx";
 import "./KitchenAssign.css";
 import { getTodayKey, getTodayFormatted, getTomorrowKey, getTomorrowFormatted } from "../../App";
 import api from "../../api";
@@ -10,8 +11,41 @@ export default function KitchenAssign({ adminData, setAdminData }) {
   const [section, setSection] = useState("mise");
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [assignSearch, setAssignSearch] = useState("");
+  const [sectionFilter, setSectionFilter] = useState("all");
   const tomorrow = getTomorrowKey();
   const tomorrowFormatted = getTomorrowFormatted();
+
+  const filteredTasks = useMemo(() => {
+    const q = assignSearch.toLowerCase();
+    const result = {};
+    Object.entries(tasks || {}).forEach(([sec, items]) => {
+      if (sectionFilter !== "all" && sec !== sectionFilter) return;
+      const filtered = items.filter(t => !q || t.toLowerCase().includes(q));
+      if (filtered.length) result[sec] = filtered;
+    });
+    return result;
+  }, [tasks, assignSearch, sectionFilter]);
+
+  const exportAssign = () => {
+    const allRows = [];
+    Object.entries(filteredTasks).forEach(([sec, items]) => {
+      items.forEach(task => {
+        allRows.push({
+          Section: sec.toUpperCase(),
+          Task: task,
+          Staff: adminData.mise?.[tomorrow]?.[task]?.staff || "—",
+          Time: adminData.mise?.[tomorrow]?.[task]?.time || "—",
+        });
+      });
+    });
+    if (!allRows.length) { alert("No assignment data to export"); return; }
+    const sheet = XLSX.utils.json_to_sheet(allRows);
+    sheet["!cols"] = Object.keys(allRows[0]).map(k => ({ wch: Math.max(k.length, ...allRows.map(r => String(r[k] ?? "").length)) + 2 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, sheet, "Staff Assign");
+    XLSX.writeFile(wb, `staff_assign_${tomorrowFormatted.replace(/\s/g, "_")}.xlsx`);
+  };
 
   const handleAddTask = async () => {
     const cleanTask = newTask.trim();
@@ -94,12 +128,30 @@ export default function KitchenAssign({ adminData, setAdminData }) {
       <div className="assign-header">
         <h2 className="assign-title">Staff Assigning</h2>
         <h2 className="assign-date">{tomorrowFormatted}</h2>
-        <button
-          onClick={() => setShowTaskModal(true)}
-          className="task-add-btn"
-        >
-          + Add Task
-        </button>
+        <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
+          <button className="orders-export-btn" onClick={exportAssign}>Export</button>
+          <button onClick={() => setShowTaskModal(true)} className="task-add-btn">+ Add Task</button>
+        </div>
+      </div>
+
+      {/* FILTER BAR */}
+      <div className="assign-filter-bar">
+        <input
+          className="assign-search"
+          placeholder="🔍 Search tasks…"
+          value={assignSearch}
+          onChange={e => setAssignSearch(e.target.value)}
+        />
+        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          <span className="kgroom-filter-label">Section</span>
+          {[["all", "All"], ...Object.keys(tasks || {}).map(s => [s, s.toUpperCase()])].map(([k, lbl]) => (
+            <button key={k} className={`sched-pill-btn${sectionFilter === k ? " active" : ""}`}
+              onClick={() => setSectionFilter(k)}>{lbl}</button>
+          ))}
+        </div>
+        {(assignSearch || sectionFilter !== "all") && (
+          <button className="ae-clear-filter" onClick={() => { setAssignSearch(""); setSectionFilter("all"); }}>Clear</button>
+        )}
       </div>
 
       <div className="assign-table-wrapper">
@@ -114,8 +166,8 @@ export default function KitchenAssign({ adminData, setAdminData }) {
           </thead>
 
           <tbody>
-            {Object.entries(tasks || {}).map(([section, items]) => (
-              <React.Fragment key={section}>
+            {Object.entries(filteredTasks).map(([sec, items]) => (
+              <React.Fragment key={sec}>
 
                 {/* ✅ Section Header */}
                 <tr>

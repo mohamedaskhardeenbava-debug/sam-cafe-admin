@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import * as XLSX from "xlsx";
 import "./Offers.css";
 import api from "../api";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +11,12 @@ const Offers = ({ adminData, setAdminData }) => {
     const [openDishDropdown, setOpenDishDropdown] = useState(false);
     const [openStatusDropdown, setOpenStatusDropdown] = useState(false);
     const navigate = useNavigate();
+
+    // Filter states
+    const [offerSearch, setOfferSearch] = useState("");
+    const [offerStatusFilter, setOfferStatusFilter] = useState("all"); // "all" | "yes" | "no"
+    const [offerFromDate, setOfferFromDate] = useState(todayStr());
+    const [offerToDate, setOfferToDate] = useState(todayStr());
 
     const [newOffer, setNewOffer] = useState({
         dishId: "",
@@ -63,13 +70,98 @@ const Offers = ({ adminData, setAdminData }) => {
         setShowModal(false);
     };
 
+    const filteredOffers = useMemo(() => {
+        return (adminData.offers || []).filter(o => {
+            const q = offerSearch.toLowerCase();
+            if (q && !(o.dishId || "").toLowerCase().includes(q)) return false;
+            if (offerStatusFilter !== "all" && o.active !== offerStatusFilter) return false;
+            if (offerFromDate && o.endDate && o.endDate < offerFromDate) return false;
+            if (offerToDate && o.startDate && o.startDate > offerToDate) return false;
+            return true;
+        });
+    }, [adminData.offers, offerSearch, offerStatusFilter, offerFromDate, offerToDate]);
+
+    const exportOffers = () => {
+        if (!filteredOffers.length) { alert("No offers to export"); return; }
+        const rows = filteredOffers.map(o => ({
+            Dish: o.dishId || "—",
+            "Original Price (₹)": o.originalPrice ?? "—",
+            "Discount %": o.percentage ? `${o.percentage}%` : "—",
+            "Offer Amount (₹)": o.offerAmount ?? "—",
+            "Offer Price (₹)": o.offerPrice ?? "—",
+            "Start Date": formatDisplayDate(o.startDate) || "—",
+            "End Date": formatDisplayDate(o.endDate) || "—",
+            Status: o.active === "yes" ? "Active" : "Inactive",
+        }));
+        const sheet = XLSX.utils.json_to_sheet(rows);
+        sheet["!cols"] = Object.keys(rows[0]).map(k => ({
+            wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2,
+        }));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, sheet, "Offers");
+        const suffix = offerFromDate && offerToDate
+            ? `${offerFromDate}_to_${offerToDate}`
+            : new Date().toISOString().slice(0, 10);
+        XLSX.writeFile(wb, `offers_${suffix}.xlsx`);
+    };
+
     return (
         <div className="offers-page">
+            {/* HEADER */}
             <div className="offers-header">
                 <h2 className="offers-title">Offers</h2>
-                <button className="offers-add-btn" onClick={() => setShowModal(true)}>
-                    Add Offer
-                </button>
+                <div style={{ display: "flex", gap: 8 }}>
+                    <button className="orders-export-btn" onClick={exportOffers}>Export</button>
+                    <button className="offers-add-btn" onClick={() => setShowModal(true)}>Add Offer</button>
+                </div>
+            </div>
+
+            {/* FILTER BAR */}
+            <div className="offers-filter-bar">
+                <input
+                    className="offers-search"
+                    placeholder="🔍 Search dish…"
+                    value={offerSearch}
+                    onChange={e => setOfferSearch(e.target.value)}
+                />
+                {/* Date range */}
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span className="offers-filter-label">From</span>
+                    <CustomDatePicker
+                        value={offerFromDate}
+                        onChange={v => { setOfferFromDate(v); if (offerToDate && v > offerToDate) setOfferToDate(v); }}
+                        placeholder="Start date"
+                    />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span className="offers-filter-label">To</span>
+                    <CustomDatePicker
+                        value={offerToDate}
+                        min={offerFromDate}
+                        onChange={setOfferToDate}
+                        placeholder="End date"
+                    />
+                </div>
+                {/* Status pills */}
+                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <span className="offers-filter-label">Status</span>
+                    {[["all", "All"], ["yes", "Active"], ["no", "Inactive"]].map(([val, lbl]) => (
+                        <button
+                            key={val}
+                            className={`sched-pill-btn${offerStatusFilter === val ? " active" : ""}${val === "yes" && offerStatusFilter === "yes" ? " offer-pill-active" : ""}${val === "no" && offerStatusFilter === "no" ? " offer-pill-inactive" : ""}`}
+                            onClick={() => setOfferStatusFilter(val)}
+                        >{lbl}</button>
+                    ))}
+                </div>
+                {(offerSearch || offerStatusFilter !== "all" || offerFromDate || offerToDate) && (
+                    <button className="ae-clear-filter" onClick={() => {
+                        setOfferSearch(""); 
+                        setOfferStatusFilter("all");
+                        setOfferFromDate(todayStr());
+                        setOfferToDate(todayStr());
+                    }}>Clear</button>
+                )}
+                <span className="ae-result-count">{filteredOffers.length} offer(s)</span>
             </div>
 
             <div className="offers-table-wrapper">
@@ -86,7 +178,11 @@ const Offers = ({ adminData, setAdminData }) => {
                         </tr>
                     </thead>
                     <tbody>
-                        {(adminData.offers || []).map(o => (
+                        {filteredOffers.length === 0 ? (
+                            <tr><td colSpan="7" style={{ textAlign: "center", color: "#aaa", padding: 20 }}>
+                                {(adminData.offers || []).length === 0 ? "No offers yet" : "No offers match filters"}
+                            </td></tr>
+                        ) : filteredOffers.map(o => (
                             <tr key={o.id}>
                                 <td className="clickable" onClick={() => navigate(`/offers/${o.id}`)}>{o.dishId}</td>
                                 <td>{o.originalPrice}</td>
@@ -94,7 +190,11 @@ const Offers = ({ adminData, setAdminData }) => {
                                 <td>{o.offerPrice}</td>
                                 <td>{formatDisplayDate(o.startDate)}</td>
                                 <td>{formatDisplayDate(o.endDate)}</td>
-                                <td>{o.active}</td>
+                                <td>
+                                    <span className={`offer-status-badge ${o.active === "yes" ? "offer-active" : "offer-inactive"}`}>
+                                        {o.active === "yes" ? "Active" : "Inactive"}
+                                    </span>
+                                </td>
                             </tr>
                         ))}
                     </tbody>

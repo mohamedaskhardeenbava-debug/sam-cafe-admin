@@ -69,13 +69,13 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
     }, [dish]);
 
     useEffect(() => {
-            const closeDropdowns = () => {
-                setOpenIngredientDropdown(false);
-            };
-    
-            window.addEventListener("click", closeDropdowns);
-            return () => window.removeEventListener("click", closeDropdowns);
-        }, []);
+        const closeDropdowns = () => {
+            setOpenIngredientDropdown(false);
+        };
+
+        window.addEventListener("click", closeDropdowns);
+        return () => window.removeEventListener("click", closeDropdowns);
+    }, []);
 
     if (!localDish) return <div className="page">Loading dish...</div>;
 
@@ -447,6 +447,92 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
                         </>
                     ) : (
                         <p>{localDish.description}</p>
+                    )}
+                </div>
+
+                {/* VEG / NON-VEG */}
+                <div className="section">
+                    <div className="section-title">
+                        <span>Type</span>
+                        {!fromOrder && editSection !== "vegType" && (
+                            <img
+                                className="edit-icon"
+                                onClick={() => setEditSection("vegType")}
+                                src={editIcon}
+                            />
+                        )}
+                    </div>
+
+                    {editSection === "vegType" ? (
+                        <>
+                            <div className="veg-toggle-group" style={{ marginTop: 8 }}>
+                                <button
+                                    type="button"
+                                    className={`veg-toggle-btn${localDish.isVeg !== false ? " active-veg" : ""}`}
+                                    onClick={() => setLocalDish({ ...localDish, isVeg: true })}
+                                >
+                                    <span className="veg-dot veg" /> Veg
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`veg-toggle-btn${localDish.isVeg === false ? " active-non-veg" : ""}`}
+                                    onClick={() => setLocalDish({ ...localDish, isVeg: false })}
+                                >
+                                    <span className="veg-dot non-veg" /> Non-Veg
+                                </button>
+                            </div>
+                            <div className="actions">
+                                <button onClick={() => persistDish(localDish)}>Save</button>
+                                <button onClick={resetEditState}>Cancel</button>
+                            </div>
+                        </>
+                    ) : (
+                        <span className={`veg-badge ${localDish.isVeg === false ? "non-veg" : "veg"}`} style={{ marginTop: 8, display: "inline-flex" }}>
+                            {localDish.isVeg === false ? "Non-Veg" : "Veg"}
+                        </span>
+                    )}
+                </div>
+
+                {/* EVENT FOOD */}
+                <div className="section">
+                    <div className="section-title">
+                        <span>Event Food</span>
+                        {!fromOrder && editSection !== "eventFood" && (
+                            <img
+                                className="edit-icon"
+                                onClick={() => setEditSection("eventFood")}
+                                src={editIcon}
+                            />
+                        )}
+                    </div>
+
+                    {editSection === "eventFood" ? (
+                        <>
+                            <div className="veg-toggle-group" style={{ marginTop: 8 }}>
+                                <button
+                                    type="button"
+                                    className={`veg-toggle-btn${localDish.isEventFood ? " active-veg" : ""}`}
+                                    onClick={() => setLocalDish({ ...localDish, isEventFood: true })}
+                                >
+                                    <span className="veg-dot veg" /> Yes
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`veg-toggle-btn${!localDish.isEventFood ? " active-non-veg" : ""}`}
+                                    onClick={() => setLocalDish({ ...localDish, isEventFood: false })}
+                                >
+                                    <span className="veg-dot non-veg" /> No
+                                </button>
+                            </div>
+                            <div className="actions">
+                                <button onClick={() => persistDish(localDish)}>Save</button>
+                                <button onClick={resetEditState}>Cancel</button>
+                            </div>
+                        </>
+                    ) : (
+                        <span className={`veg-badge ${localDish.isEventFood ? "veg" : "non-veg"}`} style={{ marginTop: 8, display: "inline-flex" }}>
+                            {localDish.isEventFood ? "Yes" : "No"}
+                        </span>
                     )}
                 </div>
 

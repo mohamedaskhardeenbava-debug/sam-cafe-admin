@@ -31,7 +31,7 @@
 
 .category-btn {
   padding: 6px 10px !important;
-  border-radius: 8px ;
+  border-radius: 8px;
   border: 1px solid #ccc;
   background: #fff;
   cursor: pointer;
@@ -137,16 +137,119 @@
 }
 
 .dish-table th:nth-child(3),
-.dish-table td:nth-child(3){
-  width: 120px !important;
-  max-width: 120px !important;
+.dish-table td:nth-child(3) {
+  width: 90px !important;
+  max-width: 90px !important;
 }
 
 .dish-table th:nth-child(4),
 .dish-table td:nth-child(4) {
+  width: 100px !important;
+  max-width: 100px !important;
+}
+
+.dish-table th:nth-child(5),
+.dish-table td:nth-child(5) {
+  width: 120px !important;
+  max-width: 120px !important;
+}
+
+.dish-table th:nth-child(6),
+.dish-table td:nth-child(6) {
   width: 72px !important;
   max-width: 72px !important;
   text-align: center;
+}
+
+/* Veg / Non-Veg badge */
+.veg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+
+.veg-badge.veg {
+  background: #e6f9ec;
+  color: #1a7a38;
+  border: 1px solid #a3e4b4;
+}
+
+.veg-badge.non-veg {
+  background: #fff0ee;
+  color: #c0392b;
+  border: 1px solid #f5b7b1;
+}
+
+.veg-badge::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.veg-badge.veg::before {
+  background: #27ae60;
+}
+
+.veg-badge.non-veg::before {
+  background: #e74c3c;
+}
+
+/* Veg toggle in form */
+.veg-toggle-group {
+  display: flex;
+  gap: 10px;
+}
+
+.veg-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #555;
+}
+
+.veg-toggle-btn:hover {
+  border-color: #aaa;
+}
+
+.veg-toggle-btn.active-veg {
+  border-color: #27ae60;
+  background: #e6f9ec;
+  color: #1a7a38;
+}
+
+.veg-toggle-btn.active-non-veg {
+  border-color: #e74c3c;
+  background: #fff0ee;
+  color: #c0392b;
+}
+
+.veg-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.veg-dot.veg {
+  background: #27ae60;
+}
+
+.veg-dot.non-veg {
+  background: #e74c3c;
 }
 
 .dish-image,
@@ -159,7 +262,7 @@
 .dish-image img {
   width: 100%;
   height: 100%;
-  object-fit: contain;  
+  object-fit: contain;
 }
 
 .dish-name {

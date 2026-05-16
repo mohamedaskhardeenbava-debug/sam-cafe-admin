@@ -7,6 +7,7 @@ import dayjs from "dayjs";
 import { useToast } from "../useToast";
 import {
   PieChart, Pie, Cell, Sector,
+  BarChart, Bar,
   XAxis, YAxis, Tooltip,
   ResponsiveContainer, LineChart, Line,
   CartesianGrid, Area
@@ -72,7 +73,7 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
   const [modeFilters, setModeFilters] = useState(new Set());
   const [statusFilters, setStatusFilters] = useState(new Set());
   const toggleFilter = (setter, val) => setter(prev => { const n = new Set(prev); n.has(val) ? n.delete(val) : n.add(val); return n; });
-  const [datePreset, setDatePreset] = useState("custom");
+  const [datePreset, setDatePreset] = useState("today");
 
   // Staff table sorting
   const [staffSortKey, setStaffSortKey] = useState("name");
@@ -267,8 +268,10 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
               <button key={k} className={`dash-preset-btn${datePreset === k ? " active" : ""}`} onClick={() => applyPreset(k)}>{lbl}</button>
             ))}
           </div>
-          <CustomDatePicker label="From" value={fromDate} max={toDate} onChange={(s) => { setFromDate(s); if (s > toDate) setToDate(s); setDatePreset("custom"); }} />
-          <CustomDatePicker label="To" value={toDate} min={fromDate} max={today} onChange={(s) => { setToDate(s); setDatePreset("custom"); }} />
+          <div className = "dashboard-custom-datepickers">
+            <CustomDatePicker label="From" value={fromDate} max={toDate} onChange={(s) => { setFromDate(s); if (s > toDate) setToDate(s); setDatePreset("custom"); }} />
+            <CustomDatePicker label="To" value={toDate} min={fromDate} max={today} onChange={(s) => { setToDate(s); setDatePreset("custom"); }} />
+          </div>
         </div>
         <button className="dashboard-export-btn" onClick={handleExport}>Export</button>
         <div className="dashboard-filter-kpis">
@@ -329,6 +332,48 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
                 </LineChart>
               </ResponsiveContainer>
             )}
+          </div>
+        </div>
+
+        {/* BAR CHART – INGREDIENT STOCK */}
+        <div className="dashboard-barchart">
+          <div className="chart-card bar">
+            <h4>Ingredient Stock</h4>
+            <div className="stock-chart-wrapper">
+              {stockData.length === 0 ? (
+                <NoChartData message="No stock data available" />
+              ) : (
+                <ResponsiveContainer
+                  width="100%"
+                  height={Math.max(stockData.length * 20, 100)}
+                >
+                  <BarChart
+                    data={stockData}
+                    layout="vertical"
+                    barCategoryGap={4}
+                  >
+                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#aaa" }} />
+                    <YAxis
+                      dataKey="name"
+                      type="category"
+                      width={120}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 10, fill: "#111" }}
+                    />
+                    <Tooltip content={<StockTooltip />} />
+                    <Bar dataKey="stock" barSize={4} radius={[0, 3, 3, 0]}>
+                      {stockData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={getStockColor(entry.percent)}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
+import * as XLSX from "xlsx";
 import "./StaffModules.css";
 import api from "../../api";
 
 export default function StaffSalary({ adminData }) {
     const [selected, setSelected] = useState(null);
     const [staffList, setStaffList] = useState(adminData.staff);
+    const [salarySearch, setSalarySearch] = useState("");
     const [form, setForm] = useState({
         advance: 0,
         deduction: 0,
@@ -91,10 +93,60 @@ export default function StaffSalary({ adminData }) {
         closeModal();
     };
 
+    const filteredList = salarySearch.trim()
+        ? staffList.filter(s =>
+            (s.name || "").toLowerCase().includes(salarySearch.toLowerCase()) ||
+            (s.role || "").toLowerCase().includes(salarySearch.toLowerCase())
+        )
+        : staffList;
+
     return (
         <div className="staff-page">
             <div className="staff-header">
                 <h2>Salary Management</h2>
+                <div style={{ display: "flex", gap: 8 }}>
+                    <button className="orders-export-btn" onClick={() => {
+                        const rows = filteredList.map((s, i) => {
+                            const totalAdvance = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.advance || 0), 0);
+                            const totalDeduction = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.deduction || 0), 0);
+                            const totalPenalty = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.penalty || 0), 0);
+                            const totalBonus = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.bonus || 0), 0);
+                            const totalOvertime = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.overtime || 0), 0);
+                            const remaining = Number(s.salary) + totalBonus + totalOvertime - totalAdvance - totalDeduction - totalPenalty;
+                            return {
+                                Name: s.name || "—",
+                                Role: s.role || "—",
+                                "Base Salary (₹)": Number(s.salary || 0),
+                                "Advance (₹)": totalAdvance,
+                                "Deduction (₹)": totalDeduction,
+                                "Penalty (₹)": totalPenalty,
+                                "Bonus (₹)": totalBonus,
+                                "Overtime (₹)": totalOvertime,
+                                "Remaining (₹)": remaining,
+                            };
+                        });
+                        if (!rows.length) { alert("No salary data to export"); return; }
+                        const sheet = XLSX.utils.json_to_sheet(rows);
+                        sheet["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2 }));
+                        const wb = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(wb, sheet, "Salary");
+                        XLSX.writeFile(wb, `salary_${new Date().toISOString().slice(0, 10)}.xlsx`);
+                    }}>Export</button>
+                </div>
+            </div>
+
+            {/* FILTER BAR */}
+            <div className="staff-filter-bar">
+                <input
+                    className="staff-search-input"
+                    placeholder="🔍 Search name or role…"
+                    value={salarySearch}
+                    onChange={e => setSalarySearch(e.target.value)}
+                />
+                {salarySearch && (
+                    <button className="ae-clear-filter" onClick={() => setSalarySearch("")}>Clear</button>
+                )}
+                <span className="ae-result-count">{filteredList.length} staff</span>
             </div>
 
             <div className="staff-salary-table-wrapper">
@@ -114,7 +166,7 @@ export default function StaffSalary({ adminData }) {
                     </thead>
 
                     <tbody>
-                        {staffList.map((s, i) => {
+                        {filteredList.map((s, i) => {
                             const PALETTE = ["#4361ee", "#06d6a0", "#ffd166", "#ef476f", "#7209b7", "#4cc9f0", "#f72585", "#3a0ca3", "#fb8500", "#023e8a"];
                             const avatarBg = PALETTE[i % PALETTE.length];
 

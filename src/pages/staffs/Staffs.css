@@ -13,7 +13,7 @@
     display: flex;
     justify-content: space-between;
     align-items: start !important;
-    margin-bottom: 20px;
+    margin-bottom: 14px;
 }
 
 .staff-header h2 {
@@ -712,4 +712,60 @@
 
 .staff-salary-table td {
     vertical-align: middle;
+}
+
+/* ── Staff filter bar (shared across Staffs, Salary, Training, Career) ── */
+.staff-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 14px 12px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    border: 1px solid #f0f0f0;
+    margin-bottom: 4px;
+}
+
+.staff-search-input {
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid #ddd;
+    background: #f9f9f9;
+    font-size: 13px;
+    outline: none;
+    width: 100%;
+    max-width: 280px;
+    transition: border-color 0.2s;
+    font-family: inherit;
+}
+
+.staff-search-input:focus {
+    border-color: #111;
+    background: #fff;
+}
+
+.staff-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.staff-filter-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    white-space: nowrap;
+    margin-right: 2px;
+}
+
+.staff-page-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #111;
+    margin: 0;
 }

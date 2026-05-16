@@ -5,9 +5,9 @@ import "./KitchenActivityLog.css";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 
 const PRESETS = [
+    { label: "All", getRange: () => ["2000-01-01", "2099-12-31"] },
     { label: "Today", getRange: () => { const t = format(new Date(), "yyyy-MM-dd"); return [t, t]; } },
     { label: "This Month", getRange: () => { const d = new Date(); return [format(new Date(d.getFullYear(), d.getMonth(), 1), "yyyy-MM-dd"), format(new Date(), "yyyy-MM-dd")]; } },
-    { label: "All", getRange: () => ["2000-01-01", "2099-12-31"] },
 ];
 
 export default function KitchenActivityLog({ adminData }) {
@@ -66,7 +66,7 @@ export default function KitchenActivityLog({ adminData }) {
                     onChange={(s) => { setToDate(s); setActivePreset("custom"); }} />
                 {PRESETS.map(p => (
                     <button key={p.label}
-                        className={`cdp-preset-btn${activePreset === p.label ? " active" : ""}`}
+                        className={`sact-pill-btn${activePreset === p.label ? " active" : ""}`}
                         onClick={() => applyPreset(p)}>
                         {p.label}
                     </button>

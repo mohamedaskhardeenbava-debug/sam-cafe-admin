@@ -1,15 +1,15 @@
-.dishes-page {
+.offers-page {
   width: 100%;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  gap: 14px;
 }
 
 .offers-header {
   display: flex;
   gap: 12px;
-  margin-bottom: 20px !important;
-  align-items: start !important;
+  justify-content: space-between;
 }
 
 .offers-block {
@@ -140,7 +140,7 @@
 .offers-image img {
   width: 100%;
   height: 100%;
-  object-fit: contain;  
+  object-fit: contain;
 }
 
 .offers-name {
@@ -447,4 +447,148 @@
   .offers-table td {
     font-size: 12px;
   }
+}
+
+/* ── Offers filter bar ── */
+.offers-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px 12px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0f0f0;
+}
+
+.offers-search {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #ddd;
+  background: #f9f9f9;
+  font-size: 13px;
+  outline: none;
+  width: 100%;
+  max-width: 240px;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.offers-search:focus {
+  border-color: #111;
+  background: #fff;
+}
+
+.offers-filter-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+}
+
+/* ── Status badge in table ── */
+.offer-status-badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.offer-active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.offer-inactive {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* ── Active status pill color overrides ── */
+.sched-pill-btn.offer-pill-active {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+  color: #065f46;
+}
+
+.sched-pill-btn.offer-pill-inactive {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+/* ── Shared utilities ── */
+.orders-export-btn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1.5px solid #e5e7eb;
+  background: #f9fafb;
+  color: #555;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.orders-export-btn:hover {
+  border-color: #111;
+  background: #111;
+  color: #fff;
+}
+
+.sched-pill-btn {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1.5px solid #e5e7eb;
+  background: #f9fafb;
+  color: #555;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.sched-pill-btn:hover {
+  border-color: #bbb;
+  background: #f3f4f6;
+  color: #111;
+}
+
+.sched-pill-btn.active {
+  background: #111;
+  border-color: #111;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.ae-clear-filter {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1.5px solid #fca5a5;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.ae-clear-filter:hover {
+  background: #fecaca;
+}
+
+.ae-result-count {
+  font-size: 12px;
+  color: #888;
+  font-weight: 500;
+  white-space: nowrap;
 }

@@ -1,8 +1,11 @@
 /* admin panel */
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
+import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import "./Catering.css";
+import "./PreviewModal.css";
 import { useToast } from "../../useToast";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
@@ -14,24 +17,37 @@ const tomorrowStr = () => { const d = new Date(); d.setDate(d.getDate() + 1); re
 const fmtTime = (t) => { if (!t) return "—"; const [h, m] = t.split(":").map(Number); return `${h % 12 || 12}:${pad(m)} ${h >= 12 ? "PM" : "AM"}`; };
 
 const SOURCE_OPTIONS = ["User App", "WhatsApp", "Phone", "In Person"];
-
-/* ── tabs for create modal ── */
 const TABS = ["Details", "Dishes", "Review"];
+const RESTAURANT_ADDRESS = {
+  addrDoorNo: "12, Sam Cafe", addrStreet: "GR Nagar", addrArea: "GR Nagar",
+  addrLandmark: "Near Andavar Meat Shop", addrCity: "Madurai",
+  addrDistrict: "Madurai", addrState: "Tamil Nadu", addrPincode: "625001",
+};
+
+const DECORATION_TIERS = [
+  { value: "normal", label: "Normal", price: 1500 },
+  { value: "elegant", label: "Elegant", price: 3000 },
+  { value: "luxury", label: "Luxury", price: 5000 },
+];
+
+const EXTRA_PRICES = {
+  cake: 500, specialMention: 0, mic: 500, projector: 800, liveMusic: 2000,
+  surpriseGift: 300, candleLight: 800, music: 1500, speaker: 600,
+};
+
+/* Address builder */
+const buildCatAddress = (f) => [
+  f.addrDoorNo, f.addrStreet, f.addrArea,
+  f.addrLandmark, f.addrCity, f.addrDistrict, f.addrState, f.addrPincode,
+].filter(Boolean).join(", ");
 
 /* ══════════════════════════════════════
-   Dish Picker (Tab 2) — categories + items
+   Dish Picker (Tab 2) — isEventFood filter, no qty selector
+   Price = dish.price × guests
 ══════════════════════════════════════ */
-const DishPicker = ({ menuData, selectedItems, setSelectedItems }) => {
-  // menuData is the raw /categories response: array of { id, name, subCategories: [{ id, name, dishes: [...] }] }
+const DishPicker = ({ menuData, selectedItems, setSelectedItems, guests }) => {
   const { categories, dishes } = useMemo(() => {
     if (!menuData) return { categories: [], dishes: [] };
-
-    // Case 1: flat array of dishes (legacy)
-    if (Array.isArray(menuData) && menuData.length > 0 && menuData[0].basePrice !== undefined) {
-      return { categories: [], dishes: menuData };
-    }
-
-    // Case 2: array of top-level categories with subCategories->dishes (db structure)
     const rawCats = Array.isArray(menuData) ? menuData : (menuData.categories || []);
     const flatCats = [];
     const flatDishes = [];
@@ -40,27 +56,30 @@ const DishPicker = ({ menuData, selectedItems, setSelectedItems }) => {
       const subs = topCat.subCategories || [];
       if (subs.length > 0) {
         subs.forEach(sub => {
-          flatCats.push({ id: sub.id, name: sub.name, parentName: topCat.name });
-          (sub.dishes || []).forEach(dish => {
+          flatCats.push({ id: sub.id, name: sub.name });
+          (sub.dishes || [])
+            .filter(d => d.isEventFood === true)
+            .forEach(dish => {
+              flatDishes.push({
+                ...dish,
+                price: dish.basePrice || dish.price || 0,
+                categoryId: sub.id,
+                category: sub.name,
+              });
+            });
+        });
+      } else {
+        flatCats.push({ id: topCat.id, name: topCat.name });
+        (topCat.dishes || [])
+          .filter(d => d.isEventFood === true)
+          .forEach(dish => {
             flatDishes.push({
               ...dish,
               price: dish.basePrice || dish.price || 0,
-              categoryId: sub.id,
-              category: sub.name,
+              categoryId: topCat.id,
+              category: topCat.name,
             });
           });
-        });
-      } else {
-        // top-level category has dishes directly
-        flatCats.push({ id: topCat.id, name: topCat.name });
-        (topCat.dishes || []).forEach(dish => {
-          flatDishes.push({
-            ...dish,
-            price: dish.basePrice || dish.price || 0,
-            categoryId: topCat.id,
-            category: topCat.name,
-          });
-        });
       }
     });
 
@@ -71,67 +90,69 @@ const DishPicker = ({ menuData, selectedItems, setSelectedItems }) => {
 
   const filteredDishes = useMemo(() => {
     if (!activeCat) return dishes;
-    return dishes.filter(d => d.categoryId === activeCat || d.category === activeCat);
+    return dishes.filter(d => d.categoryId === activeCat);
   }, [dishes, activeCat]);
+
+  const guestCount = Math.max(1, parseInt(guests, 10) || 1);
 
   const toggle = (dish) => {
     setSelectedItems(prev => {
       const exists = prev.find(i => i.id === dish.id);
       if (exists) return prev.filter(i => i.id !== dish.id);
-      return [...prev, { ...dish, quantity: 1, totalPrice: dish.price || dish.unitPrice || 0 }];
+      const unitPrice = dish.price || 0;
+      return [...prev, {
+        ...dish,
+        unitPrice,
+        totalPrice: unitPrice * guestCount,
+      }];
     });
   };
 
-  const changeQty = (dishId, delta) => {
-    setSelectedItems(prev => prev.map(i => {
-      if (i.id !== dishId) return i;
-      const qty = Math.max(1, i.quantity + delta);
-      return { ...i, quantity: qty, totalPrice: (i.price || i.unitPrice || 0) * qty };
-    }));
-  };
+  /* Recalculate prices when guests changes */
+  useEffect(() => {
+    setSelectedItems(prev => prev.map(i => ({
+      ...i,
+      totalPrice: (i.unitPrice || i.price || 0) * guestCount,
+    })));
+  }, [guestCount]);
 
   const isSelected = (id) => selectedItems.some(i => i.id === id);
-  const getQty = (id) => selectedItems.find(i => i.id === id)?.quantity || 0;
 
   return (
     <div className="act-dish-picker">
-      {/* Category filter dropdown */}
       <div className="act-cat-dropdown-wrap">
-        <select
-          className="act-cat-dropdown"
-          value={activeCat}
-          onChange={e => setActiveCat(e.target.value)}
-        >
+        <select className="act-cat-dropdown" value={activeCat} onChange={e => setActiveCat(e.target.value)}>
           <option value="">All Categories</option>
-          {categories.map(c => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
+          {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
         <span className="act-cat-dropdown-arrow">▾</span>
       </div>
-
-      {/* Dish grid */}
+      {dishes.length === 0 && (
+        <div className="act-dish-empty" style={{ color: "#ca8a04", padding: "16px", background: "#fef9c3", borderRadius: 8, fontSize: 13 }}>
+          No event food dishes found. Mark dishes as "Event Food" in the Dishes section first.
+        </div>
+      )}
       <div className="act-dish-grid">
         {filteredDishes.length === 0 ? (
-          <div className="act-dish-empty">No dishes found</div>
+          <div className="act-dish-empty">No dishes in this category</div>
         ) : (
           filteredDishes.map(dish => {
             const sel = isSelected(dish.id);
-            const qty = getQty(dish.id);
-            const price = dish.price || dish.unitPrice || 0;
+            const unitPrice = dish.price || 0;
+            const total = unitPrice * guestCount;
             return (
               <div key={dish.id} className={`act-dish-card${sel ? " selected" : ""}`}>
                 <div className="act-dish-info">
                   <div className="act-dish-name">{dish.name}</div>
-                  <div className="act-dish-price">₹{price}</div>
+                  <div style={{ fontSize: 11, color: "#888" }}>
+                    ₹{unitPrice}/person × {guestCount} guests = <strong style={{ color: "#e74c3c" }}>₹{total.toLocaleString()}</strong>
+                  </div>
                   {dish.category && <div className="act-dish-cat">{dish.category}</div>}
                 </div>
                 {sel ? (
-                  <div className="act-dish-stepper">
-                    <button onClick={() => changeQty(dish.id, -1)}>−</button>
-                    <span>{qty}</span>
-                    <button onClick={() => changeQty(dish.id, 1)}>+</button>
-                  </div>
+                  <button type="button" className="act-dish-add-btn"
+                    style={{ background: "#fee2e2", borderColor: "#fca5a5", color: "#dc2626" }}
+                    onClick={() => toggle(dish)}>✓ Added</button>
                 ) : (
                   <button className="act-dish-add-btn" onClick={() => toggle(dish)}>+ Add</button>
                 )}
@@ -144,22 +165,23 @@ const DishPicker = ({ menuData, selectedItems, setSelectedItems }) => {
   );
 };
 
-const buildCatAddress = (f) => [
-  f.addrDoorNo, f.addrStreet, f.addrArea,
-  f.addrLandmark, f.addrCity, f.addrState, f.addrPincode,
-].filter(Boolean).join(", ");
-
 /* ══════════════════════════════════════
    Empty form state
 ══════════════════════════════════════ */
 const EMPTY_FORM = {
   name: "", mobile: "", email: "",
-  guests: 2,
+  guests: 10,
   eventDate: "", time: "",
-  location: "",
   addrDoorNo: "", addrStreet: "", addrArea: "",
-  addrLandmark: "", addrCity: "", addrState: "", addrPincode: "",
+  addrLandmark: "", addrCity: "", addrDistrict: "", addrState: "", addrPincode: "",
+  location: "",
   notes: "",
+  /* Celebration-style fields */
+  decoration: null,
+  cake: false, specialMention: false, specialMentionText: "",
+  mic: false, projector: false, music: false, speaker: false,
+  liveMusic: false, surpriseGift: false,
+  specialNote: "",
   source: "Phone",
   status: "pending",
 };
@@ -171,36 +193,35 @@ const Catering = ({ adminData, setAdminData }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  /* filters */
   const [filterDate, setFilterDate] = useState(todayStr());
   const [filterStatus, setFilterStatus] = useState("");
   const [search, setSearch] = useState("");
 
-  /* create modal */
   const [showCreate, setShowCreate] = useState(false);
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [formErrors, setFormErrors] = useState({});
   const [selectedItems, setSelectedItems] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [useRestaurantAddr, setUseRestaurantAddr] = useState(false);
   const [menuData, setMenuData] = useState(null);
-  const [itemsPopup, setItemsPopup] = useState(null); // holds the order whose items we're viewing
+  const [itemsPopup, setItemsPopup] = useState(null);
+  const [callTooltipId, setCallTooltipId] = useState(null);
+  const [callTooltipPos, setCallTooltipPos] = useState({ top: 0, left: 0 });
+  const callWrapRefs = useRef({});
 
   const data = adminData?.cateringOrders || [];
 
-  /* KPI counts */
   const todayCount = data.filter(r => r.date === todayStr() || r.eventDate === todayStr()).length;
   const pendingCount = data.filter(r => (r.status || "pending") === "pending").length;
   const confirmedCount = data.filter(r => r.status === "confirmed").length;
 
-  /* Load menu when modal opens */
   useEffect(() => {
     if (showCreate && !menuData) {
       api.get("/categories").then(res => setMenuData(res.data)).catch(() => setMenuData([]));
     }
   }, [showCreate]);
 
-  /* Filter + sort */
   const filteredData = useMemo(() => {
     let d = [...data];
     if (filterDate) d = d.filter(i => (i.date || i.eventDate) === filterDate);
@@ -220,7 +241,6 @@ const Catering = ({ adminData, setAdminData }) => {
     [...filteredData].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
     [filteredData]);
 
-  /* Inline status update */
   const updateStatus = async (e, id, newStatus) => {
     e.stopPropagation();
     const prev = data.find(c => c.id === id);
@@ -236,8 +256,69 @@ const Catering = ({ adminData, setAdminData }) => {
     }
   };
 
-  /* Form helpers */
-  const setF = (key, val) => { setForm(p => ({ ...p, [key]: val })); setFormErrors(e => ({ ...e, [key]: "" })); };
+  /* call logging — persisted to JSON */
+  const handleCall = async (e, id) => {
+    e.stopPropagation();
+    const prev = data.find(c => c.id === id);
+    if (!prev) return;
+    const newEntry = new Date().toISOString();
+    const updatedHistory = [...(prev.callHistory || []), newEntry];
+    /* optimistic update */
+    if (typeof setAdminData === "function") {
+      setAdminData(p => ({
+        ...p,
+        cateringOrders: (p.cateringOrders || []).map(c =>
+          c.id === id ? { ...c, callHistory: updatedHistory } : c
+        ),
+      }));
+    }
+    try {
+      try { await api.patch(`/cateringOrders/${id}`, { callHistory: updatedHistory }); }
+      catch { await api.put(`/cateringOrders/${id}`, { ...prev, callHistory: updatedHistory }); }
+      toast.success("Call logged!");
+    } catch {
+      if (typeof setAdminData === "function") {
+        setAdminData(p => ({
+          ...p,
+          cateringOrders: (p.cateringOrders || []).map(c => c.id === id ? prev : c),
+        }));
+      }
+      toast.error("Failed to log call");
+    }
+  };
+
+  const fmtDateTime = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+      + " " + d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+  };
+
+  const setF = (key, val) => {
+    setForm(p => {
+      const updated = { ...p, [key]: val };
+      /* Rebuild location whenever address fields change */
+      updated.location = buildCatAddress(updated);
+      return updated;
+    });
+    setFormErrors(e => ({ ...e, [key]: "" }));
+  };
+
+  const handleUseRestaurantAddr = (checked) => {
+    setUseRestaurantAddr(checked);
+    if (checked) {
+      setForm(p => {
+        const updated = { ...p, ...RESTAURANT_ADDRESS };
+        updated.location = buildCatAddress(updated);
+        return updated;
+      });
+      setFormErrors(e => ({
+        ...e,
+        addrDoorNo: "", addrStreet: "", addrArea: "",
+        addrCity: "", addrDistrict: "", addrState: "", addrPincode: "",
+      }));
+    }
+  };
 
   const validateTab0 = () => {
     const e = {};
@@ -245,6 +326,13 @@ const Catering = ({ adminData, setAdminData }) => {
     if (!form.mobile || form.mobile.replace(/\D/g, "").length !== 10) e.mobile = "Valid 10-digit number";
     if (!form.eventDate) e.eventDate = "Event date required";
     if (!form.time) e.time = "Time required";
+    if (!form.addrDoorNo.trim()) e.addrDoorNo = "Required";
+    if (!form.addrStreet.trim()) e.addrStreet = "Required";
+    if (!form.addrArea.trim()) e.addrArea = "Required";
+    if (!form.addrCity.trim()) e.addrCity = "Required";
+    if (!form.addrDistrict.trim()) e.addrDistrict = "Required";
+    if (!form.addrState.trim()) e.addrState = "Required";
+    if (!form.addrPincode || form.addrPincode.length !== 6) e.addrPincode = "Valid 6-digit pincode";
     setFormErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -254,7 +342,14 @@ const Catering = ({ adminData, setAdminData }) => {
     setTab(t => Math.min(t + 1, 2));
   };
 
-  const totalAmount = selectedItems.reduce((s, i) => s + (i.totalPrice || 0), 0);
+  const guestCount = Math.max(1, parseInt(form.guests, 10) || 1);
+
+  /* dish total: sum of (unitPrice × guests) */
+  const dishTotal = selectedItems.reduce((s, i) => s + (i.totalPrice || 0), 0);
+  /* extras total */
+  const extrasTotal = Object.keys(EXTRA_PRICES).reduce((s, k) => s + (form[k] ? EXTRA_PRICES[k] : 0), 0);
+  const decorTotal = form.decoration ? (DECORATION_TIERS.find(d => d.value === form.decoration)?.price || 0) : 0;
+  const totalAmount = dishTotal + extrasTotal + decorTotal;
 
   const handleCreate = async () => {
     if (!validateTab0()) { setTab(0); return; }
@@ -262,10 +357,12 @@ const Catering = ({ adminData, setAdminData }) => {
     try {
       const id = `cat_${Date.now()}`;
       const payload = {
-        id,
-        ...form,
+        id, ...form,
         date: form.eventDate,
         items: selectedItems,
+        dishTotal,
+        extrasTotal,
+        decorTotal,
         totalAmount,
         status: form.status || "pending",
         createdAt: new Date().toISOString(),
@@ -286,23 +383,43 @@ const Catering = ({ adminData, setAdminData }) => {
     }
   };
 
-  const openCreate = () => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setSelectedItems([]); setTab(0); setFormErrors({}); };
-
+  const openCreate = () => {
+    setShowCreate(true); setForm({ ...EMPTY_FORM }); setSelectedItems([]);
+    setTab(0); setFormErrors({}); setUseRestaurantAddr(false); // ← add this
+  };
   const activeFilters = filterDate || filterStatus || search.trim();
+
+  const exportToExcel = () => {
+    if (!sortedData.length) { alert("No catering orders to export"); return; }
+    const rows = sortedData.map(item => ({
+      Name: item.name || "—", Mobile: item.mobile || "—", Email: item.email || "—",
+      "Event Date": item.eventDate || item.date || "—", Time: item.time || "—",
+      Location: item.location || "—", Guests: item.guests ?? "—",
+      Items: (item.items || []).length,
+      "Total Amount": item.totalAmount ? `₹${Number(item.totalAmount).toLocaleString("en-IN")}` : "—",
+      Status: item.status || "—", Source: item.source || "—",
+    }));
+    const sheet = XLSX.utils.json_to_sheet(rows);
+    sheet["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, sheet, "Catering Orders");
+    XLSX.writeFile(wb, `catering_orders_${filterDate || "all"}.xlsx`);
+  };
 
   return (
     <div className="act-page">
 
-      {/* HEADER */}
       <div className="act-header">
         <div>
           <h2 className="act-title">Catering Orders</h2>
           <p className="act-subtitle">Manage catering & event food orders</p>
         </div>
-        <button className="evt-res-create-btn" onClick={openCreate}>+ Add Catering Order</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="orders-export-btn" onClick={exportToExcel}>Export</button>
+          <button className="evt-res-create-btn" onClick={openCreate}>+ Add Catering Order</button>
+        </div>
       </div>
 
-      {/* KPI STRIP */}
       <div className="act-kpi-row">
         {[
           { label: "Total", val: data.length, color: "#111" },
@@ -317,12 +434,9 @@ const Catering = ({ adminData, setAdminData }) => {
         ))}
       </div>
 
-      {/* FILTER BAR */}
       <div className="act-filter-bar">
         <input className="act-search" placeholder="Search name / mobile / ID..." value={search} onChange={e => setSearch(e.target.value)} />
         <div className="act-filter-groups">
-
-          {/* Date */}
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span className="act-filter-group-label">Date</span>
             <div style={{ minWidth: 160 }}>
@@ -330,8 +444,6 @@ const Catering = ({ adminData, setAdminData }) => {
             </div>
             {filterDate && <button className="act-filter-btn" onClick={() => setFilterDate("")}>✕</button>}
           </div>
-
-          {/* Status */}
           <div className="act-filter-group">
             <span className="act-filter-group-label">Status</span>
             {["pending", "confirmed", "completed"].map(s => (
@@ -342,40 +454,29 @@ const Catering = ({ adminData, setAdminData }) => {
               </button>
             ))}
           </div>
-
           {activeFilters && (
             <button className="act-clear-btn" onClick={() => { setFilterDate(todayStr()); setFilterStatus(""); setSearch(""); }}>Clear</button>
           )}
         </div>
       </div>
 
-      {/* TABLE */}
       <div className="act-table-wrapper">
         <table className="act-table">
           <thead>
             <tr>
-              <th>Guest</th>
-              <th>Contact</th>
-              <th>Date</th>
-              <th>Time</th>
-              <th>Guests</th>
-              <th>Items</th>
-              <th>Total</th>
-              <th>Location</th>
-              <th>Status</th>
+              <th>Guest</th><th>Contact</th><th>Date</th><th>Time</th>
+              <th>Guests</th><th>Items</th><th>Total</th><th>Location</th><th>Status</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {sortedData.length === 0 ? (
-              <tr><td colSpan="9" className="act-empty">No catering orders found</td></tr>
+              <tr><td colSpan="10" className="act-empty">No catering orders found</td></tr>
             ) : (
               sortedData.map(item => {
                 const status = item.status || "pending";
                 const date = item.date || item.eventDate || "—";
                 return (
                   <tr key={item.id} className="act-row clickable" onClick={() => navigate(`/catering/${item.id}`)}>
-
-                    {/* Guest */}
                     <td>
                       <div className="act-name-cell">
                         <div className="act-avatar">{(item.name || "?").charAt(0).toUpperCase()}</div>
@@ -385,38 +486,25 @@ const Catering = ({ adminData, setAdminData }) => {
                         </div>
                       </div>
                     </td>
-
-                    {/* Contact */}
                     <td>
                       <div className="act-contact">
                         <span>{item.mobile || "—"}</span>
                         {item.email && <span className="act-email">{item.email}</span>}
                       </div>
                     </td>
-
                     <td style={{ fontWeight: 600 }}>{date}</td>
                     <td>{fmtTime(item.time)}</td>
                     <td style={{ textAlign: "center", fontWeight: 700 }}>{item.guests || "—"}</td>
                     <td style={{ textAlign: "center" }} onClick={e => e.stopPropagation()}>
                       {item.items?.length > 0 ? (
-                        <button
-                          onClick={() => setItemsPopup(item)}
-                          style={{
-                            background: "#f0f4ff", border: "1.5px solid #c7d2fe",
-                            borderRadius: "999px", padding: "3px 12px",
-                            fontWeight: 700, fontSize: 13, color: "#3730a3",
-                            cursor: "pointer", fontFamily: "inherit",
-                          }}>
+                        <button onClick={() => setItemsPopup(item)}
+                          style={{ background: "#f0f4ff", border: "1.5px solid #c7d2fe", borderRadius: "999px", padding: "3px 12px", fontWeight: 700, fontSize: 13, color: "#3730a3", cursor: "pointer", fontFamily: "inherit" }}>
                           {item.items.length}
                         </button>
-                      ) : (
-                        <span style={{ color: "#bbb", fontSize: 13 }}>0</span>
-                      )}
+                      ) : <span style={{ color: "#bbb", fontSize: 13 }}>0</span>}
                     </td>
                     <td style={{ fontWeight: 700 }}>₹{(item.totalAmount || 0).toLocaleString()}</td>
                     <td style={{ fontSize: 12, color: "#666" }}>{item.location || "—"}</td>
-
-                    {/* Inline status */}
                     <td onClick={e => e.stopPropagation()}>
                       <div className="evt-res-inline-status">
                         {["pending", "confirmed", "completed", "cancelled"].map(s => (
@@ -428,6 +516,32 @@ const Catering = ({ adminData, setAdminData }) => {
                         ))}
                       </div>
                     </td>
+
+                    {/* Actions — Call + Call History */}
+                    <td onClick={e => e.stopPropagation()}>
+                      {(() => {
+                        const history = item.callHistory || [];
+                        return (
+                          <div className="evt-pre-call-wrap"
+                            ref={el => { callWrapRefs.current[item.id] = el; }}
+                            onMouseEnter={() => {
+                              if (history.length > 0) {
+                                const el = callWrapRefs.current[item.id];
+                                if (el) {
+                                  const r = el.getBoundingClientRect();
+                                  setCallTooltipPos({ top: r.top, left: r.left, width: r.width });
+                                }
+                                setCallTooltipId(item.id);
+                              }
+                            }}
+                            onMouseLeave={() => setCallTooltipId(null)}>
+                            <button className="evt-pre-act-btn" onClick={e => handleCall(e, item.id)}>
+                              📞 Call{history.length > 0 ? ` (${history.length})` : ""}
+                            </button>
+                          </div>
+                        );
+                      })()}
+                    </td>
                   </tr>
                 );
               })
@@ -436,59 +550,73 @@ const Catering = ({ adminData, setAdminData }) => {
         </table>
       </div>
 
-      {/* ══ ITEMS POPUP ══ */}
+
+      {/* ── Call History Portal Tooltip ── */}
+      {callTooltipId && createPortal(
+        (() => {
+          const histItem = (adminData?.cateringOrders || []).find(x => x.id === callTooltipId);
+          const hist = histItem?.callHistory || [];
+          if (!hist.length) return null;
+          return (
+            <div
+              className="evt-pre-call-tooltip"
+              style={{
+                position: "fixed",
+                top: callTooltipPos.top,
+                left: callTooltipPos.left - 20,                transform: "translate(-50%, calc(-100% - 10px))",
+                zIndex: 99999,
+                pointerEvents: "none",
+              }}
+            >
+              <div className="evt-pre-call-tooltip-title">📞 Call History</div>
+              {hist.map((ts, i) => (
+                <div key={i} className="evt-pre-call-tooltip-row">{fmtDateTime(ts)}</div>
+              ))}
+            </div>
+          );
+        })(),
+        document.body
+      )}
+
+      {/* Items popup */}
       {itemsPopup && (
         <div className="ingredient-modal-overlay" onClick={() => setItemsPopup(null)}>
           <div className="ingredient-modal" style={{ width: 520, maxWidth: "95vw" }} onClick={e => e.stopPropagation()}>
             <div className="ingredient-modal-header">
-              <h3>
-                Dishes — {itemsPopup.name}
-                <span style={{ fontSize: 12, fontWeight: 400, color: "#888", marginLeft: 8 }}>
-                  #{(itemsPopup.id || "").slice(-6)}
-                </span>
-              </h3>
+              <h3>Dishes — {itemsPopup.name} <span style={{ fontSize: 12, fontWeight: 400, color: "#888", marginLeft: 8 }}>#{(itemsPopup.id || "").slice(-6)}</span></h3>
               <button className="ingredient-close-btn" onClick={() => setItemsPopup(null)} />
             </div>
             <div className="ingredient-modal-body" style={{ padding: "12px 20px 20px" }}>
               {(!itemsPopup.items || itemsPopup.items.length === 0) ? (
                 <p style={{ textAlign: "center", color: "#aaa", padding: "24px 0" }}>No dishes in this order.</p>
               ) : (
-                <>
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead>
-                      <tr style={{ borderBottom: "2px solid #f0f0f0" }}>
-                        {["#", "Dish", "Category", "Qty", "Unit Price", "Total"].map(h => (
-                          <th key={h} style={{
-                            padding: "8px 10px", fontSize: 11, fontWeight: 700, color: "#888",
-                            textTransform: "uppercase", textAlign: h === "#" || h === "Qty" ? "center" : "left"
-                          }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {itemsPopup.items.map((dish, idx) => (
-                        <tr key={idx} style={{ borderBottom: "1px solid #f5f5f5" }}>
-                          <td style={{ padding: "10px", textAlign: "center", fontSize: 12, color: "#bbb", fontWeight: 600 }}>{idx + 1}</td>
-                          <td style={{ padding: "10px", fontWeight: 600, fontSize: 13, color: "#111" }}>{dish.name || "—"}</td>
-                          <td style={{ padding: "10px", fontSize: 12, color: "#888" }}>{dish.category || dish.categoryId || "—"}</td>
-                          <td style={{ padding: "10px", textAlign: "center", fontWeight: 700, fontSize: 13 }}>{dish.quantity || 1}</td>
-                          <td style={{ padding: "10px", fontSize: 13 }}>₹{dish.price || dish.unitPrice || dish.basePrice || 0}</td>
-                          <td style={{ padding: "10px", fontWeight: 700, fontSize: 13, color: "#111" }}>
-                            ₹{dish.totalPrice || ((dish.price || dish.unitPrice || dish.basePrice || 0) * (dish.quantity || 1))}
-                          </td>
-                        </tr>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "2px solid #f0f0f0" }}>
+                      {["#", "Dish", "Category", "Unit Price", "Guests", "Total"].map(h => (
+                        <th key={h} style={{ padding: "8px 10px", fontSize: 11, fontWeight: 700, color: "#888", textTransform: "uppercase", textAlign: h === "#" ? "center" : "left" }}>{h}</th>
                       ))}
-                    </tbody>
-                    <tfoot>
-                      <tr style={{ borderTop: "2px solid #e5e7eb", background: "#f8fafc" }}>
-                        <td colSpan="5" style={{ padding: "10px", fontWeight: 700, fontSize: 13 }}>Total Amount</td>
-                        <td style={{ padding: "10px", fontWeight: 800, fontSize: 15, color: "#111" }}>
-                          ₹{(itemsPopup.totalAmount || itemsPopup.items.reduce((s, d) => s + (d.totalPrice || 0), 0)).toLocaleString()}
-                        </td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {itemsPopup.items.map((dish, idx) => (
+                      <tr key={idx} style={{ borderBottom: "1px solid #f5f5f5" }}>
+                        <td style={{ padding: "10px", textAlign: "center", fontSize: 12, color: "#bbb" }}>{idx + 1}</td>
+                        <td style={{ padding: "10px", fontWeight: 600, fontSize: 13 }}>{dish.name || "—"}</td>
+                        <td style={{ padding: "10px", fontSize: 12, color: "#888" }}>{dish.category || "—"}</td>
+                        <td style={{ padding: "10px", fontSize: 13 }}>₹{dish.unitPrice || dish.price || 0}</td>
+                        <td style={{ padding: "10px", textAlign: "center", fontWeight: 700 }}>{itemsPopup.guests || 1}</td>
+                        <td style={{ padding: "10px", fontWeight: 700, fontSize: 13 }}>₹{dish.totalPrice || 0}</td>
                       </tr>
-                    </tfoot>
-                  </table>
-                </>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ borderTop: "2px solid #e5e7eb", background: "#f8fafc" }}>
+                      <td colSpan="5" style={{ padding: "10px", fontWeight: 700 }}>Total Amount</td>
+                      <td style={{ padding: "10px", fontWeight: 800, fontSize: 15 }}>₹{(itemsPopup.totalAmount || 0).toLocaleString()}</td>
+                    </tr>
+                  </tfoot>
+                </table>
               )}
             </div>
           </div>
@@ -523,7 +651,6 @@ const Catering = ({ adminData, setAdminData }) => {
               {tab === 0 && (
                 <>
                   <div className="evt-res-form-section-label">Customer Information</div>
-
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1.4 }}>
                       <label>Name <span className="evt-res-req">*</span></label>
@@ -536,7 +663,7 @@ const Catering = ({ adminData, setAdminData }) => {
                       <div className="evt-res-stepper">
                         <button type="button" onClick={() => setF("guests", Math.max(1, form.guests - 1))}>−</button>
                         <span>{form.guests}</span>
-                        <button type="button" onClick={() => setF("guests", Math.min(1000, form.guests + 1))}>+</button>
+                        <button type="button" onClick={() => setF("guests", Math.min(10000, form.guests + 1))}>+</button>
                       </div>
                     </div>
                   </div>
@@ -555,7 +682,6 @@ const Catering = ({ adminData, setAdminData }) => {
                   </div>
 
                   <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>Event Details</div>
-
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Event Date <span className="evt-res-req">*</span></label>
@@ -569,48 +695,100 @@ const Catering = ({ adminData, setAdminData }) => {
                     </div>
                   </div>
 
+                  {/* Address — all mandatory */}
+                  <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>
+                    Event Address <span style={{ fontSize: 11, color: "#888" }}>(all fields required)</span>
+                    <button
+                      type="button"
+                      className={`use-restaurant-loc-toggle${useRestaurantAddr ? " active" : ""}`}
+                      onClick={() => handleUseRestaurantAddr(!useRestaurantAddr)}
+                    >
+                      {useRestaurantAddr ? "✓ " : ""}Use restaurant location
+                    </button>
+                  </div>
+
+
+                  <div className="ae-addr-grid">
+                    {[
+                      { key: "addrDoorNo", label: "Door No. / Building", placeholder: "Door / Flat No." },
+                      { key: "addrStreet", label: "Street Name", placeholder: "Street / Road" },
+                      { key: "addrArea", label: "Area / Locality", placeholder: "Area / Colony" },
+                      { key: "addrLandmark", label: "Landmark", placeholder: "Near / Opposite…", optional: true },
+                      { key: "addrCity", label: "City", placeholder: "City" },
+                      { key: "addrDistrict", label: "District", placeholder: "District" },
+                      { key: "addrState", label: "State", placeholder: "State" },
+                      { key: "addrPincode", label: "Pincode", placeholder: "6-digit pincode" },
+                    ].map(field => (
+                      <div key={field.key} className="ae-addr-field">
+                        <label>{field.label} {!field.optional && <span className="ae-req">*</span>}</label>
+                        <input
+                          type="text"
+                          className={formErrors[field.key] ? "error" : ""}
+                          value={form[field.key]}
+                          placeholder={field.placeholder}
+                          maxLength={field.key === "addrPincode" ? 6 : undefined}
+                          readOnly={useRestaurantAddr}
+                          style={useRestaurantAddr ? { background: "#f3f4f6", cursor: "not-allowed", color: "#888" } : {}}
+                          onChange={e => {
+                            if (useRestaurantAddr) return;
+                            const v = field.key === "addrPincode"
+                              ? e.target.value.replace(/\D/g, "").slice(0, 6)
+                              : e.target.value;
+                            setF(field.key, v);
+                          }}
+                        />
+                        {formErrors[field.key] && <span className="evt-res-form-error">{formErrors[field.key]}</span>}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Decoration */}
+                  <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>Decoration</div>
                   <div className="form-group">
-                    <label>Event Location</label>
-                    <div className="ae-addr-grid">
-                      <div className="ae-addr-field">
-                        <label>Door No. <span className="ae-req">*</span></label>
-                        <input type="text" value={form.addrDoorNo} placeholder="Door / Flat No."
-                          onChange={e => { const v = e.target.value; setForm(p => ({ ...p, addrDoorNo: v, location: buildCatAddress({ ...p, addrDoorNo: v }) })); }} />
-                      </div>
-                      <div className="ae-addr-field">
-                        <label>Street <span className="ae-req">*</span></label>
-                        <input type="text" value={form.addrStreet} placeholder="Street / Road name"
-                          onChange={e => { const v = e.target.value; setForm(p => ({ ...p, addrStreet: v, location: buildCatAddress({ ...p, addrStreet: v }) })); }} />
-                      </div>
-                      <div className="ae-addr-field">
-                        <label>Area <span className="ae-req">*</span></label>
-                        <input type="text" value={form.addrArea} placeholder="Area / Locality"
-                          onChange={e => { const v = e.target.value; setForm(p => ({ ...p, addrArea: v, location: buildCatAddress({ ...p, addrArea: v }) })); }} />
-                      </div>
-                      <div className="ae-addr-field">
-                        <label>Landmark <span style={{ fontSize: 10, color: "#aaa" }}>(optional)</span></label>
-                        <input type="text" value={form.addrLandmark} placeholder="Near / opposite…"
-                          onChange={e => { const v = e.target.value; setForm(p => ({ ...p, addrLandmark: v, location: buildCatAddress({ ...p, addrLandmark: v }) })); }} />
-                      </div>
-                      <div className="ae-addr-field">
-                        <label>City <span className="ae-req">*</span></label>
-                        <input type="text" value={form.addrCity} placeholder="City"
-                          onChange={e => { const v = e.target.value; setForm(p => ({ ...p, addrCity: v, location: buildCatAddress({ ...p, addrCity: v }) })); }} />
-                      </div>
-                      <div className="ae-addr-field">
-                        <label>State <span className="ae-req">*</span></label>
-                        <input type="text" value={form.addrState} placeholder="State"
-                          onChange={e => { const v = e.target.value; setForm(p => ({ ...p, addrState: v, location: buildCatAddress({ ...p, addrState: v }) })); }} />
-                      </div>
-                      <div className="ae-addr-field">
-                        <label>Pincode <span className="ae-req">*</span></label>
-                        <input type="text" value={form.addrPincode} placeholder="6-digit pincode" maxLength={6}
-                          onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 6); setForm(p => ({ ...p, addrPincode: v, location: buildCatAddress({ ...p, addrPincode: v }) })); }} />
-                      </div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button type="button" className={`evt-res-source-chip${!form.decoration ? " active" : ""}`} onClick={() => setF("decoration", null)}>None</button>
+                      {DECORATION_TIERS.map(d => (
+                        <button key={d.value} type="button"
+                          className={`evt-res-source-chip${form.decoration === d.value ? " active" : ""}`}
+                          onClick={() => setF("decoration", d.value)}>
+                          {d.label} ₹{d.price.toLocaleString()}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
-                  <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>Source & Status</div>
+                  {/* Add-ons — celebration fields + catering extras (no Get Together, no event type) */}
+                  <div className="evt-res-form-section-label" style={{ marginTop: 4 }}>Add-ons & Services</div>
+                  <div className="form-group">
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {[
+                        { k: "cake", l: "Cake +₹500" },
+                        { k: "specialMention", l: "Special Mention" },
+                        { k: "liveMusic", l: "Live Music +₹2,000" },
+                        { k: "surpriseGift", l: "Surprise Gift +₹300" },
+                        { k: "candleLight", l: "Candle Light +₹800" },
+                        { k: "mic", l: "Mic +₹500" },
+                        { k: "projector", l: "Projector +₹800" },
+                        { k: "music", l: "Music System +₹1,500" },
+                        { k: "speaker", l: "Speaker +₹600" },
+                      ].map(ex => (
+                        <button key={ex.k} type="button"
+                          className={`evt-res-source-chip${form[ex.k] ? " active" : ""}`}
+                          onClick={() => setF(ex.k, !form[ex.k])}>
+                          {ex.l}
+                        </button>
+                      ))}
+                    </div>
+                    {form.specialMention && (
+                      <textarea rows={2} style={{ marginTop: 8, width: "100%", boxSizing: "border-box", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #e5e7eb", fontSize: 13, fontFamily: "inherit", resize: "vertical" }}
+                        placeholder="Describe what to announce / mention..."
+                        value={form.specialMentionText}
+                        onChange={e => setF("specialMentionText", e.target.value)} />
+                    )}
+                  </div>
+
+                  {/* Source & Status */}
+                  <div className="evt-res-form-section-label" style={{ marginTop: 4 }}>Source & Status</div>
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Source</label>
@@ -643,38 +821,29 @@ const Catering = ({ adminData, setAdminData }) => {
                 </>
               )}
 
-              {/* ── TAB 1: Dishes (two-column) ── */}
+              {/* ── TAB 1: Dishes ── */}
               {tab === 1 && (
                 <div className="ae-dishes-split">
-                  {/* LEFT: picker */}
                   <div className="ae-dishes-split-left">
-                    <DishPicker
-                      menuData={menuData}
-                      selectedItems={selectedItems}
-                      setSelectedItems={setSelectedItems}
-                    />
+                    <DishPicker menuData={menuData} selectedItems={selectedItems} setSelectedItems={setSelectedItems} guests={form.guests} />
                   </div>
-                  {/* RIGHT: selected list + total */}
                   <div className="ae-dishes-split-right">
                     <div className="ae-dishes-right-header">
                       Selected Dishes
-                      {selectedItems.length > 0 && (
-                        <span style={{ fontSize: 11, fontWeight: 500, color: "#888", marginLeft: 6 }}>
-                          ({selectedItems.length})
-                        </span>
-                      )}
+                      {selectedItems.length > 0 && <span style={{ fontSize: 11, fontWeight: 500, color: "#888", marginLeft: 6 }}>({selectedItems.length})</span>}
                     </div>
+                    <div style={{ fontSize: 11, color: "#888", marginBottom: 8 }}>Price = unit × {guestCount} guests</div>
                     {selectedItems.length === 0 ? (
-                      <div className="ae-dishes-empty-right">No dishes selected yet.<br />Pick dishes from the left panel.</div>
+                      <div className="ae-dishes-empty-right">No dishes selected yet.</div>
                     ) : (
                       <>
                         <div className="ae-dishes-right-list">
                           {selectedItems.map(item => (
                             <div key={item.id} className="ae-dishes-right-item">
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontWeight: 600, fontSize: 13, color: "#111", lineHeight: 1.3 }}>{item.name}</div>
+                                <div style={{ fontWeight: 600, fontSize: 13, color: "#111" }}>{item.name}</div>
                                 <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>
-                                  {item.category || "—"} · qty: {item.quantity}
+                                  ₹{item.unitPrice || item.price} × {guestCount}
                                 </div>
                               </div>
                               <div style={{ fontWeight: 700, fontSize: 13, color: "var(--color-red,#e74c3c)", flexShrink: 0 }}>
@@ -687,8 +856,8 @@ const Catering = ({ adminData, setAdminData }) => {
                           ))}
                         </div>
                         <div className="ae-dishes-right-total">
-                          <span>Total Amount</span>
-                          <span>₹{totalAmount.toLocaleString()}</span>
+                          <span>Dishes Total</span>
+                          <span>₹{dishTotal.toLocaleString()}</span>
                         </div>
                       </>
                     )}
@@ -698,64 +867,103 @@ const Catering = ({ adminData, setAdminData }) => {
 
               {/* ── TAB 2: Review ── */}
               {tab === 2 && (
-                <div className="act-review">
-                  <div className="act-review-section">
-                    <div className="act-review-title">Customer Details</div>
-                    <div className="act-review-grid">
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {/* Summary header */}
+                  <div style={{ background: "linear-gradient(135deg,#f8fafc,#ecfdf5)", borderRadius: 12, padding: "12px 16px", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 42, height: 42, borderRadius: "50%", background: "linear-gradient(135deg,#10b981,#3b82f6)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18 }}>
+                      {(form.name || "?").charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: "#111" }}>{form.name || "—"}</div>
+                      <div style={{ fontSize: 12, color: "#666" }}>{form.mobile || "—"} {form.email ? `· ${form.email}` : ""}</div>
+                    </div>
+                    <div style={{ marginLeft: "auto", display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, background: form.status === "confirmed" ? "#d1fae5" : "#fef3c7", color: form.status === "confirmed" ? "#065f46" : "#92400e" }}>{form.status}</span>
+                      {form.source && <span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, background: "#f3f4f6", color: "#555" }}>{form.source}</span>}
+                    </div>
+                  </div>
+
+                  <div className="prv-section">
+                    <div className="prv-section-title">Customer & Event Details</div>
+                    <div className="prv-grid">
                       {[
-                        ["Name", form.name], ["Mobile", form.mobile], ["Email", form.email || "—"],
-                        ["Date", form.eventDate], ["Time", fmtTime(form.time)], ["Guests", form.guests],
-                        ["Location", form.location || "—"], ["Source", form.source], ["Status", form.status],
+                        ["Name", form.name || "—"],
+                        ["Mobile", form.mobile || "—"],
+                        ["Email", form.email || "—"],
+                        ["Event Date", form.eventDate || "—"],
+                        ["Time", fmtTime(form.time)],
+                        ["Guests", form.guests ?? "—"],
                       ].map(([l, v]) => (
-                        <div key={l} className="act-review-cell">
-                          <div className="act-review-label">{l}</div>
-                          <div className="act-review-val">{v}</div>
-                        </div>
+                        <div key={l} className="prv-cell"><div className="prv-cell-label">{l}</div><div className="prv-cell-val">{v}</div></div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="act-review-section">
-                    <div className="act-review-title">Selected Dishes ({selectedItems.length})</div>
+                  <div className="prv-section">
+                    <div className="prv-section-title">Event Address</div>
+                    <div className="prv-notes" style={{ background: "#f8fafc" }}>{form.location || "Not specified"}</div>
+                  </div>
+
+                  <div className="prv-section">
+                    <div className="prv-section-title">Selected Dishes ({selectedItems.length}) — price × {guestCount} guests</div>
                     {selectedItems.length === 0 ? (
-                      <div className="act-review-empty">No dishes selected</div>
+                      <div className="prv-empty">No dishes selected</div>
                     ) : (
-                      <table className="act-review-table">
-                        <thead>
-                          <tr><th>Dish</th><th>Qty</th><th>Unit</th><th>Total</th></tr>
-                        </thead>
+                      <table className="prv-table">
+                        <thead><tr><th>Dish</th><th>Unit Price</th><th>Guests</th><th>Total</th></tr></thead>
                         <tbody>
                           {selectedItems.map((item, i) => (
                             <tr key={i}>
-                              <td>{item.name}</td>
-                              <td style={{ textAlign: "center" }}>{item.quantity}</td>
-                              <td>₹{item.price || item.unitPrice || 0}</td>
+                              <td style={{ fontWeight: 600 }}>{item.name}</td>
+                              <td>₹{item.unitPrice || item.price || 0}</td>
+                              <td style={{ textAlign: "center", fontWeight: 700 }}>{guestCount}</td>
                               <td style={{ fontWeight: 600 }}>₹{item.totalPrice || 0}</td>
                             </tr>
                           ))}
                         </tbody>
                         <tfoot>
-                          <tr className="act-review-total-row">
-                            <td colSpan="3" style={{ fontWeight: 700 }}>Total Amount</td>
-                            <td style={{ fontWeight: 800, fontSize: 15 }}>₹{totalAmount.toLocaleString()}</td>
-                          </tr>
+                          <tr><td colSpan="3" style={{ fontWeight: 700 }}>Dishes Subtotal</td><td style={{ fontWeight: 800 }}>₹{dishTotal.toLocaleString()}</td></tr>
                         </tfoot>
                       </table>
                     )}
                   </div>
 
+                  {(extrasTotal > 0 || decorTotal > 0) && (
+                    <div className="prv-section">
+                      <div className="prv-section-title">Extras & Decoration</div>
+                      <div style={{ padding: "8px 14px", display: "flex", flexDirection: "column", gap: 4 }}>
+                        {form.decoration && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, borderBottom: "1px solid #f5f5f5" }}><span style={{ textTransform: "capitalize" }}>Decoration ({form.decoration})</span><span style={{ fontWeight: 600 }}>₹{decorTotal.toLocaleString()}</span></div>}
+                        {Object.keys(EXTRA_PRICES).filter(k => form[k] && EXTRA_PRICES[k] > 0).map(k => (
+                          <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13, borderBottom: "1px solid #f5f5f5" }}>
+                            <span style={{ textTransform: "capitalize" }}>{k.replace(/([A-Z])/g, " $1")}</span>
+                            <span style={{ fontWeight: 600 }}>₹{EXTRA_PRICES[k]}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="prv-total-bar">
+                    <span className="prv-total-label">Grand Total</span>
+                    <span className="prv-total-val">₹{totalAmount.toLocaleString()}</span>
+                  </div>
+
                   {form.notes && (
-                    <div className="act-review-section">
-                      <div className="act-review-title">Notes</div>
-                      <div className="act-review-notes">{form.notes}</div>
+                    <div className="prv-section">
+                      <div className="prv-section-title">Notes</div>
+                      <div className="prv-notes">{form.notes}</div>
+                    </div>
+                  )}
+
+                  {(!form.name.trim() || !form.mobile || !form.eventDate || !form.time) && (
+                    <div style={{ padding: "10px 14px", background: "#fef3c7", borderRadius: 10, border: "1px solid #fcd34d", fontSize: 13, color: "#92400e" }}>
+                      ⚠️ Required fields missing — please go back and fill all required details.
                     </div>
                   )}
                 </div>
               )}
-
             </div>
 
-            {/* Footer */}
             <div className="event-modal-footer">
               <div className="form-actions ae-spec-footer">
                 {tab > 0 && <button type="button" className="ae-step-prev-btn" onClick={() => setTab(t => t - 1)}>← Back</button>}
@@ -766,11 +974,9 @@ const Catering = ({ adminData, setAdminData }) => {
                 <button type="button" onClick={() => setShowCreate(false)}>Cancel</button>
               </div>
             </div>
-
           </div>
         </div>
       )}
-
     </div>
   );
 };

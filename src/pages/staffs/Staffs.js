@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import * as XLSX from "xlsx";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 import "./Staffs.css";
 import { sortArray } from "../../App";
@@ -55,11 +56,50 @@ export default function Staffs({
     const navigate = useNavigate();
     const location = useLocation();
     const [workTypeFilter, setWorkTypeFilter] = useState(location.state?.workType || "");
+    const [staffSearch, setStaffSearch] = useState("");
+    const [roleFilter, setRoleFilter] = useState("");
 
     const staffs = useMemo(() => {
-        const sorted = sortArray(adminData.staff || [], sortConfig);
-        return workTypeFilter ? sorted.filter(s => (s.workType || "full-time") === workTypeFilter) : sorted;
-    }, [adminData.staff, sortConfig, workTypeFilter]);
+        let sorted = sortArray(adminData.staff || [], sortConfig);
+        if (workTypeFilter) sorted = sorted.filter(s => (s.workType || "full-time") === workTypeFilter);
+        if (roleFilter) sorted = sorted.filter(s => s.role === roleFilter);
+        if (staffSearch.trim()) {
+            const q = staffSearch.toLowerCase();
+            sorted = sorted.filter(s =>
+                (s.name || "").toLowerCase().includes(q) ||
+                (s.role || "").toLowerCase().includes(q) ||
+                (s.contact || "").includes(q)
+            );
+        }
+        return sorted;
+    }, [adminData.staff, sortConfig, workTypeFilter, roleFilter, staffSearch]);
+
+    const exportStaffs = () => {
+        if (!staffs.length) { alert("No staff to export"); return; }
+        const rows = staffs.map(s => ({
+            Name: s.name || "—",
+            Role: s.role || "—",
+            "Work Type": s.workType || "full-time",
+            "Employment Type": s.employmentType || "—",
+            Salary: s.salary ? `₹${Number(s.salary).toLocaleString("en-IN")}` : "—",
+            Experience: s.experience ? `${s.experience} yr` : "—",
+            Contact: s.contact || "—",
+            "Alt Contact": s.altContact || "—",
+            "Joining Date": s.joiningDate || "—",
+            Education: s.education || "—",
+            "Bank Name": s.bank?.name || "—",
+            "Account No": s.bank?.account || "—",
+            IFSC: s.bank?.ifsc || "—",
+            Reference: s.reference || "—",
+        }));
+        const sheet = XLSX.utils.json_to_sheet(rows);
+        sheet["!cols"] = Object.keys(rows[0]).map(k => ({
+            wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2,
+        }));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, sheet, "Staff");
+        XLSX.writeFile(wb, `staff_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    };
 
     const resetForm = () => {
         setFormData(EMPTY_FORM);
@@ -96,21 +136,40 @@ export default function Staffs({
         <div className="staff-page">
             {/* HEADER */}
             <div className="staff-header">
-                <div className="staff-filter-pills">
-                    {[["", "All"], ["full-time", "Full-Time"], ["part-time", "Part-Time"]].map(([k, lbl]) => (
+                <h2 className="staff-page-title">Staff</h2>
+                <div style={{ display: "flex", gap: 8 }}>
+                    <button className="orders-export-btn" onClick={exportStaffs}>Export</button>
+                    <button
+                        className="staff-add-btn"
+                        onClick={() => { setFormData(EMPTY_FORM); setShowModal(true); }}
+                    >+ Add Staff</button>
+                </div>
+            </div>
+
+            {/* FILTER BAR */}
+            <div className="staff-filter-bar">
+                <input
+                    className="staff-search-input"
+                    placeholder="🔍 Search name, role, contact…"
+                    value={staffSearch}
+                    onChange={e => setStaffSearch(e.target.value)}
+                />
+                <div className="staff-filter-group">
+                    <span className="staff-filter-label">Work Type</span>
+                    {[["", "All"], ["full-time", "Full-Time"], ["part-time", "Part-Time"], ["double-shift", "Double Shift"]].map(([k, lbl]) => (
                         <button key={k} className={`sched-pill-btn${workTypeFilter === k ? " active" : ""}`} onClick={() => setWorkTypeFilter(k)}>{lbl}</button>
                     ))}
                 </div>
-                <h2>Staff</h2>
-                <button
-                    className="staff-add-btn"
-                    onClick={() => {
-                        setFormData(EMPTY_FORM);
-                        setShowModal(true);
-                    }}
-                >
-                    + Add Staff
-                </button>
+                <div className="staff-filter-group">
+                    <span className="staff-filter-label">Role</span>
+                    {[["", "All"], ...roles.map(r => [r, r])].map(([k, lbl]) => (
+                        <button key={k} className={`sched-pill-btn${roleFilter === k ? " active" : ""}`} onClick={() => setRoleFilter(k)}>{lbl}</button>
+                    ))}
+                </div>
+                {(staffSearch || workTypeFilter || roleFilter) && (
+                    <button className="ae-clear-filter" onClick={() => { setStaffSearch(""); setWorkTypeFilter(""); setRoleFilter(""); }}>Clear</button>
+                )}
+                <span className="ae-result-count">{staffs.length} staff</span>
             </div>
 
             {/* TABLE */}

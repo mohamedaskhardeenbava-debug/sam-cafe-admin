@@ -411,3 +411,177 @@
   background: #fee2e2;
   color: #dc2626;
 }
+
+/* ══════════════════════════════════════════════
+   STEP BAR — Celebrations modal
+   (matches Events page ae-spec-steps design)
+══════════════════════════════════════════════ */
+.ae-spec-steps {
+  display: flex;
+  gap: 0;
+  margin-top: 10px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.ae-spec-step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #f9f9f9;
+  border: none;
+  border-right: 1px solid #e5e7eb;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: #888;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.ae-spec-step:last-child {
+  border-right: none;
+}
+
+.ae-spec-step.active {
+  background: #111;
+  color: #fff;
+}
+
+.ae-spec-step.done {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.ae-step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.ae-spec-step.active .ae-step-num {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.ae-spec-step.done .ae-step-num {
+  background: #16a34a;
+  color: #fff;
+}
+
+.ae-step-label {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* ══════════════════════════════════════════════
+   CALL ACTION — Celebrations
+   (reuses evt-pre-* class names from PreBookings)
+══════════════════════════════════════════════ */
+.evt-pre-act-btn {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  white-space: nowrap;
+  background: #f3f4f6;
+  color: #555;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.evt-pre-act-btn:hover {
+  background: #fef9c3;
+  color: #ca8a04;
+}
+
+.evt-pre-call-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.evt-pre-call-tooltip {
+  min-width: 200px;
+  background: #fff;
+  color: #111;
+  border-radius: 10px;
+  padding: 10px 12px;
+  z-index: 99999;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  border: 1px solid #e5e7eb;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: clbCallTipFade 0.15s ease;
+}
+
+/* Downward-pointing arrow — tooltip appears above the button, centered */
+.evt-pre-call-tooltip::after {
+  content: "";
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 7px solid #e5e7eb;
+}
+
+.evt-pre-call-tooltip::before {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #fff;
+  z-index: 1;
+}
+
+@keyframes clbCallTipFade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+
+
+.evt-pre-call-tooltip-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #222;
+  margin-bottom: 6px;
+}
+
+.evt-pre-call-tooltip-row {
+  font-size: 12px;
+  color: #555;
+  padding: 3px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.evt-pre-call-tooltip-row:last-child {
+  border-bottom: none;
+}

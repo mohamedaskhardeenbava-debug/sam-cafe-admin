@@ -816,3 +816,138 @@
   border-bottom: 1px solid #f0f0f0;
   margin-bottom: 8px;
 }
+
+/* ══════════════════════════════════════
+   ADDRESS GRID — Admin Catering Modal
+══════════════════════════════════════ */
+.ae-addr-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+}
+
+.ae-addr-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ae-addr-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+}
+
+.ae-addr-field input {
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1.5px solid #e5e7eb;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.18s;
+}
+
+.ae-addr-field input:focus {
+  border-color: #111;
+}
+
+.ae-addr-field input.error {
+  border-color: #dc2626;
+}
+
+.ae-req {
+  color: #dc2626;
+  font-size: 11px;
+}
+
+/* chip disabled */
+.chip-disabled {
+  opacity: 0.45;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .ae-addr-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   CALL ACTION — Catering
+   (reuses evt-pre-* class names from PreBookings)
+══════════════════════════════════════════════ */
+.evt-pre-act-btn {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  white-space: nowrap;
+  background: #f3f4f6;
+  color: #555;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.evt-pre-act-btn:hover {
+  background: #fef9c3;
+  color: #ca8a04;
+}
+
+.evt-pre-call-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.evt-pre-call-tooltip {
+  min-width: 200px;
+  background: #fff;
+  color: #111;
+  border-radius: 10px;
+  padding: 10px 12px;
+  z-index: 99999;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  border: 1px solid #f0f0f0;
+  pointer-events: none;
+}
+
+@keyframes catCallTipFade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+
+.evt-pre-call-tooltip-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #222;
+  margin-bottom: 6px;
+}
+
+.evt-pre-call-tooltip-row {
+  font-size: 12px;
+  color: #555;
+  padding: 3px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.evt-pre-call-tooltip-row:last-child {
+  border-bottom: none;
+}

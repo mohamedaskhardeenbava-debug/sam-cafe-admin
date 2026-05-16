@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from "react";
+import * as XLSX from "xlsx";
 import "./ServiceReports.css";
 import api from "../../api";
+import { CustomDatePicker } from "../../components/CustomDatePicker";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Sector,
@@ -58,7 +60,7 @@ const parseServiceAssign = (serviceAssign = {}) => {
   }));
 };
 
-const parseServiceGrooming = (serviceGrooming = {}, staff = []) => {
+const parseServiceGrooming = (serviceGrooming = {}, staff = [], fromDate = "", toDate = "") => {
   const staffMap = {};
   staff.forEach(s => { staffMap[s.id] = s.name; });
 
@@ -67,8 +69,10 @@ const parseServiceGrooming = (serviceGrooming = {}, staff = []) => {
     .map(([staffId, dates]) => {
       const name = staffMap[staffId] || staffId.replace("staff_", "");
       let total = 0, passed = 0;
-      Object.values(dates).forEach(checks => {
+      Object.entries(dates).forEach(([d, checks]) => {
         if (typeof checks !== "object" || checks === null) return;
+        if (fromDate && d < fromDate) return;
+        if (toDate && d > toDate) return;
         ["uniform", "shoes", "groom"].forEach(k => {
           total++;
           if (checks[k] === true) passed++;
@@ -79,9 +83,13 @@ const parseServiceGrooming = (serviceGrooming = {}, staff = []) => {
     });
 };
 
-const parseAttendanceStats = (staff = []) => {
+const parseAttendanceStats = (staff = [], fromDate = "", toDate = "") => {
   return staff.map(s => {
-    const att = s.attendance || [];
+    const att = (s.attendance || []).filter(a => {
+      if (fromDate && a.date < fromDate) return false;
+      if (toDate && a.date > toDate) return false;
+      return true;
+    });
     const present = att.filter(a => a.status === "present").length;
     const leave = att.filter(a => a.status === "leave").length;
     const absent = att.filter(a => a.status === "absent").length;
@@ -177,20 +185,31 @@ const ServiceReports = ({ adminData = {} }) => {
   } = adminData;
 
   const [activePie, setActivePie] = useState(null);
+  const [reportFrom, setReportFrom] = useState("");
+  const [reportTo, setReportTo] = useState("");
+  const today = new Date().toISOString().slice(0, 10);
+
+  /* filtered orders by date range */
+  const filteredOrders = useMemo(() => orders.filter(o => {
+    const d = (o.date || o.createdAt || "").slice(0, 10);
+    if (reportFrom && d < reportFrom) return false;
+    if (reportTo && d > reportTo) return false;
+    return true;
+  }), [orders, reportFrom, reportTo]);
 
   /* derived */
   const miseData = useMemo(() => parseServiceMise(serviceMise), [serviceMise]);
   const assignData = useMemo(() => parseServiceAssign(serviceAssign), [serviceAssign]);
-  const groomData = useMemo(() => parseServiceGrooming(serviceGrooming, staff), [serviceGrooming, staff]);
-  const attData = useMemo(() => parseAttendanceStats(staff), [staff]);
-  const trendData = useMemo(() => parseDineInTrend(orders), [orders]);
-  const statusDist = useMemo(() => parseOrderStatusDist(orders), [orders]);
+  const groomData = useMemo(() => parseServiceGrooming(serviceGrooming, staff, reportFrom, reportTo), [serviceGrooming, staff, reportFrom, reportTo]);
+  const attData = useMemo(() => parseAttendanceStats(staff, reportFrom, reportTo), [staff, reportFrom, reportTo]);
+  const trendData = useMemo(() => parseDineInTrend(filteredOrders), [filteredOrders]);
+  const statusDist = useMemo(() => parseOrderStatusDist(filteredOrders), [filteredOrders]);
   const eventData = useMemo(() => parseReservationStatus(reservations, celebrations, preBookings), [reservations, celebrations, preBookings]);
 
   /* kpis */
-  const totalOrders = orders.length;
-  const dineInOrders = orders.filter(o => o.mode?.toLowerCase() === "dine in").length;
-  const takeAwayOrders = orders.filter(o => o.mode?.toLowerCase() !== "dine in").length;
+  const totalOrders = filteredOrders.length;
+  const dineInOrders = filteredOrders.filter(o => o.mode?.toLowerCase() === "dine in").length;
+  const takeAwayOrders = filteredOrders.filter(o => o.mode?.toLowerCase() !== "dine in").length;
   const miseReady = miseData.filter(m => m.verified).length;
   const eventTotal = (reservations.length) + (celebrations.length) + (preBookings.length) + (cateringOrders.length);
   const avgGroom = groomData.length ? Math.round(groomData.reduce((s, g) => s + g.score, 0) / groomData.length) : 0;
@@ -200,6 +219,17 @@ const ServiceReports = ({ adminData = {} }) => {
   const totalLeave = attData.reduce((s, x) => s + x.leave, 0);
   const totalAbsent = attData.reduce((s, x) => s + x.absent, 0);
 
+  const exportReport = () => {
+    const wb = XLSX.utils.book_new();
+    const attRows = attData.map(s => ({ Name: s.name, Present: s.present, Leave: s.leave, Absent: s.absent, "Attendance %": `${s.pct}%` }));
+    const groomRows = groomData.map(g => ({ Name: g.name, "Grooming Score %": `${g.score}%` }));
+    const orderRows = trendData.map(t => ({ Month: t.month, "Dine In": t.dineIn, "Take Away": t.takeAway, Revenue: t.revenue }));
+    if (attRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(attRows), "Attendance");
+    if (groomRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(groomRows), "Grooming");
+    if (orderRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(orderRows), "Order Trend");
+    XLSX.writeFile(wb, `service_report_${reportFrom || "all"}_${reportTo || today}.xlsx`);
+  };
+
   return (
     <div className="s-page">
 
@@ -208,6 +238,20 @@ const ServiceReports = ({ adminData = {} }) => {
         <div>
           <h2 className="s-title">Service Management</h2>
           <p className="s-subtitle">Floor Operations &amp; Guest Experience Report</p>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span className="sgroom-filter-label">From</span>
+            <CustomDatePicker value={reportFrom} onChange={v => { setReportFrom(v); if (reportTo && v > reportTo) setReportTo(v); }} placeholder="Start date" />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span className="sgroom-filter-label">To</span>
+            <CustomDatePicker value={reportTo} min={reportFrom} max={today} onChange={setReportTo} placeholder="End date" />
+          </div>
+          {(reportFrom || reportTo) && (
+            <button className="ae-clear-filter" onClick={() => { setReportFrom(""); setReportTo(""); }}>Clear</button>
+          )}
+          <button className="orders-export-btn" onClick={exportReport}>Export Report</button>
         </div>
       </div>
 

@@ -114,7 +114,13 @@ function App() {
     orders: [],
     users: [],
     favourites: [],
-    staff: []
+    staff: [],
+    callHistory: [],
+    reservations: [],
+    celebrations: [],
+    preBookings: [],
+    cateringOrders: [],
+    events: []
   });
 
   /* ---------------- LOGIN HANDLER ---------------- */
@@ -153,7 +159,8 @@ function App() {
           cateringRes,
           eventsRes,
           bookingsRes,
-          tasksRes
+          tasksRes,
+          callHistoryRes
         ] = await Promise.all([
           api.get("/categories"),
           api.get("/ingredients"),
@@ -179,7 +186,8 @@ function App() {
           api.get("/cateringOrders"),
           api.get("/events"),
           api.get("/eventBookings"),
-          api.get("/tasks")
+          api.get("/tasks"),
+          api.get("/callHistory")
         ]);
 
         setAdminData({
@@ -210,7 +218,8 @@ function App() {
           tasks: tasksRes.data?.[0] || {
             kitchen: { mise: [], cleaning: [] },
             service: { mise: [], cleaning: [] }
-          }
+          },
+          callHistory: callHistoryRes.data || []
         });
 
       } catch (err) {
@@ -424,8 +433,8 @@ function App() {
         <Topbar
           isAuthenticated={isAuthenticated}
           setIsAuthenticated={setIsAuthenticated}
-          orders={adminData.orders}
-          ingredients={adminData.ingredients}
+          adminData={adminData}
+          setAdminData={setAdminData}
         />
 
         <div className="page">
