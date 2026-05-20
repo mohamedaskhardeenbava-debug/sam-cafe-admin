@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
 import "./StaffModules.css";
 import api from "../../api";
+import useInfiniteScroll from "../../components/useInfiniteScroll";
+import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 
 export default function StaffSalary({ adminData }) {
     const [selected, setSelected] = useState(null);
@@ -100,6 +102,9 @@ export default function StaffSalary({ adminData }) {
         )
         : staffList;
 
+    const { displayLimit, sentinelRef, containerRef, hasMore } =
+        useInfiniteScroll(filteredList.length, 30);
+
     return (
         <div className="staff-page">
             <div className="staff-header">
@@ -149,7 +154,7 @@ export default function StaffSalary({ adminData }) {
                 <span className="ae-result-count">{filteredList.length} staff</span>
             </div>
 
-            <div className="staff-salary-table-wrapper">
+            <div className="staff-salary-table-wrapper" ref={containerRef}>
                 <table className="staff-salary-table">
                     <thead>
                         <tr>
@@ -166,7 +171,7 @@ export default function StaffSalary({ adminData }) {
                     </thead>
 
                     <tbody>
-                        {filteredList.map((s, i) => {
+                        {filteredList.slice(0, displayLimit).map((s, i) => {
                             const PALETTE = ["#4361ee", "#06d6a0", "#ffd166", "#ef476f", "#7209b7", "#4cc9f0", "#f72585", "#3a0ca3", "#fb8500", "#023e8a"];
                             const avatarBg = PALETTE[i % PALETTE.length];
 
@@ -214,11 +219,14 @@ export default function StaffSalary({ adminData }) {
                                 </tr>
                             );
                         })}
+                        <InfiniteScrollLoader
+                            sentinelRef={sentinelRef}
+                            hasMore={hasMore}
+                            colSpan={9}
+                        />
                     </tbody>
                 </table>
             </div>
-
-            {/* MODAL */}
             {selected && (
                 <div className="modal-overlay">
                     <div className="modal">

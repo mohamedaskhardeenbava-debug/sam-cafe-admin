@@ -73,10 +73,17 @@
   padding: 0 16px;
   border-radius: 999px;
   border: 1px solid #111;
-  background: #111;
-  color: #fff;
+  background: #fff;
+  color: #111;
   font-weight: 500;
   cursor: pointer;
+  transition: all 0.15s;
+}
+
+.orders-today-btn.active,
+.orders-today-btn:hover {
+  background: #111;
+  color: #fff;
 }
 
 .orders-export-btn {
@@ -859,5 +866,40 @@
 
   .orders-table td {
     font-size: 12px;
+  }
+}
+
+/* ── Infinite scroll sentinel ── */
+.orders-scroll-sentinel {
+  height: 1px;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+/* ── Infinite scroll loading indicator ── */
+.orders-loading-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 0;
+  font-size: 13px;
+  color: #888;
+  font-weight: 500;
+}
+
+.orders-loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e5e7eb;
+  border-top-color: #555;
+  border-radius: 50%;
+  animation: orders-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes orders-spin {
+  to {
+    transform: rotate(360deg);
   }
 }

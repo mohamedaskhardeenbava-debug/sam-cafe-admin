@@ -9,10 +9,24 @@ import "./PreviewModal.css";
 import { useToast } from "../../useToast";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
+import useInfiniteScroll from "../../components/useInfiniteScroll";
+import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 
 const pad = (n) => String(n).padStart(2, "0");
 const todayStr = () => new Date().toISOString().split("T")[0];
 const tomorrowStr = () => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split("T")[0]; };
+const getWeekRange = () => {
+  const now = new Date(); const day = now.getDay();
+  const mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  return [mon.toISOString().split("T")[0], sun.toISOString().split("T")[0]];
+};
+const getMonthRange = () => {
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth(), 1);
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return [first.toISOString().split("T")[0], last.toISOString().split("T")[0]];
+};
 
 /* Get Together removed */
 const CELEBRATION_TYPES = [
@@ -98,10 +112,18 @@ const calcTotal = (form) => {
 
 const SOURCE_OPTIONS = ["User App", "WhatsApp", "Phone", "In Person"];
 
+const SLOT_GROUPS = [
+  { label: "Breakfast", key: "BF", start: "07:00", end: "10:00" },
+  { label: "Brunch", key: "BR", start: "10:00", end: "12:00" },
+  { label: "Lunch", key: "LU", start: "12:00", end: "15:00" },
+  { label: "Hi-Tea", key: "HT", start: "15:00", end: "18:00" },
+  { label: "Dinner", key: "DI", start: "18:30", end: "22:00" },
+];
+
 const EMPTY_FORM = {
   type: "birthday",
   name: "", mobile: "", email: "",
-  date: "", time: "",
+  date: "", time: "", slotGroup: "",
   guests: 2,
   birthdayPersonName: "", birthdayPersonAge: "",
   cake: false, specialMention: false, specialMentionText: "",
@@ -121,7 +143,9 @@ const Celebrations = ({ adminData, setAdminData }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const [filterDate, setFilterDate] = useState(todayStr());
+  const [filterFromDate, setFilterFromDate] = useState(todayStr());
+  const [filterToDate, setFilterToDate] = useState(todayStr());
+  const [filterDatePreset, setFilterDatePreset] = useState("today");
   const [filterType, setFilterType] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [search, setSearch] = useState("");
@@ -147,7 +171,8 @@ const Celebrations = ({ adminData, setAdminData }) => {
   /* ─── Filter ─── */
   const filteredData = useMemo(() => {
     let d = [...data];
-    if (filterDate) d = d.filter(item => item.date === filterDate);
+    if (filterFromDate) d = d.filter(item => (item.date || "") >= filterFromDate);
+    if (filterToDate) d = d.filter(item => (item.date || "") <= filterToDate);
     if (filterType) d = d.filter(item => item.type === filterType);
     if (filterStatus) d = d.filter(item => (item.status || "pending") === filterStatus);
     if (search.trim()) {
@@ -159,11 +184,14 @@ const Celebrations = ({ adminData, setAdminData }) => {
       );
     }
     return d;
-  }, [data, filterDate, filterType, filterStatus, search]);
+  }, [data, filterFromDate, filterToDate, filterType, filterStatus, search]);
 
   const sortedData = useMemo(() => {
     return [...filteredData].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }, [filteredData]);
+
+  const { displayLimit, sentinelRef, containerRef, hasMore } =
+    useInfiniteScroll(sortedData.length, 30);
 
   /* ─── Inline status update ─── */
   const updateStatus = async (e, id, newStatus) => {
@@ -249,6 +277,10 @@ const Celebrations = ({ adminData, setAdminData }) => {
       birthdayPersonName: "",
       birthdayPersonAge: "",
 
+      // reset time/slot
+      time: "",
+      slotGroup: "",
+
       // reset luxury if not candlelight dinner
       decoration:
         val !== "candlelightdinner" && p.decoration === "luxury"
@@ -323,7 +355,7 @@ const Celebrations = ({ adminData, setAdminData }) => {
     }
   };
 
-  const activeFilters = filterDate || filterType || filterStatus || search.trim();
+  const activeFilters = filterFromDate || filterToDate || filterType || filterStatus || search.trim();
 
   const exportToExcel = () => {
     if (!sortedData.length) { alert("No celebrations to export"); return; }
@@ -346,7 +378,10 @@ const Celebrations = ({ adminData, setAdminData }) => {
     }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, sheet, "Celebrations");
-    XLSX.writeFile(wb, `celebrations_${filterDate || "all"}.xlsx`);
+    const suffix = filterFromDate && filterToDate
+      ? `${filterFromDate}_to_${filterToDate}`
+      : filterFromDate || filterToDate || "all";
+    XLSX.writeFile(wb, `celebrations_${suffix}.xlsx`);
   };
 
   return (
@@ -390,13 +425,38 @@ const Celebrations = ({ adminData, setAdminData }) => {
           onChange={e => setSearch(e.target.value)}
         />
         <div className="evt-clb-filter-groups">
+          {/* Quick date presets */}
+          <div className="evt-clb-filter-group">
+            <span className="evt-clb-filter-group-label">Period</span>
+            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
+              <button key={preset}
+                className={`evt-clb-filter-btn${filterDatePreset === preset ? " active" : ""}`}
+                onClick={() => {
+                  if (filterDatePreset === preset) {
+                    setFilterDatePreset(""); setFilterFromDate(""); setFilterToDate("");
+                  } else {
+                    setFilterDatePreset(preset);
+                    if (preset === "today") { const t = todayStr(); setFilterFromDate(t); setFilterToDate(t); }
+                    else if (preset === "week") { const [f, t] = getWeekRange(); setFilterFromDate(f); setFilterToDate(t); }
+                    else { const [f, t] = getMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
+                  }
+                }}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {/* From / To date pickers */}
           <div className="evt-res-filter-group" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="evt-res-filter-group-label">Date</span>
-            <div style={{ minWidth: 160 }}>
-              <CustomDatePicker value={filterDate} onChange={setFilterDate} placeholder="All dates" />
+            <span className="evt-clb-filter-group-label">From</span>
+            <div style={{ minWidth: 148 }}>
+              <CustomDatePicker value={filterFromDate} onChange={v => { setFilterFromDate(v); setFilterDatePreset(""); if (filterToDate && v > filterToDate) setFilterToDate(v); }} placeholder="Start date" />
             </div>
-            {filterDate && (
-              <button className="evt-clb-filter-btn" title="Clear date" onClick={() => setFilterDate("")}>✕</button>
+            <span className="evt-clb-filter-group-label" style={{ marginLeft: 2 }}>To</span>
+            <div style={{ minWidth: 148 }}>
+              <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={v => { setFilterToDate(v); setFilterDatePreset(""); }} placeholder="End date" />
+            </div>
+            {(filterFromDate || filterToDate) && (
+              <button className="evt-clb-filter-btn" title="Clear dates" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }}>✕</button>
             )}
           </div>
           <div className="evt-clb-filter-group">
@@ -421,7 +481,8 @@ const Celebrations = ({ adminData, setAdminData }) => {
           </div>
           {activeFilters && (
             <button className="evt-clb-clear-btn" onClick={() => {
-              setFilterDate(todayStr()); setFilterType(""); setFilterStatus(""); setSearch("");
+              setFilterFromDate(todayStr()); setFilterToDate(todayStr()); setFilterDatePreset("today");
+              setFilterType(""); setFilterStatus(""); setSearch("");
             }}>
               Clear
             </button>
@@ -430,7 +491,7 @@ const Celebrations = ({ adminData, setAdminData }) => {
       </div>
 
       {/* TABLE */}
-      <div className="evt-clb-table-wrapper">
+      <div className="evt-clb-table-wrapper" ref={containerRef}>
         <table className="evt-clb-table">
           <thead>
             <tr>
@@ -451,7 +512,7 @@ const Celebrations = ({ adminData, setAdminData }) => {
             {sortedData.length === 0 ? (
               <tr><td colSpan="11" className="evt-clb-empty">No celebrations found</td></tr>
             ) : (
-              sortedData.map(item => {
+              sortedData.slice(0, displayLimit).map(item => {
                 const typeLabel = CELEBRATION_TYPE_MAP[item.type] || item.type || "—";
                 const status = item.status || "pending";
                 const displayTotal = item.totalAmount || calcTotal(item);
@@ -553,6 +614,11 @@ const Celebrations = ({ adminData, setAdminData }) => {
                 );
               })
             )}
+            <InfiniteScrollLoader
+              sentinelRef={sentinelRef}
+              hasMore={hasMore}
+              colSpan={11}
+            />
           </tbody>
         </table>
       </div>
@@ -732,17 +798,45 @@ const Celebrations = ({ adminData, setAdminData }) => {
                   </div>
 
                   <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>Date & Time</div>
-                  <div className="horizontal-form-group">
-                    <div className="form-group" style={{ flex: 1 }}>
-                      <label>Event Date <span className="evt-res-req">*</span></label>
-                      <CustomDatePicker value={form.date} min={tomorrowStr()} onChange={v => setF("date", v)} placeholder="Select date" />
-                      {formErrors.date && <span className="evt-res-form-error">{formErrors.date}</span>}
+                  <div className="form-group">
+                    <label>Event Date <span className="evt-res-req">*</span></label>
+                    <CustomDatePicker value={form.date} min={tomorrowStr()} onChange={v => { setF("date", v); setF("time", ""); setF("slotGroup", ""); }} placeholder="Select date" />
+                    {formErrors.date && <span className="evt-res-form-error">{formErrors.date}</span>}
+                  </div>
+
+                  <div className="form-group">
+                    <label>Dining Slot <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400 }}>(select to restrict time picker)</span></label>
+                    <div className="evt-res-slot-grid">
+                      {SLOT_GROUPS.map(sg => (
+                        <button key={sg.key} type="button"
+                          className={`evt-res-slot-chip${form.slotGroup === sg.key ? " active" : ""}`}
+                          onClick={() => {
+                            const next = form.slotGroup === sg.key ? "" : sg.key;
+                            setF("slotGroup", next);
+                            setF("time", "");
+                          }}>
+                          <span className="evt-res-slot-chip-label">{sg.label}</span>
+                          <span className="evt-res-slot-chip-time">{sg.start}–{sg.end}</span>
+                        </button>
+                      ))}
                     </div>
-                    <div className="form-group" style={{ flex: 1 }}>
-                      <label>Time <span className="evt-res-req">*</span></label>
-                      <CustomTimePicker value={form.time} onChange={v => setF("time", v)} />
-                      {formErrors.time && <span className="evt-res-form-error">{formErrors.time}</span>}
-                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>
+                      Time <span className="evt-res-req">*</span>
+                      {form.slotGroup && (() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()}
+                    </label>
+                    <CustomTimePicker
+                      value={form.time}
+                      onChange={v => setF("time", v)}
+                      slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
+                      slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
+                      disabled={!form.slotGroup}
+                      isToday={false}
+                    />
+                    {!form.slotGroup && <span style={{ fontSize: 11, color: "#aaa", marginTop: 4, display: "block" }}>Select a dining slot first to enable time picker</span>}
+                    {formErrors.time && <span className="evt-res-form-error">{formErrors.time}</span>}
                   </div>
 
                   <div className="evt-res-form-section-label" style={{ marginTop: 4 }}>Decoration</div>

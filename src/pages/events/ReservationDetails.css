@@ -1,109 +1,127 @@
-/* ══════════════════════════════════════════════════════
-   ReservationDetails.css  —  Admin Panel
-══════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   ReservationDetails.css  —  Admin Panel  (Unified Design)
+══════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
 
+/* ── PAGE ── */
 .evt-resd-page {
   width: 100%;
+  min-height: 100vh;
+  background: #f6f5f2;
   display: flex;
-  padding: 4px 0 30px;
+  justify-content: center;
+  padding: 24px 16px 48px;
+  font-family: 'DM Sans', sans-serif;
+  box-sizing: border-box;
 }
 
+/* ── CONTAINER ── */
 .evt-resd-container {
-  background: #fff;
-  padding: 24px;
-  border-radius: 14px;
-  max-width: 900px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  width: 100%;
+  max-width: 860px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-/* HEADER */
+/* ── HEADER ── */
 .evt-resd-header {
   display: flex;
   align-items: center;
   gap: 14px;
   flex-wrap: wrap;
+  margin-bottom: 4px;
 }
 
 .evt-resd-back-btn {
-  width: 42px;
-  height: 42px;
-  border-radius: 21px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   background: #fff;
   border: 1.5px solid #e5e7eb;
   cursor: pointer;
   position: relative;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
-  transition: all 0.2s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  transition: background 0.15s, box-shadow 0.15s;
 }
 
 .evt-resd-back-btn:hover {
   background: #f3f4f6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .evt-resd-back-btn::after {
   content: "";
   position: absolute;
   top: 50%;
-  left: 42%;
-  width: 10px;
-  height: 10px;
-  border-left: 2.5px solid #333;
-  border-bottom: 2.5px solid #333;
+  left: 44%;
+  width: 9px;
+  height: 9px;
+  border-left: 2px solid #444;
+  border-bottom: 2px solid #444;
   transform: translateY(-50%) rotate(45deg);
 }
 
 .evt-resd-title {
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 700;
-  color: #111;
+  color: #141414;
   margin: 0 0 2px;
+  letter-spacing: -0.3px;
 }
 
 .evt-resd-id {
-  font-size: 12px;
-  color: #888;
+  font-size: 11px;
+  color: #a3a3a3;
   margin: 0;
 }
 
 .evt-resd-id code {
-  font-size: 12px;
-  background: #f3f4f6;
+  font-size: 11px;
+  background: #f0f0f0;
   padding: 1px 6px;
   border-radius: 5px;
+  letter-spacing: 0.03em;
 }
 
-/* STATUS BADGE (header) */
+/* ── STATUS BADGE ── */
 .evt-resd-status {
   padding: 5px 14px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: capitalize;
+  letter-spacing: 0.04em;
   margin-left: auto;
+  border: 1.5px solid transparent;
 }
 
 .evt-resd-status-pending {
-  background: #fef3c7;
+  background: #fef9ec;
   color: #92400e;
+  border-color: #fcd34d;
 }
 
 .evt-resd-status-confirmed {
-  background: #d1fae5;
+  background: #edfaf4;
   color: #065f46;
+  border-color: #6ee7b7;
 }
 
 .evt-resd-status-completed {
-  background: #e0e7ff;
+  background: #eef2ff;
   color: #3730a3;
+  border-color: #a5b4fc;
 }
 
 .evt-resd-status-cancelled {
-  background: #fee2e2;
+  background: #fef2f2;
   color: #dc2626;
+  border-color: #fca5a5;
 }
 
-/* HERO CARD */
+/* ── HERO CARD ── */
 .evt-resd-hero {
   background: #fff;
   border-radius: 16px;
@@ -111,199 +129,223 @@
   display: flex;
   align-items: flex-start;
   gap: 16px;
+  border: 1px solid #ebebeb;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
 .evt-resd-hero-avatar {
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   background: linear-gradient(135deg, #ff9f43, #ee5253);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
   flex-shrink: 0;
+  letter-spacing: -1px;
+}
+
+.evt-resd-hero-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .evt-resd-hero-name {
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 700;
-  color: #111;
+  color: #141414;
+  letter-spacing: -0.2px;
 }
 
 .evt-resd-hero-sub {
-  font-size: 13px;
-  color: #666;
+  font-size: 12.5px;
+  color: #6b6b6b;
   margin-top: 3px;
 }
 
 .evt-resd-hero-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   margin-top: 10px;
 }
 
 .evt-resd-hero-meta span {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
-  color: #555;
-  background: #f3f4f6;
+  color: #444;
+  background: #f4f4f4;
   padding: 3px 10px;
   border-radius: 999px;
+  border: 1px solid #e8e8e8;
 }
 
-/* SECTION */
+/* ── SECTION CARD ── */
 .evt-resd-section {
   background: #fff;
-  border-radius: 16px;
+  border-radius: 14px;
   padding: 18px 20px;
+  border: 1px solid #ebebeb;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
 }
 
 .evt-resd-section-title {
-  font-size: 13px;
+  font-size: 10.5px;
   font-weight: 700;
-  color: #555;
+  color: #a3a3a3;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
   margin-bottom: 14px;
 }
 
-/* INFO GRID */
+/* ── INFO GRID ── */
 .evt-resd-info-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 8px;
 }
 
 .evt-resd-info-cell {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 12px;
-  background: #f8fafc;
-  border-radius: 12px;
+  padding: 11px 12px;
+  background: #fafafa;
+  border-radius: 10px;
   border: 1px solid #f0f0f0;
+  transition: background 0.15s;
+}
+
+.evt-resd-info-cell:hover {
+  background: #f5f5f5;
 }
 
 .evt-resd-info-icon {
-  font-size: 18px;
+  font-size: 16px;
   flex-shrink: 0;
   margin-top: 1px;
+  line-height: 1;
 }
 
 .evt-resd-info-label {
-  font-size: 10px;
-  color: #999;
+  font-size: 9.5px;
+  color: #a3a3a3;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 2px;
+  letter-spacing: 0.06em;
+  margin-bottom: 3px;
+  font-weight: 600;
 }
 
 .evt-resd-info-val {
   font-size: 13px;
   font-weight: 600;
-  color: #111;
+  color: #141414;
+  line-height: 1.3;
 }
 
-/* NOTES */
+/* ── NOTES ── */
 .evt-resd-notes-box {
   background: #fffbea;
   border: 1px solid #fde68a;
   border-radius: 10px;
   padding: 12px 14px;
-  font-size: 14px;
+  font-size: 13.5px;
   color: #78350f;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
-/* STATUS BUTTONS */
+/* ── STATUS BUTTONS ── */
 .evt-resd-status-row {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .evt-resd-status-btn {
   flex: 1;
-  min-width: 90px;
-  height: 42px;
-  border-radius: 12px;
-  border: 2px solid transparent;
-  font-size: 13px;
+  min-width: 88px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1.5px solid #e5e7eb;
+  font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  background: #f3f4f6;
-  color: #555;
+  transition: all 0.18s;
+  background: #f9f9f9;
+  color: #6b6b6b;
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: 0.01em;
 }
 
 .evt-resd-status-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .evt-resd-status-btn:not(:disabled):hover {
   transform: translateY(-1px);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
 }
 
 .evt-resd-sb-pending.active {
-  background: #fef3c7;
+  background: #fef9ec;
   color: #92400e;
   border-color: #fcd34d;
 }
 
 .evt-resd-sb-confirmed.active {
-  background: #d1fae5;
+  background: #edfaf4;
   color: #065f46;
   border-color: #6ee7b7;
 }
 
 .evt-resd-sb-completed.active {
-  background: #e0e7ff;
+  background: #eef2ff;
   color: #3730a3;
   border-color: #a5b4fc;
 }
 
 .evt-resd-sb-cancelled.active {
-  background: #fee2e2;
+  background: #fef2f2;
   color: #dc2626;
   border-color: #fca5a5;
 }
 
-/* REMINDER */
+/* ── CALL CARD ── */
 .evt-resd-reminder {
   background: #fff;
-  border-radius: 16px;
+  border-radius: 14px;
   padding: 16px 20px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
   gap: 14px;
+  border: 1px solid #ebebeb;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
   border-left: 4px solid #2980b9;
 }
 
 .evt-resd-reminder-icon {
-  font-size: 24px;
+  font-size: 22px;
   flex-shrink: 0;
 }
 
 .evt-resd-reminder-label {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
-  color: #555;
+  color: #a3a3a3;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 }
 
 .evt-resd-reminder-num {
   font-size: 16px;
   font-weight: 700;
-  color: #111;
+  color: #141414;
   margin-top: 2px;
+  letter-spacing: -0.3px;
 }
 
 .evt-resd-call-btn {
@@ -312,21 +354,51 @@
   border-radius: 999px;
   background: #2980b9;
   color: #fff;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   text-decoration: none;
-  transition: all 0.2s;
+  transition: all 0.18s;
   flex-shrink: 0;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  border: none;
+  letter-spacing: 0.02em;
 }
 
 .evt-resd-call-btn:hover {
   background: #1a6fa8;
   transform: scale(1.04);
-  cursor: pointer;
 }
 
-/* RESPONSIVE */
+/* ── CALL HISTORY ── */
+.evt-resd-call-history {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.evt-resd-call-history-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #6b6b6b;
+  padding: 7px 10px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+}
+
+.evt-resd-call-history-item span:first-child {
+  font-size: 14px;
+}
+
+/* ── RESPONSIVE ── */
 @media (max-width: 640px) {
+  .evt-resd-page {
+    padding: 16px 12px 40px;
+  }
+
   .evt-resd-info-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -339,5 +411,15 @@
 
   .evt-resd-status-row {
     flex-direction: column;
+  }
+
+  .evt-resd-reminder {
+    flex-wrap: wrap;
+  }
+
+  .evt-resd-call-btn {
+    margin-left: 0;
+    width: 100%;
+    text-align: center;
   }
 }

@@ -8,10 +8,24 @@ import "./PreviewModal.css";
 import { useToast } from "../../useToast";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
+import useInfiniteScroll from "../../components/useInfiniteScroll";
+import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 /* admin panel */
 
 const pad = (n) => String(n).padStart(2, "0");
 const todayStr = () => new Date().toISOString().split("T")[0];
+const getWeekRange = () => {
+  const now = new Date(); const day = now.getDay();
+  const mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  return [mon.toISOString().split("T")[0], sun.toISOString().split("T")[0]];
+};
+const getMonthRange = () => {
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth(), 1);
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return [first.toISOString().split("T")[0], last.toISOString().split("T")[0]];
+};
 
 /* ─── All 5 slot groups (matches ReservationForm.js) ─── */
 const SLOT_GROUPS = [
@@ -159,7 +173,10 @@ const Reservations = ({ adminData, setAdminData }) => {
   const navigate = useNavigate();
 
   // ── Filter state ──
-  const [filterDate, setFilterDate] = useState(todayStr());
+  const [filterDate, setFilterDate] = useState("");
+  const [filterFromDate, setFilterFromDate] = useState(todayStr());
+  const [filterToDate, setFilterToDate] = useState(todayStr());
+  const [filterDatePreset, setFilterDatePreset] = useState("today");
   const [filterSlots, setFilterSlots] = useState(new Set());
   const [filterStatuses, setFilterStatuses] = useState(new Set());
   const [filterSources, setFilterSources] = useState(new Set());
@@ -259,7 +276,12 @@ const Reservations = ({ adminData, setAdminData }) => {
   /* ── Filter data (all 5 slots) ── */
   const filteredData = useMemo(() => {
     let d = [...data];
-    if (filterDate) d = d.filter(r => r.date === filterDate);
+    if (filterDate) {
+      d = d.filter(r => r.date === filterDate);
+    } else {
+      if (filterFromDate) d = d.filter(r => (r.date || "") >= filterFromDate);
+      if (filterToDate) d = d.filter(r => (r.date || "") <= filterToDate);
+    }
     if (filterSlots.size > 0) {
       d = d.filter(r => {
         const key = resolveSlotKey(r);
@@ -277,7 +299,7 @@ const Reservations = ({ adminData, setAdminData }) => {
       );
     }
     return d;
-  }, [data, filterDate, filterSlots, filterStatuses, filterSources, search]);
+  }, [data, filterDate, filterFromDate, filterToDate, filterSlots, filterStatuses, filterSources, search]);
 
   const sortedData = useMemo(() => {
     return [...filteredData].sort((a, b) => {
@@ -296,6 +318,9 @@ const Reservations = ({ adminData, setAdminData }) => {
       return 0;
     });
   }, [filteredData, sortField, sortDir]);
+
+  const { displayLimit, sentinelRef, containerRef, hasMore } =
+    useInfiniteScroll(sortedData.length, 30);
 
   const today = todayStr();
   const todayCount = data.filter(r => r.date === today).length;
@@ -525,7 +550,7 @@ const Reservations = ({ adminData, setAdminData }) => {
     }
   };
 
-  const activeFilters = filterDate || filterSlots.size > 0 || filterStatuses.size > 0 || filterSources.size > 0 || search.trim();
+  const activeFilters = filterDate || filterFromDate || filterToDate || filterSlots.size > 0 || filterStatuses.size > 0 || filterSources.size > 0 || search.trim();
 
   const exportToExcel = () => {
     if (!sortedData.length) { alert("No reservations to export"); return; }
@@ -551,7 +576,10 @@ const Reservations = ({ adminData, setAdminData }) => {
     }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, sheet, "Reservations");
-    XLSX.writeFile(wb, `reservations_${filterDate || "all"}.xlsx`);
+    const suffix = filterDate || (filterFromDate && filterToDate
+      ? `${filterFromDate}_to_${filterToDate}`
+      : filterFromDate || filterToDate || "all");
+    XLSX.writeFile(wb, `reservations_${suffix}.xlsx`);
   };
 
   const SortTh = ({ field, children }) => (
@@ -614,13 +642,38 @@ const Reservations = ({ adminData, setAdminData }) => {
           <input className="evt-res-search" placeholder="Search name / mobile / ID..."
             value={search} onChange={e => setSearch(e.target.value)} />
 
+          {/* Quick date presets */}
+          {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
+            <button key={preset}
+              className={`evt-res-filter-btn${filterDatePreset === preset ? " active" : ""}`}
+              onClick={() => {
+                if (filterDatePreset === preset) {
+                  setFilterDatePreset(""); setFilterDate(""); setFilterFromDate(""); setFilterToDate("");
+                } else {
+                  setFilterDatePreset(preset); setFilterDate("");
+                  if (preset === "today") { const t = todayStr(); setFilterFromDate(t); setFilterToDate(t); }
+                  else if (preset === "week") { const [f, t] = getWeekRange(); setFilterFromDate(f); setFilterToDate(t); }
+                  else { const [f, t] = getMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
+                }
+              }}>
+              {label}
+            </button>
+          ))}
+
+          {/* From / To date pickers */}
           <div className="evt-res-filter-group">
-            <span className="evt-res-filter-group-label">Date</span>
-            <div style={{ minWidth: 160 }}>
-              <CustomDatePicker value={filterDate} onChange={setFilterDate} placeholder="All dates" />
+            <span className="evt-res-filter-group-label">From</span>
+            <div style={{ minWidth: 148 }}>
+              <CustomDatePicker value={filterFromDate} onChange={v => { setFilterFromDate(v); setFilterDate(""); setFilterDatePreset(""); if (filterToDate && v > filterToDate) setFilterToDate(v); }} placeholder="Start date" />
             </div>
-            {filterDate && (
-              <button className="evt-res-filter-btn" onClick={() => setFilterDate("")} title="Clear date">✕</button>
+          </div>
+          <div className="evt-res-filter-group">
+            <span className="evt-res-filter-group-label">To</span>
+            <div style={{ minWidth: 148 }}>
+              <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={v => { setFilterToDate(v); setFilterDate(""); setFilterDatePreset(""); }} placeholder="End date" />
+            </div>
+            {(filterFromDate || filterToDate) && (
+              <button className="evt-res-filter-btn" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); setFilterDate(""); }} title="Clear dates">✕</button>
             )}
           </div>
         </div>
@@ -666,7 +719,7 @@ const Reservations = ({ adminData, setAdminData }) => {
 
           {activeFilters && (
             <button className="evt-res-clear-all" onClick={() => {
-              setSearch(""); setFilterDate(todayStr());
+              setSearch(""); setFilterDate(""); setFilterFromDate(todayStr()); setFilterToDate(todayStr()); setFilterDatePreset("today");
               setFilterSlots(new Set()); setFilterStatuses(new Set()); setFilterSources(new Set());
             }}>Clear</button>
           )}
@@ -674,7 +727,7 @@ const Reservations = ({ adminData, setAdminData }) => {
       </div>
 
       {/* ── TABLE ── */}
-      <div className="evt-res-table-wrapper">
+      <div className="evt-res-table-wrapper" ref={containerRef}>
         <table className="evt-res-table">
           <thead>
             <tr>
@@ -696,7 +749,7 @@ const Reservations = ({ adminData, setAdminData }) => {
             {sortedData.length === 0 ? (
               <tr><td colSpan="13" className="evt-res-empty">No reservations found</td></tr>
             ) : (
-              sortedData.map(item => {
+              sortedData.slice(0, displayLimit).map(item => {
                 const status = item.status || "pending";
                 const rowDate = item.date || todayStr();
                 const slotKey = resolveSlotKey(item);
@@ -818,6 +871,11 @@ const Reservations = ({ adminData, setAdminData }) => {
                 );
               })
             )}
+            <InfiniteScrollLoader
+              sentinelRef={sentinelRef}
+              hasMore={hasMore}
+              colSpan={13}
+            />
           </tbody>
         </table>
       </div>

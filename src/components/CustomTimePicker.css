@@ -100,7 +100,7 @@
 
 /* ── Header — red background, matches .clp-ctp-header ── */
 .ctp-header {
-    background: var(--color-red, #e74c3c);
+    background: var(--color-red);
     padding: 14px 16px;
     display: flex;
     align-items: center;

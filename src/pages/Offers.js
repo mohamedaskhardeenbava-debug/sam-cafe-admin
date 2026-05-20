@@ -5,6 +5,8 @@ import api from "../api";
 import { useNavigate } from "react-router-dom";
 import { formatDisplayDate } from "../App";
 import { CustomDatePicker, todayStr } from "../components/CustomDatePicker";
+import useInfiniteScroll from "../components/useInfiniteScroll";
+import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 
 const Offers = ({ adminData, setAdminData }) => {
     const [showModal, setShowModal] = useState(false);
@@ -81,6 +83,9 @@ const Offers = ({ adminData, setAdminData }) => {
         });
     }, [adminData.offers, offerSearch, offerStatusFilter, offerFromDate, offerToDate]);
 
+    const { displayLimit, sentinelRef, containerRef, hasMore } =
+        useInfiniteScroll(filteredOffers.length, 30);
+
     const exportOffers = () => {
         if (!filteredOffers.length) { alert("No offers to export"); return; }
         const rows = filteredOffers.map(o => ({
@@ -155,7 +160,7 @@ const Offers = ({ adminData, setAdminData }) => {
                 </div>
                 {(offerSearch || offerStatusFilter !== "all" || offerFromDate || offerToDate) && (
                     <button className="ae-clear-filter" onClick={() => {
-                        setOfferSearch(""); 
+                        setOfferSearch("");
                         setOfferStatusFilter("all");
                         setOfferFromDate(todayStr());
                         setOfferToDate(todayStr());
@@ -164,7 +169,7 @@ const Offers = ({ adminData, setAdminData }) => {
                 <span className="ae-result-count">{filteredOffers.length} offer(s)</span>
             </div>
 
-            <div className="offers-table-wrapper">
+            <div className="offers-table-wrapper" ref={containerRef}>
                 <table className="offers-table">
                     <thead>
                         <tr>
@@ -182,7 +187,7 @@ const Offers = ({ adminData, setAdminData }) => {
                             <tr><td colSpan="7" style={{ textAlign: "center", color: "#aaa", padding: 20 }}>
                                 {(adminData.offers || []).length === 0 ? "No offers yet" : "No offers match filters"}
                             </td></tr>
-                        ) : filteredOffers.map(o => (
+                        ) : filteredOffers.slice(0, displayLimit).map(o => (
                             <tr key={o.id}>
                                 <td className="clickable" onClick={() => navigate(`/offers/${o.id}`)}>{o.dishId}</td>
                                 <td>{o.originalPrice}</td>
@@ -197,6 +202,11 @@ const Offers = ({ adminData, setAdminData }) => {
                                 </td>
                             </tr>
                         ))}
+                        <InfiniteScrollLoader
+                            sentinelRef={sentinelRef}
+                            hasMore={hasMore}
+                            colSpan={7}
+                        />
                     </tbody>
                 </table>
             </div>

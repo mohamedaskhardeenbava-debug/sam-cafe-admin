@@ -237,3 +237,273 @@
   font-weight: 500;
   white-space: nowrap;
 }
+
+/* ── Page wrapper ── */
+.service-mise-page {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Header layout ── */
+.service-mise-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.service-mise-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.service-mise-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── Stat badges ── */
+.service-mise-stat-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  padding: 4px 12px;
+  min-width: 60px;
+  border: 1.5px solid transparent;
+}
+
+.service-mise-stat-assigned {
+  background: #faf5ff;
+  border-color: #e9d5ff;
+}
+
+.service-mise-stat-verified {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.service-mise-stat-num {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.2;
+}
+
+.service-mise-stat-assigned .service-mise-stat-num {
+  color: #7c3aed;
+}
+
+.service-mise-stat-verified .service-mise-stat-num {
+  color: #16a34a;
+}
+
+.service-mise-stat-lbl {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.service-mise-stat-assigned .service-mise-stat-lbl {
+  color: #c4b5fd;
+}
+
+.service-mise-stat-verified .service-mise-stat-lbl {
+  color: #86efac;
+}
+
+/* ── Progress bar ── */
+.service-mise-progress-wrap {
+  width: 100%;
+  height: 6px;
+  background: #f0f0f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.service-mise-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #8b5cf6, #f59e0b);
+  border-radius: 999px;
+  transition: width 0.5s ease;
+  min-width: 4px;
+}
+
+/* ── Filter bar ── */
+.service-mise-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px 12px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0f0f0;
+}
+
+.service-mise-search {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #ddd;
+  background: #f9f9f9;
+  font-size: 13px;
+  outline: none;
+  width: 100%;
+  max-width: 260px;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.service-mise-search:focus {
+  border-color: #111;
+  background: #fff;
+}
+
+.service-mise-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.service-mise-filter-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+}
+
+/* ── Section header ── */
+.service-mise-section-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #fff;
+  border-radius: 12px;
+  border-left: 4px solid #8b5cf6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  font-size: 13px;
+  font-weight: 700;
+  color: #333;
+}
+
+.service-mise-section-icon {
+  font-size: 16px;
+}
+
+.service-mise-section-label {
+  flex: 1;
+}
+
+.service-mise-section-count {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+/* ── Verified row ── */
+.service-mise-row-verified td {
+  background: #faf5ff !important;
+}
+
+/* ── Task dot ── */
+.service-mise-task-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d1d5db;
+  margin-right: 8px;
+  vertical-align: middle;
+  transition: background 0.2s;
+}
+
+.service-mise-task-dot.dot-assigned {
+  background: #8b5cf6;
+}
+
+.service-mise-task-dot.dot-verified {
+  background: #16a34a;
+  box-shadow: 0 0 0 2px #bbf7d0;
+}
+
+/* ── Not-assigned ── */
+.service-mise-no-staff {
+  color: #d1d5db;
+  font-style: italic;
+  font-size: 12px;
+}
+
+/* ── Custom checkbox ── */
+.service-mise-check-label {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.service-mise-check-label input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.service-mise-check-custom {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 2px solid #d1d5db;
+  background: #fff;
+  transition: all 0.15s;
+  position: relative;
+}
+
+.service-mise-check-custom.checked {
+  background: #16a34a;
+  border-color: #16a34a;
+}
+
+.service-mise-check-custom.checked::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 6px;
+  height: 10px;
+  border: 2px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+.service-mise-check-custom.disabled {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
+}
+
+/* ── Time cell ── */
+.service-mise-time {
+  color: #888;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}

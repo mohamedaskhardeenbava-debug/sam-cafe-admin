@@ -120,7 +120,8 @@ function App() {
     celebrations: [],
     preBookings: [],
     cateringOrders: [],
-    events: []
+    events: [],
+    kitchenAssign: {},
   });
 
   /* ---------------- LOGIN HANDLER ---------------- */
@@ -143,6 +144,7 @@ function App() {
           staffRes,
           groomRes,
           miseRes,
+          kitchenAssignRes,
           recipeRes,
           offerRes,              // ✅ offers FIRST
           activityRes,           // kitchenActivity
@@ -170,6 +172,7 @@ function App() {
           api.get("/staff"),
           api.get("/grooming"),
           api.get("/mise"),
+          api.get("/kitchenAssign"),
           api.get("/recipes"),
           api.get("/offers"),              // ✅ HERE
           api.get("/kitchenActivity"),     // ✅
@@ -199,6 +202,7 @@ function App() {
           staff: staffRes.data || [],
           grooming: groomRes.data || {},
           mise: miseRes.data || {},
+          kitchenAssign: kitchenAssignRes.data || {},
           recipes: recipeRes.data || [],
           kitchenActivity: activityRes.data || [],
           kitchenSchedules: schedulesRes.data || [],

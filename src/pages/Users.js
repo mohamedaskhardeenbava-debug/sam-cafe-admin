@@ -5,6 +5,8 @@ import api from "../api";
 import { sortArray } from "../App";
 import "./Users.css";
 import { EmptyRow } from "../App";
+import useInfiniteScroll from "../components/useInfiniteScroll";
+import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 
 const Users = ({ handleSort, sortConfig, users }) => {
     const navigate = useNavigate();
@@ -24,6 +26,9 @@ const Users = ({ handleSort, sortConfig, users }) => {
             )
             : sortedUsers;
     }, [sortedUsers, userSearch]);
+
+    const { displayLimit, sentinelRef, containerRef, hasMore } =
+        useInfiniteScroll(filteredUsers.length, 30);
 
     const exportUsers = () => {
         if (!filteredUsers.length) { alert("No users to export"); return; }
@@ -92,7 +97,7 @@ const Users = ({ handleSort, sortConfig, users }) => {
                 <span className="ae-result-count">{filteredUsers.length} user(s)</span>
             </div>
 
-            <div className="users-table-wrapper">
+            <div className="users-table-wrapper" ref={containerRef}>
                 <table className="users-table">
                     <thead>
                         <tr>
@@ -117,7 +122,7 @@ const Users = ({ handleSort, sortConfig, users }) => {
                         {filteredUsers.length === 0 ? (
                             <EmptyRow colSpan={5} message="No users found" />
                         ) : (
-                            filteredUsers.map((user, index) => (
+                            filteredUsers.slice(0, displayLimit).map((user, index) => (
                                 <tr key={user.id}>
                                     <td>{index + 1}</td>
                                     <td className="clickable" onClick={() => navigate(`/users/${user.id}`)}>
@@ -129,6 +134,11 @@ const Users = ({ handleSort, sortConfig, users }) => {
                                 </tr>
                             ))
                         )}
+                        <InfiniteScrollLoader
+                            sentinelRef={sentinelRef}
+                            hasMore={hasMore}
+                            colSpan={5}
+                        />
                     </tbody>
                 </table>
             </div>

@@ -6,6 +6,8 @@ import { sortArray } from "../../App";
 import editIcon from "../../icon/edit-icon.png";
 import deleteIcon from "../../icon/delete-icon.png";
 import { useNavigate, useLocation } from "react-router-dom";
+import useInfiniteScroll from "../../components/useInfiniteScroll";
+import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 
 const roles = ["Chef", "Waiter", "Supervisor", "Manager", "Cleaner"];
 
@@ -73,6 +75,9 @@ export default function Staffs({
         }
         return sorted;
     }, [adminData.staff, sortConfig, workTypeFilter, roleFilter, staffSearch]);
+
+    const { displayLimit, sentinelRef, containerRef, hasMore } =
+        useInfiniteScroll(staffs.length, 30);
 
     const exportStaffs = () => {
         if (!staffs.length) { alert("No staff to export"); return; }
@@ -173,7 +178,7 @@ export default function Staffs({
             </div>
 
             {/* TABLE */}
-            <div className="staff-table-wrapper">
+            <div className="staff-table-wrapper" ref={containerRef}>
                 <table className="staff-table">
                     <thead>
                         <tr>
@@ -187,7 +192,7 @@ export default function Staffs({
                         </tr>
                     </thead>
                     <tbody>
-                        {staffs.map((staff, i) => {
+                        {staffs.slice(0, displayLimit).map((staff, i) => {
                             const PALETTE = ["#4361ee", "#06d6a0", "#ffd166", "#ef476f", "#7209b7", "#4cc9f0", "#f72585", "#3a0ca3", "#fb8500", "#023e8a"];
                             const avatarBg = PALETTE[i % PALETTE.length];
                             return (
@@ -233,6 +238,11 @@ export default function Staffs({
                                 </tr>
                             );
                         })}
+                        <InfiniteScrollLoader
+                            sentinelRef={sentinelRef}
+                            hasMore={hasMore}
+                            colSpan={7}
+                        />
                     </tbody>
                 </table>
             </div>

@@ -2,6 +2,8 @@ import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Favourites.css";
 import { EmptyRow } from "../App";
+import useInfiniteScroll from "../components/useInfiniteScroll";
+import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 
 
 const Favourites = ({ adminData, handleSort, sortConfig }) => {
@@ -32,11 +34,14 @@ const Favourites = ({ adminData, handleSort, sortConfig }) => {
         return data;
     }, [dishes, sortConfig]);
 
+    const { displayLimit, sentinelRef, containerRef, hasMore } =
+        useInfiniteScroll(sortedFavourites.length, 30);
+
     return (
         <div className="favourites-page">
             <h2 className="favourites-title">Favourites</h2>
 
-            <div className="favourites-table-wrapper">
+            <div className="favourites-table-wrapper" ref={containerRef}>
                 <table className="favourites-table">
                     <thead>
                         <tr>
@@ -60,7 +65,7 @@ const Favourites = ({ adminData, handleSort, sortConfig }) => {
                         {sortedFavourites.length === 0 ? (
                             <EmptyRow colSpan={3} message="No favourite dishes added" />
                         ) : (
-                            sortedFavourites.map((dish) => (
+                            sortedFavourites.slice(0, displayLimit).map((dish) => (
                                 <tr key={dish.id}>
                                     <td
                                         className="clickable"
@@ -84,6 +89,11 @@ const Favourites = ({ adminData, handleSort, sortConfig }) => {
                                     <td>₹{dish.totalPrice}</td>
                                 </tr>
                             )))}
+                        <InfiniteScrollLoader
+                            sentinelRef={sentinelRef}
+                            hasMore={hasMore}
+                            colSpan={3}
+                        />
                     </tbody>
                 </table>
             </div>

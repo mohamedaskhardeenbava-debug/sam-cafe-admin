@@ -235,17 +235,99 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
   };
 
   const handleExport = () => {
-    if (!baseFilteredOrders.length) { toast.warning("No data available for selected date range"); return; }
-    const orderRows = [];
-    baseFilteredOrders.forEach(order => { order.items.forEach(item => { const isCustom = Array.isArray(item.ingredients) && item.ingredients.length > 0 || Boolean(item.notes); orderRows.push({ OrderID: order.id, Date: order.date, Time: order.time ?? new Date(order.createdAt).toLocaleTimeString(), Customer: order.userName || "", Category: item.categoryId, Dish: item.dishName, Quantity: resolveQty(item), Customized: isCustom ? "Yes" : "No", UnitPrice: resolveUnitPrice(item), TotalPrice: resolveRevenue(item) }); }); });
-    const ws = XLSX.utils.json_to_sheet(orderRows); applyAutoColumnWidth(ws, orderRows);
-    const drSheet = XLSX.utils.json_to_sheet(dailyRevenue.map(r => ({ Date: r.date, TotalRevenue: r.revenue }))); applyAutoColumnWidth(drSheet, [{ Date: "", TotalRevenue: 0 }]);
-    const catSheet = XLSX.utils.json_to_sheet(categoryItemSummary); applyAutoColumnWidth(catSheet, categoryItemSummary);
+    // Export everything on the page — all orders (all days), staff, schedules
+    const allOrders = orders; // not filtered by date
+    if (!allOrders.length && !staff.length) { toast.warning("No data available to export"); return; }
+
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Orders");
-    XLSX.utils.book_append_sheet(wb, drSheet, "Daily Revenue");
-    XLSX.utils.book_append_sheet(wb, catSheet, "Category Sales Summary");
-    XLSX.writeFile(wb, `dashboard_${fromDate}_to_${toDate}.xlsx`);
+
+    // ── Sheet 1: All Orders ──────────────────────────────────────────
+    if (allOrders.length) {
+      const orderRows = [];
+      allOrders.forEach(order => {
+        order.items.forEach(item => {
+          const isCustom = Array.isArray(item.ingredients) && item.ingredients.length > 0 || Boolean(item.notes);
+          orderRows.push({
+            OrderID: order.id,
+            Date: order.date,
+            Time: order.time ?? (order.createdAt ? new Date(order.createdAt).toLocaleTimeString() : "—"),
+            Customer: order.userName || "",
+            Mode: order.mode || "",
+            Category: item.categoryId,
+            Dish: item.dishName,
+            Quantity: resolveQty(item),
+            Customized: isCustom ? "Yes" : "No",
+            UnitPrice: resolveUnitPrice(item),
+            TotalPrice: resolveRevenue(item),
+            Status: item.status || "",
+          });
+        });
+      });
+      const ws = XLSX.utils.json_to_sheet(orderRows);
+      applyAutoColumnWidth(ws, orderRows);
+      XLSX.utils.book_append_sheet(wb, ws, "All Orders");
+    }
+
+    // ── Sheet 2: Daily Revenue (all days) ────────────────────────────
+    const allDailyRevMap = {};
+    allOrders.forEach(o => { o.items.forEach(i => { allDailyRevMap[o.date] = (allDailyRevMap[o.date] || 0) + resolveRevenue(i); }); });
+    const allDailyRevRows = Object.entries(allDailyRevMap).sort(([a], [b]) => a.localeCompare(b)).map(([date, revenue]) => ({ Date: date, TotalRevenue: revenue }));
+    if (allDailyRevRows.length) {
+      const drSheet = XLSX.utils.json_to_sheet(allDailyRevRows);
+      applyAutoColumnWidth(drSheet, allDailyRevRows);
+      XLSX.utils.book_append_sheet(wb, drSheet, "Daily Revenue");
+    }
+
+    // ── Sheet 3: Category Sales Summary (all days) ───────────────────
+    const allCatMap = {}; let allGRev = 0;
+    allOrders.forEach(o => { o.items.forEach(i => { const c = i.categoryId || "unknown"; if (!allCatMap[c]) allCatMap[c] = { Category: c, "Items Sold": 0, "Total Revenue": 0 }; allCatMap[c]["Items Sold"] += resolveQty(i); allCatMap[c]["Total Revenue"] += resolveRevenue(i); allGRev += resolveRevenue(i); }); });
+    const allCatRows = Object.values(allCatMap).map(r => ({ ...r, "Revenue %": allGRev > 0 ? Number(((r["Total Revenue"] / allGRev) * 100).toFixed(2)) : 0 }));
+    if (allCatRows.length) {
+      const catSheet = XLSX.utils.json_to_sheet(allCatRows);
+      applyAutoColumnWidth(catSheet, allCatRows);
+      XLSX.utils.book_append_sheet(wb, catSheet, "Category Sales");
+    }
+
+    // ── Sheet 4: Staff Summary ────────────────────────────────────────
+    if (staffStats.length) {
+      const staffRows = staffStats.map(s => ({
+        Name: s.name,
+        Role: s.role,
+        Salary: s.salary,
+        Advance: s.advance,
+        Deduction: s.deduction,
+        Present: s.present,
+        Leave: s.leave,
+        Absent: s.absent,
+        "Attendance %": s.attPct,
+        "Grooming %": s.groomPct,
+      }));
+      const staffSheet = XLSX.utils.json_to_sheet(staffRows);
+      applyAutoColumnWidth(staffSheet, staffRows);
+      XLSX.utils.book_append_sheet(wb, staffSheet, "Staff Summary");
+    }
+
+    // ── Sheet 5: Kitchen Schedules ────────────────────────────────────
+    const kSched = adminData.kitchenSchedules || [];
+    if (kSched.length) {
+      const kRows = kSched.map(s => ({ Work: s.work || "—", Staff: s.staff || "—", Date: s.date || "—", Department: s.department || "—", Status: s.status || "—", "Response (Days)": s.lastRate != null && s.lastRate !== "" ? `${s.lastRate} days` : "—" }));
+      const kSheet = XLSX.utils.json_to_sheet(kRows);
+      applyAutoColumnWidth(kSheet, kRows);
+      XLSX.utils.book_append_sheet(wb, kSheet, "Kitchen Schedules");
+    }
+
+    // ── Sheet 6: Service Schedules ────────────────────────────────────
+    const sSched = adminData.serviceSchedules || [];
+    if (sSched.length) {
+      const sRows = sSched.map(s => ({ Work: s.work || "—", Staff: s.staff || "—", Date: s.date || "—", Department: s.department || "—", Status: s.status || "—", "Response (Days)": s.lastRate != null && s.lastRate !== "" ? `${s.lastRate} days` : "—" }));
+      const sSheet = XLSX.utils.json_to_sheet(sRows);
+      applyAutoColumnWidth(sSheet, sRows);
+      XLSX.utils.book_append_sheet(wb, sSheet, "Service Schedules");
+    }
+
+    const exportDate = format(new Date(), "yyyy-MM-dd");
+    XLSX.writeFile(wb, `dashboard_full_export_${exportDate}.xlsx`);
+    toast.success("Full dashboard export complete.");
   };
 
   return (
@@ -268,7 +350,7 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
               <button key={k} className={`dash-preset-btn${datePreset === k ? " active" : ""}`} onClick={() => applyPreset(k)}>{lbl}</button>
             ))}
           </div>
-          <div className = "dashboard-custom-datepickers">
+          <div className="dashboard-custom-datepickers">
             <CustomDatePicker label="From" value={fromDate} max={toDate} onChange={(s) => { setFromDate(s); if (s > toDate) setToDate(s); setDatePreset("custom"); }} />
             <CustomDatePicker label="To" value={toDate} min={fromDate} max={today} onChange={(s) => { setToDate(s); setDatePreset("custom"); }} />
           </div>

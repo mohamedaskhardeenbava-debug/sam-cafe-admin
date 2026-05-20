@@ -154,6 +154,29 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
     useEffect(() => { moveExpiredSchedules(); }, []);
     useEffect(() => { const close = () => setOpenDropdown(null); window.addEventListener("click", close); return () => window.removeEventListener("click", close); }, []);
 
+    const markCompleted = async (item) => {
+        if (item.status === "Completed") return;
+        const updated = { ...item, status: "Completed", completedAt: new Date().toISOString() };
+        // Update schedule status in-place (keep in schedules for today)
+        try {
+            await api.put(`/serviceSchedules/${item.id}`, updated);
+        } catch (err) {
+            console.warn("Could not update schedule status:", err);
+        }
+        // Also copy to activity log
+        try {
+            await api.post("/serviceActivity", updated);
+        } catch (err) {
+            console.warn("Could not write to activity:", err);
+        }
+        setAdminData(prev => ({
+            ...prev,
+            serviceSchedules: (prev.serviceSchedules || []).map(s => s.id === item.id ? updated : s),
+            serviceActivity: [...(prev.serviceActivity || []), updated],
+        }));
+        toast.success(`"${item.work}" marked as completed.`);
+    };
+
     const exportToExcel = () => {
         if (!filteredList.length) { alert("No schedule data to export"); return; }
         const rows = filteredList.map(item => ({
@@ -213,11 +236,12 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
                             <th onClick={() => toggleSort("department")} style={{ cursor: "pointer" }}>Department <SortIcon col="department" /></th>
                             <th onClick={() => toggleSort("status")} style={{ cursor: "pointer" }}>Status <SortIcon col="status" /></th>
                             <th>Response</th>
+                            <th style={{ width: 60, textAlign: "center" }}>Done</th>
                         </tr>
                     </thead>
                     <tbody>
                         {filteredList.length === 0 ? (
-                            <tr><td colSpan="6" style={{ textAlign: "center", color: "#aaa" }}>No schedules found</td></tr>
+                            <tr><td colSpan="7" style={{ textAlign: "center", color: "#aaa" }}>No schedules found</td></tr>
                         ) : (
                             filteredList.map(i => (
                                 <tr key={i.id}>
@@ -227,6 +251,16 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
                                     <td>{i.department || "—"}</td>
                                     <td>{i.status ? <span className={`status status-${i.status.toLowerCase().replace(/\s+/g, "-")}`}>{i.status}</span> : "—"}</td>
                                     <td>{i.lastRate ? `${i.lastRate} days` : "—"}</td>
+                                    <td style={{ textAlign: "center" }}>
+                                        {i.status === "Completed"
+                                            ? <span style={{ color: "#2e7d32", fontSize: 18 }}>✔</span>
+                                            : <button
+                                                onClick={() => markCompleted(i)}
+                                                title="Mark as Completed"
+                                                style={{ background: "none", border: "1.5px solid #2e7d32", borderRadius: "50%", width: 28, height: 28, cursor: "pointer", color: "#2e7d32", fontSize: 14, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                                            >✓</button>
+                                        }
+                                    </td>
                                 </tr>
                             ))
                         )}

@@ -6,9 +6,11 @@ import editIcon from "../icon/edit-icon.png";
 import deleteIcon from "../icon/delete-icon.png";
 import * as XLSX from "xlsx";
 import { EmptyRow } from "../App";
-import { formatDisplayDate } from "../App"
+import { formatDisplayDate } from "../App";
 import { CustomDatePicker } from "../components/CustomDatePicker";
 import socket from "../socket";
+import useInfiniteScroll from "../components/useInfiniteScroll";
+import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 
 const toTwoDecimals = (value) =>
   Math.round((Number(value) + Number.EPSILON) * 100) / 100;
@@ -153,6 +155,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
     return data;
   }, [adminData.ingredients, sortConfig]);
 
+  const { displayLimit, sentinelRef, containerRef, hasMore } =
+    useInfiniteScroll(sortedIngredients.length, 30);
+
   /* ---------------- EDIT MODAL ---------------- */
   const openEditModal = (ingredient) => {
     setSelectedIngredient(ingredient);
@@ -296,7 +301,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       </div>
 
       {/* TABLE */}
-      <div className="stocks-table-wrapper">
+      <div className="stocks-table-wrapper" ref={containerRef}>
         <table className="stocks-table">
           <thead>
             <tr>
@@ -380,7 +385,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
             {sortedIngredients.length === 0 ? (
               <EmptyRow colSpan={6} message="No stock data available" />
             ) : (
-              sortedIngredients.map((ing) => (
+              sortedIngredients.slice(0, displayLimit).map((ing) => (
                 <tr key={ing.id}>
                   <td
                     className="clickable"
@@ -448,11 +453,14 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                   </td>
                 </tr>
               )))}
+            <InfiniteScrollLoader
+              sentinelRef={sentinelRef}
+              hasMore={hasMore}
+              colSpan={9}
+            />
           </tbody>
         </table>
       </div>
-
-      {/* EDIT MODAL */}
       {showEditModal && selectedIngredient && (
         <div className="category-modal-overlay">
           <div className="category-modal">

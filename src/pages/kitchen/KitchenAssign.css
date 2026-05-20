@@ -471,3 +471,301 @@
     font-weight: 500;
     white-space: nowrap;
 }
+
+/* ── Header layout ── */
+.assign-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.assign-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* ── Progress badge ── */
+.assign-progress-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f0f9ff;
+    border: 1.5px solid #bae6fd;
+    border-radius: 10px;
+    padding: 4px 12px;
+    min-width: 60px;
+}
+
+.assign-progress-num {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0369a1;
+    line-height: 1.2;
+}
+
+.assign-progress-lbl {
+    font-size: 9px;
+    font-weight: 700;
+    color: #7dd3fc;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* ── View toggle ── */
+.assign-view-toggle {
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1.5px solid #e5e7eb;
+    background: #f9fafb;
+    color: #555;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    white-space: nowrap;
+}
+
+.assign-view-toggle:hover {
+    border-color: #111;
+    background: #111;
+    color: #fff;
+}
+
+/* ── Add task btn ── */
+.task-add-btn {
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid #111;
+    background: #111;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    transition: all 0.15s;
+}
+
+.task-add-btn:hover {
+    background: #333;
+}
+
+/* ── Filter pills ── */
+.assign-pills {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.assign-filter-lbl {
+    font-size: 10px;
+    font-weight: 700;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    white-space: nowrap;
+}
+
+/* ── Section row in table ── */
+.assign-section-row td {
+    padding: 10px 12px 6px !important;
+    font-size: 12px;
+    font-weight: 700;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: #e9e9e9 !important;
+    border-radius: 0 !important;
+}
+
+.assign-section-icon {
+    margin-right: 6px;
+    font-size: 14px;
+}
+
+/* ── Assigned row highlight ── */
+.assign-row-assigned td {
+    background: #f0fdf4 !important;
+}
+
+/* ── Task dot indicator ── */
+.assign-task-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #d1d5db;
+    margin-right: 8px;
+    flex-shrink: 0;
+    vertical-align: middle;
+    transition: background 0.2s;
+}
+
+.assign-task-dot.dot-filled {
+    background: #16a34a;
+    box-shadow: 0 0 0 2px #bbf7d0;
+}
+
+/* ── Staff select ── */
+.assign-select {
+    width: 100%;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1.5px solid #e5e7eb;
+    background: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.assign-select:focus {
+    border-color: #3b82f6;
+}
+
+/* ── Time cell ── */
+.assign-time {
+    color: #888;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Delete btn ── */
+.assign-del-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.assign-del-btn:hover {
+    background: #fee2e2;
+}
+
+.assign-del-btn .delete-icon {
+    width: 15px;
+    height: 15px;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+}
+
+.assign-del-btn:hover .delete-icon {
+    opacity: 1;
+}
+
+/* ── List layout ── */
+.assign-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.assign-list-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.assign-list-section-hdr {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: #fff;
+    border-radius: 12px;
+    border-left: 4px solid #3b82f6;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    font-size: 13px;
+    font-weight: 700;
+    color: #333;
+    letter-spacing: 0.02em;
+}
+
+.assign-list-count {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 600;
+    color: #888;
+    background: #f3f4f6;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.assign-list-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+}
+
+.assign-list-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px 14px;
+    border: 1.5px solid #f0f0f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.assign-list-card:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.assign-list-card.card-assigned {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+}
+
+.assign-list-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.assign-list-task-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #222;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.assign-list-card-bot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.assign-list-select {
+    flex: 1;
+}
+
+.assign-list-time {
+    font-size: 11px;
+    color: #888;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}

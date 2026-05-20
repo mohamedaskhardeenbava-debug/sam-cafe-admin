@@ -114,6 +114,20 @@ const EVENT_CATEGORIES = [
 const pad = (n) => String(n).padStart(2, "0");
 const todayStr = () => new Date().toISOString().split("T")[0];
 
+const getWeekRange = () => {
+    const now = new Date();
+    const day = now.getDay();
+    const mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    return [mon.toISOString().split("T")[0], sun.toISOString().split("T")[0]];
+};
+const getMonthRange = () => {
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return [first.toISOString().split("T")[0], last.toISOString().split("T")[0]];
+};
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 const Events = ({ adminData, setAdminData }) => {
     const { toast } = useToast();
@@ -151,9 +165,12 @@ const Events = ({ adminData, setAdminData }) => {
 
     // Events tab filters
     const [evtSearch, setEvtSearch] = useState("");
-    const [evtFilterStatus, setEvtFilterStatus] = useState("all");
+    const [evtFilterStatus, setEvtFilterStatus] = useState("upcoming,ongoing");
     const [evtFilterType, setEvtFilterType] = useState("all");
     const [evtFilterPublish, setEvtFilterPublish] = useState("all"); // "all" | "live" | "draft"
+    const [evtFromDate, setEvtFromDate] = useState("");
+    const [evtToDate, setEvtToDate] = useState("");
+    const [evtDatePreset, setEvtDatePreset] = useState("");
     const [addGuestCount, setAddGuestCount] = useState(1);
     const [addGuestSaving, setAddGuestSaving] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -209,12 +226,17 @@ const Events = ({ adminData, setAdminData }) => {
                 (e.categoryLabel || e.eventType || "").toLowerCase().includes(q)
             );
         }
-        if (evtFilterStatus !== "all") list = list.filter(e => e.status === evtFilterStatus);
+        if (evtFilterStatus && evtFilterStatus !== "all") {
+            const statuses = evtFilterStatus.split(",");
+            list = list.filter(e => statuses.includes(e.status));
+        }
         if (evtFilterType !== "all") list = list.filter(e => (e.eventType || "") === evtFilterType || (e.categoryLabel || "").toLowerCase() === evtFilterType);
         if (evtFilterPublish === "live") list = list.filter(e => e.isPublished);
         if (evtFilterPublish === "draft") list = list.filter(e => !e.isPublished);
+        if (evtFromDate) list = list.filter(e => (e.date || "") >= evtFromDate);
+        if (evtToDate) list = list.filter(e => (e.date || "") <= evtToDate);
         return list;
-    }, [events, evtSearch, evtFilterStatus, evtFilterType, evtFilterPublish]);
+    }, [events, evtSearch, evtFilterStatus, evtFilterType, evtFilterPublish, evtFromDate, evtToDate]);
 
     const exportEvents = () => {
         if (!filteredEvents.length) { alert("No events to export"); return; }
@@ -737,6 +759,7 @@ const Events = ({ adminData, setAdminData }) => {
                                 <span className="ae-filter-group-label">Status</span>
                                 {[
                                     ["all", "All"],
+                                    ["upcoming,ongoing", "Active"],
                                     ["upcoming", "Upcoming"],
                                     ["ongoing", "Ongoing"],
                                     ["completed", "Completed"],
@@ -744,11 +767,42 @@ const Events = ({ adminData, setAdminData }) => {
                                 ].map(([val, label]) => (
                                     <button key={val}
                                         className={`ae-filter-pill${evtFilterStatus === val ? " active" : ""}`}
-                                        style={evtFilterStatus === val && val !== "all" ? { background: STATUS_COLORS[val], borderColor: STATUS_COLORS[val], color: "#fff" } : {}}
+                                        style={evtFilterStatus === val && !["all", "upcoming,ongoing"].includes(val) ? { background: STATUS_COLORS[val], borderColor: STATUS_COLORS[val], color: "#fff" } : {}}
                                         onClick={() => setEvtFilterStatus(val)}>
                                         {label}
                                     </button>
                                 ))}
+                            </div>
+                            {/* Date quick presets */}
+                            <div className="ae-events-filter-group">
+                                <span className="ae-filter-group-label">Period</span>
+                                {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
+                                    <button key={preset}
+                                        className={`ae-filter-pill${evtDatePreset === preset ? " active" : ""}`}
+                                        onClick={() => {
+                                            if (evtDatePreset === preset) {
+                                                setEvtDatePreset(""); setEvtFromDate(""); setEvtToDate("");
+                                            } else {
+                                                setEvtDatePreset(preset);
+                                                if (preset === "today") { const t = todayStr(); setEvtFromDate(t); setEvtToDate(t); }
+                                                else if (preset === "week") { const [f, t] = getWeekRange(); setEvtFromDate(f); setEvtToDate(t); }
+                                                else { const [f, t] = getMonthRange(); setEvtFromDate(f); setEvtToDate(t); }
+                                            }
+                                        }}>
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+                            {/* Date range pickers */}
+                            <div className="ae-events-filter-group">
+                                <span className="ae-filter-group-label">From</span>
+                                <div style={{ minWidth: 140 }}>
+                                    <CustomDatePicker value={evtFromDate} onChange={v => { setEvtFromDate(v); setEvtDatePreset(""); if (evtToDate && v > evtToDate) setEvtToDate(v); }} placeholder="Start date" />
+                                </div>
+                                <span className="ae-filter-group-label" style={{ marginLeft: 4 }}>To</span>
+                                <div style={{ minWidth: 140 }}>
+                                    <CustomDatePicker value={evtToDate} min={evtFromDate} onChange={v => { setEvtToDate(v); setEvtDatePreset(""); }} placeholder="End date" />
+                                </div>
                             </div>
                             {/* Type */}
                             <div className="ae-events-filter-group">
@@ -781,10 +835,11 @@ const Events = ({ adminData, setAdminData }) => {
                                 ))}
                             </div>
                             {/* Clear + count */}
-                            {(evtSearch || evtFilterStatus !== "all" || evtFilterType !== "all" || evtFilterPublish !== "all") && (
+                            {(evtSearch || evtFilterStatus !== "upcoming,ongoing" || evtFilterType !== "all" || evtFilterPublish !== "all" || evtFromDate || evtToDate) && (
                                 <button className="ae-clear-filter" onClick={() => {
-                                    setEvtSearch(""); setEvtFilterStatus("all");
+                                    setEvtSearch(""); setEvtFilterStatus("upcoming,ongoing");
                                     setEvtFilterType("all"); setEvtFilterPublish("all");
+                                    setEvtFromDate(""); setEvtToDate(""); setEvtDatePreset("");
                                 }}>Clear</button>
                             )}
                             <span className="ae-result-count">{filteredEvents.length} event(s)</span>
@@ -884,6 +939,27 @@ const Events = ({ adminData, setAdminData }) => {
                     <div className="ae-booking-filters">
                         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                             <input type="text" placeholder="Search by name, email or phone…" className="ae-search-input" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+
+                            {/* Quick date presets */}
+                            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => {
+                                const isActive = (() => {
+                                    if (preset === "today") { const t = todayStr(); return filterFromDate === t && filterToDate === t; }
+                                    if (preset === "week") { const [f, t] = getWeekRange(); return filterFromDate === f && filterToDate === t; }
+                                    const [f, t] = getMonthRange(); return filterFromDate === f && filterToDate === t;
+                                })();
+                                return (
+                                    <button key={preset}
+                                        className={`ae-filter-pill${isActive ? " active" : ""}`}
+                                        onClick={() => {
+                                            if (isActive) { setFilterFromDate(""); setFilterToDate(""); return; }
+                                            if (preset === "today") { const t = todayStr(); setFilterFromDate(t); setFilterToDate(t); }
+                                            else if (preset === "week") { const [f, t] = getWeekRange(); setFilterFromDate(f); setFilterToDate(t); }
+                                            else { const [f, t] = getMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
+                                        }}>
+                                        {label}
+                                    </button>
+                                );
+                            })}
 
                             {/* Date range */}
                             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>

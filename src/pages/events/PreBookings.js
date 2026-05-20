@@ -8,9 +8,23 @@ import "./PreviewModal.css";
 import { useToast } from "../../useToast";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
+import useInfiniteScroll from "../../components/useInfiniteScroll";
+import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 
 const pad = (n) => String(n).padStart(2, "0");
 const todayStr = () => new Date().toISOString().split("T")[0];
+const getWeekRange = () => {
+  const now = new Date(); const day = now.getDay();
+  const mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  return [mon.toISOString().split("T")[0], sun.toISOString().split("T")[0]];
+};
+const getMonthRange = () => {
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth(), 1);
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return [first.toISOString().split("T")[0], last.toISOString().split("T")[0]];
+};
 
 const SLOT_GROUPS = [
   { label: "Breakfast", key: "BF", short: "BF", start: "07:00", end: "10:00" },
@@ -251,14 +265,26 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
               <div className="form-group">
                 <label>Dining Slot <span className="evt-pre-opt">(optional)</span></label>
                 <div className="evt-pre-modal-slots">
-                  {SLOT_GROUPS.map(sg => (
-                    <button key={sg.key} type="button"
-                      className={`evt-pre-modal-slot-chip${form.slotGroup === sg.key ? " active" : ""}`}
-                      onClick={() => { const next = form.slotGroup === sg.key ? "" : sg.key; setF("slotGroup", next); setF("time", ""); }}>
-                      {sg.label}
-                      <span className="evt-pre-modal-slot-time">{sg.start}–{sg.end}</span>
-                    </button>
-                  ))}
+                  {SLOT_GROUPS.map(sg => {
+                    const nowH = new Date().getHours();
+                    const slotEndH = parseInt(sg.end.split(":")[0]);
+                    const isPast = form.date === todayStr() && nowH >= slotEndH;
+                    return (
+                      <button key={sg.key} type="button"
+                        className={`evt-pre-modal-slot-chip${form.slotGroup === sg.key ? " active" : ""}${isPast ? " chip-disabled" : ""}`}
+                        title={isPast ? "This slot has passed today" : ""}
+                        onClick={() => {
+                          if (isPast) return;
+                          const next = form.slotGroup === sg.key ? "" : sg.key;
+                          setF("slotGroup", next);
+                          setF("time", "");
+                        }}>
+                        {sg.label}
+                        <span className="evt-pre-modal-slot-time">{sg.start}–{sg.end}</span>
+                        {isPast && <span style={{ fontSize: 9, color: "#ef4444", display: "block" }}>Passed</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -272,7 +298,8 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                   <CustomTimePicker value={form.time} onChange={v => setF("time", v)}
                     slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
                     slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
-                    disabled={!form.slotGroup} />
+                    disabled={!form.slotGroup}
+                    isToday={form.date === todayStr()} />
                 </div>
               </div>
 
@@ -454,7 +481,9 @@ const PreBookings = ({ adminData, setAdminData }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const [filterDate, setFilterDate] = useState(todayStr());
+  const [filterFromDate, setFilterFromDate] = useState(todayStr());
+  const [filterToDate, setFilterToDate] = useState(todayStr());
+  const [filterDatePreset, setFilterDatePreset] = useState("today");
   const [filterSlots, setFilterSlots] = useState(new Set());
   const [filterStatuses, setFilterStatuses] = useState(new Set());
   const [search, setSearch] = useState("");
@@ -478,7 +507,8 @@ const PreBookings = ({ adminData, setAdminData }) => {
   /* filter */
   const filteredData = useMemo(() => {
     let d = [...data];
-    if (filterDate) d = d.filter(r => r.date === filterDate);
+    if (filterFromDate) d = d.filter(r => (r.date || "") >= filterFromDate);
+    if (filterToDate) d = d.filter(r => (r.date || "") <= filterToDate);
     if (filterSlots.size > 0) d = d.filter(r => { const k = resolveSlotKey(r); return k && filterSlots.has(k); });
     if (filterStatuses.size > 0) d = d.filter(r => filterStatuses.has(r.status || "scheduled"));
     if (search.trim()) {
@@ -486,7 +516,7 @@ const PreBookings = ({ adminData, setAdminData }) => {
       d = d.filter(r => (r.name || "").toLowerCase().includes(q) || (r.mobile || "").includes(q) || (r.id || "").toLowerCase().includes(q));
     }
     return d;
-  }, [data, filterDate, filterSlots, filterStatuses, search]);
+  }, [data, filterFromDate, filterToDate, filterSlots, filterStatuses, search]);
 
   /* sort */
   const sortedData = useMemo(() => {
@@ -502,7 +532,8 @@ const PreBookings = ({ adminData, setAdminData }) => {
     });
   }, [filteredData, sortField, sortDir]);
 
-  /* KPIs */
+  const { displayLimit, sentinelRef, containerRef, hasMore } =
+    useInfiniteScroll(sortedData.length, 30);
   const today = todayStr();
   const todayCount = data.filter(r => r.date === today).length;
   const scheduledCount = data.filter(r => (r.status || "scheduled") === "scheduled").length;
@@ -566,7 +597,7 @@ const PreBookings = ({ adminData, setAdminData }) => {
     }
   };
 
-  const activeFilters = filterDate || filterSlots.size > 0 || filterStatuses.size > 0 || search.trim();
+  const activeFilters = filterFromDate || filterToDate || filterSlots.size > 0 || filterStatuses.size > 0 || search.trim();
 
   const exportToExcel = () => {
     if (!sortedData.length) { alert("No pre-bookings to export"); return; }
@@ -589,7 +620,10 @@ const PreBookings = ({ adminData, setAdminData }) => {
     }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, sheet, "PreBookings");
-    XLSX.writeFile(wb, `prebookings_${filterDate || "all"}.xlsx`);
+    const suffix = filterFromDate && filterToDate
+      ? `${filterFromDate}_to_${filterToDate}`
+      : filterFromDate || filterToDate || "all";
+    XLSX.writeFile(wb, `prebookings_${suffix}.xlsx`);
   };
 
   const SortTh = ({ field, children }) => (
@@ -638,13 +672,39 @@ const PreBookings = ({ adminData, setAdminData }) => {
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <input className="evt-pre-search" placeholder="Search name / mobile / ID..."
             value={search} onChange={e => setSearch(e.target.value)} />
+
+          {/* Quick date presets */}
+          {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
+            <button key={preset}
+              className={`evt-pre-filter-btn${filterDatePreset === preset ? " active" : ""}`}
+              onClick={() => {
+                if (filterDatePreset === preset) {
+                  setFilterDatePreset(""); setFilterFromDate(""); setFilterToDate("");
+                } else {
+                  setFilterDatePreset(preset);
+                  if (preset === "today") { const t = todayStr(); setFilterFromDate(t); setFilterToDate(t); }
+                  else if (preset === "week") { const [f, t] = getWeekRange(); setFilterFromDate(f); setFilterToDate(t); }
+                  else { const [f, t] = getMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
+                }
+              }}>
+              {label}
+            </button>
+          ))}
+
+          {/* From / To date pickers */}
           <div className="evt-pre-filter-group">
-            <span className="evt-pre-filter-group-label">Date</span>
-            <div style={{ minWidth: 155 }}>
-              <CustomDatePicker value={filterDate} onChange={setFilterDate} placeholder="All dates" />
+            <span className="evt-pre-filter-group-label">From</span>
+            <div style={{ minWidth: 148 }}>
+              <CustomDatePicker value={filterFromDate} onChange={v => { setFilterFromDate(v); setFilterDatePreset(""); if (filterToDate && v > filterToDate) setFilterToDate(v); }} placeholder="Start date" />
             </div>
-            {filterDate && (
-              <button className="evt-pre-filter-btn" onClick={() => setFilterDate("")} title="Clear date">✕</button>
+          </div>
+          <div className="evt-pre-filter-group">
+            <span className="evt-pre-filter-group-label">To</span>
+            <div style={{ minWidth: 148 }}>
+              <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={v => { setFilterToDate(v); setFilterDatePreset(""); }} placeholder="End date" />
+            </div>
+            {(filterFromDate || filterToDate) && (
+              <button className="evt-pre-filter-btn" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
             )}
           </div>
         </div>
@@ -676,7 +736,10 @@ const PreBookings = ({ adminData, setAdminData }) => {
           </div>
 
           {activeFilters && (
-            <button className="evt-pre-clear-all" onClick={() => { setSearch(""); setFilterDate(todayStr()); setFilterSlots(new Set()); setFilterStatuses(new Set()); }}>
+            <button className="evt-pre-clear-all" onClick={() => {
+              setSearch(""); setFilterFromDate(todayStr()); setFilterToDate(todayStr());
+              setFilterDatePreset("today"); setFilterSlots(new Set()); setFilterStatuses(new Set());
+            }}>
               Clear
             </button>
           )}
@@ -684,7 +747,7 @@ const PreBookings = ({ adminData, setAdminData }) => {
       </div>
 
       {/* TABLE */}
-      <div className="evt-pre-table-wrapper">
+      <div className="evt-pre-table-wrapper" ref={containerRef}>
         <table className="evt-pre-table">
           <thead>
             <tr>
@@ -704,7 +767,7 @@ const PreBookings = ({ adminData, setAdminData }) => {
             {sortedData.length === 0 ? (
               <tr><td colSpan="10" className="evt-pre-empty">No preBookings found</td></tr>
             ) : (
-              sortedData.map(item => {
+              sortedData.slice(0, displayLimit).map(item => {
                 const status = item.status || "scheduled";
                 const slotKey = resolveSlotKey(item);
                 const slotLabel = SLOT_GROUPS.find(s => s.key === slotKey)?.label || "—";
@@ -800,6 +863,11 @@ const PreBookings = ({ adminData, setAdminData }) => {
                 );
               })
             )}
+            <InfiniteScrollLoader
+              sentinelRef={sentinelRef}
+              hasMore={hasMore}
+              colSpan={10}
+            />
           </tbody>
         </table>
       </div>

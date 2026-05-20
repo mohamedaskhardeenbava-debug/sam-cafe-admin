@@ -5,6 +5,7 @@ import api from "../../api";
 import "./CelebrationDetails.css";
 import { useToast } from "../../useToast";
 
+/* ── Helpers ── */
 const pad = (n) => String(n).padStart(2, "0");
 
 const fmtTime = (t) => {
@@ -14,32 +15,44 @@ const fmtTime = (t) => {
   return `${h % 12 || 12}:${pad(m)} ${ap}`;
 };
 
+const fmtDateTime = (iso) => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleString("en-IN", {
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: true,
+  });
+};
+
+/* ── Constants ── */
 const CELEBRATION_TYPES = {
-  birthday: { label: "Birthday" },
-  anniversary: { label: "Anniversary" },
-  meeting: { label: "Meeting" },
-  gettogether: { label: "Get Together" },
+  birthday: { label: "🎂 Birthday", emoji: "🎂" },
+  anniversary: { label: "💍 Anniversary", emoji: "💍" },
+  meeting: { label: "🤝 Meeting", emoji: "🤝" },
+  gettogether: { label: "🎉 Get Together", emoji: "🎉" },
 };
 
 const DECORATION_TIERS = {
-  normal: { label: "Normal", price: 1500, color: "#6b7280" },
-  elegant: { label: "Elegant", price: 3000, color: "#3730a3" },
-  luxury: { label: "Luxury", price: 5000, color: "#92400e" },
+  normal: { label: "Normal", price: 1500, color: "#6b7280", bg: "#f3f4f6" },
+  elegant: { label: "Elegant", price: 3000, color: "#3730a3", bg: "#eef2ff" },
+  luxury: { label: "Luxury", price: 5000, color: "#92400e", bg: "#fef3c7" },
 };
 
 const EXTRAS_MAP = [
-  { key: "cake", label: "Cake" },
-  { key: "specialMention", label: "Special Mention" },
-  { key: "candleLight", label: "Candle Light Dinner" },
-  { key: "liveMusic", label: "Live Music" },
-  { key: "surpriseGift", label: "Surprise Gift Revealing" },
-  { key: "mic", label: "Microphone" },
-  { key: "projector", label: "Projector" },
-  { key: "standingBrochures", label: "Standing Brochures" },
-  { key: "placeHolders", label: "Place Holders" },
-  { key: "pens", label: "Pens" },
+  { key: "cake", label: "Cake", icon: "🎂" },
+  { key: "specialMention", label: "Special Mention", icon: "📢" },
+  { key: "candleLight", label: "Candle Light Dinner", icon: "🕯️" },
+  { key: "liveMusic", label: "Live Music", icon: "🎵" },
+  { key: "surpriseGift", label: "Surprise Gift Reveal", icon: "🎁" },
+  { key: "mic", label: "Microphone", icon: "🎤" },
+  { key: "projector", label: "Projector", icon: "📽️" },
+  { key: "standingBrochures", label: "Standing Brochures", icon: "🗂️" },
+  { key: "placeHolders", label: "Place Holders", icon: "🪧" },
+  { key: "pens", label: "Pens", icon: "🖊️" },
+  { key: "audioVideo", label: "Audio & Video", icon: "🔊" },
 ];
 
+/* ── Component ── */
 const CelebrationDetails = ({ adminData, setAdminData }) => {
   const { toast } = useToast();
   const { id } = useParams();
@@ -52,17 +65,25 @@ const CelebrationDetails = ({ adminData, setAdminData }) => {
   if (!data) return (
     <div className="evt-clbd-page">
       <div className="evt-clbd-container">
-        <button className="evt-clbd-back-btn" onClick={() => navigate(-1)} />
-        <p style={{ color: "#888", marginTop: 20 }}>Celebration not found.</p>
+        <div className="evt-clbd-header">
+          <button className="evt-clbd-back-btn" onClick={() => navigate(-1)} />
+          <div>
+            <h2 className="evt-clbd-title">Celebration Detail</h2>
+          </div>
+        </div>
+        <div className="evt-clbd-section">
+          <p style={{ color: "#a3a3a3", fontSize: 14, margin: 0 }}>Celebration not found.</p>
+        </div>
       </div>
     </div>
   );
 
-  const typeInfo = CELEBRATION_TYPES[data.type] || { label: data.type || "Event" };
+  const typeInfo = CELEBRATION_TYPES[data.type] || { label: data.type || "Event", emoji: "🎉" };
   const decoInfo = data.decoration ? DECORATION_TIERS[data.decoration] : null;
   const decoPrice = decoInfo ? decoInfo.price : 0;
-  const avPrice = (data.mic || data.projector) ? 1500 : 0;
+  const avPrice = (data.mic || data.projector || data.audioVideo) ? 1500 : 0;
   const totalAddons = decoPrice + avPrice;
+  const totalAmount = data.totalAmount ?? totalAddons;
 
   const handleStatusChange = async (newStatus) => {
     setSaving(true);
@@ -74,7 +95,9 @@ const CelebrationDetails = ({ adminData, setAdminData }) => {
       if (typeof setAdminData === "function") {
         setAdminData(p => ({
           ...p,
-          celebrations: (p.celebrations || []).map(c => c.id === id ? { ...c, status: newStatus } : c),
+          celebrations: (p.celebrations || []).map(c =>
+            c.id === id ? { ...c, status: newStatus } : c
+          ),
         }));
       }
     } catch (err) {
@@ -85,26 +108,23 @@ const CelebrationDetails = ({ adminData, setAdminData }) => {
     }
   };
 
-  /* ── Info rows (same layout as ReservationDetails) ── */
   const infoRows = [
-    { label: "Guest Name", val: data.name || "—" },
-    { label: "Mobile", val: data.mobile || "—" },
-    { label: "Email", val: data.email || "—" },
-    { label: "Source", val: data.source || "—" },
-    { label: "Event Type", val: typeInfo.label },
-    { label: "No. of Guests", val: data.guests || "—" },
-    { label: "Date", val: data.date || "—" },
-    { label: "Time", val: fmtTime(data.time) },
+    { icon: "👤", label: "Guest Name", val: data.name || "—" },
+    { icon: "📱", label: "Mobile", val: data.mobile || "—" },
+    { icon: "📧", label: "Email", val: data.email || "—" },
+    { icon: "🌐", label: "Source", val: data.source || "—" },
+    { icon: "🎉", label: "Event Type", val: typeInfo.label },
+    { icon: "👥", label: "No. of Guests", val: data.guests || "—" },
+    { icon: "📅", label: "Date", val: data.date || "—" },
+    { icon: "⏰", label: "Time", val: fmtTime(data.time) },
     ...(data.type === "birthday" ? [
-      { label: "Birthday Person", val: data.birthdayPersonName || "—" },
-      { label: "Age", val: data.birthdayPersonAge ? `${data.birthdayPersonAge} yrs` : "—" },
+      { icon: "🎂", label: "Birthday Person", val: data.birthdayPersonName || "—" },
+      { icon: "🎈", label: "Age", val: data.birthdayPersonAge ? `${data.birthdayPersonAge} yrs` : "—" },
     ] : []),
-    { label: "Decoration", val: decoInfo ? `${decoInfo.label} — ₹${decoInfo.price.toLocaleString()}` : "None" },
-    { label: "Event Menu", val: data.eventMenu || "—" },
+    { icon: "🎨", label: "Decoration", val: decoInfo ? `${decoInfo.label} — ₹${decoInfo.price.toLocaleString()}` : "None" },
+    { icon: "🍽️", label: "Event Menu", val: data.eventMenu || "—" },
+    { icon: "🕐", label: "Created At", val: fmtDateTime(data.createdAt) },
   ];
-
-  /* ── Selected add-ons list ── */
-  const selectedExtras = EXTRAS_MAP.filter(e => data[e.key]);
 
   return (
     <div className="evt-clbd-page">
@@ -132,9 +152,10 @@ const CelebrationDetails = ({ adminData, setAdminData }) => {
             </div>
             <div className="evt-clbd-hero-meta">
               <span>{typeInfo.label}</span>
-              <span>{data.date || "—"}</span>
-              <span>{fmtTime(data.time)}</span>
-              <span>{data.guests} guests</span>
+              <span>📅 {data.date || "—"}</span>
+              <span>⏰ {fmtTime(data.time)}</span>
+              <span>👥 {data.guests} guests</span>
+              {data.source && <span>🌐 {data.source}</span>}
             </div>
           </div>
         </div>
@@ -145,6 +166,7 @@ const CelebrationDetails = ({ adminData, setAdminData }) => {
           <div className="evt-clbd-info-grid">
             {infoRows.map((row, i) => (
               <div key={i} className="evt-clbd-info-cell">
+                <span className="evt-clbd-info-icon">{row.icon}</span>
                 <div>
                   <div className="evt-clbd-info-label">{row.label}</div>
                   <div className="evt-clbd-info-val">{row.val}</div>
@@ -155,30 +177,32 @@ const CelebrationDetails = ({ adminData, setAdminData }) => {
         </div>
 
         {/* ── ADD-ONS ── */}
-        {selectedExtras.length > 0 && (
-          <div className="evt-clbd-section">
-            <div className="evt-clbd-section-title">Add-on Services</div>
-            <div className="evt-clbd-extras-grid">
-              {EXTRAS_MAP.map(ex => (
-                <div key={ex.key} className={`evt-clbd-extra-item${data[ex.key] ? " selected" : " not-selected"}`}>
-                  <span className="evt-clbd-extra-label">{ex.label}</span>
-                  <span className="evt-clbd-extra-check">{data[ex.key] ? "✓" : "—"}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Special mention text if present */}
-            {data.specialMention && data.specialMentionText && (
-              <div className="evt-clbd-mention-box">
-                <div className="evt-clbd-info-label" style={{ marginBottom: 4 }}>Special Mention Details</div>
-                <p className="evt-clbd-mention-text">{data.specialMentionText}</p>
+        <div className="evt-clbd-section">
+          <div className="evt-clbd-section-title">Add-on Services</div>
+          <div className="evt-clbd-extras-grid">
+            {EXTRAS_MAP.map(ex => (
+              <div
+                key={ex.key}
+                className={`evt-clbd-extra-item${data[ex.key] ? " selected" : " not-selected"}`}
+              >
+                <span style={{ fontSize: 14, marginRight: 4 }}>{ex.icon}</span>
+                <span className="evt-clbd-extra-label">{ex.label}</span>
+                <span className="evt-clbd-extra-check">{data[ex.key] ? "✓" : "—"}</span>
               </div>
-            )}
+            ))}
           </div>
-        )}
+
+          {/* Special mention text */}
+          {data.specialMention && data.specialMentionText && (
+            <div className="evt-clbd-mention-box">
+              <div className="evt-clbd-info-label" style={{ marginBottom: 4 }}>Special Mention Details</div>
+              <p className="evt-clbd-mention-text">{data.specialMentionText}</p>
+            </div>
+          )}
+        </div>
 
         {/* ── PRICING ── */}
-        {(decoInfo || avPrice > 0 || data.eventMenu) && (
+        {(decoInfo || avPrice > 0 || data.eventMenu || totalAmount > 0) && (
           <div className="evt-clbd-section">
             <div className="evt-clbd-section-title">Decoration & Pricing</div>
             <div className="evt-clbd-pricing-card">
@@ -186,8 +210,10 @@ const CelebrationDetails = ({ adminData, setAdminData }) => {
                 <div className="evt-clbd-pricing-row">
                   <div className="evt-clbd-pricing-label">Decoration</div>
                   <div className="evt-clbd-pricing-val">
-                    <span className="evt-clbd-deco-badge"
-                      style={{ background: decoInfo.color + "18", color: decoInfo.color }}>
+                    <span
+                      className="evt-clbd-deco-badge"
+                      style={{ background: decoInfo.bg, color: decoInfo.color }}
+                    >
                       {decoInfo.label} — ₹{decoInfo.price.toLocaleString()}
                     </span>
                   </div>
@@ -207,10 +233,12 @@ const CelebrationDetails = ({ adminData, setAdminData }) => {
                   </div>
                 </div>
               )}
-              {totalAddons > 0 && (
+              {totalAmount > 0 && (
                 <div className="evt-clbd-pricing-row evt-clbd-pricing-total">
-                  <div className="evt-clbd-pricing-label">Estimated Add-ons Total</div>
-                  <div className="evt-clbd-pricing-val">₹{totalAddons.toLocaleString()}</div>
+                  <div className="evt-clbd-pricing-label">
+                    {data.totalAmount ? "Total Amount" : "Estimated Add-ons Total"}
+                  </div>
+                  <div className="evt-clbd-pricing-val">₹{totalAmount.toLocaleString()}</div>
                 </div>
               )}
             </div>
@@ -218,10 +246,26 @@ const CelebrationDetails = ({ adminData, setAdminData }) => {
         )}
 
         {/* ── SPECIAL NOTES ── */}
-        {data.specialNote && (
+        {data.specialNote && data.specialNote.replace(/-/g, "").trim() && (
           <div className="evt-clbd-section">
             <div className="evt-clbd-section-title">Special Notes</div>
             <div className="evt-clbd-notes-box">{data.specialNote}</div>
+          </div>
+        )}
+
+        {/* ── CALL HISTORY ── */}
+        {data.callHistory?.length > 0 && (
+          <div className="evt-clbd-section">
+            <div className="evt-clbd-section-title">Call History ({data.callHistory.length})</div>
+            <div className="evt-clbd-call-history">
+              {data.callHistory.map((ts, i) => (
+                <div key={i} className="evt-clbd-call-history-item">
+                  <span>📞</span>
+                  <span>Call #{i + 1}</span>
+                  <span style={{ marginLeft: "auto", color: "#a3a3a3" }}>{fmtDateTime(ts)}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -230,18 +274,21 @@ const CelebrationDetails = ({ adminData, setAdminData }) => {
           <div className="evt-clbd-section-title">Update Status</div>
           <div className="evt-clbd-status-row">
             {["pending", "confirmed", "completed", "cancelled"].map(s => (
-              <button key={s}
+              <button
+                key={s}
                 className={`evt-clbd-status-btn evt-clbd-sb-${s}${localStatus === s ? " active" : ""}`}
                 onClick={() => handleStatusChange(s)}
-                disabled={saving || localStatus === s}>
+                disabled={saving || localStatus === s}
+              >
                 {saving && localStatus !== s ? "…" : s.charAt(0).toUpperCase() + s.slice(1)}
               </button>
             ))}
           </div>
         </div>
 
-        {/* ── REMINDER CALL ── */}
+        {/* ── CALL CARD ── */}
         <div className="evt-clbd-reminder">
+          <span className="evt-clbd-reminder-icon">📞</span>
           <div>
             <div className="evt-clbd-reminder-label">Reminder Call</div>
             <div className="evt-clbd-reminder-num">{data.mobile || "—"}</div>

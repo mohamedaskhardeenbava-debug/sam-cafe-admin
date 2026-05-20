@@ -8,6 +8,8 @@ import { allowTextInput } from "../App";
 import { useMemo } from "react";
 import { sortArray } from "../App";
 import { EmptyRow } from "../App";
+import useInfiniteScroll from "../components/useInfiniteScroll";
+import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 
 const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }) => {
   const navigate = useNavigate();
@@ -49,6 +51,9 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
     () => sortArray(adminData.categories, sortConfig),
     [adminData.categories, sortConfig]
   );
+
+  const { displayLimit, sentinelRef, containerRef, hasMore } =
+    useInfiniteScroll(sortedCategories.length, 30);
 
   const generateCategoryId = (name) =>
     name
@@ -436,7 +441,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
         </button>
       </div>
 
-      <div className="category-table-wrapper">
+      <div className="category-table-wrapper" ref={containerRef}>
         <table className="category-table">
           <thead>
             <tr>
@@ -466,7 +471,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
             {sortedCategories.length === 0 ? (
               <EmptyRow colSpan={5} message="No categories available" />
             ) : (
-              sortedCategories.map((category) => {
+              sortedCategories.slice(0, displayLimit).map((category) => {
                 const stats = getMostAndLeastSelling(category.dishes);
 
                 return (
@@ -613,6 +618,11 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                   </React.Fragment>
                 );
               }))}
+            <InfiniteScrollLoader
+              sentinelRef={sentinelRef}
+              hasMore={hasMore}
+              colSpan={5}
+            />
           </tbody>
         </table>
       </div>

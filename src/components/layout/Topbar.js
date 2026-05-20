@@ -62,11 +62,11 @@ function formatTime(timeStr) {
 }
 
 const TYPE_META = {
-  reservation: { label: "Reservation", emoji: "📅", route: "/reservations", color: "#7c3aed" },
-  prebooking: { label: "Pre-Booking", emoji: "🗓️", route: "/prebookings", color: "#0891b2" },
-  catering: { label: "Catering", emoji: "🍽️", route: "/catering", color: "#d97706" },
-  celebration: { label: "Celebration", emoji: "🎉", route: "/celebrations", color: "#db2777" },
-  event: { label: "Event", emoji: "🎪", route: "/events", color: "#16a34a" },
+  reservation: { label: "Reservation", short: "R", emoji: "📅", route: "/reservations", color: "#7c3aed" },
+  prebooking: { label: "Pre-Booking", short: "PB", emoji: "🗓️", route: "/prebookings", color: "#0891b2" },
+  catering: { label: "Catering", short: "C", emoji: "🍽️", route: "/catering", color: "#d97706" },
+  celebration: { label: "Celebration", short: "CL", emoji: "🎉", route: "/celebrations", color: "#db2777" },
+  event: { label: "Event", short: "E", emoji: "🎪", route: "/events", color: "#16a34a" },
 };
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -401,10 +401,8 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
               onClick={(e) => { e.stopPropagation(); navigate(meta.route || "/"); }}
               title={`${meta.label}: ${chip.label} at ${formatTime(chip.time)}`}
             >
-              <span className="today-chip__emoji">{meta.emoji}</span>
-              <span className="today-chip__label">{chip.label}</span>
               <span className="today-chip__countdown">
-                {isPast ? "Now!" : formatCountdown(ms)}
+                {meta.short} {isPast ? "Now!" : formatCountdown(ms)}
               </span>
             </button>
           );

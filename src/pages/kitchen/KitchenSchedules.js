@@ -69,6 +69,26 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
     useEffect(() => { moveExpiredSchedules(); }, []);
     useEffect(() => { const close = () => setOpenDropdown(null); window.addEventListener("click", close); return () => window.removeEventListener("click", close); }, []);
 
+    const markCompleted = async (item) => {
+        if (item.status === "Completed") return;
+        const updated = { ...item, status: "Completed", completedAt: new Date().toISOString() };
+        try {
+            await api.put(`/kitchenSchedules/${item.id}`, updated);
+        } catch (err) {
+            console.warn("Could not update schedule status:", err);
+        }
+        try {
+            await api.post("/kitchenActivity", updated);
+        } catch (err) {
+            console.warn("Could not write to activity:", err);
+        }
+        setAdminData(prev => ({
+            ...prev,
+            kitchenSchedules: (prev.kitchenSchedules || []).map(s => s.id === item.id ? updated : s),
+            kitchenActivity: [...(prev.kitchenActivity || []), updated],
+        }));
+    };
+
     const exportToExcel = () => {
         if (!filteredList.length) { alert("No schedule data to export"); return; }
         const rows = filteredList.map(item => ({
@@ -124,11 +144,12 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                         <tr>
                             <th>Work</th><th>Staff</th><th>Date</th>
                             <th>Department</th><th>Status</th><th>Response</th>
+                            <th style={{ width: 60, textAlign: "center" }}>Done</th>
                         </tr>
                     </thead>
                     <tbody>
                         {filteredList.length === 0 ? (
-                            <tr><td colSpan="6" style={{ textAlign: "center", color: "#aaa" }}>No schedules found</td></tr>
+                            <tr><td colSpan="7" style={{ textAlign: "center", color: "#aaa" }}>No schedules found</td></tr>
                         ) : (
                             filteredList.map(i => (
                                 <tr key={i.id}>
@@ -138,6 +159,16 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                                     <td>{i.department || "—"}</td>
                                     <td>{i.status ? <span className={`status status-${i.status.toLowerCase().replace(/\s+/g, "-")}`}>{i.status}</span> : "—"}</td>
                                     <td>{i.lastRate ? `${i.lastRate} days` : "—"}</td>
+                                    <td style={{ textAlign: "center" }}>
+                                        {i.status === "Completed"
+                                            ? <span style={{ color: "#2e7d32", fontSize: 18 }}>✔</span>
+                                            : <button
+                                                onClick={() => markCompleted(i)}
+                                                title="Mark as Completed"
+                                                style={{ background: "none", border: "1.5px solid #2e7d32", borderRadius: "50%", width: 28, height: 28, cursor: "pointer", color: "#2e7d32", fontSize: 14, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                                            >✓</button>
+                                        }
+                                    </td>
                                 </tr>
                             ))
                         )}

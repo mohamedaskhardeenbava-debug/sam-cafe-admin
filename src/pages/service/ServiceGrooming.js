@@ -3,6 +3,20 @@ import * as XLSX from "xlsx";
 import "./ServiceGrooming.css";
 import api from "../../api";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
+import useInfiniteScroll from "../../components/useInfiniteScroll";
+import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+
+/*
+  DATA SHAPE (serviceGrooming in db.json):
+  {
+    "staff_vijay": {
+      "2026-05-19": { "uniform": false, "shoes": false, "groom": false },
+      "2026-05-18": { "uniform": true,  "shoes": true,  "groom": true  },
+      ...
+    }
+  }
+  Today's entries start all false by default (seeded by db.json).
+*/
 
 const GROOM_FIELDS = [
   { key: "uniform", label: "Uniform", icon: "👔" },
@@ -12,43 +26,69 @@ const GROOM_FIELDS = [
 
 const WEEKDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-/* ─── Helpers ─────────────────────────────────────────── */
-const buildGroomKey = (date) => date; // dates are already ISO strings
+function getWeekStart() {
+  const d = new Date(); const day = d.getDay();
+  const mon = new Date(d); mon.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+  return mon.toISOString().split("T")[0];
+}
+function getMonthStart() {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split("T")[0];
+}
 
 export default function ServiceGrooming({ adminData, setAdminData }) {
-  const dates = (() => {
+  const today = new Date().toISOString().split("T")[0];
+
+  const dates = useMemo(() => {
     const arr = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
+    for (let i = 91; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
       arr.push(d.toISOString().split("T")[0]);
     }
     return arr;
-  })();
-
-  const today = dates[dates.length - 1];
+  }, []);
 
   const [selected, setSelected] = useState(null);
   const [showMemo, setShowMemo] = useState(false);
   const [memo, setMemo] = useState({ staffId: "", text: "" });
   const [saving, setSaving] = useState({});
   const [sgroomSearch, setSgroomSearch] = useState("");
-  const [sgroomFrom, setSgroomFrom] = useState("");
-  const [sgroomTo, setSgroomTo] = useState("");
+  const [sgroomFrom, setSgroomFrom] = useState(getWeekStart);
+  const [sgroomTo, setSgroomTo] = useState(today);
   const [showSummary, setShowSummary] = useState(false);
+  const [sgroomPreset, setSgroomPreset] = useState("week");
 
-  const visibleDates = useMemo(() => dates.filter(d => {
-    if (sgroomFrom && d < sgroomFrom) return false;
-    if (sgroomTo && d > sgroomTo) return false;
-    return true;
-  }), [dates, sgroomFrom, sgroomTo]);
+  const applyPreset = (preset) => {
+    setSgroomPreset(preset);
+    if (preset === "today") { setSgroomFrom(today); setSgroomTo(today); }
+    if (preset === "week") { setSgroomFrom(getWeekStart()); setSgroomTo(today); }
+    if (preset === "month") { setSgroomFrom(getMonthStart()); setSgroomTo(today); }
+  };
+
+  const visibleDates = useMemo(() =>
+    dates.filter(d => d >= sgroomFrom && d <= sgroomTo),
+    [dates, sgroomFrom, sgroomTo]);
 
   const visibleStaff = useMemo(() => {
     const q = sgroomSearch.toLowerCase();
     return adminData.staff.filter(s =>
-      !q || (s.name || "").toLowerCase().includes(q) || (s.role || "").toLowerCase().includes(q)
-    );
+      !q || (s.name || "").toLowerCase().includes(q) || (s.role || "").toLowerCase().includes(q));
   }, [adminData.staff, sgroomSearch]);
+
+  const staffStats = useMemo(() => visibleStaff.map((s, i) => {
+    let perfect = 0;
+    visibleDates.forEach(d => {
+      const e = adminData.serviceGrooming?.[s.id]?.[d];
+      if (e?.uniform && e?.shoes && e?.groom) perfect++;
+    });
+    return {
+      id: s.id, name: s.name, role: s.role, perfect,
+      pct: visibleDates.length > 0 ? Math.round((perfect / visibleDates.length) * 100) : 0,
+    };
+  }), [visibleStaff, adminData.serviceGrooming, visibleDates]);
+
+  const { displayLimit, sentinelRef, containerRef, hasMore } =
+    useInfiniteScroll(visibleStaff.length, 20);
 
   const exportGrooming = () => {
     if (!visibleStaff.length) { alert("No data to export"); return; }
@@ -64,99 +104,56 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
         if (e?.uniform && e?.shoes && e?.groom) perfect++;
       });
       row["Perfect Days"] = perfect;
-      row["Score %"] = visibleDates.length > 0 ? `${Math.round((perfect / visibleDates.length) * 100)}%` : "0%";
+      row["Score %"] = visibleDates.length > 0
+        ? `${Math.round((perfect / visibleDates.length) * 100)}%` : "0%";
       return row;
     });
     const sheet = XLSX.utils.json_to_sheet(rows);
-    sheet["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2 }));
+    sheet["!cols"] = Object.keys(rows[0]).map(k => ({
+      wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2
+    }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, sheet, "Service Grooming");
-    XLSX.writeFile(wb, `service_grooming_${sgroomFrom || dates[0]}_to_${sgroomTo || today}.xlsx`);
+    XLSX.writeFile(wb, `service_grooming_${sgroomFrom}_to_${sgroomTo}.xlsx`);
   };
 
-  /* ─── Toggle a single grooming check ─────────────────── */
   const toggle = async (staffId, date, field) => {
-    const cellKey = `${staffId}_${date}_${field}`;
-    setSaving(prev => ({ ...prev, [cellKey]: true }));
-
+    const ck = `${staffId}_${date}_${field}`;
+    setSaving(prev => ({ ...prev, [ck]: true }));
     const prevData = adminData.serviceGrooming || {};
-
-    const currentEntry = prevData[staffId]?.[date] || {};
-    const newVal = !currentEntry[field];
-
-    const updatedEntry = { ...currentEntry, [field]: newVal };
-
-    const updatedStaffDates = {
-      ...(prevData[staffId] || {}),
-      [date]: updatedEntry,
-    };
-
-    const updatedGrooming = {
+    const current = prevData[staffId]?.[date] || {};
+    const updated = {
       ...prevData,
-      [staffId]: updatedStaffDates,
+      [staffId]: { ...(prevData[staffId] || {}), [date]: { ...current, [field]: !current[field] } }
     };
-
-    // Optimistic UI update
-    setAdminData(prev => ({ ...prev, serviceGrooming: updatedGrooming }));
-
+    setAdminData(prev => ({ ...prev, serviceGrooming: updated }));
     try {
-      // serviceGrooming in db.json is stored as a single document
-      // Adjust the endpoint/method to match your actual API shape.
-      // If your API is json-server with /serviceGrooming/:id, use id=1.
-      // If it stores the whole object at /serviceGrooming, use PUT /serviceGrooming.
-      await api.put("/serviceGrooming", updatedGrooming);
+      await api.put("/serviceGrooming", updated);
     } catch (err) {
       console.error("ServiceGrooming toggle failed:", err.message);
-      // Rollback
       setAdminData(prev => ({ ...prev, serviceGrooming: prevData }));
     } finally {
-      setSaving(prev => ({ ...prev, [cellKey]: false }));
+      setSaving(prev => ({ ...prev, [ck]: false }));
     }
   };
 
-  /* ─── Save memo ───────────────────────────────────────── */
   const saveMemo = async () => {
     if (!memo.staffId || !memo.text) return;
-
-    const memoToday = new Date().toISOString().split("T")[0];
+    const memoDate = new Date().toISOString().split("T")[0];
     const prevData = adminData.serviceGrooming || {};
-
     const updated = {
       ...prevData,
       memo: {
         ...(prevData.memo || {}),
-        [memo.staffId]: {
-          ...(prevData.memo?.[memo.staffId] || {}),
-          [memoToday]: memo.text,
-        },
-      },
+        [memo.staffId]: { ...(prevData.memo?.[memo.staffId] || {}), [memoDate]: memo.text }
+      }
     };
-
     try {
       await api.put("/serviceGrooming", updated);
       setAdminData(prev => ({ ...prev, serviceGrooming: updated }));
-    } catch (err) {
-      console.error("Memo save failed:", err.message);
-    }
-
-    setShowMemo(false);
-    setMemo({ staffId: "", text: "" });
+    } catch (err) { console.error("Memo save failed:", err.message); }
+    setShowMemo(false); setMemo({ staffId: "", text: "" });
   };
-
-  /* ─── Derived: 7-day compliance per staff ─────────────── */
-  const staffStats = useMemo(() => {
-    return visibleStaff.map(s => {
-      let perfect = 0;
-      visibleDates.forEach(d => {
-        const e = adminData.serviceGrooming?.[s.id]?.[d];
-        if (e?.uniform && e?.shoes && e?.groom) perfect++;
-      });
-      return {
-        id: s.id, name: s.name, role: s.role, perfect,
-        pct: visibleDates.length > 0 ? Math.round((perfect / visibleDates.length) * 100) : 0,
-      };
-    });
-  }, [visibleStaff, adminData.serviceGrooming, visibleDates]);
 
   return (
     <div className="sgroom-page">
@@ -175,34 +172,35 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
 
       {/* FILTER BAR */}
       <div className="sgroom-filter-bar">
-        <input
-          className="sgroom-search"
-          placeholder="🔍 Search staff or role…"
-          value={sgroomSearch}
-          onChange={e => setSgroomSearch(e.target.value)}
-        />
+        <input className="sgroom-search" placeholder="🔍 Search staff…"
+          value={sgroomSearch} onChange={e => setSgroomSearch(e.target.value)} />
+        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          <span className="sgroom-filter-label">Range</span>
+          {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([k, lbl]) => (
+            <button key={k} className={`sched-pill-btn${sgroomPreset === k ? " active" : ""}`}
+              onClick={() => applyPreset(k)}>{lbl}</button>
+          ))}
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span className="sgroom-filter-label">From</span>
-          <CustomDatePicker value={sgroomFrom} onChange={v => { setSgroomFrom(v); if (sgroomTo && v > sgroomTo) setSgroomTo(v); }} placeholder="Start date" />
+          <CustomDatePicker value={sgroomFrom} max={sgroomTo || today}
+            onChange={v => { setSgroomFrom(v); setSgroomPreset("custom"); }} placeholder="Start date" />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span className="sgroom-filter-label">To</span>
-          <CustomDatePicker value={sgroomTo} min={sgroomFrom} max={today} onChange={setSgroomTo} placeholder="End date" />
+          <CustomDatePicker value={sgroomTo} min={sgroomFrom} max={today}
+            onChange={v => { setSgroomTo(v); setSgroomPreset("custom"); }} placeholder="End date" />
         </div>
-        {(sgroomSearch || sgroomFrom || sgroomTo) && (
-          <button className="ae-clear-filter" onClick={() => { setSgroomSearch(""); setSgroomFrom(""); setSgroomTo(""); }}>Clear</button>
+        {(sgroomSearch || sgroomPreset === "custom") && (
+          <button className="ae-clear-filter" onClick={() => { setSgroomSearch(""); applyPreset("week"); }}>Clear</button>
         )}
         <span className="ae-result-count">{visibleDates.length} day(s) · {visibleStaff.length} staff</span>
-        <button
-          className={`sched-pill-btn sgroom-summary-toggle ${showSummary ? "active" : ""}`}
-          onClick={() => setShowSummary(v => !v)}
-        >
-          📊 Staff Overview
-        </button>
+        <button className={`sched-pill-btn sgroom-summary-toggle${showSummary ? " active" : ""}`}
+          onClick={() => setShowSummary(v => !v)}>📊 Staff Overview</button>
       </div>
 
       {/* SUMMARY CARDS */}
-      <div className={`sgroom-summary-collapsible ${showSummary ? "sgroom-summary-open" : ""}`}>
+      <div className={`sgroom-summary-collapsible${showSummary ? " sgroom-summary-open" : ""}`}>
         <div className="sgroom-summary-row">
           {staffStats.map((s, i) => (
             <div key={s.id} className="sgroom-summary-card">
@@ -212,24 +210,26 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
               <div className="sgroom-sum-info">
                 <span className="sgroom-sum-name">{s.name}</span>
                 <div className="sgroom-sum-bar-wrap">
-                  <div className="sgroom-sum-bar" style={{ width: `${s.pct}%`, background: s.pct >= 80 ? "#16a34a" : s.pct >= 50 ? "#f59e0b" : "#dc2626" }} />
+                  <div className="sgroom-sum-bar"
+                    style={{ width: `${s.pct}%`, background: s.pct >= 80 ? "#16a34a" : s.pct >= 50 ? "#f59e0b" : "#dc2626" }} />
                 </div>
                 <span className="sgroom-sum-pct">{s.pct}% compliant</span>
               </div>
             </div>
           ))}
         </div>
-      </div>      {/* TABLE */}
-      <div className="sgroom-table-wrapper">
+      </div>
+
+      {/* TABLE */}
+      <div className="sgroom-table-wrapper" ref={containerRef}>
         <table className="sgroom-table">
           <thead>
             <tr>
               <th className="sgroom-staff-th">Staff</th>
               {visibleDates.map(d => {
-                const dObj = new Date(d);
-                const isToday = d === today;
+                const dObj = new Date(d); const isToday = d === today;
                 return (
-                  <th key={d} className={`sgroom-date-th ${isToday ? "sgroom-today-th" : ""}`}>
+                  <th key={d} className={`sgroom-date-th${isToday ? " sgroom-today-th" : ""}`}>
                     <div className="sgroom-date-head">
                       <span className="sgroom-date-num">{dObj.getDate()}</span>
                       <span className="sgroom-date-wd">{WEEKDAY[dObj.getDay()]}</span>
@@ -240,9 +240,8 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
               })}
             </tr>
           </thead>
-
           <tbody>
-            {visibleStaff.map((s, si) => (
+            {visibleStaff.slice(0, displayLimit).map((s, si) => (
               <tr key={s.id} className="sgroom-row">
                 <td className="sgroom-name-td">
                   <div className="sgroom-name-wrap">
@@ -255,7 +254,6 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
                     </div>
                   </div>
                 </td>
-
                 {visibleDates.map(d => {
                   const entry = adminData.serviceGrooming?.[s.id]?.[d];
                   const isToday = d === today;
@@ -269,13 +267,9 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
                           {GROOM_FIELDS.map(f => {
                             const ck = `${s.id}_${d}_${f.key}`;
                             return (
-                              <label key={f.key} className={`sgroom-check-item ${entry?.[f.key] ? "checked" : ""}`}>
-                                <input
-                                  type="checkbox"
-                                  checked={entry?.[f.key] === true}
-                                  disabled={saving[ck]}
-                                  onChange={() => toggle(s.id, d, f.key)}
-                                />
+                              <label key={f.key} className={`sgroom-check-item${entry?.[f.key] ? " checked" : ""}`}>
+                                <input type="checkbox" checked={entry?.[f.key] === true}
+                                  disabled={saving[ck]} onChange={() => toggle(s.id, d, f.key)} />
                                 <span className="sgroom-check-icon">{f.icon}</span>
                                 <span>{f.label}</span>
                               </label>
@@ -285,13 +279,10 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
                       </td>
                     );
                   }
-
                   return (
-                    <td
-                      key={d}
-                      className={`sgroom-td sgroom-hist-td ${allGood ? "sgroom-good" : partial ? "sgroom-partial" : "sgroom-bad"}`}
-                      onClick={() => setSelected({ staff: s.name, date: d, entry })}
-                    >
+                    <td key={d}
+                      className={`sgroom-td sgroom-hist-td${allGood ? " sgroom-good" : partial ? " sgroom-partial" : " sgroom-bad"}`}
+                      onClick={() => setSelected({ staff: s.name, date: d, entry })}>
                       <div className="sgroom-hist-cell">
                         {allGood ? <span className="sgroom-tick good">✔</span>
                           : partial ? <span className="sgroom-tick partial">{Object.values(entry || {}).filter(Boolean).length}/3</span>
@@ -302,6 +293,11 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
                 })}
               </tr>
             ))}
+            <InfiniteScrollLoader
+              sentinelRef={sentinelRef}
+              hasMore={hasMore}
+              colSpan={visibleDates.length + 1}
+            />
           </tbody>
         </table>
       </div>
@@ -323,12 +319,10 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
               </div>
               <div className="sgroom-detail-checks">
                 {GROOM_FIELDS.map(f => (
-                  <div key={f.key} className={`sgroom-detail-row ${selected.entry?.[f.key] ? "pass" : "fail"}`}>
+                  <div key={f.key} className={`sgroom-detail-row${selected.entry?.[f.key] ? " pass" : " fail"}`}>
                     <span className="sgroom-detail-icon">{f.icon}</span>
                     <span className="sgroom-detail-label">{f.label}</span>
-                    <span className="sgroom-detail-status">
-                      {selected.entry?.[f.key] ? "✔ OK" : "✖ Missing"}
-                    </span>
+                    <span className="sgroom-detail-status">{selected.entry?.[f.key] ? "✔ OK" : "✖ Missing"}</span>
                   </div>
                 ))}
               </div>
@@ -348,21 +342,15 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
             <div className="sgroom-modal-body">
               <div className="sgroom-form-group">
                 <label>Staff Member</label>
-                <select value={memo.staffId} onChange={(e) => setMemo({ ...memo, staffId: e.target.value })}>
+                <select value={memo.staffId} onChange={e => setMemo({ ...memo, staffId: e.target.value })}>
                   <option value="">Select staff…</option>
-                  {adminData.staff.map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
+                  {adminData.staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div className="sgroom-form-group">
                 <label>Memo Note</label>
-                <textarea
-                  value={memo.text}
-                  onChange={(e) => setMemo({ ...memo, text: e.target.value })}
-                  placeholder="Write your memo here…"
-                  rows={4}
-                />
+                <textarea value={memo.text} onChange={e => setMemo({ ...memo, text: e.target.value })}
+                  placeholder="Write your memo here…" rows={4} />
               </div>
             </div>
             <div className="sgroom-modal-footer">

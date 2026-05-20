@@ -6,6 +6,8 @@ import { allowTextInput } from "../App";
 import { sortArray } from "../App";
 import { EmptyRow } from "../App";
 import api from "../api";
+import useInfiniteScroll from "../components/useInfiniteScroll";
+import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 
 
 const EMPTY_FORM = {
@@ -50,6 +52,9 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
     () => sortArray(adminData.ingredients, sortConfig),
     [adminData.ingredients, sortConfig]
   );
+
+  const { displayLimit, sentinelRef, containerRef, hasMore } =
+    useInfiniteScroll(sortedIngredients.length, 30);
 
   const handleSave = async () => {
     const normalizedName = formData.name.trim().toLowerCase();
@@ -436,7 +441,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
       )}
 
 
-      <div className="ingredient-table-wrapper">
+      <div className="ingredient-table-wrapper" ref={containerRef}>
         <table className="ingredient-table">
           <thead>
             <tr>
@@ -465,7 +470,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
             {sortedIngredients.length === 0 ? (
               <EmptyRow colSpan={7} message="No ingredients found" />
             ) : (
-              sortedIngredients.map((ingredient) => (
+              sortedIngredients.slice(0, displayLimit).map((ingredient) => (
                 <tr key={ingredient.id}>
                   <td className="clickable"
                     onClick={() => navigate(`/ingredients/${ingredient.id}`)}>
@@ -501,6 +506,11 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                   </td>
                 </tr>
               )))}
+            <InfiniteScrollLoader
+              sentinelRef={sentinelRef}
+              hasMore={hasMore}
+              colSpan={8}
+            />
           </tbody>
         </table>
       </div>

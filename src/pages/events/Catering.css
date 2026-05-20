@@ -284,9 +284,9 @@
 }
 
 .act-filter-btn.active.act-status-confirmed {
-  background: #d1fae5;
-  border-color: #6ee7b7;
-  color: #065f46;
+  background: #111;
+  border-color: #111;
+  color: #fff;
   box-shadow: none;
 }
 

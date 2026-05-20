@@ -9,14 +9,36 @@ import "./PreviewModal.css";
 import { useToast } from "../../useToast";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
+import useInfiniteScroll from "../../components/useInfiniteScroll";
+import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 
 /* ─── helpers ─── */
 const pad = (n) => String(n).padStart(2, "0");
 const todayStr = () => new Date().toISOString().split("T")[0];
 const tomorrowStr = () => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split("T")[0]; };
 const fmtTime = (t) => { if (!t) return "—"; const [h, m] = t.split(":").map(Number); return `${h % 12 || 12}:${pad(m)} ${h >= 12 ? "PM" : "AM"}`; };
+const getWeekRange = () => {
+  const now = new Date(); const day = now.getDay();
+  const mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  return [mon.toISOString().split("T")[0], sun.toISOString().split("T")[0]];
+};
+const getMonthRange = () => {
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth(), 1);
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return [first.toISOString().split("T")[0], last.toISOString().split("T")[0]];
+};
 
 const SOURCE_OPTIONS = ["User App", "WhatsApp", "Phone", "In Person"];
+
+const SLOT_GROUPS = [
+  { label: "Breakfast", key: "BF", start: "07:00", end: "10:00" },
+  { label: "Brunch", key: "BR", start: "10:00", end: "12:00" },
+  { label: "Lunch", key: "LU", start: "12:00", end: "15:00" },
+  { label: "Hi-Tea", key: "HT", start: "15:00", end: "18:00" },
+  { label: "Dinner", key: "DI", start: "18:30", end: "22:00" },
+];
 const TABS = ["Details", "Dishes", "Review"];
 const RESTAURANT_ADDRESS = {
   addrDoorNo: "12, Sam Cafe", addrStreet: "GR Nagar", addrArea: "GR Nagar",
@@ -171,7 +193,7 @@ const DishPicker = ({ menuData, selectedItems, setSelectedItems, guests }) => {
 const EMPTY_FORM = {
   name: "", mobile: "", email: "",
   guests: 10,
-  eventDate: "", time: "",
+  eventDate: "", time: "", slotGroup: "",
   addrDoorNo: "", addrStreet: "", addrArea: "",
   addrLandmark: "", addrCity: "", addrDistrict: "", addrState: "", addrPincode: "",
   location: "",
@@ -193,7 +215,9 @@ const Catering = ({ adminData, setAdminData }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const [filterDate, setFilterDate] = useState(todayStr());
+  const [filterFromDate, setFilterFromDate] = useState(todayStr());
+  const [filterToDate, setFilterToDate] = useState(todayStr());
+  const [filterDatePreset, setFilterDatePreset] = useState("today");
   const [filterStatus, setFilterStatus] = useState("");
   const [search, setSearch] = useState("");
 
@@ -224,7 +248,8 @@ const Catering = ({ adminData, setAdminData }) => {
 
   const filteredData = useMemo(() => {
     let d = [...data];
-    if (filterDate) d = d.filter(i => (i.date || i.eventDate) === filterDate);
+    if (filterFromDate) d = d.filter(i => (i.date || i.eventDate || "") >= filterFromDate);
+    if (filterToDate) d = d.filter(i => (i.date || i.eventDate || "") <= filterToDate);
     if (filterStatus) d = d.filter(i => (i.status || "pending") === filterStatus);
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -235,11 +260,14 @@ const Catering = ({ adminData, setAdminData }) => {
       );
     }
     return d;
-  }, [data, filterDate, filterStatus, search]);
+  }, [data, filterFromDate, filterToDate, filterStatus, search]);
 
   const sortedData = useMemo(() =>
     [...filteredData].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
     [filteredData]);
+
+  const { displayLimit, sentinelRef, containerRef, hasMore } =
+    useInfiniteScroll(sortedData.length, 30);
 
   const updateStatus = async (e, id, newStatus) => {
     e.stopPropagation();
@@ -387,7 +415,7 @@ const Catering = ({ adminData, setAdminData }) => {
     setShowCreate(true); setForm({ ...EMPTY_FORM }); setSelectedItems([]);
     setTab(0); setFormErrors({}); setUseRestaurantAddr(false); // ← add this
   };
-  const activeFilters = filterDate || filterStatus || search.trim();
+  const activeFilters = filterFromDate || filterToDate || filterStatus || search.trim();
 
   const exportToExcel = () => {
     if (!sortedData.length) { alert("No catering orders to export"); return; }
@@ -403,7 +431,10 @@ const Catering = ({ adminData, setAdminData }) => {
     sheet["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2 }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, sheet, "Catering Orders");
-    XLSX.writeFile(wb, `catering_orders_${filterDate || "all"}.xlsx`);
+    const suffix = filterFromDate && filterToDate
+      ? `${filterFromDate}_to_${filterToDate}`
+      : filterFromDate || filterToDate || "all";
+    XLSX.writeFile(wb, `catering_orders_${suffix}.xlsx`);
   };
 
   return (
@@ -437,12 +468,39 @@ const Catering = ({ adminData, setAdminData }) => {
       <div className="act-filter-bar">
         <input className="act-search" placeholder="Search name / mobile / ID..." value={search} onChange={e => setSearch(e.target.value)} />
         <div className="act-filter-groups">
+          {/* Quick date presets */}
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="act-filter-group-label">Date</span>
-            <div style={{ minWidth: 160 }}>
-              <CustomDatePicker value={filterDate} onChange={setFilterDate} placeholder="All dates" />
+            <span className="act-filter-group-label">Period</span>
+            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
+              <button key={preset}
+                className={`act-filter-btn${filterDatePreset === preset ? " active act-status-confirmed" : ""}`}
+                onClick={() => {
+                  if (filterDatePreset === preset) {
+                    setFilterDatePreset(""); setFilterFromDate(""); setFilterToDate("");
+                  } else {
+                    setFilterDatePreset(preset);
+                    if (preset === "today") { const t = todayStr(); setFilterFromDate(t); setFilterToDate(t); }
+                    else if (preset === "week") { const [f, t] = getWeekRange(); setFilterFromDate(f); setFilterToDate(t); }
+                    else { const [f, t] = getMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
+                  }
+                }}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {/* From / To date pickers */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span className="act-filter-group-label">From</span>
+            <div style={{ minWidth: 148 }}>
+              <CustomDatePicker value={filterFromDate} onChange={v => { setFilterFromDate(v); setFilterDatePreset(""); if (filterToDate && v > filterToDate) setFilterToDate(v); }} placeholder="Start date" />
             </div>
-            {filterDate && <button className="act-filter-btn" onClick={() => setFilterDate("")}>✕</button>}
+            <span className="act-filter-group-label" style={{ marginLeft: 2 }}>To</span>
+            <div style={{ minWidth: 148 }}>
+              <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={v => { setFilterToDate(v); setFilterDatePreset(""); }} placeholder="End date" />
+            </div>
+            {(filterFromDate || filterToDate) && (
+              <button className="act-filter-btn" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
+            )}
           </div>
           <div className="act-filter-group">
             <span className="act-filter-group-label">Status</span>
@@ -455,12 +513,15 @@ const Catering = ({ adminData, setAdminData }) => {
             ))}
           </div>
           {activeFilters && (
-            <button className="act-clear-btn" onClick={() => { setFilterDate(todayStr()); setFilterStatus(""); setSearch(""); }}>Clear</button>
+            <button className="act-clear-btn" onClick={() => {
+              setFilterFromDate(todayStr()); setFilterToDate(todayStr());
+              setFilterDatePreset("today"); setFilterStatus(""); setSearch("");
+            }}>Clear</button>
           )}
         </div>
       </div>
 
-      <div className="act-table-wrapper">
+      <div className="act-table-wrapper" ref={containerRef}>
         <table className="act-table">
           <thead>
             <tr>
@@ -472,7 +533,7 @@ const Catering = ({ adminData, setAdminData }) => {
             {sortedData.length === 0 ? (
               <tr><td colSpan="10" className="act-empty">No catering orders found</td></tr>
             ) : (
-              sortedData.map(item => {
+              sortedData.slice(0, displayLimit).map(item => {
                 const status = item.status || "pending";
                 const date = item.date || item.eventDate || "—";
                 return (
@@ -546,12 +607,14 @@ const Catering = ({ adminData, setAdminData }) => {
                 );
               })
             )}
+            <InfiniteScrollLoader
+              sentinelRef={sentinelRef}
+              hasMore={hasMore}
+              colSpan={10}
+            />
           </tbody>
         </table>
       </div>
-
-
-      {/* ── Call History Portal Tooltip ── */}
       {callTooltipId && createPortal(
         (() => {
           const histItem = (adminData?.cateringOrders || []).find(x => x.id === callTooltipId);
@@ -563,7 +626,7 @@ const Catering = ({ adminData, setAdminData }) => {
               style={{
                 position: "fixed",
                 top: callTooltipPos.top,
-                left: callTooltipPos.left - 20,                transform: "translate(-50%, calc(-100% - 10px))",
+                left: callTooltipPos.left - 20, transform: "translate(-50%, calc(-100% - 10px))",
                 zIndex: 99999,
                 pointerEvents: "none",
               }}
@@ -685,14 +748,44 @@ const Catering = ({ adminData, setAdminData }) => {
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Event Date <span className="evt-res-req">*</span></label>
-                      <CustomDatePicker value={form.eventDate} min={todayStr()} onChange={v => setF("eventDate", v)} placeholder="Select date" />
+                      <CustomDatePicker value={form.eventDate} min={tomorrowStr()} onChange={v => { setF("eventDate", v); setF("time", ""); setF("slotGroup", ""); }} placeholder="Select date" />
                       {formErrors.eventDate && <span className="evt-res-form-error">{formErrors.eventDate}</span>}
                     </div>
-                    <div className="form-group" style={{ flex: 1 }}>
-                      <label>Time <span className="evt-res-req">*</span></label>
-                      <CustomTimePicker value={form.time} onChange={v => setF("time", v)} />
-                      {formErrors.time && <span className="evt-res-form-error">{formErrors.time}</span>}
+                  </div>
+
+                  <div className="form-group">
+                    <label>Dining Slot <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400 }}>(select to restrict time picker)</span></label>
+                    <div className="evt-res-slot-grid">
+                      {SLOT_GROUPS.map(sg => (
+                        <button key={sg.key} type="button"
+                          className={`evt-res-slot-chip${form.slotGroup === sg.key ? " active" : ""}`}
+                          onClick={() => {
+                            const next = form.slotGroup === sg.key ? "" : sg.key;
+                            setF("slotGroup", next);
+                            setF("time", "");
+                          }}>
+                          <span className="evt-res-slot-chip-label">{sg.label}</span>
+                          <span className="evt-res-slot-chip-time">{sg.start}–{sg.end}</span>
+                        </button>
+                      ))}
                     </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>
+                      Time <span className="evt-res-req">*</span>
+                      {form.slotGroup && (() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()}
+                    </label>
+                    <CustomTimePicker
+                      value={form.time}
+                      onChange={v => setF("time", v)}
+                      slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
+                      slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
+                      disabled={!form.slotGroup}
+                      isToday={false}
+                    />
+                    {!form.slotGroup && <span style={{ fontSize: 11, color: "#aaa", marginTop: 4, display: "block" }}>Select a dining slot first to enable time picker</span>}
+                    {formErrors.time && <span className="evt-res-form-error">{formErrors.time}</span>}
                   </div>
 
                   {/* Address — all mandatory */}

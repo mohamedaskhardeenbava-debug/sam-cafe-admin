@@ -6,10 +6,12 @@ import * as XLSX from "xlsx";
 import { EmptyRow } from "../App";
 import { QRCodeCanvas } from "qrcode.react";
 import { createPortal } from "react-dom";
-import { formatDisplayDate } from "../App"
-import { formatIndianTime } from "../App"
+import { formatDisplayDate } from "../App";
+import { formatIndianTime } from "../App";
 import socket from "../socket";
 import { CustomDatePicker } from "../components/CustomDatePicker";
+import useInfiniteScroll from "../components/useInfiniteScroll";
+import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 
 const SEVEN_MIN = 7 * 60 * 1000;
 const ONE_MIN = 60 * 1000;
@@ -504,6 +506,32 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
     const [splitBills, setSplitBills] = useState("");
 
     const todayISO = new Date().toISOString().split("T")[0];
+
+    const getWeekRange = () => {
+        const today = new Date();
+        const day = today.getDay(); // 0=Sun
+        const mon = new Date(today); mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+        return { from: mon.toISOString().split("T")[0], to: todayISO };
+    };
+
+    const getMonthRange = () => {
+        const today = new Date();
+        const first = new Date(today.getFullYear(), today.getMonth(), 1);
+        return { from: first.toISOString().split("T")[0], to: todayISO };
+    };
+
+    const [datePreset, setDatePreset] = useState(() => {
+        const saved = JSON.parse(localStorage.getItem(DATE_STORAGE_KEY) || "null");
+        return saved?.preset || "today";
+    });
+
+    const applyPreset = useCallback((preset) => {
+        setDatePreset(preset);
+        if (preset === "today") { setFromDate(todayISO); setToDate(todayISO); }
+        else if (preset === "week") { const r = getWeekRange(); setFromDate(r.from); setToDate(r.to); }
+        else if (preset === "month") { const r = getMonthRange(); setFromDate(r.from); setToDate(r.to); }
+    }, [todayISO]);
+
     const toggleOrder = useCallback((orderId) => {
         setActiveOrderIds(prev =>
             prev.includes(orderId)
@@ -531,7 +559,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
     const [previewBillOrder, setPreviewBillOrder] = useState(null);
     const [editableBill, setEditableBill] = useState(null);
     const [menuPos, setMenuPos] = useState(null);
-    const [displayLimit, setDisplayLimit] = useState(50);
+    const tableWrapperRef = useRef(null);
 
 
 
@@ -658,6 +686,9 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         return data;
     }, [filteredOrders, sortConfig]);
 
+    const { displayLimit, sentinelRef, hasMore } =
+        useInfiniteScroll(sortedOrders.length, 50, tableWrapperRef.current);
+
     const deriveOrderStatusFromItems = useCallback((items) => {
         if (items.every(i => i.status === "completed")) return "completed";
         if (items.some(i => i.status === "preparing" || i.status === "service pickup"))
@@ -783,15 +814,16 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
     }, [isOrdersPage]);
 
-    // Reset display limit when any filter changes
-    useEffect(() => { setDisplayLimit(50); }, [statusFilter, modeFilter, fromDate, toDate]);
+    // Note: displayLimit, sentinelRef, and IntersectionObserver are now managed
+    // by the useInfiniteScroll hook declared above.
+
 
     useEffect(() => {
         localStorage.setItem(
             DATE_STORAGE_KEY,
-            JSON.stringify({ fromDate, toDate })
+            JSON.stringify({ fromDate, toDate, preset: datePreset })
         );
-    }, [fromDate, toDate]);
+    }, [fromDate, toDate, datePreset]);
 
     useEffect(() => {
         if (!location.state) return;
@@ -1100,23 +1132,37 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <div className="orders-filter">
                     <button
                         type="button"
-                        className="orders-today-btn"
-                        onClick={() => { setFromDate(todayISO); setToDate(todayISO); }}
+                        className={`orders-today-btn${datePreset === "today" ? " active" : ""}`}
+                        onClick={() => applyPreset("today")}
                     >
                         Today
+                    </button>
+                    <button
+                        type="button"
+                        className={`orders-today-btn${datePreset === "week" ? " active" : ""}`}
+                        onClick={() => applyPreset("week")}
+                    >
+                        This Week
+                    </button>
+                    <button
+                        type="button"
+                        className={`orders-today-btn${datePreset === "month" ? " active" : ""}`}
+                        onClick={() => applyPreset("month")}
+                    >
+                        This Month
                     </button>
                     <CustomDatePicker
                         label="From"
                         value={fromDate}
                         max={toDate}
-                        onChange={(s) => { setFromDate(s); if (s > toDate) setToDate(s); }}
+                        onChange={(s) => { setFromDate(s); setDatePreset("custom"); if (s > toDate) setToDate(s); }}
                     />
                     <CustomDatePicker
                         label="To"
                         value={toDate}
                         min={fromDate}
                         max={todayISO}
-                        onChange={(s) => setToDate(s)}
+                        onChange={(s) => { setToDate(s); setDatePreset("custom"); }}
                     />
                 </div>
 
@@ -1129,7 +1175,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
             </div>
 
-            <div className="orders-table-wrapper">
+            <div className="orders-table-wrapper" ref={tableWrapperRef}>
                 <table className="orders-table">
                     <colgroup>
                         <col />
@@ -1218,19 +1264,14 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                                     />
                                 );
                             }))}
+                        <InfiniteScrollLoader
+                            sentinelRef={sentinelRef}
+                            hasMore={hasMore}
+                            colSpan={11}
+                        />
                     </tbody>
                 </table>
             </div>
-            {sortedOrders.length > displayLimit && (
-                <div style={{ textAlign: "center", padding: "12px 0 4px" }}>
-                    <button
-                        onClick={() => setDisplayLimit(l => l + 50)}
-                        style={{ padding: "8px 28px", borderRadius: "999px", border: "1.5px solid #ddd", background: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#333" }}
-                    >
-                        Show more ({sortedOrders.length - displayLimit} more)
-                    </button>
-                </div>
-            )}
             {pickupConfirm && (
                 <div
                     className="pickup-overlay"

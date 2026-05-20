@@ -5,7 +5,9 @@ import api from "../api";
 import deleteIcon from "../icon/delete-icon.png";
 import { allowTextInput } from "../App";
 import { EmptyRow } from "../App";
-import { resolveCategoryAndSubCategory } from "../App"
+import { resolveCategoryAndSubCategory } from "../App";
+import useInfiniteScroll from "../components/useInfiniteScroll";
+import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 
 const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }) => {
   const [dishImagePreview, setDishImagePreview] = useState("");
@@ -156,6 +158,9 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     });
 
   }, [adminData.categories, selectedCategoryIds, sortConfig]);
+
+  const { displayLimit, sentinelRef, containerRef, hasMore } =
+    useInfiniteScroll(sortedDishes.length, 30);
 
   const handleSaveDish = async () => {
 
@@ -493,7 +498,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       <div className="dish-block">
         {/* <div className="dish-title">{selectedCategory?.name}</div> */}
 
-        <div className="dish-table-wrapper">
+        <div className="dish-table-wrapper" ref={containerRef}>
           <table className="dish-table">
             <thead>
               <tr>
@@ -517,7 +522,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
             </thead>
 
             <tbody>
-              {sortedDishes.map((dish) => (
+              {sortedDishes.slice(0, displayLimit).map((dish) => (
                 <tr key={dish.id}>
                   <td
                     className="clickable"
@@ -569,6 +574,11 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               {sortedDishes.length === 0 && (
                 <EmptyRow colSpan={5} message="No dishes available" />
               )}
+              <InfiniteScrollLoader
+                sentinelRef={sentinelRef}
+                hasMore={hasMore}
+                colSpan={6}
+              />
             </tbody>
           </table>
         </div>

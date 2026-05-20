@@ -339,14 +339,13 @@
 .today-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
+  padding: 4px 10px;
   border-radius: 999px;
   border: 1.5px solid var(--chip-color, #7c3aed);
   background: color-mix(in srgb, var(--chip-color, #7c3aed) 8%, #fff);
   color: var(--chip-color, #7c3aed);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
@@ -365,21 +364,11 @@
     chipPulse 1.2s ease-in-out infinite;
 }
 
-.today-chip__emoji {
-  font-size: 13px;
-}
-
-.today-chip__label {
-  max-width: 80px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .today-chip__countdown {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  opacity: 0.85;
+  letter-spacing: 0.02em;
 }
 
 @keyframes chipPop {
