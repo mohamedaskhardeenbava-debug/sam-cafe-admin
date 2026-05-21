@@ -1154,7 +1154,11 @@ const Reservations = ({ adminData, setAdminData }) => {
                       {SLOT_GROUPS.map(sg => (
                         <button key={sg.key} type="button"
                           className={`evt-res-slot-chip ${form.slotGroup === sg.key ? "active" : ""}`}
-                          onClick={() => { setF("slotGroup", sg.key); setF("time", ""); }}>
+                          onClick={() => {
+                            const next = form.slotGroup === sg.key ? "" : sg.key;
+                            setF("slotGroup", next);
+                            setF("time", "");
+                          }}>
                           <span className="evt-res-slot-chip-label">{sg.label}</span>
                           <span className="evt-res-slot-chip-time">{sg.start}–{sg.end}</span>
                         </button>
@@ -1165,11 +1169,15 @@ const Reservations = ({ adminData, setAdminData }) => {
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Time <span className="evt-res-req">*</span>
-                        {form.slotGroup && (() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()}
+                        {!form.slotGroup
+                          ? <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(select slot first)</span>
+                          : (() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()
+                        }
                       </label>
                       <CustomTimePicker value={form.time} onChange={v => setF("time", v)}
                         slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
                         slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
+                        disabled={!form.slotGroup}
                         isToday={form.reservedDate === todayStr()} />
                       {formErrors.time && <span className="evt-res-form-error">{formErrors.time}</span>}
                     </div>

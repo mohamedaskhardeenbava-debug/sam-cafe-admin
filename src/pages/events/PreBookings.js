@@ -262,37 +262,39 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                 </div>
               </div>
 
-              <div className="form-group">
-                <label>Dining Slot <span className="evt-pre-opt">(optional)</span></label>
-                <div className="evt-pre-modal-slots">
-                  {SLOT_GROUPS.map(sg => {
-                    const nowH = new Date().getHours();
-                    const slotEndH = parseInt(sg.end.split(":")[0]);
-                    const isPast = form.date === todayStr() && nowH >= slotEndH;
-                    return (
-                      <button key={sg.key} type="button"
-                        className={`evt-pre-modal-slot-chip${form.slotGroup === sg.key ? " active" : ""}${isPast ? " chip-disabled" : ""}`}
-                        title={isPast ? "This slot has passed today" : ""}
-                        onClick={() => {
-                          if (isPast) return;
-                          const next = form.slotGroup === sg.key ? "" : sg.key;
-                          setF("slotGroup", next);
-                          setF("time", "");
-                        }}>
-                        {sg.label}
-                        <span className="evt-pre-modal-slot-time">{sg.start}–{sg.end}</span>
-                        {isPast && <span style={{ fontSize: 9, color: "#ef4444", display: "block" }}>Passed</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
               <div className="evt-pre-modal-row">
                 <div className="form-group">
                   <label>Date <span className="evt-pre-req">*</span></label>
                   <CustomDatePicker value={form.date} min={todayStr()} onChange={v => setF("date", v)} hasError={!!errors.date} />
                 </div>
+
+                <div className="form-group">
+                  <label>Dining Slot <span className="evt-pre-opt">(optional)</span></label>
+                  <div className="evt-pre-modal-slots">
+                    {SLOT_GROUPS.map(sg => {
+                      const nowH = new Date().getHours();
+                      const slotEndH = parseInt(sg.end.split(":")[0]);
+                      const isPast = form.date === todayStr() && nowH >= slotEndH;
+                      return (
+                        <button key={sg.key} type="button"
+                          className={`evt-pre-modal-slot-chip${form.slotGroup === sg.key ? " active" : ""}${isPast ? " chip-disabled" : ""}`}
+                          title={isPast ? "This slot has passed today" : ""}
+                          onClick={() => {
+                            if (isPast) return;
+                            const next = form.slotGroup === sg.key ? "" : sg.key;
+                            setF("slotGroup", next);
+                            setF("time", "");
+                          }}>
+                          {sg.label}
+                          <span className="evt-pre-modal-slot-time">{sg.start}–{sg.end}</span>
+                          {isPast && <span style={{ fontSize: 9, color: "#ef4444", display: "block" }}>Passed</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                
                 <div className="form-group">
                   <label>Time <span className="evt-pre-req">*</span>{!form.slotGroup && <span className="evt-pre-opt"> (select slot first)</span>}</label>
                   <CustomTimePicker value={form.time} onChange={v => setF("time", v)}
