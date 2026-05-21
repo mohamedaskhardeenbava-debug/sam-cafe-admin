@@ -339,7 +339,7 @@
 .today-chip {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
+  padding: 8px 10px;
   border-radius: 999px;
   border: 1.5px solid var(--chip-color, #7c3aed);
   background: color-mix(in srgb, var(--chip-color, #7c3aed) 8%, #fff);

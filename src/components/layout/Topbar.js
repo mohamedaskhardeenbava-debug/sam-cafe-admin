@@ -41,9 +41,10 @@ function formatCountdown(ms) {
   const h = Math.floor(totalSec / 3600);
   const min = Math.floor((totalSec % 3600) / 60);
   const sec = totalSec % 60;
-  if (h > 0) return `${h}h ${min}m`;
-  if (min > 0) return `${min}m ${sec}s`;
-  return `${sec}s`;
+  const hh = String(h).padStart(2, "0");
+  const mm = String(min).padStart(2, "0");
+  const ss = String(sec).padStart(2, "0");
+  return `${hh}h ${mm}m ${ss}s`;
 }
 
 function formatDate(dateStr) {
