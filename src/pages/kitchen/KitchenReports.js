@@ -247,7 +247,7 @@ const KitchenReports = ({ adminData = {} }) => {
           {(reportFrom || reportTo) && (
             <button className="ae-clear-filter" onClick={() => { setReportFrom(""); setReportTo(""); }}>Clear</button>
           )}
-          <button className="orders-export-btn" onClick={exportReport}>Export Report</button>
+          <button className="export-btn" onClick={exportReport}>Export Report</button>
         </div>
       </div>
 

@@ -777,28 +777,6 @@
     white-space: nowrap;
 }
 
-/* ── Shared export btn ── */
-.orders-export-btn {
-    height: 36px;
-    padding: 0 16px;
-    border-radius: 999px;
-    border: 1.5px solid #e5e7eb;
-    background: #f9fafb;
-    color: #555;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-    font-family: inherit;
-    white-space: nowrap;
-}
-
-.orders-export-btn:hover {
-    border-color: #111;
-    background: #111;
-    color: #fff;
-}
-
 /* ── Shared pill btn ── */
 .sched-pill-btn {
     padding: 5px 12px;

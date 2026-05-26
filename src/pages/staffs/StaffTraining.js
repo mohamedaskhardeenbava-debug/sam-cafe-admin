@@ -17,6 +17,42 @@ const typeIcons = {
     Workshop: "🔧",
 };
 
+
+// ── CustomDropdown (matches Dishes page style) ───────────────────────────────
+function CustomDropdown({ value, onChange, options, placeholder = "Select…" }) {
+    const [open, setOpen] = React.useState(false);
+    const ref = React.useRef(null);
+    React.useEffect(() => {
+        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+    const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
+    const label = selected ? (selected.label !== undefined ? selected.label : selected) : placeholder;
+    return (
+        <div className="dishes-dropdown-wrapper" ref={ref}>
+            <button type="button" className="dishes-status-dropdown"
+                onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
+                {label}
+            </button>
+            {open && (
+                <div className="dropdown-menu">
+                    {placeholder && (
+                        <div onClick={() => { onChange(""); setOpen(false); }}
+                            style={{ color: "#aaa", fontStyle: "italic" }}>{placeholder}</div>
+                    )}
+                    {options.map((o, i) => {
+                        const val = o.value !== undefined ? o.value : o;
+                        const lbl = o.label !== undefined ? o.label : o;
+                        return (
+                            <div key={i} onClick={() => { onChange(val); setOpen(false); }}>{lbl}</div>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+}
 export default function StaffTraining({ adminData, setAdminData }) {
     const [trainings, setTrainings] = useState([]);
     const [showForm, setShowForm] = useState(false);
@@ -96,15 +132,15 @@ export default function StaffTraining({ adminData, setAdminData }) {
             <div className="staff-header">
                 <h2>Training</h2>
                 <div style={{ display: "flex", gap: 8 }}>
-                    <button className="orders-export-btn" onClick={exportTrainings}>Export</button>
-                    <button className="staff-add-btn" onClick={() => setShowForm(true)}>+ Add Training</button>
+                    <button className="export-btn" onClick={exportTrainings}>Export</button>
+                    <button className="category-add-btn" onClick={() => setShowForm(true)}>+ Add Training</button>
                 </div>
             </div>
 
             {/* FILTER BAR */}
             <div className="staff-filter-bar">
                 <input
-                    className="staff-search-input"
+                    className="search-input"
                     placeholder="🔍 Search staff, role, type…"
                     value={trainingSearch}
                     onChange={e => setTrainingSearch(e.target.value)}
@@ -132,66 +168,52 @@ export default function StaffTraining({ adminData, setAdminData }) {
             )}
 
             {/* CARD GRID */}
-            <div className="card-grid">
-                {filteredTrainings.map((t, i) => {
-                    const colors = typeColors[t.type] || { bg: "#f5f4f1", color: "#3a3a3a" };
-                    const icon = typeIcons[t.type] || "📌";
-                    return (
-                        <div className="card st-card" key={i} onClick={() => setSelected(t)}>
-                            <div className="st-card-header">
-                                <span className="st-type-chip" style={{ background: colors.bg, color: colors.color }}>
-                                    {icon} {t.type || "General"}
-                                </span>
-                            </div>
-                            <h3 className="st-card-role">{t.role}</h3>
-                            <div className="st-card-meta">
-                                <span className="st-meta-item">👤 {t.staffName}</span>
-                                {t.duration && (
-                                    <span className="st-meta-item">⏱ {t.duration} days</span>
+            <div className="card-grid-wrapper">
+                <div className="card-grid">
+                    {filteredTrainings.map((t, i) => {
+                        const colors = typeColors[t.type] || { bg: "#f5f4f1", color: "#3a3a3a" };
+                        const icon = typeIcons[t.type] || "📌";
+                        return (
+                            <div className="card st-card" key={i} onClick={() => setSelected(t)}>
+                                <div className="st-card-header">
+                                    <span className="st-type-chip" style={{ background: colors.bg, color: colors.color }}>
+                                        {icon} {t.type || "General"}
+                                    </span>
+                                </div>
+                                <h3 className="st-card-role">{t.role}</h3>
+                                <div className="st-card-meta">
+                                    <span className="st-meta-item">👤 {t.staffName}</span>
+                                    {t.duration && (
+                                        <span className="st-meta-item">⏱ {t.duration} days</span>
+                                    )}
+                                </div>
+                                {t.certificate && (
+                                    <div className="st-cert-badge">✔ Certificate attached</div>
                                 )}
                             </div>
-                            {t.certificate && (
-                                <div className="st-cert-badge">✔ Certificate attached</div>
-                            )}
-                        </div>
-                    );
-                })}
+                        );
+                    })}
+                </div>
             </div>
 
             {/* ADD MODAL */}
             {showForm && (
-                <div className="category-modal-overlay">
-                    <form className="category-modal" onSubmit={addTraining}>
-                        <div className="category-modal-header">
+                <div className="modal-overlay">
+                    <form className="modal" onSubmit={addTraining}>
+                        <div className="modal-header">
                             <h3>Add Training Record</h3>
-                            <button type="button" className="dish-close-btn" onClick={() => setShowForm(false)}>✕</button>
+                            <button type="button" className="close-btn" onClick={() => setShowForm(false)}>✕</button>
                         </div>
 
-                        <div className="category-modal-body">
+                        <div className="modal-body">
                             <div className="form-group">
                                 <label>Staff Member</label>
-                                <select
-                                    value={form.staffId || ""}
-                                    onChange={e => setForm({ ...form, staffId: e.target.value })}
-                                >
-                                    <option value="">Select staff member</option>
-                                    {adminData.staff.map(s => (
-                                        <option key={s.id} value={s.id}>{s.name}</option>
-                                    ))}
-                                </select>
+                                <CustomDropdown value={form.staffId || ""} onChange={v => setForm({ ...form, staffId: v })} options={adminData.staff.map(s => ({ value: s.id, label: s.name }))} placeholder="Select staff member" />
                             </div>
 
                             <div className="form-group">
                                 <label>Role</label>
-                                <select
-                                    value={form.role}
-                                    onChange={e => setForm({ ...form, role: e.target.value })}
-                                >
-                                    <option value="">Select role</option>
-                                    <option>Chef</option>
-                                    <option>Waiter</option>
-                                    <option>Supervisor</option>
-                                </select>
+                                <CustomDropdown value={form.role} onChange={v => setForm({ ...form, role: v })} options={["Chef", "Waiter", "Supervisor"]} placeholder="Select role" />
                             </div>
 
                             <div className="st-form-row">
@@ -208,16 +230,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
 
                                 <div className="form-group">
                                     <label>Type</label>
-                                    <select
-                                        value={form.type}
-                                        onChange={e => setForm({ ...form, type: e.target.value })}
-                                    >
-                                        <option value="">Select type</option>
-                                        <option>Online</option>
-                                        <option>Training</option>
-                                        <option>Internship</option>
-                                        <option>Workshop</option>
-                                    </select>
+                                    <CustomDropdown value={form.type} onChange={v => setForm({ ...form, type: v })} options={["Online", "Training", "Internship", "Workshop"]} placeholder="Select type" />
                                 </div>
                             </div>
 
@@ -235,9 +248,9 @@ export default function StaffTraining({ adminData, setAdminData }) {
                             </div>
                         </div>
 
-                        <div className="category-modal-footer form-actions">
-                            <button type="submit">Save Training</button>
+                        <div className="modal-footer">
                             <button type="button" onClick={() => setShowForm(false)}>Cancel</button>
+                            <button type="submit">Save Training</button>
                         </div>
                     </form>
                 </div>
@@ -245,17 +258,17 @@ export default function StaffTraining({ adminData, setAdminData }) {
 
             {/* DETAIL MODAL */}
             {selected && (
-                <div className="category-modal-overlay" onClick={() => setSelected(null)}>
-                    <div className="category-modal" onClick={e => e.stopPropagation()}>
-                        <div className="category-modal-header">
+                <div className="modal-overlay" onClick={() => setSelected(null)}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
                             <div>
                                 <h3>{selected.role}</h3>
                                 <span className="sc-modal-sub">Training Record</span>
                             </div>
-                            <button type="button" className="dish-close-btn" onClick={() => setSelected(null)}>✕</button>
+                            <button type="button" className="close-btn" onClick={() => setSelected(null)}>✕</button>
                         </div>
 
-                        <div className="category-modal-body">
+                        <div className="modal-body">
                             <table className="staff-training-table">
                                 <tbody>
                                     <tr><td>Staff</td><td>{selected.staffName}</td></tr>
@@ -282,7 +295,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
                             </table>
                         </div>
 
-                        <div className="category-modal-footer form-actions">
+                        <div className="modal-footer ">
                             <button type="button" onClick={() => setSelected(null)}>Close</button>
                         </div>
                     </div>

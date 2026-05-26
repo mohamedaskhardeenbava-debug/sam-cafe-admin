@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 import "./Staffs.css";
+import "../ModalCSS.css";
 import { sortArray } from "../../App";
 import editIcon from "../../icon/edit-icon.png";
 import deleteIcon from "../../icon/delete-icon.png";
@@ -10,6 +11,43 @@ import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 
 const roles = ["Chef", "Waiter", "Supervisor", "Manager", "Cleaner"];
+
+// ── CustomDropdown (matches Dishes page style) ───────────────────────────────
+function CustomDropdown({ value, onChange, options, placeholder = "Select…" }) {
+    const [open, setOpen] = React.useState(false);
+    const ref = React.useRef(null);
+    React.useEffect(() => {
+        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+    const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
+    const label = selected ? (selected.label !== undefined ? selected.label : selected) : placeholder;
+    return (
+        <div className="dishes-dropdown-wrapper" ref={ref}>
+            <button type="button" className="dishes-status-dropdown"
+                onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
+                {label}
+            </button>
+            {open && (
+                <div className="dropdown-menu">
+                    {placeholder && (
+                        <div onClick={() => { onChange(""); setOpen(false); }}
+                            style={{ color: "#aaa", fontStyle: "italic" }}>{placeholder}</div>
+                    )}
+                    {options.map((o, i) => {
+                        const val = o.value !== undefined ? o.value : o;
+                        const lbl = o.label !== undefined ? o.label : o;
+                        return (
+                            <div key={i} onClick={() => { onChange(val); setOpen(false); }}>{lbl}</div>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+}
+
 
 const EMPTY_FORM = {
     id: "",
@@ -142,10 +180,10 @@ export default function Staffs({
             {/* HEADER */}
             <div className="staff-header">
                 <h2 className="staff-page-title">Staff</h2>
-                <div style={{ display: "flex", gap: 8 }}>
-                    <button className="orders-export-btn" onClick={exportStaffs}>Export</button>
+                <div style={{ display: "flex", gap: 8, overflow: "visible" }}>
+                    <button className="export-btn" onClick={exportStaffs}>Export</button>
                     <button
-                        className="staff-add-btn"
+                        className="category-add-btn"
                         onClick={() => { setFormData(EMPTY_FORM); setShowModal(true); }}
                     >+ Add Staff</button>
                 </div>
@@ -154,7 +192,7 @@ export default function Staffs({
             {/* FILTER BAR */}
             <div className="staff-filter-bar">
                 <input
-                    className="staff-search-input"
+                    className="search-input"
                     placeholder="🔍 Search name, role, contact…"
                     value={staffSearch}
                     onChange={e => setStaffSearch(e.target.value)}
@@ -174,7 +212,6 @@ export default function Staffs({
                 {(staffSearch || workTypeFilter || roleFilter) && (
                     <button className="ae-clear-filter" onClick={() => { setStaffSearch(""); setWorkTypeFilter(""); setRoleFilter(""); }}>Clear</button>
                 )}
-                <span className="ae-result-count">{staffs.length} staff</span>
             </div>
 
             {/* TABLE */}
@@ -249,10 +286,10 @@ export default function Staffs({
 
             {/* MODAL */}
             {showModal && (
-                <div className="staff-modal-overlay">
-                    <div className="staff-modal">
+                <div className="modal-overlay">
+                    <div className="modal">
                         {/* HEADER */}
-                        <div className="staff-modal-header">
+                        <div className="modal-header">
                             <h3>
                                 {previewMode
                                     ? "Preview Staff Details"
@@ -260,11 +297,13 @@ export default function Staffs({
                                         ? "Edit Staff"
                                         : "Add Staff"}
                             </h3>
-                            <button onClick={resetForm}>✖</button>
+                            <button className="close-btn" onClick={resetForm}>
+
+                            </button>
                         </div>
 
                         {/* BODY */}
-                        <div className="staff-modal-body">
+                        <div className="modal-body">
                             {!previewMode ? (
                                 <>
                                     <div className="horizantal-form-group">
@@ -283,19 +322,7 @@ export default function Staffs({
 
                                             <div className="form-group">
                                                 <label>Role</label>
-                                                <select
-                                                    value={formData.role}
-                                                    onChange={(e) =>
-                                                        setFormData({ ...formData, role: e.target.value })
-                                                    }
-                                                >
-                                                    <option value="">Select Role</option>
-                                                    {roles.map(role => (
-                                                        <option key={role} value={role}>
-                                                            {role}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                <CustomDropdown value={formData.role} onChange={v => setFormData({ ...formData, role: v })} options={roles} placeholder="Select Role" />
                                             </div>
 
                                             <div className="form-group">
@@ -473,7 +500,7 @@ export default function Staffs({
                                                 </div>
 
                                                 <button
-                                                    className="org-add-btn"
+                                                    className="category-add-btn"
                                                     type="button"
                                                     onClick={() => {
                                                         if (!tempExp.org || !tempExp.place) return;
@@ -785,21 +812,22 @@ export default function Staffs({
                         </div>
 
                         {/* FOOTER */}
-                        <div className="staff-modal-footer">
+                        <div className="modal-footer">
                             {!previewMode ? (
                                 <>
+                                    <button onClick={resetForm}>Cancel</button>
                                     <button onClick={() => setPreviewMode(true)}>
                                         Preview
                                     </button>
-                                    <button onClick={resetForm}>Cancel</button>
                                 </>
                             ) : (
                                 <>
-                                    <button onClick={handleSave}>Save</button>
+                                    <button onClick={resetForm}>Cancel</button>
                                     <button onClick={() => setPreviewMode(false)}>
                                         Edit
                                     </button>
-                                    <button onClick={resetForm}>Cancel</button>
+                                    <button onClick={handleSave}>Save</button>
+
                                 </>
                             )}
                         </div>

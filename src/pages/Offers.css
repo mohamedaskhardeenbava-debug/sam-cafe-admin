@@ -59,7 +59,7 @@
 
 .offers-table-wrapper {
   width: 100%;
-  max-height: calc(100vh - 275px);
+  height: calc(100vh - 250px);
   overflow-y: auto;
   padding: 0 10px;
   background: #e9e9e9;
@@ -174,18 +174,6 @@
   align-items: center;
 }
 
-.offers-add-btn {
-  height: 38px;
-  padding: 0 16px;
-  border-radius: 999px;
-  border: 1px solid #111;
-  background: #111;
-  color: #fff;
-  font-weight: 500;
-  cursor: pointer;
-  margin-left: auto;
-}
-
 .offers-modal-overlay {
   position: fixed;
   inset: 0;
@@ -249,59 +237,6 @@
   border: 1px solid #d1d5db;
 }
 
-.offers-close-btn {
-  position: relative;
-
-  width: 36px;
-  height: 36px;
-
-  border-radius: 5px;
-  border: none;
-  background-color: #f2f2f2;
-
-  cursor: pointer;
-  padding: 0;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  transition: background-color 0.2s ease, transform 0.15s ease;
-}
-
-/* hover & active */
-.offers-close-btn:hover {
-  background-color: #e5e5e5;
-  transform: scale(1.05);
-}
-
-.offers-close-btn:active {
-  transform: scale(0.95);
-}
-
-/* ✕ icon */
-.offers-close-btn::before,
-.offers-close-btn::after {
-  content: "";
-  position: absolute;
-
-  width: 18px;
-  height: 2px;
-
-  background-color: #333;
-  border-radius: 2px;
-}
-
-/* first line */
-.offers-close-btn::before {
-  transform: rotate(45deg);
-}
-
-/* second line */
-.offers-close-btn::after {
-  transform: rotate(-45deg);
-}
-
 .offers-modal textarea {
   resize: none;
   min-height: 70px;
@@ -340,34 +275,6 @@
 
 .offers-dropdown-wrapper {
   position: relative;
-}
-
-.offers-dropdown-menu {
-  position: absolute;
-  max-height: 165px;
-  overflow: auto;
-  top: 46px;
-  left: 0;
-  width: 100%;
-  box-sizing: border-box;
-  background: #ffffff;
-  border-radius: 6px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
-  padding: 6px;
-  z-index: 999999999;
-  animation: dropdownFade 0.15s ease;
-}
-
-.offers-dropdown-menu div {
-  padding: 10px 14px;
-  font-size: 14px;
-  border-radius: 10px;
-  cursor: pointer;
-  text-transform: capitalize;
-}
-
-.offers-dropdown-menu div:hover {
-  background: #f3f4f6;
 }
 
 .offers-status-dropdown {
@@ -462,24 +369,6 @@
   border: 1px solid #f0f0f0;
 }
 
-.offers-search {
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid #ddd;
-  background: #f9f9f9;
-  font-size: 13px;
-  outline: none;
-  width: 100%;
-  max-width: 240px;
-  transition: border-color 0.2s;
-  font-family: inherit;
-}
-
-.offers-search:focus {
-  border-color: #111;
-  background: #fff;
-}
-
 .offers-filter-label {
   font-size: 10px;
   font-weight: 700;
@@ -518,28 +407,6 @@
   background: #fee2e2;
   border-color: #fca5a5;
   color: #dc2626;
-}
-
-/* ── Shared utilities ── */
-.orders-export-btn {
-  height: 36px;
-  padding: 0 16px;
-  border-radius: 999px;
-  border: 1.5px solid #e5e7eb;
-  background: #f9fafb;
-  color: #555;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-  font-family: inherit;
-  white-space: nowrap;
-}
-
-.orders-export-btn:hover {
-  border-color: #111;
-  background: #111;
-  color: #fff;
 }
 
 .sched-pill-btn {

@@ -3,7 +3,6 @@
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
 }
@@ -12,7 +11,8 @@
 .staff-header {
     display: flex;
     justify-content: space-between;
-    align-items: start !important;
+    align-items: center !important;
+    overflow: visible;
     margin-bottom: 14px;
 }
 
@@ -23,26 +23,10 @@
     margin: 0;
 }
 
-.staff-add-btn {
-    height: 38px;
-    padding: 0 16px;
-    border-radius: 999px;
-    border: 1px solid #111;
-    background: #111;
-    color: #fff;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.staff-add-btn:hover {
-    background: #000;
-}
-
 /* ================= TABLE ================= */
 .staff-table-wrapper {
     width: 100%;
-    max-height: calc(100vh - 175px);
+    height: calc(100vh - 230px);
     overflow-y: auto;
     padding: 0 10px;
     background: #e9e9e9;
@@ -158,111 +142,6 @@
     transform: scale(1.1);
 }
 
-/* ================= MODAL ================= */
-.staff-modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.45);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 999;
-}
-
-/* CARD */
-.staff-modal {
-    background: #ffffff;
-    width: 560px;
-    max-height: 85vh;
-    padding: 24px;
-    border-radius: 14px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-/* HEADER */
-.staff-modal-header {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background-color: #ffffff;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.staff-modal-header h3 {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-}
-
-/* CLOSE BUTTON */
-.staff-modal-header button {
-    width: 36px;
-    height: 36px;
-    border-radius: 6px;
-    border: none;
-    background: #f2f2f2;
-    cursor: pointer;
-    position: relative;
-}
-
-.staff-modal-header button:hover {
-    background: #e5e5e5;
-}
-
-.staff-modal-header button::before,
-.staff-modal-header button::after {
-    content: "";
-    position: absolute;
-    width: 16px;
-    height: 2px;
-    background: #333;
-    top: 50%;
-    left: 50%;
-}
-
-.staff-modal-header button::before {
-    transform: translate(-50%, -50%) rotate(45deg);
-}
-
-.staff-modal-header button::after {
-    transform: translate(-50%, -50%) rotate(-45deg);
-}
-
-/* BODY */
-.staff-modal-body {
-    overflow-y: auto;
-    padding-top: 10px;
-}
-
-.staff-modal-body textarea {
-    resize: none;
-    min-height: 70px;
-}
-
-/* LABEL TITLES */
-.staff-modal-body h4 {
-    margin: 10px 0;
-    font-size: 14px;
-    font-weight: 600;
-}
-
-/* ADD BUTTON */
-.staff-modal-body button {
-    width: fit-content;
-    padding: 6px 10px;
-    border-radius: 6px;
-    background: #111;
-    color: #fff;
-    border: none;
-    cursor: pointer;
-}
-
 .experience-input-row {
     display: flex;
     gap: 8px;
@@ -324,13 +203,6 @@
     border: 1px solid #ddd;
 }
 
-/* RADIO GROUP */
-.staff-modal-body label {
-    margin-right: 10px;
-    font-size: 13px;
-    cursor: pointer;
-}
-
 .exp-table {
     width: 100%;
     max-width: 100%;
@@ -388,10 +260,6 @@
 .radio-group {
     display: flex;
     gap: 10px;
-}
-
-.staff-modal-body input[type="radio"] {
-    margin-right: 4px;
 }
 
 .staff-preview-card {
@@ -454,41 +322,6 @@
     margin-bottom: 6px;
     font-size: 14px;
     color: #111;
-}
-
-/* ================= FOOTER ================= */
-.staff-modal-footer {
-    position: sticky;
-    bottom: 0;
-    z-index: 2;
-    background-color: #ffffff;
-
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    padding-top: 10px;
-}
-
-/* BUTTONS */
-.staff-modal-footer button {
-    padding: 8px 14px;
-    font-size: 13px;
-    border-radius: 6px;
-    cursor: pointer;
-    border: none;
-}
-
-.staff-modal-footer button:first-child {
-    background: #2563eb;
-    color: white;
-}
-
-.staff-modal-footer button:nth-child(2) {
-    background: #f0f0f0;
-}
-
-.staff-modal-footer button:hover {
-    transform: scale(1.05);
 }
 
 /* ================= PREVIEW ================= */
@@ -726,24 +559,6 @@
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     border: 1px solid #f0f0f0;
     margin-bottom: 4px;
-}
-
-.staff-search-input {
-    padding: 8px 14px;
-    border-radius: 999px;
-    border: 1px solid #ddd;
-    background: #f9f9f9;
-    font-size: 13px;
-    outline: none;
-    width: 100%;
-    max-width: 280px;
-    transition: border-color 0.2s;
-    font-family: inherit;
-}
-
-.staff-search-input:focus {
-    border-color: #111;
-    background: #fff;
 }
 
 .staff-filter-group {

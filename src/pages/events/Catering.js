@@ -6,6 +6,8 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import "./Catering.css";
 import "./PreviewModal.css";
+import "../ModalCSS.css";
+import "./EvtCommon.css";
 import { useToast } from "../../useToast";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
@@ -211,15 +213,16 @@ const EMPTY_FORM = {
 /* ══════════════════════════════════════
    Main Component — Admin Catering
 ══════════════════════════════════════ */
-const Catering = ({ adminData, setAdminData }) => {
+const Catering = ({ adminData, setAdminData,
+  filterFromDate, setFilterFromDate,
+  filterToDate, setFilterToDate,
+  filterDatePreset, setFilterDatePreset,
+  filterStatus, setFilterStatus,
+  search, setSearch,
+  onResetFilters,
+}) => {
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  const [filterFromDate, setFilterFromDate] = useState(todayStr());
-  const [filterToDate, setFilterToDate] = useState(todayStr());
-  const [filterDatePreset, setFilterDatePreset] = useState("today");
-  const [filterStatus, setFilterStatus] = useState("");
-  const [search, setSearch] = useState("");
 
   const [showCreate, setShowCreate] = useState(false);
   const [tab, setTab] = useState(0);
@@ -235,10 +238,6 @@ const Catering = ({ adminData, setAdminData }) => {
   const callWrapRefs = useRef({});
 
   const data = adminData?.cateringOrders || [];
-
-  const todayCount = data.filter(r => r.date === todayStr() || r.eventDate === todayStr()).length;
-  const pendingCount = data.filter(r => (r.status || "pending") === "pending").length;
-  const confirmedCount = data.filter(r => r.status === "confirmed").length;
 
   useEffect(() => {
     if (showCreate && !menuData) {
@@ -261,6 +260,11 @@ const Catering = ({ adminData, setAdminData }) => {
     }
     return d;
   }, [data, filterFromDate, filterToDate, filterStatus, search]);
+
+  const pendingCount = filteredData.filter(r => (r.status || "pending") === "pending").length;
+  const confirmedCount = filteredData.filter(r => r.status === "confirmed").length;
+  const completedCount = filteredData.filter(r => r.status === "completed").length;
+  const cancelledCount = filteredData.filter(r => r.status === "cancelled").length;
 
   const sortedData = useMemo(() =>
     [...filteredData].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
@@ -415,7 +419,8 @@ const Catering = ({ adminData, setAdminData }) => {
     setShowCreate(true); setForm({ ...EMPTY_FORM }); setSelectedItems([]);
     setTab(0); setFormErrors({}); setUseRestaurantAddr(false); // ← add this
   };
-  const activeFilters = filterFromDate || filterToDate || filterStatus || search.trim();
+  const isDefaultFilter = filterFromDate === todayStr() && filterToDate === todayStr() && filterDatePreset === "today" && !filterStatus && !search.trim();
+  const activeFilters = !isDefaultFilter;
 
   const exportToExcel = () => {
     if (!sortedData.length) { alert("No catering orders to export"); return; }
@@ -445,35 +450,34 @@ const Catering = ({ adminData, setAdminData }) => {
           <h2 className="act-title">Catering Orders</h2>
           <p className="act-subtitle">Manage catering & event food orders</p>
         </div>
+        <div className="evt-kpi-row">
+          {[
+            { label: "Total", val: filteredData.length, color: "#111" },
+            { label: "Pending", val: pendingCount, color: "#ca8a04" },
+            { label: "Confirmed", val: confirmedCount, color: "#16a34a" },
+            { label: "Completed", val: completedCount, color: "#2980b9" },
+            { label: "Cancelled", val: cancelledCount, color: "#dc2626" },
+          ].map((k, i) => (
+            <div key={i} className="evt-kpi" style={{ borderTopColor: k.color }}>
+              <div className="evt-kpi-val" style={{ color: k.color }}>{k.val}</div>
+              <div className="evt-kpi-label">{k.label}</div>
+            </div>
+          ))}
+        </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="orders-export-btn" onClick={exportToExcel}>Export</button>
+          <button className="export-btn" onClick={exportToExcel}>Export</button>
           <button className="evt-res-create-btn" onClick={openCreate}>+ Add Catering Order</button>
         </div>
       </div>
 
-      <div className="act-kpi-row">
-        {[
-          { label: "Total", val: data.length, color: "#111" },
-          { label: "Today", val: todayCount, color: "#2980b9" },
-          { label: "Pending", val: pendingCount, color: "#ca8a04" },
-          { label: "Confirmed", val: confirmedCount, color: "#16a34a" },
-        ].map((k, i) => (
-          <div key={i} className="act-kpi" style={{ borderTopColor: k.color }}>
-            <div className="act-kpi-val" style={{ color: k.color }}>{k.val}</div>
-            <div className="act-kpi-label">{k.label}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="act-filter-bar">
-        <input className="act-search" placeholder="Search name / mobile / ID..." value={search} onChange={e => setSearch(e.target.value)} />
-        <div className="act-filter-groups">
-          {/* Quick date presets */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="act-filter-group-label">Period</span>
+      <div className="evt-filter-bar">
+        <div className="evt-filter-groups">
+          <input className="search-input" placeholder="Search name / mobile / ID..." value={search} onChange={e => setSearch(e.target.value)} />
+          <div className="evt-filter-group">
+            <span className="evt-filter-group-label">Period</span>
             {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
               <button key={preset}
-                className={`act-filter-btn${filterDatePreset === preset ? " active act-status-confirmed" : ""}`}
+                className={`evt-filter-btn${filterDatePreset === preset ? " active evt-status-confirmed" : ""}`}
                 onClick={() => {
                   if (filterDatePreset === preset) {
                     setFilterDatePreset(""); setFilterFromDate(""); setFilterToDate("");
@@ -490,33 +494,33 @@ const Catering = ({ adminData, setAdminData }) => {
           </div>
           {/* From / To date pickers */}
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="act-filter-group-label">From</span>
+            <span className="evt-filter-group-label">From</span>
             <div style={{ minWidth: 148 }}>
               <CustomDatePicker value={filterFromDate} onChange={v => { setFilterFromDate(v); setFilterDatePreset(""); if (filterToDate && v > filterToDate) setFilterToDate(v); }} placeholder="Start date" />
             </div>
-            <span className="act-filter-group-label" style={{ marginLeft: 2 }}>To</span>
+            <span className="evt-filter-group-label" style={{ marginLeft: 2 }}>To</span>
             <div style={{ minWidth: 148 }}>
               <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={v => { setFilterToDate(v); setFilterDatePreset(""); }} placeholder="End date" />
             </div>
             {(filterFromDate || filterToDate) && (
-              <button className="act-filter-btn" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
+              <button className="evt-filter-btn" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
             )}
           </div>
-          <div className="act-filter-group">
-            <span className="act-filter-group-label">Status</span>
+        </div>
+        <div className="evt-filter-groups">
+
+          <div className="evt-filter-group">
+            <span className="evt-filter-group-label">Status</span>
             {["pending", "confirmed", "completed"].map(s => (
               <button key={s}
-                className={`act-filter-btn${filterStatus === s ? " active act-status-" + s : ""}`}
+                className={`evt-filter-btn${filterStatus === s ? " active act-status-" + s : ""}`}
                 onClick={() => setFilterStatus(p => p === s ? "" : s)}>
                 {s === "pending" ? "P" : s === "confirmed" ? "C" : "D"}
               </button>
             ))}
           </div>
           {activeFilters && (
-            <button className="act-clear-btn" onClick={() => {
-              setFilterFromDate(todayStr()); setFilterToDate(todayStr());
-              setFilterDatePreset("today"); setFilterStatus(""); setSearch("");
-            }}>Clear</button>
+            <button className="act-clear-btn" onClick={onResetFilters}>Clear</button>
           )}
         </div>
       </div>
@@ -537,7 +541,7 @@ const Catering = ({ adminData, setAdminData }) => {
                 const status = item.status || "pending";
                 const date = item.date || item.eventDate || "—";
                 return (
-                  <tr key={item.id} className="act-row clickable" onClick={() => navigate(`/catering/${item.id}`)}>
+                  <tr key={item.id} className="act-row clickable" onClick={() => navigate(`/catering/${item.id}`, { state: { fromDetail: true } })}>
                     <td>
                       <div className="act-name-cell">
                         <div className="act-avatar">{(item.name || "?").charAt(0).toUpperCase()}</div>
@@ -647,7 +651,7 @@ const Catering = ({ adminData, setAdminData }) => {
           <div className="ingredient-modal" style={{ width: 520, maxWidth: "95vw" }} onClick={e => e.stopPropagation()}>
             <div className="ingredient-modal-header">
               <h3>Dishes — {itemsPopup.name} <span style={{ fontSize: 12, fontWeight: 400, color: "#888", marginLeft: 8 }}>#{(itemsPopup.id || "").slice(-6)}</span></h3>
-              <button className="ingredient-close-btn" onClick={() => setItemsPopup(null)} />
+              <button className="close-btn" onClick={() => setItemsPopup(null)} />
             </div>
             <div className="ingredient-modal-body" style={{ padding: "12px 20px 20px" }}>
               {(!itemsPopup.items || itemsPopup.items.length === 0) ? (
@@ -694,18 +698,18 @@ const Catering = ({ adminData, setAdminData }) => {
             <div className="event-modal-header">
               <div>
                 <h3>Add Catering Order</h3>
-                <div className="ae-spec-steps">
+                <div className="evt-spec-steps">
                   {TABS.map((t, i) => (
                     <button key={i}
-                      className={`ae-spec-step${tab === i ? " active" : ""}${tab > i ? " done" : ""}`}
+                      className={`evt-spec-step${tab === i ? " active" : ""}${tab > i ? " done" : ""}`}
                       onClick={() => i < tab && setTab(i)}>
-                      <span className="ae-step-num">{tab > i ? "✓" : i + 1}</span>
-                      <span className="ae-step-label">{t}</span>
+                      <span className="evt-step-num">{tab > i ? "✓" : i + 1}</span>
+                      <span className="evt-step-label">{t}</span>
                     </button>
                   ))}
                 </div>
               </div>
-              <button className="ingredient-close-btn" onClick={() => setShowCreate(false)} />
+              <button className="close-btn" onClick={() => setShowCreate(false)} />
             </div>
 
             <div className={`event-modal-body act-modal-body${tab === 1 ? " act-modal-body--split" : ""}`}>
@@ -723,7 +727,7 @@ const Catering = ({ adminData, setAdminData }) => {
                     </div>
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Guests</label>
-                      <div className="evt-res-stepper">
+                      <div className="evt-stepper">
                         <button type="button" onClick={() => setF("guests", Math.max(1, form.guests - 1))}>−</button>
                         <span>{form.guests}</span>
                         <button type="button" onClick={() => setF("guests", Math.min(10000, form.guests + 1))}>+</button>
@@ -1058,14 +1062,12 @@ const Catering = ({ adminData, setAdminData }) => {
             </div>
 
             <div className="event-modal-footer">
-              <div className="form-actions ae-spec-footer">
-                {tab > 0 && <button type="button" className="ae-step-prev-btn" onClick={() => setTab(t => t - 1)}>← Back</button>}
-                {tab < 2
-                  ? <button type="button" className="btn-primary" onClick={handleNext}>Next →</button>
-                  : <button type="button" className="btn-primary" onClick={handleCreate} disabled={saving}>{saving ? "Saving..." : "Create Order"}</button>
-                }
-                <button type="button" onClick={() => setShowCreate(false)}>Cancel</button>
-              </div>
+              <button type="button" onClick={() => setShowCreate(false)}>Cancel</button>
+              {tab > 0 && <button type="button" className="ae-step-prev-btn" onClick={() => setTab(t => t - 1)}>← Back</button>}
+              {tab < 2
+                ? <button type="button" onClick={handleNext}>Next →</button>
+                : <button type="button" onClick={handleCreate} disabled={saving}>{saving ? "Saving..." : "Create Order"}</button>
+              }
             </div>
           </div>
         </div>

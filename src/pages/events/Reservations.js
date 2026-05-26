@@ -4,12 +4,51 @@ import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import "./Reservations.css";
+import "./EvtCommon.css";
+import "../ModalCSS.css";
 import "./PreviewModal.css";
 import { useToast } from "../../useToast";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+
+// ── CustomDropdown (matches Dishes page style) ───────────────────────────────
+function CustomDropdown({ value, onChange, options, placeholder = "Select…" }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
+  const label = selected ? (selected.label !== undefined ? selected.label : selected) : placeholder;
+  return (
+    <div className="dishes-dropdown-wrapper" ref={ref}>
+      <button type="button" className="dishes-status-dropdown"
+        onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
+        {label}
+      </button>
+      {open && (
+        <div className="dropdown-menu">
+          {placeholder && (
+            <div onClick={() => { onChange(""); setOpen(false); }}
+              style={{ color: "#aaa", fontStyle: "italic" }}>{placeholder}</div>
+          )}
+          {options.map((o, i) => {
+            const val = o.value !== undefined ? o.value : o;
+            const lbl = o.label !== undefined ? o.label : o;
+            return (
+              <div key={i} onClick={() => { onChange(val); setOpen(false); }}>{lbl}</div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* admin panel */
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -168,26 +207,33 @@ const readFileAsDataURL = (file) =>
 /* ══════════════════════════════════════════════
    Main Component
 ══════════════════════════════════════════════ */
-const Reservations = ({ adminData, setAdminData }) => {
+const Reservations = ({ adminData, setAdminData,
+  filterDate, setFilterDate,
+  filterFromDate, setFilterFromDate,
+  filterToDate, setFilterToDate,
+  filterDatePreset, setFilterDatePreset,
+  filterSlots, setFilterSlots,
+  filterStatuses, setFilterStatuses,
+  filterSources, setFilterSources,
+  search, setSearch,
+  sortField, setSortField,
+  sortDir, setSortDir,
+  onResetFilters,
+}) => {
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  // ── Filter state ──
-  const [filterDate, setFilterDate] = useState("");
-  const [filterFromDate, setFilterFromDate] = useState(todayStr());
-  const [filterToDate, setFilterToDate] = useState(todayStr());
-  const [filterDatePreset, setFilterDatePreset] = useState("today");
-  const [filterSlots, setFilterSlots] = useState(new Set());
-  const [filterStatuses, setFilterStatuses] = useState(new Set());
-  const [filterSources, setFilterSources] = useState(new Set());
-  const [search, setSearch] = useState("");
-  const [sortField, setSortField] = useState("date");
-  const [sortDir, setSortDir] = useState("asc");
 
   // ── Call history ──
   const [callTooltipId, setCallTooltipId] = useState(null);
   const [callTooltipPos, setCallTooltipPos] = useState({ top: 0, left: 0 });
   const callWrapRefs = useRef({});
+
+  // ── Live clock — updates every minute so past-slot highlighting stays current ──
+  const [nowMinutes, setNowMinutes] = useState(() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); });
+  useEffect(() => {
+    const id = setInterval(() => { const n = new Date(); setNowMinutes(n.getHours() * 60 + n.getMinutes()); }, 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   // ── Table preference management ──
   const [showPrefModal, setShowPrefModal] = useState(false);
@@ -323,9 +369,10 @@ const Reservations = ({ adminData, setAdminData }) => {
     useInfiniteScroll(sortedData.length, 30);
 
   const today = todayStr();
-  const todayCount = data.filter(r => r.date === today).length;
-  const pendingCount = data.filter(r => (r.status || "pending") === "pending").length;
-  const confirmedCount = data.filter(r => r.status === "confirmed").length;
+  const pendingCount = filteredData.filter(r => (r.status || "pending") === "pending").length;
+  const confirmedCount = filteredData.filter(r => r.status === "confirmed").length;
+  const completedCount = filteredData.filter(r => r.status === "completed").length;
+  const cancelledCount = filteredData.filter(r => r.status === "cancelled").length;
 
   /* ── Status / table update ── */
   const updateStatus = async (e, id, status) => {
@@ -344,7 +391,7 @@ const Reservations = ({ adminData, setAdminData }) => {
   };
 
   const updateTable = async (e, id, tableNo) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     const prev = (adminData.reservations || []).find(r => r.id === id);
     if (!prev) return;
     setAdminData(p => ({ ...p, reservations: (p.reservations || []).map(r => r.id === id ? { ...r, tableNo } : r) }));
@@ -550,7 +597,8 @@ const Reservations = ({ adminData, setAdminData }) => {
     }
   };
 
-  const activeFilters = filterDate || filterFromDate || filterToDate || filterSlots.size > 0 || filterStatuses.size > 0 || filterSources.size > 0 || search.trim();
+  const isDefaultFilter = !filterDate && filterFromDate === todayStr() && filterToDate === todayStr() && filterDatePreset === "today" && filterSlots.size === 0 && filterStatuses.size === 0 && filterSources.size === 0 && !search.trim();
+  const activeFilters = !isDefaultFilter;
 
   const exportToExcel = () => {
     if (!sortedData.length) { alert("No reservations to export"); return; }
@@ -609,8 +657,23 @@ const Reservations = ({ adminData, setAdminData }) => {
           <h2 className="evt-res-title">Reservations</h2>
           <p className="evt-res-subtitle">Manage table bookings</p>
         </div>
+        {/* KPI strip */}
+        <div className="evt-kpi-row">
+          {[
+            { label: "Total", val: filteredData.length, color: "#111" },
+            { label: "Pending", val: pendingCount, color: "#ca8a04" },
+            { label: "Confirmed", val: confirmedCount, color: "#16a34a" },
+            { label: "Completed", val: completedCount, color: "#2980b9" },
+            { label: "Cancelled", val: cancelledCount, color: "#dc2626" },
+          ].map((k, i) => (
+            <div key={i} className="evt-kpi" style={{ borderTopColor: k.color }}>
+              <div className="evt-kpi-val" style={{ color: k.color }}>{k.val}</div>
+              <div className="evt-kpi-label">{k.label}</div>
+            </div>
+          ))}
+        </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="orders-export-btn" onClick={exportToExcel}>Export</button>
+          <button className="export-btn" onClick={exportToExcel}>Export</button>
           <button className="evt-res-pref-manage-btn" onClick={() => setShowPrefModal(true)}>
             🪑 Table Preferences
           </button>
@@ -621,31 +684,16 @@ const Reservations = ({ adminData, setAdminData }) => {
         </div>
       </div>
 
-      {/* KPI strip */}
-      <div className="evt-res-kpi-row">
-        {[
-          { label: "Total", val: data.length, color: "#111" },
-          { label: "Today", val: todayCount, color: "#2980b9" },
-          { label: "Pending", val: pendingCount, color: "#ca8a04" },
-          { label: "Confirmed", val: confirmedCount, color: "#16a34a" },
-        ].map((k, i) => (
-          <div key={i} className="evt-res-kpi" style={{ borderTopColor: k.color }}>
-            <div className="evt-res-kpi-val" style={{ color: k.color }}>{k.val}</div>
-            <div className="evt-res-kpi-label">{k.label}</div>
-          </div>
-        ))}
-      </div>
-
       {/* ── Filter bar ── */}
-      <div className="evt-res-filter-bar">
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <input className="evt-res-search" placeholder="Search name / mobile / ID..."
+      <div className="evt-filter-bar">
+        <div className="evt-filter-groups">
+          <input className="search-input" placeholder="Search name / mobile / ID..."
             value={search} onChange={e => setSearch(e.target.value)} />
 
           {/* Quick date presets */}
           {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
             <button key={preset}
-              className={`evt-res-filter-btn${filterDatePreset === preset ? " active" : ""}`}
+              className={`evt-filter-btn${filterDatePreset === preset ? " active" : ""}`}
               onClick={() => {
                 if (filterDatePreset === preset) {
                   setFilterDatePreset(""); setFilterDate(""); setFilterFromDate(""); setFilterToDate("");
@@ -661,31 +709,31 @@ const Reservations = ({ adminData, setAdminData }) => {
           ))}
 
           {/* From / To date pickers */}
-          <div className="evt-res-filter-group">
-            <span className="evt-res-filter-group-label">From</span>
+          <div className="evt-filter-group">
+            <span className="evt-filter-group-label">From</span>
             <div style={{ minWidth: 148 }}>
               <CustomDatePicker value={filterFromDate} onChange={v => { setFilterFromDate(v); setFilterDate(""); setFilterDatePreset(""); if (filterToDate && v > filterToDate) setFilterToDate(v); }} placeholder="Start date" />
             </div>
           </div>
-          <div className="evt-res-filter-group">
-            <span className="evt-res-filter-group-label">To</span>
+          <div className="evt-filter-group">
+            <span className="evt-filter-group-label">To</span>
             <div style={{ minWidth: 148 }}>
               <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={v => { setFilterToDate(v); setFilterDate(""); setFilterDatePreset(""); }} placeholder="End date" />
             </div>
             {(filterFromDate || filterToDate) && (
-              <button className="evt-res-filter-btn" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); setFilterDate(""); }} title="Clear dates">✕</button>
+              <button className="evt-filter-btn" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); setFilterDate(""); }} title="Clear dates">✕</button>
             )}
           </div>
         </div>
 
-        <div className="evt-res-filter-groups">
+        <div className="evt-filter-groups">
 
           {/* ── All 5 Slots ── */}
-          <div className="evt-res-filter-group">
-            <span className="evt-res-filter-group-label">Slot</span>
+          <div className="evt-filter-group">
+            <span className="evt-filter-group-label">Slot</span>
             {SLOT_GROUPS.map(sg => (
               <button key={sg.key} title={`${sg.label} (${sg.start}–${sg.end})`}
-                className={`evt-res-filter-btn ${filterSlots.has(sg.key) ? "active" : ""}`}
+                className={`evt-filter-btn ${filterSlots.has(sg.key) ? "active" : ""}`}
                 onClick={() => toggleSet(setFilterSlots, sg.key)}>
                 {sg.short}
               </button>
@@ -693,8 +741,8 @@ const Reservations = ({ adminData, setAdminData }) => {
           </div>
 
           {/* Status */}
-          <div className="evt-res-filter-group">
-            <span className="evt-res-filter-group-label">Status</span>
+          <div className="evt-filter-group">
+            <span className="evt-filter-group-label">Status</span>
             {[
               ["pending", "P", "status-pending", "Pending"],
               ["confirmed", "C", "status-confirmed", "Confirmed"],
@@ -702,26 +750,23 @@ const Reservations = ({ adminData, setAdminData }) => {
               ["cancelled", "X", "status-cancelled", "Cancelled"],
             ].map(([key, short, cls, title]) => (
               <button key={key} title={title}
-                className={`evt-res-filter-btn ${filterStatuses.has(key) ? "active " + cls : ""}`}
+                className={`evt-filter-btn ${filterStatuses.has(key) ? "active " + cls : ""}`}
                 onClick={() => toggleSet(setFilterStatuses, key)}>{short}</button>
             ))}
           </div>
 
           {/* Source */}
-          <div className="evt-res-filter-group">
-            <span className="evt-res-filter-group-label">Source</span>
+          <div className="evt-filter-group">
+            <span className="evt-filter-group-label">Source</span>
             {SOURCE_OPTIONS.map(s => (
               <button key={s.label} title={s.label}
-                className={`evt-res-filter-btn ${filterSources.has(s.label) ? "active" : ""}`}
+                className={`evt-filter-btn ${filterSources.has(s.label) ? "active" : ""}`}
                 onClick={() => toggleSet(setFilterSources, s.label)}>{s.icon}</button>
             ))}
           </div>
 
           {activeFilters && (
-            <button className="evt-res-clear-all" onClick={() => {
-              setSearch(""); setFilterDate(""); setFilterFromDate(todayStr()); setFilterToDate(todayStr()); setFilterDatePreset("today");
-              setFilterSlots(new Set()); setFilterStatuses(new Set()); setFilterSources(new Set());
-            }}>Clear</button>
+            <button className="evt-res-clear-all" onClick={onResetFilters}>Clear</button>
           )}
         </div>
       </div>
@@ -767,7 +812,7 @@ const Reservations = ({ adminData, setAdminData }) => {
 
                 return (
                   <tr key={item.id} className="evt-res-row clickable"
-                    onClick={() => navigate(`/reservations/${item.id}`)}>
+                    onClick={() => navigate(`/reservations/${item.id}`, { state: { fromDetail: true } })}>
 
                     {/* Guest name */}
                     <td>
@@ -822,11 +867,7 @@ const Reservations = ({ adminData, setAdminData }) => {
 
                     {/* Table assign */}
                     <td onClick={e => e.stopPropagation()}>
-                      <select className="evt-res-table-select" value={item.tableNo || ""}
-                        onChange={e => updateTable(e, item.id, e.target.value)}>
-                        <option value="">— Table —</option>
-                        {rowAvailTables.map(t => <option key={t} value={t}>T-{t}</option>)}
-                      </select>
+                      <CustomDropdown value={item.tableNo || ""} onChange={v => updateTable(null, item.id, v)} options={rowAvailTables.map(t => ({ value: t, label: `T-${t}` }))} placeholder="— Table —" />
                     </td>
 
                     {/* Incharge */}
@@ -914,7 +955,7 @@ const Reservations = ({ adminData, setAdminData }) => {
           <div className="event-modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
             <div className="event-modal-header">
               <h3>Table Preferences</h3>
-              <button className="ingredient-close-btn" onClick={() => setShowPrefModal(false)} />
+              <button className="close-btn" onClick={() => setShowPrefModal(false)} />
             </div>
             <div className="event-modal-body" style={{ padding: "16px 0" }}>
               <p style={{ fontSize: 13, color: "#666", margin: "0 0 14px" }}>
@@ -1016,12 +1057,11 @@ const Reservations = ({ adminData, setAdminData }) => {
               </div>
             </div>
             <div className="event-modal-footer">
-              <div className="form-actions">
-                <button onClick={handleSavePrefs} disabled={prefSaving} style={{ background: "#1dd1a1", color: "#fff", fontWeight: 700 }}>
-                  {prefSaving ? "Saving..." : "💾 Save & Close"}
-                </button>
-                <button onClick={() => setShowPrefModal(false)}>Cancel</button>
-              </div>
+              <button onClick={() => setShowPrefModal(false)}>Cancel</button>
+              <button onClick={handleSavePrefs} disabled={prefSaving} style={{ background: "#1dd1a1", color: "#fff", fontWeight: 700 }}>
+                {prefSaving ? "Saving..." : "💾 Save & Close"}
+              </button>
+
             </div>
           </div>
         </div>
@@ -1033,18 +1073,18 @@ const Reservations = ({ adminData, setAdminData }) => {
             <div className="event-modal-header">
               <div style={{ display: "flex", flexDirection: "column" }}>
                 <h3>Add Reservation</h3>
-                <div className="ae-spec-steps">
+                <div className="evt-spec-steps">
                   {CREATE_TABS.map((t, i) => (
                     <button key={i}
-                      className={`ae-spec-step${createTab === i ? " active" : ""}${createTab > i ? " done" : ""}`}
+                      className={`evt-spec-step${createTab === i ? " active" : ""}${createTab > i ? " done" : ""}`}
                       onClick={() => setCreateTab(i)}>
-                      <span className="ae-step-num">{createTab > i ? "✓" : i + 1}</span>
-                      <span className="ae-step-label">{t}</span>
+                      <span className="evt-step-num">{createTab > i ? "✓" : i + 1}</span>
+                      <span className="evt-step-label">{t}</span>
                     </button>
                   ))}
                 </div>
               </div>
-              <button className="ingredient-close-btn" onClick={() => setShowCreate(false)} />
+              <button className="close-btn" onClick={() => setShowCreate(false)} />
             </div>
 
             <div className="event-modal-body" style={{ padding: "8px 0" }}>
@@ -1052,7 +1092,7 @@ const Reservations = ({ adminData, setAdminData }) => {
               {/* ── TAB 0: Guest Information ── */}
               {createTab === 0 && (
                 <>
-                  <div className="evt-res-form-section-label">Guest Information</div>
+                  <div className="evt-form-section-label">Guest Information</div>
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1.4 }}>
                       <label>Name <span className="evt-res-req">*</span></label>
@@ -1063,7 +1103,7 @@ const Reservations = ({ adminData, setAdminData }) => {
                     </div>
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Guests</label>
-                      <div className="evt-res-stepper">
+                      <div className="evt-stepper">
                         <button type="button" onClick={() => setF("guests", Math.max(1, form.guests - 1))}>−</button>
                         <span>{form.guests}</span>
                         <button type="button" onClick={() => setF("guests", Math.min(30, form.guests + 1))}>+</button>
@@ -1087,7 +1127,7 @@ const Reservations = ({ adminData, setAdminData }) => {
                     </div>
                   </div>
 
-                  <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>Staff & Source</div>
+                  <div className="evt-form-section-label" style={{ marginTop: 8 }}>Staff & Source</div>
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Source</label>
@@ -1118,10 +1158,7 @@ const Reservations = ({ adminData, setAdminData }) => {
                   <div className="form-group">
                     <label>Staff Incharge</label>
                     {staff.length > 0 ? (
-                      <select value={form.inchargePerson} onChange={e => setF("inchargePerson", e.target.value)}>
-                        <option value="">— Assign staff —</option>
-                        {staff.map(s => <option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ""}</option>)}
-                      </select>
+                      <CustomDropdown value={form.inchargePerson} onChange={v => setF("inchargePerson", v)} options={staff.map(s => ({ value: s.name, label: s.name + (s.role ? ` (${s.role})` : "") }))} placeholder="— Assign staff —" />
                     ) : (
                       <input placeholder="Staff name" value={form.inchargePerson}
                         onChange={e => setF("inchargePerson", e.target.value)} />
@@ -1134,7 +1171,7 @@ const Reservations = ({ adminData, setAdminData }) => {
                       value={form.notes} onChange={e => setF("notes", e.target.value)} />
                   </div>
 
-                  <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>Booking Dates</div>
+                  <div className="evt-form-section-label" style={{ marginTop: 8 }}>Booking Dates</div>
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Booked On <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(date reservation was made)</span></label>
@@ -1142,27 +1179,51 @@ const Reservations = ({ adminData, setAdminData }) => {
                     </div>
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Reserved For <span className="evt-res-req">*</span> <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(table reservation date)</span></label>
-                      <CustomDatePicker value={form.reservedDate} min={todayStr()} onChange={v => { setF("reservedDate", v); setF("date", v); }} placeholder="Reserved date" />
+                      <CustomDatePicker value={form.reservedDate} min={todayStr()} onChange={v => {
+                        setF("reservedDate", v);
+                        setF("date", v);
+                        if (v === todayStr() && form.slotGroup) {
+                          const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup);
+                          if (sg) {
+                            const slotEndH = parseInt(sg.end.split(":")[0], 10);
+                            const slotEndM = parseInt(sg.end.split(":")[1], 10);
+                            if (nowMinutes >= slotEndH * 60 + slotEndM) { setF("slotGroup", ""); setF("time", ""); }
+                          }
+                        }
+                      }} placeholder="Reserved date" />
                       {formErrors.date && <span className="evt-res-form-error">{formErrors.date}</span>}
                     </div>
                   </div>
 
-                  <div className="evt-res-form-section-label" style={{ marginTop: 4 }}>Booking Details</div>
+                  <div className="evt-form-section-label" style={{ marginTop: 4 }}>Booking Details</div>
                   <div className="form-group">
                     <label>Dining Slot <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400 }}>(select to restrict time picker)</span></label>
                     <div className="evt-res-slot-grid">
-                      {SLOT_GROUPS.map(sg => (
-                        <button key={sg.key} type="button"
-                          className={`evt-res-slot-chip ${form.slotGroup === sg.key ? "active" : ""}`}
-                          onClick={() => {
-                            const next = form.slotGroup === sg.key ? "" : sg.key;
-                            setF("slotGroup", next);
-                            setF("time", "");
-                          }}>
-                          <span className="evt-res-slot-chip-label">{sg.label}</span>
-                          <span className="evt-res-slot-chip-time">{sg.start}–{sg.end}</span>
-                        </button>
-                      ))}
+                      {SLOT_GROUPS.map(sg => {
+                        const isReservedToday = (form.reservedDate || form.date) === todayStr();
+                        const slotEndH = parseInt(sg.end.split(":")[0], 10);
+                        const slotEndM = parseInt(sg.end.split(":")[1], 10);
+                        const isPast = isReservedToday && nowMinutes >= slotEndH * 60 + slotEndM;
+                        return (
+                          <button key={sg.key} type="button"
+                            disabled={isPast}
+                            className={`evt-res-slot-chip ${form.slotGroup === sg.key ? "active" : ""}`}
+                            style={isPast ? {
+                              opacity: 0.38, cursor: "not-allowed", pointerEvents: "none",
+                              background: "#f3f4f6", borderColor: "#e5e7eb", color: "#9ca3af",
+                            } : {}}
+                            onClick={() => {
+                              if (isPast) return;
+                              const next = form.slotGroup === sg.key ? "" : sg.key;
+                              setF("slotGroup", next);
+                              setF("time", "");
+                            }}>
+                            <span className="evt-res-slot-chip-label">{sg.label}</span>
+                            <span className="evt-res-slot-chip-time">{sg.start}–{sg.end}</span>
+                            {isPast && <span style={{ fontSize: 9, fontWeight: 700, color: "#ef4444", letterSpacing: "0.05em", marginTop: 1, display: "block" }}>PAST</span>}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -1183,10 +1244,7 @@ const Reservations = ({ adminData, setAdminData }) => {
                     </div>
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Table No. <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(available)</span></label>
-                      <select value={form.tableNo} onChange={e => setF("tableNo", e.target.value)}>
-                        <option value="">— No table —</option>
-                        {availableTablesForForm.map(t => <option key={t} value={t}>Table {t}</option>)}
-                      </select>
+                      <CustomDropdown value={form.tableNo} onChange={v => setF("tableNo", v)} options={availableTablesForForm.map(t => ({ value: t, label: `Table ${t}` }))} placeholder="— No table —" />
                     </div>
                   </div>
 
@@ -1288,19 +1346,18 @@ const Reservations = ({ adminData, setAdminData }) => {
             </div>
 
             <div className="event-modal-footer">
-              <div className="form-actions ae-spec-footer">
-                {createTab === 0 ? (
-                  <button type="button" className="btn-primary" onClick={handleResNext}>Preview →</button>
-                ) : (
-                  <>
-                    <button type="button" className="ae-step-prev-btn" onClick={() => setCreateTab(0)}>← Edit</button>
-                    <button onClick={handleCreate} disabled={saving}>
-                      {saving ? "Saving..." : "Create Reservation"}
-                    </button>
-                  </>
-                )}
-                <button onClick={() => setShowCreate(false)}>Cancel</button>
-              </div>
+              <button onClick={() => setShowCreate(false)}>Cancel</button>
+              {createTab === 0 ? (
+                <button type="button" onClick={handleResNext}>Preview →</button>
+              ) : (
+                <>
+                  <button type="button" className="ae-step-prev-btn" onClick={() => setCreateTab(0)}>← Edit</button>
+                  <button onClick={handleCreate} disabled={saving}>
+                    {saving ? "Saving..." : "Create Reservation"}
+                  </button>
+                </>
+              )}
+
             </div>
           </div>
         </div>

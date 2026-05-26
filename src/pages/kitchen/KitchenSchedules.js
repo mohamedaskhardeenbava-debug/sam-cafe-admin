@@ -113,20 +113,14 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
             <div className="schedule-header">
                 <h2>Kitchen Schedules</h2>
                 <div style={{ display: "flex", gap: "8px" }}>
-                    <button className="orders-export-btn" onClick={exportToExcel}>Export</button>
-                    <button onClick={() => setShow(true)}>+ Add Schedule</button>
+                    <button className="export-btn" onClick={exportToExcel}>Export</button>
+                    <button className="category-add-btn" onClick={() => setShow(true)}>+ Add Schedule</button>
                 </div>
             </div>
 
             <div className="ssched-filter-bar">
-                <input className="cdp-search-input" placeholder="🔍 Search work / staff…" value={searchText} onChange={e => setSearchText(e.target.value)} />
-                <div className="sched-status-pills">
-                    {["", "Scheduled", "Completed", "Pending"].map(s => (
-                        <button key={s} className={`ssch-pill-btn${statusFilter === s ? " active" : ""}`} onClick={() => setStatusFilter(s)}>
-                            {s || "All"}
-                        </button>
-                    ))}
-                </div>
+                <input className="search-input" placeholder="🔍 Search work / staff…" value={searchText} onChange={e => setSearchText(e.target.value)} />
+
                 <CustomDatePicker label="From" value={fromDate} max={toDate}
                     onChange={s => { setFromDate(s); if (s > toDate) setToDate(s); setActivePreset("custom"); }} />
                 <CustomDatePicker label="To" value={toDate} min={fromDate}
@@ -136,6 +130,13 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                         {p.label}
                     </button>
                 ))}
+                <div className="sched-status-pills">
+                    {["", "Scheduled", "Completed", "Pending"].map(s => (
+                        <button key={s} className={`ssch-pill-btn${statusFilter === s ? " active" : ""}`} onClick={() => setStatusFilter(s)}>
+                            {s || "All"}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             <div className="schedule-table-wrapper">
@@ -177,13 +178,13 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
             </div>
 
             {show && (
-                <div className="category-modal-overlay">
-                    <form className="category-modal" onSubmit={e => { e.preventDefault(); add(); }}>
-                        <div className="category-modal-header">
+                <div className="modal-overlay">
+                    <form className="modal" onSubmit={e => { e.preventDefault(); add(); }}>
+                        <div className="modal-header">
                             <h3>Add Schedule</h3>
-                            <button type="button" className="dish-close-btn" onClick={cancel}></button>
+                            <button type="button" className="close-btn" onClick={cancel}></button>
                         </div>
-                        <div className="category-modal-body">
+                        <div className="modal-body">
                             <div className="form-group">
                                 <label>Department</label>
                                 <div className="dishes-dropdown-wrapper">
@@ -191,7 +192,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                                         {form.department || "Select Department"}
                                     </button>
                                     {openDropdown === "dept" && (
-                                        <div className="dishes-dropdown-menu">
+                                        <div className="dropdown-menu">
                                             {["Pest Control", "Maintenance", "Laundry"].map(dep => (
                                                 <div key={dep} onClick={e => { e.stopPropagation(); setForm({ ...form, department: dep }); setOpenDropdown(null); }}>{dep}</div>
                                             ))}
@@ -210,7 +211,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                                         {form.staff || "Select Staff"}
                                     </button>
                                     {openDropdown === "staff" && (
-                                        <div className="dishes-dropdown-menu">
+                                        <div className="dropdown-menu">
                                             {adminData.staff?.map(s => (
                                                 <div key={s.id} onClick={e => { e.stopPropagation(); setForm({ ...form, staff: s.name }); setOpenDropdown(null); }}>{s.name}</div>
                                             ))}
@@ -233,7 +234,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                                         {form.status || "Select Status"}
                                     </button>
                                     {openDropdown === "status" && (
-                                        <div className="dishes-dropdown-menu">
+                                        <div className="dropdown-menu">
                                             {["Scheduled", "Completed", "Pending"].map(st => (
                                                 <div key={st} onClick={e => { e.stopPropagation(); setForm({ ...form, status: st }); setOpenDropdown(null); }}>{st}</div>
                                             ))}
@@ -248,7 +249,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                                         {form.lastRate !== "" ? `${form.lastRate} Days` : "Select Days"}
                                     </button>
                                     {openDropdown === "rate" && (
-                                        <div className="dishes-dropdown-menu">
+                                        <div className="dropdown-menu">
                                             {[0, 1, 2, 3].map(day => (
                                                 <div key={day} onClick={e => { e.stopPropagation(); setForm({ ...form, lastRate: String(day) }); setOpenDropdown(null); }}>{day} Days</div>
                                             ))}
@@ -257,11 +258,9 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                                 </div>
                             </div>
                         </div>
-                        <div className="category-modal-footer">
-                            <div className="form-actions">
-                                <button type="submit">Save Schedule</button>
-                                <button type="button" onClick={cancel}>Cancel</button>
-                            </div>
+                        <div className="modal-footer">
+                            <button type="button" onClick={cancel}>Cancel</button>
+                            <button type="submit">Save Schedule</button>
                         </div>
                     </form>
                 </div>

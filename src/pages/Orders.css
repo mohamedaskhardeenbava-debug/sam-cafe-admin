@@ -8,11 +8,44 @@
 /* HEADER */
 .orders-header {
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
   align-items: start;
   gap: 10px;
   margin-bottom: 20px;
-  height: 38px;
+}
+
+.orders-header-div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* SEARCH */
+.orders-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.orders-search-clear {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  color: #999;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.orders-search-clear:hover {
+  color: #333;
 }
 
 .orders-title {
@@ -86,25 +119,13 @@
   color: #fff;
 }
 
-.orders-export-btn {
-  height: 38px;
-  padding: 0 16px;
-  border-radius: 999px;
-  border: 1px solid #111;
-  background: #111;
-  color: #fff;
-  font-weight: 500;
-  cursor: pointer;
-  margin-left: auto;
-}
-
 /* ===============================
    MODERN CARD TABLE UI
    =============================== */
 
 .orders-table-wrapper {
   width: 100%;
-  max-height: calc(100vh - 185px);
+  height: calc(100vh - 225px);
   overflow-y: auto;
   padding: 0 10px;
   background: #e9e9e9;
@@ -810,31 +831,6 @@
 .orders-dropdown-wrapper {
   position: relative;
   display: inline-block;
-}
-
-.orders-dropdown-menu {
-  position: absolute;
-  top: 46px;
-  left: 0;
-  width: 180px;
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
-  padding: 6px;
-  z-index: 2000;
-  animation: dropdownFade 0.15s ease;
-}
-
-.orders-dropdown-menu div {
-  padding: 10px 14px;
-  font-size: 14px;
-  border-radius: 10px;
-  cursor: pointer;
-  text-transform: capitalize;
-}
-
-.orders-dropdown-menu div:hover {
-  background: #f3f4f6;
 }
 
 /* animation */

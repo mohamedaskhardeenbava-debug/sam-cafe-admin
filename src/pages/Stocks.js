@@ -155,8 +155,20 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
     return data;
   }, [adminData.ingredients, sortConfig]);
 
+  const [stockSearch, setStockSearch] = useState("");
+
   const { displayLimit, sentinelRef, containerRef, hasMore } =
     useInfiniteScroll(sortedIngredients.length, 30);
+
+  const filteredIngredients = useMemo(() => {
+    const q = stockSearch.toLowerCase();
+    return q
+      ? sortedIngredients.filter(i =>
+        (i.name || "").toLowerCase().includes(q) ||
+        (i.brands || []).some(b => b.name.toLowerCase().includes(q))
+      )
+      : sortedIngredients;
+  }, [sortedIngredients, stockSearch]);
 
   /* ---------------- EDIT MODAL ---------------- */
   const openEditModal = (ingredient) => {
@@ -293,11 +305,25 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         <h2 className="stocks-title">Stocks</h2>
 
         <button
-          className="stocks-export-btn"
+          className="export-btn"
           onClick={handleExportStocks}
         >
           Export
         </button>
+      </div>
+
+      {/* FILTER BAR */}
+      <div className="stocks-filter-bar">
+        <input
+          className="search-input"
+          placeholder="🔍 Search ingredient or brand…"
+          value={stockSearch}
+          onChange={e => setStockSearch(e.target.value)}
+        />
+        {stockSearch && (
+          <button className="ae-clear-filter" onClick={() => setStockSearch("")}>Clear</button>
+        )}
+        <span className="ae-result-count">{filteredIngredients.length} ingredient(s)</span>
       </div>
 
       {/* TABLE */}
@@ -382,10 +408,10 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
           </thead>
 
           <tbody>
-            {sortedIngredients.length === 0 ? (
+            {filteredIngredients.length === 0 ? (
               <EmptyRow colSpan={6} message="No stock data available" />
             ) : (
-              sortedIngredients.slice(0, displayLimit).map((ing) => (
+              filteredIngredients.slice(0, displayLimit).map((ing) => (
                 <tr key={ing.id}>
                   <td
                     className="clickable"
@@ -462,19 +488,18 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         </table>
       </div>
       {showEditModal && selectedIngredient && (
-        <div className="category-modal-overlay">
-          <div className="category-modal">
-            <div className="category-modal-header">
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h3>Edit Stock & Price for {selectedIngredient.name}</h3>
               <button
-                className="category-close-btn"
+                className="close-btn"
                 onClick={closeModal}
               ></button>
-
-              <h3>Edit Stock & Price for {selectedIngredient.name}</h3>
             </div>
 
-            <div className="category-modal-body">
-              <div className="stocks-form-group">
+            <div className="modal-body">
+              <div className="form-group">
                 <label>Price per 100g</label>
                 <input
                   autoFocus
@@ -486,7 +511,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 />
               </div>
 
-              <div className="stocks-form-group">
+              <div className="form-group">
                 <label>Stock Max (kg)</label>
                 <input
                   type="number"
@@ -497,7 +522,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 />
               </div>
 
-              <div className="stocks-form-group">
+              <div className="form-group">
                 <label>Add Stock in kg</label>
                 <input
                   type="number"
@@ -522,7 +547,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 </p>
               )}
 
-              <div className="stocks-form-group">
+              <div className="form-group">
                 <label>Expiry Date</label>
 
                 <CustomDatePicker
@@ -537,7 +562,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <h4>Visibility Controls</h4>
 
                 {/* GLOBAL DISABLE */}
-                <div className="stocks-form-group">
+                <div className="form-group">
                   <label>
                     <input
                       className="stock-all-input"
@@ -550,10 +575,10 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 </div>
 
                 {/* DISABLE FOR SPECIFIC DISH */}
-                <div className="stocks-form-group">
+                <div className="form-group">
                   <label>Disable For Dish</label>
 
-                  <div className="stocks-form-group-select-container">
+                  <div className="form-group-select-container">
                     <div className="orders-dropdown-wrapper">
                       <button
                         type="button"
@@ -567,7 +592,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                       </button>
 
                       {openDishDropdown && (
-                        <div className="orders-dropdown-menu">
+                        <div className="dropdown-menu">
                           {dishesContainingIngredient.map(d => (
                             <div
                               key={d.id}
@@ -649,11 +674,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
               </div>
             </div>
 
-            <div className="category-modal-footer">
-              <div className="form-actions">
-                <button onClick={handleSave}>Save</button>
-                <button onClick={closeModal}>Cancel</button>
-              </div>
+            <div className="modal-footer">
+              <button onClick={closeModal}>Cancel</button>
+              <button onClick={handleSave}>Save</button>
             </div>
           </div>
         </div>

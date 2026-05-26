@@ -84,10 +84,10 @@ const OfferDetails = ({ adminData, setAdminData }) => {
 
   return (
     <div className="offer-details-page">
-      <div className="offer-container">
+      <div className="details-container">
 
         {/* HEADER */}
-        <div className="offer-details-header">
+        <div className="details-header">
           <button
             className="offer-back-btn"
             onClick={() => {

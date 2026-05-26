@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import "./ServiceGrooming.css";
 import api from "../../api";
@@ -26,24 +26,27 @@ const GROOM_FIELDS = [
 
 const WEEKDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+function toLocalISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 function getWeekStart() {
   const d = new Date(); const day = d.getDay();
   const mon = new Date(d); mon.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
-  return mon.toISOString().split("T")[0];
+  return toLocalISO(mon);
 }
 function getMonthStart() {
   const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split("T")[0];
+  return toLocalISO(new Date(d.getFullYear(), d.getMonth(), 1));
 }
 
 export default function ServiceGrooming({ adminData, setAdminData }) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = toLocalISO(new Date());
 
   const dates = useMemo(() => {
     const arr = [];
     for (let i = 91; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i);
-      arr.push(d.toISOString().split("T")[0]);
+      arr.push(toLocalISO(d));
     }
     return arr;
   }, []);
@@ -51,12 +54,25 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
   const [selected, setSelected] = useState(null);
   const [showMemo, setShowMemo] = useState(false);
   const [memo, setMemo] = useState({ staffId: "", text: "" });
+  const [openMemoDropdown, setOpenMemoDropdown] = useState(false);
   const [saving, setSaving] = useState({});
   const [sgroomSearch, setSgroomSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef(null);
   const [sgroomFrom, setSgroomFrom] = useState(getWeekStart);
   const [sgroomTo, setSgroomTo] = useState(today);
-  const [showSummary, setShowSummary] = useState(false);
   const [sgroomPreset, setSgroomPreset] = useState("week");
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setSearchOpen(false);
+      }
+      setOpenMemoDropdown(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const applyPreset = (preset) => {
     setSgroomPreset(preset);
@@ -139,7 +155,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
 
   const saveMemo = async () => {
     if (!memo.staffId || !memo.text) return;
-    const memoDate = new Date().toISOString().split("T")[0];
+    const memoDate = toLocalISO(new Date());
     const prevData = adminData.serviceGrooming || {};
     const updated = {
       ...prevData,
@@ -165,17 +181,70 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
           <p className="sgroom-subtitle">Uniform · Shoes · Grooming</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="orders-export-btn" onClick={exportGrooming}>Export</button>
-          <button className="sgroom-add-btn" onClick={() => setShowMemo(true)}>+ Add Memo</button>
+          <button className="export-btn" onClick={exportGrooming}>Export</button>
+          <button className="category-add-btn" onClick={() => setShowMemo(true)}>+ Add Memo</button>
         </div>
       </div>
 
       {/* FILTER BAR */}
       <div className="sgroom-filter-bar">
-        <input className="sgroom-search" placeholder="🔍 Search staff…"
-          value={sgroomSearch} onChange={e => setSgroomSearch(e.target.value)} />
+        {/* SEARCH WITH DROPDOWN */}
+        <div className="sgroom-search-wrap" ref={searchRef}>
+          <input
+            className="search-input"
+            placeholder="🔍 Search staff…"
+            value={sgroomSearch}
+            onChange={e => { setSgroomSearch(e.target.value); setSearchOpen(true); }}
+            onFocus={() => setSearchOpen(true)}
+          />
+          {searchOpen && staffStats.length > 0 && (
+            <div className="sgroom-search-dropdown">
+              {staffStats
+                .filter(s =>
+                  s.name.toLowerCase().includes(sgroomSearch.toLowerCase()) ||
+                  (s.role || "").toLowerCase().includes(sgroomSearch.toLowerCase())
+                )
+                .map((s, i) => (
+                  <div
+                    key={s.id}
+                    className="sgroom-search-suggestion"
+                    onMouseDown={() => {
+                      setSgroomSearch(s.name);
+                      setSearchOpen(false);
+                    }}
+                  >
+                    <div className="sgroom-sug-avatar" style={{ background: `hsl(${i * 55 + 200},70%,55%)` }}>
+                      {s.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="sgroom-sug-info">
+                      <span className="sgroom-sug-name">{s.name}</span>
+                      {s.role && <span className="sgroom-sug-role">{s.role}</span>}
+                    </div>
+                    <div className="sgroom-sug-bar-wrap">
+                      <div
+                        className="sgroom-sug-bar"
+                        style={{
+                          width: `${s.pct}%`,
+                          background: s.pct >= 80 ? "#16a34a" : s.pct >= 50 ? "#f59e0b" : "#dc2626"
+                        }}
+                      />
+                    </div>
+                    <span
+                      className="sgroom-sug-pct"
+                      style={{ color: s.pct >= 80 ? "#16a34a" : s.pct >= 50 ? "#f59e0b" : "#dc2626" }}
+                    >{s.pct}%</span>
+                  </div>
+                ))}
+              {staffStats.filter(s =>
+                s.name.toLowerCase().includes(sgroomSearch.toLowerCase()) ||
+                (s.role || "").toLowerCase().includes(sgroomSearch.toLowerCase())
+              ).length === 0 && (
+                  <div className="sgroom-search-no-result">No staff found</div>
+                )}
+            </div>
+          )}
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <span className="sgroom-filter-label">Range</span>
           {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([k, lbl]) => (
             <button key={k} className={`sched-pill-btn${sgroomPreset === k ? " active" : ""}`}
               onClick={() => applyPreset(k)}>{lbl}</button>
@@ -195,30 +264,9 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
           <button className="ae-clear-filter" onClick={() => { setSgroomSearch(""); applyPreset("week"); }}>Clear</button>
         )}
         <span className="ae-result-count">{visibleDates.length} day(s) · {visibleStaff.length} staff</span>
-        <button className={`sched-pill-btn sgroom-summary-toggle${showSummary ? " active" : ""}`}
-          onClick={() => setShowSummary(v => !v)}>📊 Staff Overview</button>
       </div>
 
-      {/* SUMMARY CARDS */}
-      <div className={`sgroom-summary-collapsible${showSummary ? " sgroom-summary-open" : ""}`}>
-        <div className="sgroom-summary-row">
-          {staffStats.map((s, i) => (
-            <div key={s.id} className="sgroom-summary-card">
-              <div className="sgroom-sum-avatar" style={{ background: `hsl(${i * 55 + 200},70%,55%)` }}>
-                {s.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="sgroom-sum-info">
-                <span className="sgroom-sum-name">{s.name}</span>
-                <div className="sgroom-sum-bar-wrap">
-                  <div className="sgroom-sum-bar"
-                    style={{ width: `${s.pct}%`, background: s.pct >= 80 ? "#16a34a" : s.pct >= 50 ? "#f59e0b" : "#dc2626" }} />
-                </div>
-                <span className="sgroom-sum-pct">{s.pct}% compliant</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* SUMMARY CARDS REMOVED — now shown in search dropdown */}
 
       {/* TABLE */}
       <div className="sgroom-table-wrapper" ref={containerRef}>
@@ -304,13 +352,13 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
 
       {/* DETAIL MODAL */}
       {selected && (
-        <div className="sgroom-overlay">
-          <div className="sgroom-modal">
-            <div className="sgroom-modal-header">
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
               <h3>Grooming Details</h3>
-              <button className="sgroom-close-btn" onClick={() => setSelected(null)} />
+              <button className="close-btn" onClick={() => setSelected(null)} />
             </div>
-            <div className="sgroom-modal-body">
+            <div className="modal-body">
               <div className="sgroom-detail-info">
                 <div className="sgroom-detail-name">{selected.staff}</div>
                 <div className="sgroom-detail-date">
@@ -333,19 +381,35 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
 
       {/* MEMO MODAL */}
       {showMemo && (
-        <div className="sgroom-overlay">
-          <div className="sgroom-modal">
-            <div className="sgroom-modal-header">
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
               <h3>Add Memo</h3>
-              <button className="sgroom-close-btn" onClick={() => setShowMemo(false)} />
+              <button className="close-btn" onClick={() => setShowMemo(false)} />
             </div>
-            <div className="sgroom-modal-body">
+            <div className="modal-body">
               <div className="sgroom-form-group">
                 <label>Staff Member</label>
-                <select value={memo.staffId} onChange={e => setMemo({ ...memo, staffId: e.target.value })}>
-                  <option value="">Select staff…</option>
-                  {adminData.staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+                <div className="dishes-dropdown-wrapper">
+                  <button
+                    type="button"
+                    className="dishes-status-dropdown"
+                    onMouseDown={e => { e.stopPropagation(); setOpenMemoDropdown(p => !p); }}
+                  >
+                    {memo.staffId
+                      ? (adminData.staff.find(s => s.id === memo.staffId)?.name || memo.staffId)
+                      : "Select staff…"}
+                  </button>
+                  {openMemoDropdown && (
+                    <div className="dropdown-menu">
+                      {adminData.staff.map(s => (
+                        <div key={s.id} onMouseDown={e => { e.stopPropagation(); setMemo({ ...memo, staffId: s.id }); setOpenMemoDropdown(false); }}>
+                          {s.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="sgroom-form-group">
                 <label>Memo Note</label>
@@ -353,9 +417,9 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
                   placeholder="Write your memo here…" rows={4} />
               </div>
             </div>
-            <div className="sgroom-modal-footer">
-              <button className="sgroom-btn-primary" onClick={saveMemo}>Save Memo</button>
-              <button className="sgroom-btn-secondary" onClick={() => setShowMemo(false)}>Cancel</button>
+            <div className="modal-footer">
+              <button onClick={() => setShowMemo(false)}>Cancel</button>
+              <button onClick={saveMemo}>Save Memo</button>
             </div>
           </div>
         </div>

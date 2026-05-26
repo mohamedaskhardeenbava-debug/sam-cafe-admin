@@ -21,9 +21,9 @@ const UserDetails = ({ users }) => {
 
   return (
     <div className="user-details-page">
-      <div className="user-details-container">
+      <div className="details-container ">
 
-        <div className="user-details-header">
+        <div className="details-header">
           <button className="back-btn" onClick={() => navigate(-1)} />
           <h2>{user.name}</h2>
         </div>

@@ -25,10 +25,10 @@ const CateringDetails = ({ adminData, setAdminData }) => {
   const [localStatus, setLocalStatus] = useState(data?.status || "pending");
 
   if (!data) return (
-    <div className="evt-catd-page">
+    <div className="details-container">
       <div className="evt-catd-container">
-        <div className="evt-catd-header">
-          <button className="evt-catd-back-btn" onClick={() => navigate(-1)} />
+        <div className="details-header">
+          <button className="back-btn" onClick={() => navigate(-1)} />
           <div>
             <h2 className="evt-catd-title">Catering Detail</h2>
           </div>
@@ -77,12 +77,12 @@ const CateringDetails = ({ adminData, setAdminData }) => {
   ];
 
   return (
-    <div className="evt-catd-page">
+    <div className="details-container">
       <div className="evt-catd-container">
 
         {/* ── HEADER ── */}
-        <div className="evt-catd-header">
-          <button className="evt-catd-back-btn" onClick={() => navigate(-1)} />
+        <div className="details-header">
+          <button className="back-btn" onClick={() => navigate(-1)} />
           <div>
             <h2 className="evt-catd-title">Catering Detail</h2>
             <p className="evt-catd-id">ID: <code>{data.id}</code></p>

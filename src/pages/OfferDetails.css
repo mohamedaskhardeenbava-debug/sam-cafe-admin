@@ -2,23 +2,6 @@
   display: flex;
 }
 
-.offer-container {
-  background: #fff;
-  padding: 24px;
-  border-radius: 14px;
-  width: 100%;
-  max-width: 900px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-}
-
-/* HEADER */
-.offer-details-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
 .offer-back-btn {
   width: 50px;
   height: 50px;

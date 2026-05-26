@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import "./KitchenGrooming.css";
 import api from "../../api";
@@ -28,25 +28,28 @@ const GROOM_FIELDS = [
 const WEEKDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const PALETTE = ["#4361ee", "#06d6a0", "#ffd166", "#ef476f", "#7209b7", "#4cc9f0", "#f72585", "#3a0ca3"];
 
+function toLocalISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 function getWeekStart() {
   const d = new Date(); const day = d.getDay();
   const mon = new Date(d); mon.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
-  return mon.toISOString().split("T")[0];
+  return toLocalISO(mon);
 }
 function getMonthStart() {
   const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split("T")[0];
+  return toLocalISO(new Date(d.getFullYear(), d.getMonth(), 1));
 }
 
 export default function KitchenGrooming({ adminData, setAdminData }) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = toLocalISO(new Date());
 
   // Rolling 92-day pool (3 months)
   const dates = useMemo(() => {
     const arr = [];
     for (let i = 91; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i);
-      arr.push(d.toISOString().split("T")[0]);
+      arr.push(toLocalISO(d));
     }
     return arr;
   }, []);
@@ -54,12 +57,26 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
   const [selected, setSelected] = useState(null);
   const [showMemo, setShowMemo] = useState(false);
   const [memo, setMemo] = useState({ staffId: "", text: "" });
+  const [openMemoDropdown, setOpenMemoDropdown] = useState(false);
   const [saving, setSaving] = useState({});
   const [groomSearch, setGroomSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef(null);
   const [groomFrom, setGroomFrom] = useState(getWeekStart);
   const [groomTo, setGroomTo] = useState(today);
-  const [showSummary, setShowSummary] = useState(false);
   const [groomPreset, setGroomPreset] = useState("week");
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setSearchOpen(false);
+      }
+      setOpenMemoDropdown(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const applyPreset = (preset) => {
     setGroomPreset(preset);
@@ -147,7 +164,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
   // ── Save memo ─────────────────────────────────────────────────
   const saveMemo = async () => {
     if (!memo.staffId || !memo.text) return;
-    const memoDate = new Date().toISOString().split("T")[0];
+    const memoDate = toLocalISO(new Date());
     const prevData = adminData.grooming || {};
     const updated = {
       ...prevData,
@@ -173,17 +190,70 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
           <p className="kgroom-subtitle">Uniform · Shoes · Grooming</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="orders-export-btn" onClick={exportGrooming}>Export</button>
-          <button className="kgroom-add-btn" onClick={() => setShowMemo(true)}>+ Add Memo</button>
+          <button className="export-btn" onClick={exportGrooming}>Export</button>
+          <button className="category-add-btn" onClick={() => setShowMemo(true)}>+ Add Memo</button>
         </div>
       </div>
 
       {/* FILTER BAR */}
       <div className="kgroom-filter-bar">
-        <input className="kgroom-search" placeholder="🔍 Search staff…"
-          value={groomSearch} onChange={e => setGroomSearch(e.target.value)} />
+        {/* SEARCH WITH DROPDOWN */}
+        <div className="kgroom-search-wrap" ref={searchRef}>
+          <input
+            className="search-input"
+            placeholder="🔍 Search staff…"
+            value={groomSearch}
+            onChange={e => { setGroomSearch(e.target.value); setSearchOpen(true); }}
+            onFocus={() => setSearchOpen(true)}
+          />
+          {searchOpen && staffStats.length > 0 && (
+            <div className="kgroom-search-dropdown">
+              {staffStats
+                .filter(s =>
+                  s.name.toLowerCase().includes(groomSearch.toLowerCase()) ||
+                  (s.role || "").toLowerCase().includes(groomSearch.toLowerCase())
+                )
+                .map((s, i) => (
+                  <div
+                    key={s.id}
+                    className="kgroom-search-suggestion"
+                    onMouseDown={() => {
+                      setGroomSearch(s.name);
+                      setSearchOpen(false);
+                    }}
+                  >
+                    <div className="kgroom-sug-avatar" style={{ background: PALETTE[i % PALETTE.length] }}>
+                      {s.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="kgroom-sug-info">
+                      <span className="kgroom-sug-name">{s.name}</span>
+                      {s.role && <span className="kgroom-sug-role">{s.role}</span>}
+                    </div>
+                    <div className="kgroom-sug-bar-wrap">
+                      <div
+                        className="kgroom-sug-bar"
+                        style={{
+                          width: `${s.pct}%`,
+                          background: s.pct >= 80 ? "#06d6a0" : s.pct >= 50 ? "#ffd166" : "#ef476f"
+                        }}
+                      />
+                    </div>
+                    <span
+                      className="kgroom-sug-pct"
+                      style={{ color: s.pct >= 80 ? "#06d6a0" : s.pct >= 50 ? "#f59e0b" : "#ef476f" }}
+                    >{s.pct}%</span>
+                  </div>
+                ))}
+              {staffStats.filter(s =>
+                s.name.toLowerCase().includes(groomSearch.toLowerCase()) ||
+                (s.role || "").toLowerCase().includes(groomSearch.toLowerCase())
+              ).length === 0 && (
+                  <div className="kgroom-search-no-result">No staff found</div>
+                )}
+            </div>
+          )}
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <span className="kgroom-filter-label">Range</span>
           {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([k, lbl]) => (
             <button key={k} className={`sched-pill-btn${groomPreset === k ? " active" : ""}`}
               onClick={() => applyPreset(k)}>{lbl}</button>
@@ -203,34 +273,9 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
           <button className="ae-clear-filter" onClick={() => { setGroomSearch(""); applyPreset("week"); }}>Clear</button>
         )}
         <span className="ae-result-count">{visibleDates.length} day(s) · {visibleStaff.length} staff</span>
-        <button className={`sched-pill-btn kgroom-summary-toggle${showSummary ? " active" : ""}`}
-          onClick={() => setShowSummary(v => !v)}>📊 Staff Overview</button>
       </div>
 
-      {/* SUMMARY CARDS */}
-      <div className={`kgroom-summary-collapsible${showSummary ? " kgroom-summary-open" : ""}`}>
-        <div className="kgroom-summary-row">
-          {staffStats.map((s, i) => (
-            <div key={s.id} className="kgroom-summary-card">
-              <div className="kgroom-sum-avatar" style={{ background: PALETTE[i % PALETTE.length] }}>
-                {s.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="kgroom-sum-info">
-                <span className="kgroom-sum-name">{s.name}</span>
-                <div className="kgroom-sum-bar-wrap">
-                  <div className="kgroom-sum-bar"
-                    style={{ width: `${s.pct}%`, background: s.pct >= 80 ? "#06d6a0" : s.pct >= 50 ? "#ffd166" : "#ef476f" }} />
-                </div>
-                <div className="kgroom-sum-row">
-                  <span className="kgroom-sum-days">{s.perfect}/{visibleDates.length} days</span>
-                  <span className="kgroom-sum-pct"
-                    style={{ color: s.pct >= 80 ? "#06d6a0" : s.pct >= 50 ? "#f59e0b" : "#ef476f" }}>{s.pct}%</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* SUMMARY CARDS REMOVED — now shown in search dropdown */}
 
       {/* TABLE */}
       <div className="kgroom-table-wrapper" ref={containerRef}>
@@ -316,13 +361,13 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
 
       {/* DETAIL MODAL */}
       {selected && (
-        <div className="kgroom-overlay">
-          <div className="kgroom-modal">
-            <div className="kgroom-modal-header">
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
               <h3>Grooming Details</h3>
-              <button className="kgroom-close-btn" onClick={() => setSelected(null)} />
+              <button className="close-btn" onClick={() => setSelected(null)} />
             </div>
-            <div className="kgroom-modal-body">
+            <div className="modal-body">
               <div className="kgroom-detail-info">
                 <div className="kgroom-detail-name">{selected.staff}</div>
                 <div className="kgroom-detail-date">
@@ -345,19 +390,35 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
 
       {/* MEMO MODAL */}
       {showMemo && (
-        <div className="kgroom-overlay">
-          <div className="kgroom-modal">
-            <div className="kgroom-modal-header">
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
               <h3>Add Memo</h3>
-              <button className="kgroom-close-btn" onClick={() => setShowMemo(false)} />
+              <button className="close-btn" onClick={() => setShowMemo(false)} />
             </div>
-            <div className="kgroom-modal-body">
+            <div className="modal-body">
               <div className="kgroom-form-group">
                 <label>Staff Member</label>
-                <select value={memo.staffId} onChange={e => setMemo({ ...memo, staffId: e.target.value })}>
-                  <option value="">Select staff…</option>
-                  {adminData.staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+                <div className="dishes-dropdown-wrapper">
+                  <button
+                    type="button"
+                    className="dishes-status-dropdown"
+                    onMouseDown={e => { e.stopPropagation(); setOpenMemoDropdown(p => !p); }}
+                  >
+                    {memo.staffId
+                      ? (adminData.staff.find(s => s.id === memo.staffId)?.name || memo.staffId)
+                      : "Select staff…"}
+                  </button>
+                  {openMemoDropdown && (
+                    <div className="dropdown-menu">
+                      {adminData.staff.map(s => (
+                        <div key={s.id} onMouseDown={e => { e.stopPropagation(); setMemo({ ...memo, staffId: s.id }); setOpenMemoDropdown(false); }}>
+                          {s.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="kgroom-form-group">
                 <label>Memo Note</label>
@@ -365,9 +426,9 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
                   placeholder="Write your memo here…" rows={4} />
               </div>
             </div>
-            <div className="kgroom-modal-footer">
-              <button className="kgroom-btn-primary" onClick={saveMemo}>Save Memo</button>
+            <div className="modal-footer">
               <button className="kgroom-btn-secondary" onClick={() => setShowMemo(false)}>Cancel</button>
+              <button className="kgroom-btn-primary" onClick={saveMemo}>Save Memo</button>
             </div>
           </div>
         </div>

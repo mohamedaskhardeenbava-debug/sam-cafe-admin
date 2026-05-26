@@ -22,25 +22,6 @@
   transform: translateY(-50%) rotate(45deg);
 }
 
-.dish-container {
-  background: #fff;
-  padding: 24px;
-  border-radius: 14px;
-  max-width: 900px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
-}
-
-.dish-details-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.dish-details-header h2 {
-  margin: 0;
-}
-
 .dish-details-image {
   position: relative;
   width: 50%;

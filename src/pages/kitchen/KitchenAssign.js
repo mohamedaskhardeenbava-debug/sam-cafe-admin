@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import * as XLSX from "xlsx";
 import "./KitchenAssign.css";
 import { getTomorrowKey, getTomorrowFormatted } from "../../App";
@@ -33,6 +33,14 @@ export default function KitchenAssign({ adminData, setAdminData }) {
   const [section, setSection] = useState("mise");
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
+
+  // Close section dropdown on outside click
+  useEffect(() => {
+    const closeDropdowns = () => setOpenDropdown(null);
+    window.addEventListener("click", closeDropdowns);
+    return () => window.removeEventListener("click", closeDropdowns);
+  }, []);
+
   const [assignSearch, setAssignSearch] = useState("");
   const [sectionFilter, setSectionFilter] = useState("all");
   const [listView, setListView] = useState(false); // toggle between table / list
@@ -169,15 +177,15 @@ export default function KitchenAssign({ adminData, setAdminData }) {
             title={listView ? "Table view" : "List view"}>
             {listView ? "⊞ Table" : "≡ List"}
           </button>
-          <button className="orders-export-btn" onClick={exportAssign}>Export</button>
-          <button className="task-add-btn" onClick={() => setShowTaskModal(true)}>+ Task</button>
+          <button className="export-btn" onClick={exportAssign}>Export</button>
+          <button className="category-add-btn" onClick={() => setShowTaskModal(true)}>+ Task</button>
         </div>
       </div>
 
       {/* FILTER BAR */}
       <div className="assign-filter-bar">
         <input
-          className="assign-search"
+          className="search-input"
           placeholder="🔍 Search tasks…"
           value={assignSearch}
           onChange={e => setAssignSearch(e.target.value)}
@@ -216,15 +224,15 @@ export default function KitchenAssign({ adminData, setAdminData }) {
 
       {/* ADD TASK MODAL */}
       {showTaskModal && (
-        <div className="category-modal-overlay">
-          <form className="category-modal" onSubmit={e => {
+        <div className="modal-overlay">
+          <form className="modal" onSubmit={e => {
             e.preventDefault(); handleAddTask(); setShowTaskModal(false);
           }}>
-            <div className="category-modal-header">
+            <div className="modal-header">
               <h3>Add Task</h3>
-              <button type="button" className="dish-close-btn" onClick={() => setShowTaskModal(false)} />
+              <button type="button" className="close-btn" onClick={() => setShowTaskModal(false)} />
             </div>
-            <div className="category-modal-body">
+            <div className="modal-body">
               <div className="form-group">
                 <label>Task Name</label>
                 <input required value={newTask} onChange={e => setNewTask(e.target.value)} />
@@ -237,7 +245,7 @@ export default function KitchenAssign({ adminData, setAdminData }) {
                     {SECTION_META[section]?.label || section}
                   </button>
                   {openDropdown === "sec" && (
-                    <div className="dishes-dropdown-menu">
+                    <div className="dropdown-menu">
                       {Object.entries(SECTION_META).map(([k, v]) => (
                         <div key={k} onClick={e => { e.stopPropagation(); setSection(k); setOpenDropdown(null); }}>
                           {v.icon} {v.label}
@@ -248,11 +256,9 @@ export default function KitchenAssign({ adminData, setAdminData }) {
                 </div>
               </div>
             </div>
-            <div className="category-modal-footer">
-              <div className="form-actions">
-                <button type="submit">Add Task</button>
-                <button type="button" onClick={() => setShowTaskModal(false)}>Cancel</button>
-              </div>
+            <div className="modal-footer">
+              <button type="button" onClick={() => setShowTaskModal(false)}>Cancel</button>
+              <button type="submit">Add Task</button>
             </div>
           </form>
         </div>
@@ -263,6 +269,13 @@ export default function KitchenAssign({ adminData, setAdminData }) {
 
 /* ─── TABLE LAYOUT ──────────────────────────────────────────── */
 function TableLayout({ filteredTasks, assignedDay, adminData, handleChange, handleDelete }) {
+  const [openStaffDropdown, setOpenStaffDropdown] = useState(null);
+
+  useEffect(() => {
+    const close = () => setOpenStaffDropdown(null);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, []);
   return (
     <div className="assign-table-wrapper">
       <table className="assign-table">
@@ -286,6 +299,7 @@ function TableLayout({ filteredTasks, assignedDay, adminData, handleChange, hand
               {items.map(task => {
                 const entry = assignedDay[task];
                 const isAssigned = !!entry?.staff;
+                const dropKey = `table_${task}`;
                 return (
                   <tr key={task} className={isAssigned ? "assign-row-assigned" : ""}>
                     <td>
@@ -293,16 +307,27 @@ function TableLayout({ filteredTasks, assignedDay, adminData, handleChange, hand
                       {task}
                     </td>
                     <td>
-                      <select
-                        className="assign-select"
-                        value={entry?.staff ?? ""}
-                        onChange={e => handleChange(task, e.target.value)}
-                      >
-                        <option value="">— Select —</option>
-                        {adminData.staff.map(s => (
-                          <option key={s.id} value={s.name}>{s.name}</option>
-                        ))}
-                      </select>
+                      <div className="dishes-dropdown-wrapper">
+                        <button
+                          type="button"
+                          className="dishes-status-dropdown"
+                          onClick={e => { e.stopPropagation(); setOpenStaffDropdown(p => p === dropKey ? null : dropKey); }}
+                        >
+                          {entry?.staff || "— Select —"}
+                        </button>
+                        {openStaffDropdown === dropKey && (
+                          <div className="dropdown-menu">
+                            <div onClick={e => { e.stopPropagation(); handleChange(task, ""); setOpenStaffDropdown(null); }}>
+                              — Select —
+                            </div>
+                            {adminData.staff.map(s => (
+                              <div key={s.id} onClick={e => { e.stopPropagation(); handleChange(task, s.name); setOpenStaffDropdown(null); }}>
+                                {s.name}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="assign-time">{entry?.assignedAt || "—"}</td>
                     <td>
@@ -324,6 +349,13 @@ function TableLayout({ filteredTasks, assignedDay, adminData, handleChange, hand
 
 /* ─── LIST LAYOUT ───────────────────────────────────────────── */
 function ListLayout({ filteredTasks, assignedDay, adminData, handleChange, handleDelete }) {
+  const [openStaffDropdown, setOpenStaffDropdown] = useState(null);
+
+  useEffect(() => {
+    const close = () => setOpenStaffDropdown(null);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, []);
   return (
     <div className="assign-list-container">
       {Object.entries(filteredTasks).map(([sec, items]) => (
@@ -338,6 +370,7 @@ function ListLayout({ filteredTasks, assignedDay, adminData, handleChange, handl
             {items.map(task => {
               const entry = assignedDay[task];
               const isAssigned = !!entry?.staff;
+              const dropKey = `list_${task}`;
               return (
                 <div key={task} className={`assign-list-card ${isAssigned ? "card-assigned" : ""}`}>
                   <div className="assign-list-card-top">
@@ -351,16 +384,27 @@ function ListLayout({ filteredTasks, assignedDay, adminData, handleChange, handl
                     </div>
                   </div>
                   <div className="assign-list-card-bot">
-                    <select
-                      className="assign-select assign-list-select"
-                      value={entry?.staff ?? ""}
-                      onChange={e => handleChange(task, e.target.value)}
-                    >
-                      <option value="">— Select Staff —</option>
-                      {adminData.staff.map(s => (
-                        <option key={s.id} value={s.name}>{s.name}</option>
-                      ))}
-                    </select>
+                    <div className="dishes-dropdown-wrapper">
+                      <button
+                        type="button"
+                        className="dishes-status-dropdown"
+                        onClick={e => { e.stopPropagation(); setOpenStaffDropdown(p => p === dropKey ? null : dropKey); }}
+                      >
+                        {entry?.staff || "— Select Staff —"}
+                      </button>
+                      {openStaffDropdown === dropKey && (
+                        <div className="dropdown-menu">
+                          <div onClick={e => { e.stopPropagation(); handleChange(task, ""); setOpenStaffDropdown(null); }}>
+                            — Select Staff —
+                          </div>
+                          {adminData.staff.map(s => (
+                            <div key={s.id} onClick={e => { e.stopPropagation(); handleChange(task, s.name); setOpenStaffDropdown(null); }}>
+                              {s.name}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     {entry?.assignedAt && (
                       <span className="assign-list-time">⏱ {entry.assignedAt}</span>
                     )}

@@ -115,7 +115,7 @@ export default function KitchenMise({ adminData, setAdminData }) {
             <span className="mise-stat-num">{verifiedCnt}/{allTasks.length}</span>
             <span className="mise-stat-lbl">Verified</span>
           </div>
-          <button className="orders-export-btn" onClick={exportMise}>Export</button>
+          <button className="export-btn" onClick={exportMise}>Export</button>
         </div>
       </div>
 
@@ -130,7 +130,7 @@ export default function KitchenMise({ adminData, setAdminData }) {
       {/* FILTER BAR */}
       <div className="mise-filter-bar">
         <input
-          className="mise-search"
+          className="search-input"
           placeholder="🔍 Search tasks…"
           value={miseSearch}
           onChange={e => setMiseSearch(e.target.value)}
@@ -149,63 +149,62 @@ export default function KitchenMise({ adminData, setAdminData }) {
         )}
       </div>
 
-      {/* SECTIONS */}
-      {Object.entries(filteredTasks).map(([sec, items]) => {
-        const secVerified = items.filter(t => miseDay[t]?.verified).length;
-        return (
-          <div key={sec} className="mise-section">
-            <div className="mise-section-hdr"
-              style={{ borderLeftColor: SECTION_META[sec]?.color }}>
-              <span className="mise-section-icon">{SECTION_META[sec]?.icon}</span>
-              <span className="mise-section-label">{SECTION_META[sec]?.label || sec.toUpperCase()}</span>
-              <span className="mise-section-count">{secVerified}/{items.length} verified</span>
-            </div>
-
-            <div className="mise-table-wrapper">
-              <table className="mise-table">
-                <thead>
-                  <tr>
-                    <th>Task</th>
-                    <th>Staff</th>
-                    <th>Verify</th>
-                    <th>Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map(task => {
-                    const entry = miseDay[task];
-                    const staffAssigned = !!entry?.staff;
-                    const isVerified = !!entry?.verified;
-                    return (
-                      <tr key={task} className={isVerified ? "mise-row-verified" : ""}>
-                        <td>
-                          <span className={`mise-task-dot ${isVerified ? "dot-verified" : staffAssigned ? "dot-assigned" : ""}`} />
-                          {task}
-                        </td>
-                        <td className={staffAssigned ? "" : "mise-no-staff"}>
-                          {entry?.staff || "Not assigned"}
-                        </td>
-                        <td>
-                          <label className="mise-check-label">
-                            <input
-                              type="checkbox"
-                              disabled={!staffAssigned}
-                              checked={isVerified}
-                              onChange={() => toggle(task)}
-                            />
-                            <span className={`mise-check-custom ${isVerified ? "checked" : ""} ${!staffAssigned ? "disabled" : ""}`} />
-                          </label>
-                        </td>
-                        <td className="mise-time">{entry?.time || "—"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
-      })}
+      {/* UNIFIED TABLE */}
+      <div className="mise-table-wrapper">
+        <table className="mise-table">
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Staff</th>
+              <th>Verify</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(filteredTasks).map(([sec, items]) => (
+              <React.Fragment key={sec}>
+                <tr className="mise-section-row">
+                  <td colSpan="4">
+                    <span className="mise-section-icon">{SECTION_META[sec]?.icon}</span>
+                    {SECTION_META[sec]?.label || sec.toUpperCase()}
+                    <span className="mise-section-row-count">
+                      {items.filter(t => miseDay[t]?.verified).length}/{items.length} verified
+                    </span>
+                  </td>
+                </tr>
+                {items.map(task => {
+                  const entry = miseDay[task];
+                  const staffAssigned = !!entry?.staff;
+                  const isVerified = !!entry?.verified;
+                  return (
+                    <tr key={task} className={isVerified ? "mise-row-verified" : ""}>
+                      <td>
+                        <span className={`mise-task-dot ${isVerified ? "dot-verified" : staffAssigned ? "dot-assigned" : ""}`} />
+                        {task}
+                      </td>
+                      <td className={staffAssigned ? "" : "mise-no-staff"}>
+                        {entry?.staff || "Not assigned"}
+                      </td>
+                      <td>
+                        <label className="mise-check-label">
+                          <input
+                            type="checkbox"
+                            disabled={!staffAssigned}
+                            checked={isVerified}
+                            onChange={() => toggle(task)}
+                          />
+                          <span className={`mise-check-custom ${isVerified ? "checked" : ""} ${!staffAssigned ? "disabled" : ""}`} />
+                        </label>
+                      </td>
+                      <td className="mise-time">{entry?.time || "—"}</td>
+                    </tr>
+                  );
+                })}
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

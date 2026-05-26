@@ -5,6 +5,8 @@ import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import "./Celebrations.css";
+import "./EvtCommon.css";
+import "../ModalCSS.css";
 import "./PreviewModal.css";
 import { useToast } from "../../useToast";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
@@ -139,16 +141,17 @@ const EMPTY_FORM = {
 /* ══════════════════════════════════════
    Main Component
 ══════════════════════════════════════ */
-const Celebrations = ({ adminData, setAdminData }) => {
+const Celebrations = ({ adminData, setAdminData,
+  filterFromDate, setFilterFromDate,
+  filterToDate, setFilterToDate,
+  filterDatePreset, setFilterDatePreset,
+  filterType, setFilterType,
+  filterStatus, setFilterStatus,
+  search, setSearch,
+  onResetFilters,
+}) => {
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  const [filterFromDate, setFilterFromDate] = useState(todayStr());
-  const [filterToDate, setFilterToDate] = useState(todayStr());
-  const [filterDatePreset, setFilterDatePreset] = useState("today");
-  const [filterType, setFilterType] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
-  const [search, setSearch] = useState("");
 
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM });
@@ -162,11 +165,6 @@ const Celebrations = ({ adminData, setAdminData }) => {
   const CREATE_TABS = ["All Details", "Preview"];
 
   const data = adminData?.celebrations || [];
-
-  const today = todayStr();
-  const todayCount = data.filter(r => r.date === today).length;
-  const pendingCount = data.filter(r => (r.status || "pending") === "pending").length;
-  const confirmedCount = data.filter(r => r.status === "confirmed").length;
 
   /* ─── Filter ─── */
   const filteredData = useMemo(() => {
@@ -185,6 +183,12 @@ const Celebrations = ({ adminData, setAdminData }) => {
     }
     return d;
   }, [data, filterFromDate, filterToDate, filterType, filterStatus, search]);
+
+  const today = todayStr();
+  const pendingCount = filteredData.filter(r => (r.status || "pending") === "pending").length;
+  const confirmedCount = filteredData.filter(r => r.status === "confirmed").length;
+  const completedCount = filteredData.filter(r => r.status === "completed").length;
+  const cancelledCount = filteredData.filter(r => r.status === "cancelled").length;
 
   const sortedData = useMemo(() => {
     return [...filteredData].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -355,7 +359,8 @@ const Celebrations = ({ adminData, setAdminData }) => {
     }
   };
 
-  const activeFilters = filterFromDate || filterToDate || filterType || filterStatus || search.trim();
+  const isDefaultFilter = filterFromDate === todayStr() && filterToDate === todayStr() && filterDatePreset === "today" && !filterType && !filterStatus && !search.trim();
+  const activeFilters = !isDefaultFilter;
 
   const exportToExcel = () => {
     if (!sortedData.length) { alert("No celebrations to export"); return; }
@@ -393,44 +398,47 @@ const Celebrations = ({ adminData, setAdminData }) => {
           <h2 className="evt-clb-title">Celebrations</h2>
           <p className="evt-clb-subtitle">Manage event & celebration bookings</p>
         </div>
+
+        {/* KPI STRIP */}
+        <div className="evt-kpi-row">
+          {[
+            { label: "Total", val: filteredData.length, color: "#111" },
+            { label: "Pending", val: pendingCount, color: "#ca8a04" },
+            { label: "Confirmed", val: confirmedCount, color: "#16a34a" },
+            { label: "Completed", val: completedCount, color: "#2980b9" },
+            { label: "Cancelled", val: cancelledCount, color: "#dc2626" },
+          ].map((k, i) => (
+            <div key={i} className="evt-kpi" style={{ borderTopColor: k.color }}>
+              <div className="evt-kpi-val" style={{ color: k.color }}>{k.val}</div>
+              <div className="evt-kpi-label">{k.label}</div>
+            </div>
+          ))}
+        </div>
+
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="orders-export-btn" onClick={exportToExcel}>Export</button>
+          <button className="export-btn" onClick={exportToExcel}>Export</button>
           <button className="evt-res-create-btn" onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setCreateTab(0); }}>
             + Add Celebration
           </button>
         </div>
       </div>
 
-      {/* KPI STRIP */}
-      <div className="evt-clb-kpi-row">
-        {[
-          { label: "Total", val: data.length, color: "#111" },
-          { label: "Today", val: todayCount, color: "#2980b9" },
-          { label: "Pending", val: pendingCount, color: "#ca8a04" },
-          { label: "Confirmed", val: confirmedCount, color: "#16a34a" },
-        ].map((k, i) => (
-          <div key={i} className="evt-clb-kpi" style={{ borderTopColor: k.color }}>
-            <div className="evt-clb-kpi-val" style={{ color: k.color }}>{k.val}</div>
-            <div className="evt-clb-kpi-label">{k.label}</div>
-          </div>
-        ))}
-      </div>
-
       {/* FILTER BAR */}
-      <div className="evt-clb-filter-bar">
-        <input
-          className="evt-clb-search"
-          placeholder="Search name / mobile / ID..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-        <div className="evt-clb-filter-groups">
+      <div className="evt-filter-bar">
+        <div className="evt-filter-groups">
+          <input
+            className="search-input"
+            placeholder="Search name / mobile / ID..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+
           {/* Quick date presets */}
-          <div className="evt-clb-filter-group">
-            <span className="evt-clb-filter-group-label">Period</span>
+          <div className="evt-filter-group">
+            <span className="evt-filter-group-label">Period</span>
             {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
               <button key={preset}
-                className={`evt-clb-filter-btn${filterDatePreset === preset ? " active" : ""}`}
+                className={`evt-filter-btn${filterDatePreset === preset ? " active" : ""}`}
                 onClick={() => {
                   if (filterDatePreset === preset) {
                     setFilterDatePreset(""); setFilterFromDate(""); setFilterToDate("");
@@ -446,44 +454,44 @@ const Celebrations = ({ adminData, setAdminData }) => {
             ))}
           </div>
           {/* From / To date pickers */}
-          <div className="evt-res-filter-group" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="evt-clb-filter-group-label">From</span>
+          <div className="evt-filter-group" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span className="evt-filter-group-label">From</span>
             <div style={{ minWidth: 148 }}>
               <CustomDatePicker value={filterFromDate} onChange={v => { setFilterFromDate(v); setFilterDatePreset(""); if (filterToDate && v > filterToDate) setFilterToDate(v); }} placeholder="Start date" />
             </div>
-            <span className="evt-clb-filter-group-label" style={{ marginLeft: 2 }}>To</span>
+            <span className="evt-filter-group-label" style={{ marginLeft: 2 }}>To</span>
             <div style={{ minWidth: 148 }}>
               <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={v => { setFilterToDate(v); setFilterDatePreset(""); }} placeholder="End date" />
             </div>
             {(filterFromDate || filterToDate) && (
-              <button className="evt-clb-filter-btn" title="Clear dates" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }}>✕</button>
+              <button className="evt-filter-btn" title="Clear dates" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }}>✕</button>
             )}
           </div>
-          <div className="evt-clb-filter-group">
-            <span className="evt-clb-filter-group-label">Type</span>
+
+        </div>
+        <div className="evt-filter-groups">
+          <div className="evt-filter-group">
+            <span className="evt-filter-group-label">Type</span>
             {CELEBRATION_TYPES.map(t => (
               <button key={t.value} title={t.label}
-                className={`evt-clb-filter-btn${filterType === t.value ? " active" : ""}`}
+                className={`evt-filter-btn${filterType === t.value ? " active" : ""}`}
                 onClick={() => setFilterType(p => p === t.value ? "" : t.value)}>
                 {t.label.slice(0, 3)}
               </button>
             ))}
           </div>
-          <div className="evt-clb-filter-group">
-            <span className="evt-clb-filter-group-label">Status</span>
+          <div className="evt-filter-group">
+            <span className="evt-filter-group-label">Status</span>
             {["pending", "confirmed", "completed"].map(s => (
               <button key={s} title={s}
-                className={`evt-clb-filter-btn${filterStatus === s ? " active clb-status-" + s : ""}`}
+                className={`evt-filter-btn${filterStatus === s ? " active clb-status-" + s : ""}`}
                 onClick={() => setFilterStatus(p => p === s ? "" : s)}>
                 {s === "pending" ? "P" : s === "confirmed" ? "C" : "D"}
               </button>
             ))}
           </div>
           {activeFilters && (
-            <button className="evt-clb-clear-btn" onClick={() => {
-              setFilterFromDate(todayStr()); setFilterToDate(todayStr()); setFilterDatePreset("today");
-              setFilterType(""); setFilterStatus(""); setSearch("");
-            }}>
+            <button className="evt-clb-clear-btn" onClick={onResetFilters}>
               Clear
             </button>
           )}
@@ -531,7 +539,7 @@ const Celebrations = ({ adminData, setAdminData }) => {
 
                 return (
                   <tr key={item.id} className="evt-clb-row clickable"
-                    onClick={() => navigate(`/celebrations/${item.id}`)}>
+                    onClick={() => navigate(`/celebrations/${item.id}`, { state: { fromDetail: true } })}>
                     <td>
                       <div className="evt-clb-name-cell">
                         <div className="evt-clb-avatar">{(item.name || "?").charAt(0).toUpperCase()}</div>
@@ -658,18 +666,18 @@ const Celebrations = ({ adminData, setAdminData }) => {
             <div className="event-modal-header">
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                 <h3>Add Celebration</h3>
-                <div className="ae-spec-steps">
+                <div className="evt-spec-steps">
                   {CREATE_TABS.map((t, i) => (
                     <button key={i}
-                      className={`ae-spec-step${createTab === i ? " active" : ""}${createTab > i ? " done" : ""}`}
+                      className={`evt-spec-step${createTab === i ? " active" : ""}${createTab > i ? " done" : ""}`}
                       onClick={() => setCreateTab(i)}>
-                      <span className="ae-step-num">{createTab > i ? "✓" : i + 1}</span>
-                      <span className="ae-step-label">{t}</span>
+                      <span className="evt-step-num">{createTab > i ? "✓" : i + 1}</span>
+                      <span className="evt-step-label">{t}</span>
                     </button>
                   ))}
                 </div>
               </div>
-              <button className="ingredient-close-btn" onClick={() => setShowCreate(false)} />
+              <button className="close-btn" onClick={() => setShowCreate(false)} />
             </div>
 
             <div className="event-modal-body" style={{ padding: "8px 0" }}>
@@ -747,7 +755,7 @@ const Celebrations = ({ adminData, setAdminData }) => {
                     </div>
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Guests <span style={{ fontSize: 10, color: "#aaa" }}>(max 20)</span></label>
-                      <div className="evt-res-stepper">
+                      <div className="evt-stepper">
                         <button type="button" onClick={() => setF("guests", Math.max(1, form.guests - 1))}>−</button>
                         <span>{form.guests}</span>
                         <button type="button" onClick={() => setF("guests", Math.min(20, form.guests + 1))}>+</button>
@@ -982,9 +990,9 @@ const Celebrations = ({ adminData, setAdminData }) => {
             </div>
 
             <div className="event-modal-footer">
-              <div className="form-actions ae-spec-footer">
+              <button onClick={() => setShowCreate(false)}>Cancel</button>
                 {createTab === 0 ? (
-                  <button type="button" className="btn-primary" onClick={handleCreateNext}>Preview →</button>
+                  <button type="button" onClick={handleCreateNext}>Preview →</button>
                 ) : (
                   <>
                     <button type="button" className="ae-step-prev-btn" onClick={() => setCreateTab(0)}>← Edit</button>
@@ -993,9 +1001,7 @@ const Celebrations = ({ adminData, setAdminData }) => {
                     </button>
                   </>
                 )}
-                <button onClick={() => setShowCreate(false)}>Cancel</button>
               </div>
-            </div>
           </div>
         </div>
       )}

@@ -156,7 +156,7 @@ const TableManagement = ({ adminData, setAdminData }) => {
                     <span style={{ fontSize: 13, color: "#a3a3a3", fontWeight: 500 }}>
                         {tables.length} table{tables.length !== 1 ? "s" : ""}
                     </span>
-                    <button className="orders-export-btn" onClick={exportTables}>Export</button>
+                    <button className="export-btn" onClick={exportTables}>Export</button>
                 </div>
             </div>
 
@@ -237,7 +237,7 @@ const TableManagement = ({ adminData, setAdminData }) => {
                         <div className="qr-modal-header">
                             <h3>Table {selectedTable}</h3>
                             <button
-                                className="qr-close-btn"
+                                className="close-btn"
                                 onClick={() => setShowQRModal(false)}
                             />
                         </div>

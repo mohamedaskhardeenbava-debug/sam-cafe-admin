@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import "./Ingredients.css";
+import "./ModalCSS.css";
 import { useNavigate } from "react-router-dom";
 import deleteIcon from "../icon/delete-icon.png";
 import { allowTextInput } from "../App";
@@ -48,13 +49,25 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
     setImagePreview("");
   };
 
+  const [ingredientSearch, setIngredientSearch] = useState("");
+
   const sortedIngredients = useMemo(
     () => sortArray(adminData.ingredients, sortConfig),
     [adminData.ingredients, sortConfig]
   );
 
+  const filteredIngredients = useMemo(() => {
+    const q = ingredientSearch.toLowerCase();
+    return q
+      ? sortedIngredients.filter(i =>
+        (i.name || "").toLowerCase().includes(q) ||
+        (i.brands || []).some(b => b.name.toLowerCase().includes(q))
+      )
+      : sortedIngredients;
+  }, [sortedIngredients, ingredientSearch]);
+
   const { displayLimit, sentinelRef, containerRef, hasMore } =
-    useInfiniteScroll(sortedIngredients.length, 30);
+    useInfiniteScroll(filteredIngredients.length, 30);
 
   const handleSave = async () => {
     const normalizedName = formData.name.trim().toLowerCase();
@@ -136,31 +149,45 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
       {/* HEADER */}
       <div className="ingredient-header">
         <h2 className="ingredient-title">Ingredients</h2>
-        <button className="ingredient-add-btn" onClick={openAddForm}>
+        <button className="category-add-btn" onClick={openAddForm}>
           + Add Ingredient
         </button>
       </div>
 
+      {/* FILTER BAR */}
+      <div className="ingredient-filter-bar">
+        <input
+          className="search-input"
+          placeholder="🔍 Search name or brand…"
+          value={ingredientSearch}
+          onChange={e => setIngredientSearch(e.target.value)}
+        />
+        {ingredientSearch && (
+          <button className="ae-clear-filter" onClick={() => setIngredientSearch("")}>Clear</button>
+        )}
+        <span className="ae-result-count">{filteredIngredients.length} ingredient(s)</span>
+      </div>
+
       {showForm && (
-        <div className="ingredient-modal-overlay">
+        <div className="modal-overlay">
           <form
-            className="ingredient-modal"
+            className="modal"
             onSubmit={(e) => {
               e.preventDefault();
               handleSave();
             }}>
 
-            <div className="ingredient-modal-header">
+            <div className="modal-header">
               <h3>{isEditMode ? "Edit Ingredient" : "Add New Ingredient"}</h3>
               <button
                 type="button"
-                className="ingredient-close-btn"
+                className="close-btn"
                 aria-label="Close"
                 onClick={resetIngredientForm}
               ></button>
             </div>
 
-            <div className="ingredient-modal-body">
+            <div className="modal-body">
               <div className="form-group">
                 <label>Ingredient Name</label>
                 <input
@@ -426,15 +453,13 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
               </div>
             </div>
 
-            <div className="ingredient-modal-footer">
-              <div className="form-actions">
-                <button type="submit">
-                  {isEditMode ? "Save Changes" : "Add Ingredient"}
-                </button>
-                <button type="button" onClick={resetIngredientForm}>
-                  Cancel
-                </button>
-              </div>
+            <div className="modal-footer">
+              <button type="button" onClick={resetIngredientForm}>
+                Cancel
+              </button>
+              <button type="submit">
+                {isEditMode ? "Save Changes" : "Add Ingredient"}
+              </button>
             </div>
           </form>
         </div>
@@ -467,10 +492,10 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
           </thead>
 
           <tbody>
-            {sortedIngredients.length === 0 ? (
+            {filteredIngredients.length === 0 ? (
               <EmptyRow colSpan={7} message="No ingredients found" />
             ) : (
-              sortedIngredients.slice(0, displayLimit).map((ingredient) => (
+              filteredIngredients.slice(0, displayLimit).map((ingredient) => (
                 <tr key={ingredient.id}>
                   <td className="clickable"
                     onClick={() => navigate(`/ingredients/${ingredient.id}`)}>

@@ -63,12 +63,90 @@ function formatTime(timeStr) {
 }
 
 const TYPE_META = {
-  reservation: { label: "Reservation", short: "R", emoji: "📅", route: "/reservations", color: "#7c3aed" },
-  prebooking: { label: "Pre-Booking", short: "PB", emoji: "🗓️", route: "/prebookings", color: "#0891b2" },
-  catering: { label: "Catering", short: "C", emoji: "🍽️", route: "/catering", color: "#d97706" },
-  celebration: { label: "Celebration", short: "CL", emoji: "🎉", route: "/celebrations", color: "#db2777" },
-  event: { label: "Event", short: "E", emoji: "🎪", route: "/events", color: "#16a34a" },
+  reservation: { label: "Reservation", short: "R", route: "/reservations", color: "#7c3aed" },
+  prebooking: { label: "Pre-Booking", short: "PB", route: "/prebookings", color: "#0891b2" },
+  catering: { label: "Catering", short: "C", route: "/catering", color: "#d97706" },
+  celebration: { label: "Celebration", short: "CL", route: "/celebrations", color: "#db2777" },
+  event: { label: "Event", short: "E", route: "/events", color: "#16a34a" },
 };
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ODOMETER COMPONENTS
+───────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Countdown odometer digit.
+ * Reel always shows: [current (leaving)] / [incoming (arriving)] / [next-after]
+ * On each tick: snap reel so "current" is in the window (translateY(0)),
+ * then slide DOWN one cell to show "incoming" — exactly one step per tick.
+ */
+function OdometerDigit({ digit }) {
+  const reelRef = useRef(null);
+  const shownRef = useRef(digit); // what's currently visible in the window
+
+  useEffect(() => {
+    const reel = reelRef.current;
+    if (!reel) return;
+
+    const incoming = Number(digit);
+    const current = Number(shownRef.current);
+    if (incoming === current) return;
+
+    const nextAfter = (incoming + 9) % 10; // one below incoming
+
+    // Build reel: current (top) → incoming → nextAfter
+    reel.innerHTML = '';
+    [current, incoming, nextAfter].forEach(n => {
+      const face = document.createElement('span');
+      face.className = 'odo-strip__face';
+      face.textContent = n;
+      reel.appendChild(face);
+    });
+
+    // Snap: show current in window (top face = translateY(0))
+    reel.style.transition = 'none';
+    reel.style.transform = 'translateY(0)';
+
+    // Double rAF → slide down one cell to reveal incoming
+    const r1 = requestAnimationFrame(() => {
+      const r2 = requestAnimationFrame(() => {
+        reel.style.transition = 'transform 0.42s cubic-bezier(0.4, 0, 0.2, 1)';
+        reel.style.transform = 'translateY(-22px)'; // one cell height
+        shownRef.current = digit;
+      });
+      return () => cancelAnimationFrame(r2);
+    });
+    return () => cancelAnimationFrame(r1);
+  }, [digit]);
+
+  // Initial static render
+  const curr = Number(digit);
+  const next = (curr + 9) % 10;
+  return (
+    <span className="odo-digit">
+      <span className="odo-strip" ref={reelRef} style={{ transform: 'translateY(-22px)' }}>
+        <span className="odo-strip__face">{(curr + 1) % 10}</span>
+        <span className="odo-strip__face">{curr}</span>
+        <span className="odo-strip__face">{next}</span>
+      </span>
+    </span>
+  );
+}
+
+/** Renders a two-digit odometer segment (e.g. "07") with a unit label. */
+function OdometerSeg({ value, unit }) {
+  const d0 = value[0] ?? "0";
+  const d1 = value[1] ?? "0";
+  return (
+    <span className="today-chip__seg">
+      <span className="today-chip__num odo-group">
+        <OdometerDigit digit={d0} />
+        <OdometerDigit digit={d1} />
+      </span>
+      <span className="today-chip__unit">{unit}</span>
+    </span>
+  );
+}
 
 /* ─────────────────────────────────────────────────────────────────────────────
    TOPBAR COMPONENT
@@ -385,29 +463,106 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
         <h3 className="topbar-title">Admin</h3>
       </div>
 
-      {/* ── RIGHT ── */}
-      <div className="topbar-right">
-
-        {/* ── TODAY COUNTDOWN CHIPS ── */}
+      {/* ── CENTER: TODAY COUNTDOWN CHIPS ── */}
+      <div className="topbar-center">
         {todayChips.map(chip => {
           const meta = TYPE_META[chip.type] || {};
           const ms = countdown[chip.id] ?? 0;
           const isPast = ms <= 0;
+          const totalSec = Math.max(0, Math.floor(ms / 1000));
+          const hh = String(Math.floor(totalSec / 3600)).padStart(2, "0");
+          const mm = String(Math.floor((totalSec % 3600) / 60)).padStart(2, "0");
+          const ss = String(totalSec % 60).padStart(2, "0");
+          const d = chip.data || {};
+          const phone = d.mobile || d.phone || d.contactPhone || d.contactMobile || null;
+          const guests = d.pax || d.guests || d.guestCount || d.numberOfGuests || null;
+          const status = d.status || null;
+          const note = d.notes || d.note || d.specialRequests || d.specialRequest || null;
+          const venue = d.venue || d.venueName || d.tableNumber ? `Table ${d.tableNumber}` : null;
+          const occasion = d.occasion || d.eventType || d.celebrationType || null;
           return (
-            <button
-              key={chip.id}
-              type="button"
-              className={`today-chip ${isPast ? "today-chip--past" : ""}`}
-              style={{ "--chip-color": meta.color }}
-              onClick={(e) => { e.stopPropagation(); navigate(meta.route || "/"); }}
-              title={`${meta.label}: ${chip.label} at ${formatTime(chip.time)}`}
-            >
-              <span className="today-chip__countdown">
-                {meta.short} {isPast ? "Now!" : formatCountdown(ms)}
-              </span>
-            </button>
+            <div key={chip.id} className="today-chip-wrapper">
+              <button
+                type="button"
+                className={`today-chip ${isPast ? "today-chip--past" : ""}`}
+                style={{ "--chip-color": meta.color }}
+                onClick={(e) => { e.stopPropagation(); navigate(meta.route || "/"); }}
+              >
+                <span className="today-chip__header">
+                  {chip.label}
+                </span>
+                <span className="today-chip__countdown">
+                  {isPast ? (
+                    <span className="today-chip__now">Now!</span>
+                  ) : (
+                    <span className="today-chip__timer">
+                      <OdometerSeg value={hh} unit="h" />
+                      <span className="today-chip__sep">:</span>
+                      <OdometerSeg value={mm} unit="m" />
+                      <span className="today-chip__sep">:</span>
+                      <OdometerSeg value={ss} unit="s" />
+                    </span>
+                  )}
+                </span>
+              </button>
+
+              {/* ── TOOLTIP ── */}
+              <div className="chip-tooltip" style={{ "--chip-color": meta.color }}>
+                <div className="chip-tooltip__header">
+                  <span className="chip-tooltip__type-badge" style={{ background: meta.color }}>
+                    {meta.label}
+                  </span>
+                  {status && (
+                    <span className={`chip-tooltip__status chip-tooltip__status--${status}`}>
+                      {status}
+                    </span>
+                  )}
+                </div>
+                <p className="chip-tooltip__name">{chip.label}</p>
+                <div className="chip-tooltip__rows">
+                  <div className="chip-tooltip__row">
+                    <span className="chip-tooltip__icon">🕐</span>
+                    <span>{formatTime(chip.time)}{isPast ? " · Now!" : ` · in ${hh}h ${mm}m`}</span>
+                  </div>
+                  {phone && (
+                    <div className="chip-tooltip__row">
+                      <span className="chip-tooltip__icon">📞</span>
+                      <span>{phone}</span>
+                    </div>
+                  )}
+                  {guests && (
+                    <div className="chip-tooltip__row">
+                      <span className="chip-tooltip__icon">👥</span>
+                      <span>{guests} guest{guests > 1 ? "s" : ""}</span>
+                    </div>
+                  )}
+                  {occasion && (
+                    <div className="chip-tooltip__row">
+                      <span className="chip-tooltip__icon">🎉</span>
+                      <span>{occasion}</span>
+                    </div>
+                  )}
+                  {venue && (
+                    <div className="chip-tooltip__row">
+                      <span className="chip-tooltip__icon">📍</span>
+                      <span>{venue}</span>
+                    </div>
+                  )}
+                  {note && (
+                    <div className="chip-tooltip__row chip-tooltip__row--note">
+                      <span className="chip-tooltip__icon">📝</span>
+                      <span>{note}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           );
         })}
+      </div>
+
+      {/* ── RIGHT ── */}
+      <div className="topbar-right">
 
         {/* ── BELL CALL BUTTONS ── */}
         {bellTableList.map(tableNo => (
@@ -474,7 +629,7 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
                               className="phone-list__badge"
                               style={{ background: meta.color }}
                             >
-                              {meta.emoji} {meta.label}
+                              {meta.label}
                             </span>
                             <span className={`phone-list__timer ${isPast ? "phone-list__timer--now" : ""}`}>
                               {isPast ? "🔴 Now!" : `⏱ ${formatCountdown(ms)}`}
@@ -522,12 +677,6 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
                           className="phone-list__item phone-list__item--compact"
                           onClick={(e) => { e.stopPropagation(); navigate(meta.route); setShowPhone(false); }}
                         >
-                          <span
-                            className="phone-list__badge phone-list__badge--sm"
-                            style={{ background: meta.color }}
-                          >
-                            {meta.emoji}
-                          </span>
                           <div className="phone-list__compact-info">
                             <strong>{name}</strong>
                             <span>{formatDate(item._date || item.date)} {item.time ? `· ${formatTime(item.time)}` : ""}</span>
@@ -555,7 +704,6 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
                             className="phone-list__badge phone-list__badge--sm"
                             style={{ background: meta.color || "#555" }}
                           >
-                            {meta.emoji || "📞"}
                           </span>
                           <div className="phone-list__compact-info">
                             <strong>{log.name}</strong>

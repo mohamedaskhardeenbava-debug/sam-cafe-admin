@@ -116,15 +116,15 @@ const Offers = ({ adminData, setAdminData }) => {
             <div className="offers-header">
                 <h2 className="offers-title">Offers</h2>
                 <div style={{ display: "flex", gap: 8 }}>
-                    <button className="orders-export-btn" onClick={exportOffers}>Export</button>
-                    <button className="offers-add-btn" onClick={() => setShowModal(true)}>Add Offer</button>
+                    <button className="export-btn" onClick={exportOffers}>Export</button>
+                    <button className="category-add-btn" onClick={() => setShowModal(true)}>Add Offer</button>
                 </div>
             </div>
 
             {/* FILTER BAR */}
             <div className="offers-filter-bar">
                 <input
-                    className="offers-search"
+                    className="search-input"
                     placeholder="🔍 Search dish…"
                     value={offerSearch}
                     onChange={e => setOfferSearch(e.target.value)}
@@ -213,9 +213,9 @@ const Offers = ({ adminData, setAdminData }) => {
 
             {/* MODAL */}
             {showModal && (
-                <div className="offers-modal-overlay">
+                <div className="modal-overlay">
                     <form
-                        className="offers-modal"
+                        className="modal"
                         onSubmit={(e) => {
                             e.preventDefault();
                             handleSave();
@@ -223,17 +223,17 @@ const Offers = ({ adminData, setAdminData }) => {
                     >
 
                         {/* HEADER */}
-                        <div className="offers-modal-header">
+                        <div className="modal-header">
                             <h3>Add Offer</h3>
                             <button
                                 type="button"
-                                className="offers-close-btn"
+                                className="close-btn"
                                 onClick={() => setShowModal(false)}
                             ></button>
                         </div>
 
                         {/* BODY */}
-                        <div className="offers-modal-body">
+                        <div className="modal-body">
                             <div className="horizontal-form-group">
                                 {/* DISH */}
                                 <div className="form-group">
@@ -250,7 +250,7 @@ const Offers = ({ adminData, setAdminData }) => {
                                         </button>
 
                                         {openDishDropdown && (
-                                            <div className="offers-dropdown-menu">
+                                            <div className="dropdown-menu">
                                                 {allDishes.map(d => (
                                                     <div
                                                         key={d.id}
@@ -351,7 +351,7 @@ const Offers = ({ adminData, setAdminData }) => {
                                         </button>
 
                                         {openStatusDropdown && (
-                                            <div className="offers-dropdown-menu">
+                                            <div className="dropdown-menu">
                                                 {[
                                                     { label: "Active", value: "yes" },
                                                     { label: "Inactive", value: "no" }
@@ -377,13 +377,11 @@ const Offers = ({ adminData, setAdminData }) => {
                         </div>
 
                         {/* FOOTER */}
-                        <div className="offers-modal-footer">
-                            <div className="form-actions">
-                                <button type="submit">Save Offer</button>
+                        <div className="modal-footer">
                                 <button type="button" onClick={() => setShowModal(false)}>
                                     Cancel
                                 </button>
-                            </div>
+                            <button type="submit">Save Offer</button>
                         </div>
 
                     </form>

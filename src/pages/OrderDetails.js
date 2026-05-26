@@ -66,10 +66,10 @@ const OrderDetails = ({ orders, menu }) => {
 
   return (
     <div className="order-details-page">
-      <div className="order-container">
+      <div className="details-container">
 
         {/* HEADER */}
-        <div className="order-details-header">
+        <div className="details-header">
           <button
             className="back-btn"
             onClick={() => navigate(-1)}

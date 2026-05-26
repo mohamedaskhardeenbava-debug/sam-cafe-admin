@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "./Dishes.css";
+import "./ModalCSS.css";
 import api from "../api";
 import deleteIcon from "../icon/delete-icon.png";
 import { allowTextInput } from "../App";
@@ -487,7 +488,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
         </div>
 
         <button
-          className="dish-add-btn"
+          className="category-add-btn"
           onClick={() => setShowForm(true)}
         >
           + Add Dish
@@ -585,15 +586,15 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       </div>
 
       {showForm && (
-        <div className="category-modal-overlay">
+        <div className="modal-overlay">
           <form
-            className="category-modal"
+            className="modal"
             onSubmit={(e) => {
               e.preventDefault();
               handleSaveDish();
             }}>
 
-            <div className="category-modal-header">
+            <div className="modal-header">
               <h3>
                 Add New Dish
                 {selectedCategoryIds.length === 1 && (
@@ -618,12 +619,12 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               </h3>
               <button
                 type="button"
-                className="dish-close-btn"
+                className="close-btn"
                 aria-label="Close"
                 onClick={resetDishForm}
               ></button>
             </div>
-            <div className="category-modal-body">
+            <div className="modal-body">
               <div className="form-group">
                 <label htmlFor="">Dish name</label>
                 <input
@@ -775,7 +776,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                       </button>
 
                       {openIngredientDropdown && (
-                        <div className="dishes-dropdown-menu">
+                        <div className="dropdown-menu">
                           {availableIngredients.map(ing => (
                             <div
                               key={ing.id}
@@ -848,13 +849,11 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               </div>
 
             </div>
-            <div className="category-modal-footer">
-              <div className="form-actions">
-                <button type="submit">Add Dish</button>
+            <div className="modal-footer">
                 <button type="button" onClick={resetDishForm}>
                   Cancel
                 </button>
-              </div>
+                <button type="submit">Add Dish</button>
             </div>
           </form>
         </div>

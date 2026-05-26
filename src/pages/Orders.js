@@ -501,23 +501,31 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
     const [openModeDropdown, setOpenModeDropdown] = useState(false);
     const [statusFilter, setStatusFilter] = useState("all");
     const [modeFilter, setModeFilter] = useState("all");
+    const [orderSearch, setOrderSearch] = useState("");
     const [originalBill, setOriginalBill] = useState(null);
     const [splitPeople, setSplitPeople] = useState("");
     const [splitBills, setSplitBills] = useState("");
 
-    const todayISO = new Date().toISOString().split("T")[0];
+    // Use local date string to avoid UTC offset shifting the date (e.g. UTC+5:30)
+    const toLocalISO = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${y}-${m}-${day}`;
+    };
+    const todayISO = toLocalISO(new Date());
 
     const getWeekRange = () => {
         const today = new Date();
         const day = today.getDay(); // 0=Sun
         const mon = new Date(today); mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
-        return { from: mon.toISOString().split("T")[0], to: todayISO };
+        return { from: toLocalISO(mon), to: todayISO };
     };
 
     const getMonthRange = () => {
         const today = new Date();
         const first = new Date(today.getFullYear(), today.getMonth(), 1);
-        return { from: first.toISOString().split("T")[0], to: todayISO };
+        return { from: toLocalISO(first), to: todayISO };
     };
 
     const [datePreset, setDatePreset] = useState(() => {
@@ -540,17 +548,34 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         );
     }, []);
 
-    const savedDates = JSON.parse(
-        localStorage.getItem(DATE_STORAGE_KEY) || "null"
-    );
+    // Always recompute range from saved preset so "month"/"week" are never stale
+    const [fromDate, setFromDate] = useState(() => {
+        const saved = JSON.parse(localStorage.getItem(DATE_STORAGE_KEY) || "null");
+        const preset = saved?.preset || "today";
+        if (preset === "month") {
+            const d = new Date(); const first = new Date(d.getFullYear(), d.getMonth(), 1);
+            const y = first.getFullYear(), m = String(first.getMonth() + 1).padStart(2, "0"), day = String(first.getDate()).padStart(2, "0");
+            return `${y}-${m}-${day}`;
+        }
+        if (preset === "week") {
+            const today = new Date();
+            const day = today.getDay();
+            const mon = new Date(today);
+            mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+            return `${mon.getFullYear()}-${String(mon.getMonth() + 1).padStart(2, "0")}-${String(mon.getDate()).padStart(2, "0")}`;
+        }
+        return saved?.fromDate || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}-${String(new Date().getDate()).padStart(2, "0")}`;
+    });
 
-    const [fromDate, setFromDate] = useState(
-        savedDates?.fromDate || todayISO
-    );
-
-    const [toDate, setToDate] = useState(
-        savedDates?.toDate || todayISO
-    );
+    const [toDate, setToDate] = useState(() => {
+        const saved = JSON.parse(localStorage.getItem(DATE_STORAGE_KEY) || "null");
+        const preset = saved?.preset || "today";
+        // For month and week, "to" is always today
+        const n = new Date();
+        const todayLocal = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+        if (preset === "month" || preset === "week") return todayLocal;
+        return saved?.toDate || todayLocal;
+    });
     const location = useLocation();
     const isOrdersPage = location.pathname === "/orders";
     const orderRefs = useRef({});
@@ -638,9 +663,17 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 modeFilter === "all" ||
                 orderMode === modeFilter;
 
-            return withinDate && matchesStatus && matchesMode;
+            const q = orderSearch.trim().toLowerCase();
+            const matchesSearch = !q || (
+                (order.id || "").toLowerCase().includes(q) ||
+                (order.userName || "").toLowerCase().includes(q) ||
+                order.items.some(i => (i.dishName || "").toLowerCase().includes(q)) ||
+                String(order.tableNo ?? "").includes(q)
+            );
+
+            return withinDate && matchesStatus && matchesMode && matchesSearch;
         });
-    }, [normalizedOrders, fromDate, toDate, statusFilter, modeFilter]);
+    }, [normalizedOrders, fromDate, toDate, statusFilter, modeFilter, orderSearch]);
 
     const sortedOrders = useMemo(() => {
         const data = [...filteredOrders];
@@ -1071,107 +1104,123 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         <div className="orders-page">
 
             <div className="orders-header">
-                <h2 className="orders-title">Orders</h2>
+                <div className="orders-header-div">
+                    <h2 className="orders-title">Orders</h2>
 
-                <div className="orders-dropdown-wrapper">
+                    <div className="orders-search-wrapper">
+                        <input
+                            className="search-input"
+                            placeholder="🔍 Search by order ID, customer, dish…"
+                            value={orderSearch}
+                            onChange={e => setOrderSearch(e.target.value)}
+                        />
+                        {orderSearch && (
+                            <button className="orders-search-clear" onClick={() => setOrderSearch("")}>✕</button>
+                        )}
+                    </div>
+
+                    <div className="orders-filter">
+                        <button
+                            type="button"
+                            className={`orders-today-btn${datePreset === "today" ? " active" : ""}`}
+                            onClick={() => applyPreset("today")}
+                        >
+                            Today
+                        </button>
+                        <button
+                            type="button"
+                            className={`orders-today-btn${datePreset === "week" ? " active" : ""}`}
+                            onClick={() => applyPreset("week")}
+                        >
+                            This Week
+                        </button>
+                        <button
+                            type="button"
+                            className={`orders-today-btn${datePreset === "month" ? " active" : ""}`}
+                            onClick={() => applyPreset("month")}
+                        >
+                            This Month
+                        </button>
+                        <CustomDatePicker
+                            label="From"
+                            value={fromDate}
+                            max={toDate}
+                            onChange={(s) => { setFromDate(s); setDatePreset("custom"); if (s > toDate) setToDate(s); }}
+                        />
+                        <CustomDatePicker
+                            label="To"
+                            value={toDate}
+                            min={fromDate}
+                            max={todayISO}
+                            onChange={(s) => { setToDate(s); setDatePreset("custom"); }}
+                        />
+                    </div>
+
                     <button
-                        className="orders-status-dropdown"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenStatusDropdown(prev => !prev);
-                        }}
+                        className="export-btn"
+                        onClick={() => exportOrders(filteredOrders, fromDate, toDate)}
                     >
-                        {statusFilter === "all" ? "All Status" : statusFilter}
+                        Export
                     </button>
-
-                    {openStatusDropdown && (
-                        <div className="orders-dropdown-menu">
-                            {["all", "placed", "preparing", "service pickup", "completed"].map(status => (
-                                <div
-                                    key={status}
-                                    onClick={() => {
-                                        setStatusFilter(status);
-                                        setOpenStatusDropdown(false);
-                                    }}
-                                >
-                                    {status === "all" ? "All Status" : status}
-                                </div>
-                            ))}
-                        </div>
-                    )}
                 </div>
 
-                <div className="orders-dropdown-wrapper">
-                    <button
-                        className="orders-status-dropdown"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenModeDropdown(prev => !prev);
-                        }}
-                    >
-                        {modeFilter === "all" ? "All Modes" : modeFilter}
-                    </button>
+                <div className="orders-header-div">
+                    <div className="orders-dropdown-wrapper">
+                        <button
+                            className="orders-status-dropdown"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenModeDropdown(prev => !prev);
+                            }}
+                        >
+                            {modeFilter === "all" ? "All Modes" : modeFilter}
+                        </button>
 
-                    {openModeDropdown && (
-                        <div className="orders-dropdown-menu">
-                            {["all", "dine in", "take away"].map(mode => (
-                                <div
-                                    key={mode}
-                                    onClick={() => {
-                                        setModeFilter(mode);
-                                        setOpenModeDropdown(false);
-                                    }}
-                                >
-                                    {mode === "all" ? "All Modes" : mode}
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                        {openModeDropdown && (
+                            <div className="dropdown-menu">
+                                {["all", "dine in", "take away"].map(mode => (
+                                    <div
+                                        key={mode}
+                                        onClick={() => {
+                                            setModeFilter(mode);
+                                            setOpenModeDropdown(false);
+                                        }}
+                                    >
+                                        {mode === "all" ? "All Modes" : mode}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="orders-dropdown-wrapper">
+                        <button
+                            className="orders-status-dropdown"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenStatusDropdown(prev => !prev);
+                            }}
+                        >
+                            {statusFilter === "all" ? "All Status" : statusFilter}
+                        </button>
+
+                        {openStatusDropdown && (
+                            <div className="dropdown-menu">
+                                {["all", "placed", "preparing", "service pickup", "completed"].map(status => (
+                                    <div
+                                        key={status}
+                                        onClick={() => {
+                                            setStatusFilter(status);
+                                            setOpenStatusDropdown(false);
+                                        }}
+                                    >
+                                        {status === "all" ? "All Status" : status}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
-
-                <div className="orders-filter">
-                    <button
-                        type="button"
-                        className={`orders-today-btn${datePreset === "today" ? " active" : ""}`}
-                        onClick={() => applyPreset("today")}
-                    >
-                        Today
-                    </button>
-                    <button
-                        type="button"
-                        className={`orders-today-btn${datePreset === "week" ? " active" : ""}`}
-                        onClick={() => applyPreset("week")}
-                    >
-                        This Week
-                    </button>
-                    <button
-                        type="button"
-                        className={`orders-today-btn${datePreset === "month" ? " active" : ""}`}
-                        onClick={() => applyPreset("month")}
-                    >
-                        This Month
-                    </button>
-                    <CustomDatePicker
-                        label="From"
-                        value={fromDate}
-                        max={toDate}
-                        onChange={(s) => { setFromDate(s); setDatePreset("custom"); if (s > toDate) setToDate(s); }}
-                    />
-                    <CustomDatePicker
-                        label="To"
-                        value={toDate}
-                        min={fromDate}
-                        max={todayISO}
-                        onChange={(s) => { setToDate(s); setDatePreset("custom"); }}
-                    />
-                </div>
-
-                <button
-                    className="orders-export-btn"
-                    onClick={() => exportOrders(filteredOrders, fromDate, toDate)}
-                >
-                    Export
-                </button>
 
             </div>
 

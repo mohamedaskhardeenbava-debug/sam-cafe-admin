@@ -52,10 +52,10 @@ const ReservationDetails = ({ adminData, setAdminData }) => {
   const [localStatus, setLocalStatus] = useState(data?.status || "pending");
 
   if (!data) return (
-    <div className="evt-resd-page">
+    <div className="details-container">
       <div className="evt-resd-container">
-        <div className="evt-resd-header">
-          <button className="evt-resd-back-btn" onClick={() => navigate(-1)} />
+        <div className="details-header">
+          <button className="back-btn" onClick={() => navigate(-1)} />
           <div>
             <h2 className="evt-resd-title">Reservation Detail</h2>
           </div>
@@ -109,12 +109,12 @@ const ReservationDetails = ({ adminData, setAdminData }) => {
   ];
 
   return (
-    <div className="evt-resd-page">
+    <div className="details-container">
       <div className="evt-resd-container">
 
         {/* ── HEADER ── */}
-        <div className="evt-resd-header">
-          <button className="evt-resd-back-btn" onClick={() => navigate(-1)} />
+        <div className="details-header">
+          <button className="back-btn" onClick={() => navigate(-1)} />
           <div>
             <h2 className="evt-resd-title">Reservation Detail</h2>
             <p className="evt-resd-id">ID: <code>{data.id}</code></p>

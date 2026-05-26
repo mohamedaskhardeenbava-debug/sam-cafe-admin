@@ -45,24 +45,11 @@
     margin: 0;
 }
 
-.recipe-add-btn {
-    height: 36px;
-    padding: 0 18px;
-    border-radius: 999px;
-    border: 1px solid var(--border-med);
-    background: var(--ink);
-    color: #fff;
-    font-size: 13px;
-    font-weight: 500;
-    font-family: var(--font);
-    cursor: pointer;
-    transition: var(--t);
-}
-
-.recipe-add-btn:hover {
-    background: var(--ink-2);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
+.card-grid-wrapper {
+    width: 100%;
+    height: calc(100vh - 230px);
+    overflow-y: auto;
+    box-sizing: border-box;
 }
 
 /* CARD GRID */
@@ -170,74 +157,6 @@
     opacity: 0.85;
 }
 
-/* MODAL OVERLAY */
-.category-modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(10, 10, 10, 0.42);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 999;
-    animation: fadeIn 0.16s ease;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0
-    }
-
-    to {
-        opacity: 1
-    }
-}
-
-/* MODAL */
-.category-modal {
-    background: var(--surface);
-    width: 500px;
-    max-width: 95vw;
-    max-height: 88vh;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    animation: slideUp 0.2s cubic-bezier(0.34, 1.36, 0.64, 1);
-    border: 1px solid var(--border);
-}
-
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(16px) scale(0.97);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-/* MODAL HEADER */
-.category-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 22px 16px;
-    border-bottom: 1px solid var(--border);
-}
-
-.category-modal-header h3 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--ink);
-    letter-spacing: -0.01em;
-}
-
 .dish-close-btn {
     width: 30px;
     height: 30px;
@@ -258,141 +177,6 @@
 .dish-close-btn:hover {
     background: var(--surface-3);
     color: var(--ink);
-}
-
-/* MODAL BODY */
-.category-modal-body {
-    padding: 18px 22px;
-    overflow-y: auto;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-
-/* RECIPE LIST in detail */
-.category-modal-body ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.category-modal-body li {
-    padding: 10px 14px;
-    border-radius: var(--radius-sm);
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    font-size: 14px;
-    color: var(--ink-2);
-    line-height: 1.55;
-    position: relative;
-    padding-left: 32px;
-}
-
-.category-modal-body li::before {
-    content: counter(step);
-    counter-increment: step;
-    position: absolute;
-    left: 10px;
-    top: 10px;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--ink-4);
-    min-width: 14px;
-    text-align: center;
-}
-
-.category-modal-body ul {
-    counter-reset: step;
-}
-
-/* FORM GROUP */
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.form-group label {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--ink-4);
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-}
-
-.form-group input,
-.form-group textarea,
-.form-group select {
-    width: 100%;
-    padding: 9px 12px;
-    border: 1px solid var(--border-med);
-    border-radius: var(--radius-sm);
-    font-size: 14px;
-    font-family: var(--font);
-    color: var(--ink);
-    background: var(--surface);
-    box-sizing: border-box;
-    transition: var(--t);
-    outline: none;
-    -webkit-appearance: none;
-}
-
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
-    border-color: var(--ink);
-    box-shadow: 0 0 0 3px rgba(15, 15, 15, 0.07);
-}
-
-.form-group textarea {
-    resize: vertical;
-    min-height: 160px;
-    line-height: 1.7;
-}
-
-/* MODAL FOOTER */
-.category-modal-footer.form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 14px 22px 18px;
-    border-top: 1px solid var(--border);
-}
-
-.category-modal-footer.form-actions button {
-    height: 34px;
-    padding: 0 18px;
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: var(--t);
-    border: 1px solid transparent;
-    font-family: var(--font);
-}
-
-.category-modal-footer.form-actions button:first-child {
-    background: var(--ink);
-    color: #fff;
-    border-color: var(--ink);
-}
-
-.category-modal-footer.form-actions button:first-child:hover {
-    background: var(--ink-2);
-}
-
-.category-modal-footer.form-actions button:last-child {
-    background: var(--surface-2);
-    color: var(--ink-2);
-    border-color: var(--border-med);
-}
-
-.category-modal-footer.form-actions button:last-child:hover {
-    background: var(--surface-3);
 }
 
 /* EMPTY STATE */
@@ -439,28 +223,6 @@
     margin-bottom: 4px;
 }
 
-.kgroom-search,
-.assign-search,
-.recipe-search {
-    padding: 8px 14px;
-    border-radius: 999px;
-    border: 1px solid #ddd;
-    background: #f9f9f9;
-    font-size: 13px;
-    outline: none;
-    width: 100%;
-    max-width: 260px;
-    transition: border-color 0.2s;
-    font-family: inherit;
-}
-
-.kgroom-search:focus,
-.assign-search:focus,
-.recipe-search:focus {
-    border-color: #111;
-    background: #fff;
-}
-
 .kgroom-filter-label {
     font-size: 10px;
     font-weight: 700;
@@ -468,28 +230,6 @@
     text-transform: uppercase;
     letter-spacing: 0.07em;
     white-space: nowrap;
-}
-
-/* ── Shared export btn ── */
-.orders-export-btn {
-    height: 36px;
-    padding: 0 16px;
-    border-radius: 999px;
-    border: 1.5px solid #e5e7eb;
-    background: #f9fafb;
-    color: #555;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-    font-family: inherit;
-    white-space: nowrap;
-}
-
-.orders-export-btn:hover {
-    border-color: #111;
-    background: #111;
-    color: #fff;
 }
 
 /* ── Shared pill btn ── */

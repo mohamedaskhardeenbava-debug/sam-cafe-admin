@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "./Categories.css";
+import "./ModalCSS.css";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 import deleteIcon from "../icon/delete-icon.png";
@@ -629,16 +630,16 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
       {
         showForm && (
-          <div className="category-modal-overlay">
+          <div className="modal-overlay">
             <form onSubmit={(e) => {
               e.preventDefault();
               handleAddCategory();
-            }} className="category-modal form-actions">
+            }} className="modal">
               <div className="modal-header">
                 <h3>Add New Category</h3>
                 <button
                   type="button"
-                  className="category-close-btn"
+                  className="close-btn"
                   aria-label="Close"
                   onClick={resetAddCategoryForm}
                 >
@@ -1026,11 +1027,11 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                 )}
               </div>
 
-              <div className="modal-actions modal-footer">
-                <button type="submit">Add</button>
+              <div className="modal-footer">
                 <button type="button" onClick={resetAddCategoryForm}>
                   Cancel
                 </button>
+                <button type="submit">Add</button>
               </div>
             </form>
           </div>
@@ -1039,13 +1040,13 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
       {
         showEditModal && (
-          <div className="category-modal-overlay">
-            <div className="category-modal form-actions">
+          <div className="modal-overlay">
+            <div className="modal">
               <div className="modal-header">
                 <h3>{isEditingSubCategory ? "Edit Subcategory" : "Edit Category"}</h3>
                 <button
                   type="button"
-                  className="category-close-btn"
+                  className="close-btn"
                   aria-label="Close"
                   onClick={resetEditCategoryForm}
                 ></button>
@@ -1268,11 +1269,11 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                   )}
               </div>
 
-              <div className="modal-actions modal-footer">
+              <div className="modal-footer">
                 <button onClick={handleSaveEdit}>Save</button>
                 <button type="button" onClick={resetEditCategoryForm}>
                   Cancel
-                </button>
+                </button>                
               </div>
             </div>
           </div>

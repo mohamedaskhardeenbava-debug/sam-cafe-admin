@@ -140,9 +140,9 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
     return (
         <div className="ingredient-details-page">
 
-            <div className="ingredient-container">
+            <div className="details-container">
                 {/* HEADER */}
-                <div className="ingredient-details-header">
+                <div className="details-header">
                     <button
                         className="back-btn"
                         onClick={() => {

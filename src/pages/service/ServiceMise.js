@@ -111,7 +111,7 @@ export default function ServiceMise({ adminData, setAdminData }) {
             <span className="service-mise-stat-num">{verifiedCnt}/{allTasks.length}</span>
             <span className="service-mise-stat-lbl">Verified</span>
           </div>
-          <button className="orders-export-btn" onClick={exportMise}>Export</button>
+          <button className="export-btn" onClick={exportMise}>Export</button>
         </div>
       </div>
 
@@ -126,7 +126,7 @@ export default function ServiceMise({ adminData, setAdminData }) {
       {/* FILTER BAR */}
       <div className="service-mise-filter-bar">
         <input
-          className="service-mise-search"
+          className="search-input"
           placeholder="🔍 Search tasks…"
           value={miseSearch}
           onChange={e => setMiseSearch(e.target.value)}
@@ -145,63 +145,62 @@ export default function ServiceMise({ adminData, setAdminData }) {
         )}
       </div>
 
-      {/* SECTIONS */}
-      {Object.entries(filteredTasks).map(([sec, items]) => {
-        const secVerified = items.filter(t => miseDay[t]?.verified).length;
-        return (
-          <div key={sec} className="service-mise-section">
-            <div className="service-mise-section-hdr"
-              style={{ borderLeftColor: SECTION_META[sec]?.color }}>
-              <span className="service-mise-section-icon">{SECTION_META[sec]?.icon}</span>
-              <span className="service-mise-section-label">{SECTION_META[sec]?.label || sec.toUpperCase()}</span>
-              <span className="service-mise-section-count">{secVerified}/{items.length} verified</span>
-            </div>
-
-            <div className="service-mise-table-wrapper">
-              <table className="service-mise-table">
-                <thead>
-                  <tr>
-                    <th>Task</th>
-                    <th>Staff</th>
-                    <th>Verify</th>
-                    <th>Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map(task => {
-                    const entry = miseDay[task];
-                    const staffAssigned = !!entry?.staff;
-                    const isVerified = !!entry?.verified;
-                    return (
-                      <tr key={task} className={isVerified ? "service-mise-row-verified" : ""}>
-                        <td>
-                          <span className={`service-mise-task-dot ${isVerified ? "dot-verified" : staffAssigned ? "dot-assigned" : ""}`} />
-                          {task}
-                        </td>
-                        <td className={staffAssigned ? "" : "service-mise-no-staff"}>
-                          {entry?.staff || "Not assigned"}
-                        </td>
-                        <td>
-                          <label className="service-mise-check-label">
-                            <input
-                              type="checkbox"
-                              disabled={!staffAssigned}
-                              checked={isVerified}
-                              onChange={() => toggle(task)}
-                            />
-                            <span className={`service-mise-check-custom ${isVerified ? "checked" : ""} ${!staffAssigned ? "disabled" : ""}`} />
-                          </label>
-                        </td>
-                        <td className="service-mise-time">{entry?.time || "—"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
-      })}
+      {/* UNIFIED TABLE */}
+      <div className="service-mise-table-wrapper">
+        <table className="service-mise-table">
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Staff</th>
+              <th>Verify</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(filteredTasks).map(([sec, items]) => (
+              <React.Fragment key={sec}>
+                <tr className="service-mise-section-row">
+                  <td colSpan="4">
+                    <span className="service-mise-section-icon">{SECTION_META[sec]?.icon}</span>
+                    {SECTION_META[sec]?.label || sec.toUpperCase()}
+                    <span className="service-mise-section-row-count">
+                      {items.filter(t => miseDay[t]?.verified).length}/{items.length} verified
+                    </span>
+                  </td>
+                </tr>
+                {items.map(task => {
+                  const entry = miseDay[task];
+                  const staffAssigned = !!entry?.staff;
+                  const isVerified = !!entry?.verified;
+                  return (
+                    <tr key={task} className={isVerified ? "service-mise-row-verified" : ""}>
+                      <td>
+                        <span className={`service-mise-task-dot ${isVerified ? "dot-verified" : staffAssigned ? "dot-assigned" : ""}`} />
+                        {task}
+                      </td>
+                      <td className={staffAssigned ? "" : "service-mise-no-staff"}>
+                        {entry?.staff || "Not assigned"}
+                      </td>
+                      <td>
+                        <label className="service-mise-check-label">
+                          <input
+                            type="checkbox"
+                            disabled={!staffAssigned}
+                            checked={isVerified}
+                            onChange={() => toggle(task)}
+                          />
+                          <span className={`service-mise-check-custom ${isVerified ? "checked" : ""} ${!staffAssigned ? "disabled" : ""}`} />
+                        </label>
+                      </td>
+                      <td className="service-mise-time">{entry?.time || "—"}</td>
+                    </tr>
+                  );
+                })}
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

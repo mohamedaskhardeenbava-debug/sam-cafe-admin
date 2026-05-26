@@ -63,15 +63,15 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
       <div className="recipe-header">
         <h2>Recipes</h2>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="orders-export-btn" onClick={exportRecipes}>Export</button>
-          <button className="recipe-add-btn" onClick={() => setShowForm(true)}>+ Add Recipe</button>
+          <button className="export-btn" onClick={exportRecipes}>Export</button>
+          <button className="category-add-btn" onClick={() => setShowForm(true)}>+ Add Recipe</button>
         </div>
       </div>
 
       {/* FILTER BAR */}
       <div className="recipe-filter-bar">
         <input
-          className="recipe-search"
+          className="search-input"
           placeholder="🔍 Search recipes…"
           value={recipeSearch}
           onChange={e => setRecipeSearch(e.target.value)}
@@ -92,53 +92,55 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
       )}
 
       {/* CARD GRID */}
-      <div className="recipe-card-grid">
-        {filteredRecipes.map(r => {
-          const steps = countSteps(r.description);
-          return (
-            <div
-              key={r.id}
-              className="recipe-card"
-              onClick={() => setSelected(r)}
-            >
-              <div className="recipe-card-content">
-                <h3>{r.name}</h3>
-                {steps > 0 && (
-                  <span className="recipe-card-meta">{steps} step{steps !== 1 ? "s" : ""}</span>
-                )}
-              </div>
-
-              <button
-                className="recipe-delete-btn"
-                title="Delete recipe"
-                onClick={e => {
-                  e.stopPropagation();
-                  deleteRecipe(r.id);
-                }}
+      <div className="card-grid-wrapper">
+        <div className="recipe-card-grid">
+          {filteredRecipes.map(r => {
+            const steps = countSteps(r.description);
+            return (
+              <div
+                key={r.id}
+                className="recipe-card"
+                onClick={() => setSelected(r)}
               >
-                <img src={deleteIcon} alt="Delete" />
-              </button>
-            </div>
-          );
-        })}
+                <div className="recipe-card-content">
+                  <h3>{r.name}</h3>
+                  {steps > 0 && (
+                    <span className="recipe-card-meta">{steps} step{steps !== 1 ? "s" : ""}</span>
+                  )}
+                </div>
+
+                <button
+                  className="recipe-delete-btn"
+                  title="Delete recipe"
+                  onClick={e => {
+                    e.stopPropagation();
+                    deleteRecipe(r.id);
+                  }}
+                >
+                  <img src={deleteIcon} alt="Delete" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* ADD MODAL */}
       {showForm && (
-        <div className="category-modal-overlay">
-          <form className="category-modal" onSubmit={addRecipe}>
-            <div className="category-modal-header">
+        <div className="modal-overlay">
+          <form className="modal" onSubmit={addRecipe}>
+            <div className="modal-header">
               <h3>Add Recipe</h3>
               <button
                 type="button"
-                className="dish-close-btn"
+                className="close-btn"
                 onClick={() => { resetForm(); setShowForm(false); }}
               >
                 ✕
               </button>
             </div>
 
-            <div className="category-modal-body">
+            <div className="modal-body">
               <div className="form-group">
                 <label>Recipe Name</label>
                 <input
@@ -160,14 +162,14 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
               </div>
             </div>
 
-            <div className="category-modal-footer form-actions">
-              <button type="submit">Save Recipe</button>
+            <div className="modal-footer ">
               <button
                 type="button"
                 onClick={() => { resetForm(); setShowForm(false); }}
               >
                 Cancel
               </button>
+              <button type="submit">Save Recipe</button>
             </div>
           </form>
         </div>
@@ -175,9 +177,9 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
 
       {/* DETAIL MODAL */}
       {selected && (
-        <div className="category-modal-overlay" onClick={() => setSelected(null)}>
-          <div className="category-modal" onClick={e => e.stopPropagation()}>
-            <div className="category-modal-header">
+        <div className="modal-overlay" onClick={() => setSelected(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
               <div>
                 <h3>{selected.name}</h3>
                 <span style={{ fontSize: 12, color: "#a3a3a3", display: "block", marginTop: 2 }}>
@@ -186,14 +188,14 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
               </div>
               <button
                 type="button"
-                className="dish-close-btn"
+                className="close-btn"
                 onClick={() => setSelected(null)}
               >
                 ✕
               </button>
             </div>
 
-            <div className="category-modal-body">
+            <div className="modal-body">
               <ul>
                 {selected.description
                   ?.split("\n")
@@ -204,12 +206,13 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
               </ul>
             </div>
 
-            <div className="category-modal-footer form-actions">
+            <div className="modal-footer ">
               <button type="button" onClick={() => setSelected(null)}>Close</button>
             </div>
           </div>
         </div>
       )}
+
 
     </div>
   );

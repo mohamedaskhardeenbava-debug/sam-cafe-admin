@@ -355,7 +355,7 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
             <CustomDatePicker label="To" value={toDate} min={fromDate} max={today} onChange={(s) => { setToDate(s); setDatePreset("custom"); }} />
           </div>
         </div>
-        <button className="dashboard-export-btn" onClick={handleExport}>Export</button>
+        <button className="export-btn" onClick={handleExport}>Export</button>
         <div className="dashboard-filter-kpis">
           <div className="dashboard-kpi-row">
             <div className="kpi-card kpi-small"><p>Total Items</p><h3>{itemStats.total}</h3></div>

@@ -110,7 +110,7 @@ export default function StaffSalary({ adminData }) {
             <div className="staff-header">
                 <h2>Salary Management</h2>
                 <div style={{ display: "flex", gap: 8 }}>
-                    <button className="orders-export-btn" onClick={() => {
+                    <button className="export-btn" onClick={() => {
                         const rows = filteredList.map((s, i) => {
                             const totalAdvance = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.advance || 0), 0);
                             const totalDeduction = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.deduction || 0), 0);
@@ -143,7 +143,7 @@ export default function StaffSalary({ adminData }) {
             {/* FILTER BAR */}
             <div className="staff-filter-bar">
                 <input
-                    className="staff-search-input"
+                    className="search-input"
                     placeholder="🔍 Search name or role…"
                     value={salarySearch}
                     onChange={e => setSalarySearch(e.target.value)}

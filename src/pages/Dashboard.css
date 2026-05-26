@@ -234,17 +234,6 @@
   width: 100%;
 }
 
-.dashboard-export-btn {
-  height: 38px;
-  padding: 0 16px;
-  border-radius: 999px;
-  border: 1px solid #111;
-  background: #111;
-  color: #fff;
-  font-weight: 500;
-  cursor: pointer;
-}
-
 .chart-header {
   display: flex;
   align-items: center;

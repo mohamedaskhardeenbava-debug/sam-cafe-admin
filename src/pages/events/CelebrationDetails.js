@@ -63,10 +63,10 @@ const CelebrationDetails = ({ adminData, setAdminData }) => {
   const [localStatus, setLocalStatus] = useState(data?.status || "pending");
 
   if (!data) return (
-    <div className="evt-clbd-page">
+    <div className="details-container">
       <div className="evt-clbd-container">
-        <div className="evt-clbd-header">
-          <button className="evt-clbd-back-btn" onClick={() => navigate(-1)} />
+        <div className="details-header">
+          <button className="back-btn" onClick={() => navigate(-1)} />
           <div>
             <h2 className="evt-clbd-title">Celebration Detail</h2>
           </div>
@@ -127,12 +127,12 @@ const CelebrationDetails = ({ adminData, setAdminData }) => {
   ];
 
   return (
-    <div className="evt-clbd-page">
+    <div className="details-container">
       <div className="evt-clbd-container">
 
         {/* ── HEADER ── */}
-        <div className="evt-clbd-header">
-          <button className="evt-clbd-back-btn" onClick={() => navigate(-1)} />
+        <div className="details-header">
+          <button className="back-btn" onClick={() => navigate(-1)} />
           <div>
             <h2 className="evt-clbd-title">Celebration Detail</h2>
             <p className="evt-clbd-id">ID: <code>{data.id}</code></p>

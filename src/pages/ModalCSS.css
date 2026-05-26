@@ -1,0 +1,183 @@
+.close-btn {
+    position: relative;
+
+    width: 36px;
+    height: 36px;
+
+    border-radius: 5px;
+    border: none;
+    background-color: #f2f2f2;
+
+    cursor: pointer;
+    padding: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+/* hover & active */
+.close-btn:hover {
+    background-color: #e5e5e5;
+    transform: scale(1.05);
+}
+
+.close-btn:active {
+    transform: scale(0.95);
+}
+
+/* ✕ icon */
+.close-btn::before,
+.close-btn::after {
+    content: "";
+    position: absolute;
+
+    width: 18px;
+    height: 2px;
+
+    background-color: #333;
+    border-radius: 2px;
+}
+
+/* first line */
+.close-btn::before {
+    transform: rotate(45deg);
+}
+
+/* second line */
+.close-btn::after {
+    transform: rotate(-45deg);
+}
+
+/* ---------- MODAL CARD ---------- */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.modal {
+    position: relative;
+    background: #ffffff;
+    width: 560px;
+    min-height: 85vh;
+    max-height: 85vh;
+    padding: 24px;
+    border-radius: 14px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: visible !important;
+}
+
+.modal-header {
+    position: sticky;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    top: 0;
+    z-index: 2;
+    background-color: #ffffff;
+}
+
+.modal-body {
+    overflow-y: auto;
+    box-sizing: border-box;
+    height: 100%;
+}
+
+.modal-body input {
+    box-sizing: border-box;
+}
+
+.modal.large {
+    width: 480px;
+}
+
+.modal textarea {
+    resize: none;
+    min-height: 70px;
+}
+
+/* ================= FOOTER ================= */
+.modal-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background-color: #ffffff;
+
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 10px;
+    box-sizing: border-box;
+    margin-top: auto;
+}
+
+/* BUTTONS */
+.modal-footer button {
+    padding: 8px 14px;
+    font-size: 13px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    background: #f0f0f0;
+}
+
+.modal-footer button:last-child {
+    background: #2563eb;
+    color: white;
+}
+
+.modal-footer button:hover {
+    transform: scale(1.05);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.modal-actions button {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.form-actions button {
+    padding: 8px 14px;
+    font-size: 13px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3 ease-in;
+}
+
+.form-actions button:first-child {
+    background-color: #2563eb;
+    color: #ffffff;
+}
+
+.form-actions button:last-child {
+    background-color: #d8d8d8;
+    color: #111;
+}
+
+.form-actions button:hover {
+    scale: 1.05;
+}

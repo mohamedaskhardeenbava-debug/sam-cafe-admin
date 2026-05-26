@@ -54,11 +54,11 @@ export default function KitchenActivityLog({ adminData }) {
         <div className="activity-page">
             <div className="activity-header">
                 <h2 className="activity-title">Kitchen Activity Log</h2>
-                <button className="orders-export-btn" onClick={exportToExcel}>Export</button>
+                <button className="export-btn" onClick={exportToExcel}>Export</button>
             </div>
 
             <div className="activity-filter-bar">
-                <input className="cdp-search-input" placeholder="🔍 Search work / staff…"
+                <input className="search-input" placeholder="🔍 Search work / staff…"
                     value={searchText} onChange={e => setSearchText(e.target.value)} />
                 <CustomDatePicker label="From" value={fromDate} max={toDate}
                     onChange={(s) => { setFromDate(s); if (s > toDate) setToDate(s); setActivePreset("custom"); }} />

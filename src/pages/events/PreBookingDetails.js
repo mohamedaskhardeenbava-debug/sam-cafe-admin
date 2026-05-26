@@ -53,10 +53,10 @@ const PreBookingDetails = ({ adminData, setAdminData }) => {
   const [localStatus, setLocalStatus] = useState(data?.status || "scheduled");
 
   if (!data) return (
-    <div className="evt-pbd-page">
+    <div className="details-container">
       <div className="evt-pbd-container">
-        <div className="evt-pbd-header">
-          <button className="evt-pbd-back-btn" onClick={() => navigate(-1)} />
+        <div className="details-header">
+          <button className="back-btn" onClick={() => navigate(-1)} />
           <div>
             <h2 className="evt-pbd-title">PreBooking Detail</h2>
           </div>
@@ -112,12 +112,12 @@ const PreBookingDetails = ({ adminData, setAdminData }) => {
   ];
 
   return (
-    <div className="evt-pbd-page">
+    <div className="details-container">
       <div className="evt-pbd-container">
 
         {/* ── HEADER ── */}
-        <div className="evt-pbd-header">
-          <button className="evt-pbd-back-btn" onClick={() => navigate(-1)} />
+        <div className="details-header">
+          <button className="back-btn" onClick={() => navigate(-1)} />
           <div>
             <h2 className="evt-pbd-title">PreBooking Detail</h2>
             <p className="evt-pbd-id">ID: <code>{data.id}</code></p>

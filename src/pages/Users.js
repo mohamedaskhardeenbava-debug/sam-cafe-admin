@@ -78,15 +78,15 @@ const Users = ({ handleSort, sortConfig, users }) => {
             <div className="users-header">
                 <h2 className="users-title">Users</h2>
                 <div style={{ display: "flex", gap: 8 }}>
-                    <button className="orders-export-btn" onClick={exportUsers}>Export</button>
-                    <button className="campaign-btn" onClick={sendCampaignToAllUsers}>Campaign</button>
+                    <button className="export-btn" onClick={exportUsers}>Export</button>
+                    <button className="category-add-btn" onClick={sendCampaignToAllUsers}>Campaign</button>
                 </div>
             </div>
 
             {/* FILTER BAR */}
             <div className="users-filter-bar">
                 <input
-                    className="users-search"
+                    className="search-input"
                     placeholder="🔍 Search name or mobile…"
                     value={userSearch}
                     onChange={e => setUserSearch(e.target.value)}
@@ -147,141 +147,3 @@ const Users = ({ handleSort, sortConfig, users }) => {
 };
 
 export default Users;
-
-// import React, { useEffect, useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import api from "../api";
-// import "./Ingredients.css"; // reuse Ingredients table styles
-
-// const Users = () => {
-//     const [users, setUsers] = useState([]);
-//     const navigate = useNavigate();
-
-//     useEffect(() => {
-//         const fetchUsers = async () => {
-//             try {
-//                 const res = await api.get("/users");
-//                 setUsers(res.data || []);
-//             } catch (err) {
-//                 console.error("Failed to fetch users", err);
-//             }
-//         };
-
-//         fetchUsers();
-//     }, []);
-
-//     const normalizeIndianMobile = (mobile) => {
-//         if (!mobile) return null;
-
-//         let digits = mobile.toString().replace(/\D/g, "");
-
-//         // remove leading 0 (VERY IMPORTANT)
-//         if (digits.startsWith("0")) {
-//             digits = digits.slice(1);
-//         }
-
-//         // remove country code if present
-//         if (digits.startsWith("91") && digits.length === 12) {
-//             digits = digits.slice(2);
-//         }
-
-//         // must be exactly 10 digits
-//         if (digits.length !== 10) return null;
-
-//         return `91${digits}`;
-//     };
-
-//     // const runWhatsappCampaign = (user) => {
-//     //     if (!user || !user.mobile) return;
-
-//     //     const phone = normalizeIndianMobile(user.mobile);
-//     //     if (!phone) {
-//     //         alert(`Invalid mobile number: ${user.mobile}`);
-//     //         return;
-//     //     }
-
-//     //     const message =
-//     //         `Hi ${user.name}, 🎉 Special offers are waiting for you at Sam Cafe!`;
-
-//     //     const url =
-//     //         `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
-
-//     //     window.open(url, "_blank");
-//     // };
-
-//     const sendCampaignToAllUsers = () => {
-//         const message =
-//             "🎉 Special offers are waiting for you at Sam Cafe! Order now 🍔🍕";
-
-//         const url =
-//             `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
-
-//         window.open(url, "_blank");
-//     };
-
-//     return (
-//         <div className="ingredients-page">
-//             {/* HEADER */}
-//             <div className="ingredient-header">
-//                 <h2 className="ingredient-title">Users</h2>
-
-//                 <button
-//                     className="ingredient-add-btn"
-//                     onClick={sendCampaignToAllUsers}
-//                 >
-//                     Send to All
-//                 </button>
-//             </div>
-
-//             {/* TABLE */}
-//             <div className="ingredient-table-wrapper">
-//                 <table className="ingredient-table">
-//                     <thead>
-//                         <tr>
-//                             <th>#</th>
-//                             <th>User Name</th>
-//                             <th>Mobile</th>
-//                             <th>Orders</th>
-//                             {/* <th>Campaign</th> */}
-//                         </tr>
-//                     </thead>
-
-//                     <tbody>
-//                         {users.length === 0 && (
-//                             <tr>
-//                                 <td colSpan="5">No users found</td>
-//                             </tr>
-//                         )}
-
-//                         {users.map((user, index) => (
-//                             <tr
-//                                 key={user.id}
-//                                 className="clickable"
-//                                 onClick={() => navigate(`/users/${user.id}`)}
-//                             >
-//                                 <td>{index + 1}</td>
-//                                 <td>{user.name}</td>
-//                                 <td>{user.mobile}</td>
-//                                 <td>{user.orders?.length || 0}</td>
-
-//                                 {/* WhatsApp button */}
-//                                 {/* <td
-//                                     onClick={(e) => {
-//                                         e.stopPropagation(); // prevent row navigation
-//                                         runWhatsappCampaign(user);
-//                                     }}
-//                                 >
-//                                     <button className="ingredient-add-btn">
-//                                         WhatsApp
-//                                     </button>
-//                                 </td> */}
-//                             </tr>
-//                         ))}
-//                     </tbody>
-//                 </table>
-//             </div>
-//         </div>
-//     );
-// };
-
-// export default Users;

@@ -21,8 +21,8 @@ const FavouriteDetails = ({ adminData }) => {
     return (
         <div className="favourite-details-page">
 
-            <div className="favourite-container">
-                <div className="favourite-details-header">
+            <div className="details-container">
+                <div className="details-header">
                     <button className="back-btn" onClick={() => navigate(-1)} />
                     <h2>{dish.name}</h2>
                 </div>

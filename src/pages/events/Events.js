@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import "./Events.css";
+import "../ModalCSS.css";
 import api from "../../api";
 import { useToast } from "../../useToast";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
@@ -129,7 +130,7 @@ const getMonthRange = () => {
 };
 
 // ─── Main Component ─────────────────────────────────────────────────────────
-const Events = ({ adminData, setAdminData }) => {
+const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
     const { toast } = useToast();
     const events = adminData?.events || [];
     const bookings = adminData?.eventBookings || [];
@@ -146,6 +147,7 @@ const Events = ({ adminData, setAdminData }) => {
         return list;
     }, [adminData]);
 
+    const sf = savedFilters;
     const [showForm, setShowForm] = useState(false);
     const [showSpecForm, setShowSpecForm] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
@@ -156,24 +158,24 @@ const Events = ({ adminData, setAdminData }) => {
     const [highlightInput, setHighlightInput] = useState("");
     const [specTagInput, setSpecTagInput] = useState("");
     const [specHighlightInput, setSpecHighlightInput] = useState("");
-    const [activeTab, setActiveTab] = useState("events");
-    const [filterEventId, setFilterEventId] = useState("all");
-    const [filterStatus, setFilterStatus] = useState("all");
-    const [filterFromDate, setFilterFromDate] = useState("");
-    const [filterToDate, setFilterToDate] = useState("");
+    const [activeTab, setActiveTab] = useState(sf?.activeTab ?? "events");
+    const [filterEventId, setFilterEventId] = useState(sf?.filterEventId ?? "all");
+    const [filterStatus, setFilterStatus] = useState(sf?.filterStatus ?? "all");
+    const [filterFromDate, setFilterFromDate] = useState(sf?.filterFromDate ?? "");
+    const [filterToDate, setFilterToDate] = useState(sf?.filterToDate ?? "");
     const [viewBooking, setViewBooking] = useState(null);
 
     // Events tab filters
-    const [evtSearch, setEvtSearch] = useState("");
-    const [evtFilterStatus, setEvtFilterStatus] = useState("upcoming,ongoing");
-    const [evtFilterType, setEvtFilterType] = useState("all");
-    const [evtFilterPublish, setEvtFilterPublish] = useState("all"); // "all" | "live" | "draft"
-    const [evtFromDate, setEvtFromDate] = useState("");
-    const [evtToDate, setEvtToDate] = useState("");
-    const [evtDatePreset, setEvtDatePreset] = useState("");
+    const [evtSearch, setEvtSearch] = useState(sf?.evtSearch ?? "");
+    const [evtFilterStatus, setEvtFilterStatus] = useState(sf?.evtFilterStatus ?? "upcoming,ongoing");
+    const [evtFilterType, setEvtFilterType] = useState(sf?.evtFilterType ?? "all");
+    const [evtFilterPublish, setEvtFilterPublish] = useState(sf?.evtFilterPublish ?? "all");
+    const [evtFromDate, setEvtFromDate] = useState(sf?.evtFromDate ?? "");
+    const [evtToDate, setEvtToDate] = useState(sf?.evtToDate ?? "");
+    const [evtDatePreset, setEvtDatePreset] = useState(sf?.evtDatePreset ?? "");
     const [addGuestCount, setAddGuestCount] = useState(1);
     const [addGuestSaving, setAddGuestSaving] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
+    const [searchQuery, setSearchQuery] = useState(sf?.searchQuery ?? "");
     const [useCurrentLocation, setUseCurrentLocation] = useState(false);
     const [useRestaurantAddrSpec, setUseRestaurantAddrSpec] = useState(false);
 
@@ -237,6 +239,19 @@ const Events = ({ adminData, setAdminData }) => {
         if (evtToDate) list = list.filter(e => (e.date || "") <= evtToDate);
         return list;
     }, [events, evtSearch, evtFilterStatus, evtFilterType, evtFilterPublish, evtFromDate, evtToDate]);
+
+    // ── Persist filters for back-navigation restore ──
+    useEffect(() => {
+        if (typeof onSaveFilters === "function") {
+            onSaveFilters({
+                activeTab, filterEventId, filterStatus, filterFromDate, filterToDate,
+                evtSearch, evtFilterStatus, evtFilterType, evtFilterPublish,
+                evtFromDate, evtToDate, evtDatePreset, searchQuery,
+            });
+        }
+    }, [activeTab, filterEventId, filterStatus, filterFromDate, filterToDate,
+        evtSearch, evtFilterStatus, evtFilterType, evtFilterPublish,
+        evtFromDate, evtToDate, evtDatePreset, searchQuery]);
 
     const exportEvents = () => {
         if (!filteredEvents.length) { alert("No events to export"); return; }
@@ -724,11 +739,11 @@ const Events = ({ adminData, setAdminData }) => {
                     <div className="ae-tab-pills">
                         <button className={`ae-tab-pill ${activeTab === "events" ? "active" : ""}`} onClick={() => setActiveTab("events")}>
                             Events
-                            <span className="ae-badge">{events.length}</span>
+                            <span className="ae-badge">{filteredEvents.length}/{events.length}</span>
                         </button>
                         <button className={`ae-tab-pill ${activeTab === "bookings" ? "active" : ""}`} onClick={() => setActiveTab("bookings")}>
                             Bookings
-                            <span className="ae-badge ae-badge-purple">{bookings.length}</span>
+                            <span className="ae-badge ae-badge-purple">{filteredBookings.length}/{bookings.length}</span>
                         </button>
                     </div>
                     {activeTab === "events" && (
@@ -746,12 +761,12 @@ const Events = ({ adminData, setAdminData }) => {
                     <div className="ae-events-filter-bar">
                         <div className="ae-events-filter-top">
                             <input
-                                className="ae-events-search"
+                                className="search-input"
                                 placeholder="🔍 Search title, venue, type…"
                                 value={evtSearch}
                                 onChange={e => setEvtSearch(e.target.value)}
                             />
-                            <button className="orders-export-btn" onClick={exportEvents}>Export</button>
+                            <button className="export-btn" onClick={exportEvents}>Export</button>
                         </div>
                         <div className="ae-events-filter-groups">
                             {/* Status */}
@@ -935,8 +950,8 @@ const Events = ({ adminData, setAdminData }) => {
 
             {/* BOOKINGS TAB */}
             {activeTab === "bookings" && (
-                <div className="ae-bookings-section">
-                    <div className="ae-booking-filters">
+                <div className="admin-events-page">
+                    <div className="ae-events-filter-bar">
                         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                             <input type="text" placeholder="Search by name, email or phone…" className="ae-search-input" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
 
@@ -976,7 +991,7 @@ const Events = ({ adminData, setAdminData }) => {
                             </div>
                         </div>
 
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", alignItems: "center", marginTop: 8 }}>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", alignItems: "center", marginTop: 4 }}>
                             {/* Event filter */}
                             <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                                 <span className="ae-filter-group-label">Event</span>
@@ -1010,7 +1025,7 @@ const Events = ({ adminData, setAdminData }) => {
                                 }}>Clear</button>
                             )}
                             <span className="ae-result-count">{filteredBookings.length} result(s)</span>
-                            <button className="orders-export-btn" onClick={exportBookings} style={{ marginLeft: "auto" }}>Export</button>
+                            <button className="export-btn" onClick={exportBookings} style={{ marginLeft: "auto" }}>Export</button>
                         </div>
                     </div>
 
@@ -1073,7 +1088,7 @@ const Events = ({ adminData, setAdminData }) => {
                     <div className="ingredient-modal ae-event-modal">
                         <div className="ingredient-modal-header">
                             <h3>{isEditMode ? "Edit Event" : "Create New Event"}</h3>
-                            <button className="ingredient-close-btn" onClick={resetForm} aria-label="Close" />
+                            <button className="close-btn" onClick={resetForm} aria-label="Close" />
                         </div>
 
                         <div className="ingredient-modal-body ae-event-form-body">
@@ -1210,10 +1225,10 @@ const Events = ({ adminData, setAdminData }) => {
                         </div>
 
                         <div className="ingredient-modal-footer">
-                            <div className="form-actions">
-                                <button type="button" onClick={handleSave}>{isEditMode ? "Save Changes" : "Create Event"}</button>
-                                <button type="button" onClick={resetForm}>Cancel</button>
-                            </div>
+
+                            <button type="button" onClick={handleSave}>{isEditMode ? "Save Changes" : "Create Event"}</button>
+                            <button type="button" onClick={resetForm}>Cancel</button>
+
                         </div>
                     </div>
                 </div>
@@ -1222,20 +1237,20 @@ const Events = ({ adminData, setAdminData }) => {
             {/* SPECIALIZED EVENT MODAL */}
             {showSpecForm && (
                 <div className="event-modal-overlay">
-                    <div className="event-modal ae-spec-modal">
+                    <div className="event-modal">
                         <div className="event-modal-header">
                             <div>
                                 <h3>Create Event</h3>
-                                <div className="ae-spec-steps">
+                                <div className="evt-spec-steps">
                                     {["Event Details", "Packages & Add-ons", "Dishes", "Summary & Preview"].map((s, i) => (
-                                        <button key={i} className={`ae-spec-step ${specFormStep === i + 1 ? "active" : ""} ${specFormStep > i + 1 ? "done" : ""}`} onClick={() => setSpecFormStep(i + 1)}>
-                                            <span className="ae-step-num">{specFormStep > i + 1 ? "✓" : i + 1}</span>
-                                            <span className="ae-step-label">{s}</span>
+                                        <button key={i} className={`evt-spec-step ${specFormStep === i + 1 ? "active" : ""} ${specFormStep > i + 1 ? "done" : ""}`} onClick={() => setSpecFormStep(i + 1)}>
+                                            <span className="evt-step-num">{specFormStep > i + 1 ? "✓" : i + 1}</span>
+                                            <span className="evt-step-label">{s}</span>
                                         </button>
                                     ))}
                                 </div>
                             </div>
-                            <button className="ingredient-close-btn" onClick={resetSpecForm} aria-label="Close" />
+                            <button className="close-btn" onClick={resetSpecForm} aria-label="Close" />
                         </div>
 
                         <div className={`event-modal-body ae-spec-form-body${specFormStep === 3 ? " ae-spec-form-body--split" : ""}`}>
@@ -1542,17 +1557,16 @@ const Events = ({ adminData, setAdminData }) => {
                         </div>
 
                         <div className="event-modal-footer">
-                            <div className="form-actions ae-spec-footer">
-                                {specFormStep > 1 && (
-                                    <button type="button" className="ae-step-prev-btn" onClick={() => setSpecFormStep(s => s - 1)}>← Back</button>
-                                )}
-                                {specFormStep < 4 ? (
-                                    <button type="button" className="btn-primary" onClick={() => setSpecFormStep(s => s + 1)}>Next →</button>
-                                ) : (
-                                    <button type="button" className="btn-primary" onClick={handleSpecSave}>Create Event</button>
-                                )}
-                                <button type="button" onClick={resetSpecForm}>Cancel</button>
-                            </div>
+                            <button type="button" onClick={resetSpecForm}>Cancel</button>
+                            {specFormStep > 1 && (
+                                <button type="button" className="ae-step-prev-btn" onClick={() => setSpecFormStep(s => s - 1)}>← Back</button>
+                            )}
+                            {specFormStep < 4 ? (
+                                <button type="button" onClick={() => setSpecFormStep(s => s + 1)}>Next →</button>
+                            ) : (
+                                <button type="button" onClick={handleSpecSave}>Create Event</button>
+                            )}
+
                         </div>
                     </div>
                 </div>
@@ -1564,7 +1578,7 @@ const Events = ({ adminData, setAdminData }) => {
                     <div className="ingredient-modal ae-booking-detail-modal">
                         <div className="ingredient-modal-header">
                             <h3>Booking Details</h3>
-                            <button className="ingredient-close-btn" onClick={() => setViewBooking(null)} aria-label="Close" />
+                            <button className="close-btn" onClick={() => setViewBooking(null)} aria-label="Close" />
                         </div>
                         <div className="ingredient-modal-body ae-booking-detail-body">
                             {(() => {
@@ -1630,15 +1644,15 @@ const Events = ({ adminData, setAdminData }) => {
                             })()}
                         </div>
                         <div className="ingredient-modal-footer">
-                            <div className="form-actions">
-                                {viewBooking.status === "pending" && (
-                                    <button onClick={() => handleBookingStatus(viewBooking.id, "confirmed")}>Confirm Booking</button>
-                                )}
-                                {viewBooking.status !== "cancelled" && (
-                                    <button style={{ background: "#dc2626", color: "#fff" }} onClick={() => handleBookingStatus(viewBooking.id, "cancelled")}>Cancel Booking</button>
-                                )}
-                                <button onClick={() => { setViewBooking(null); setAddGuestCount(1); }}>Close</button>
-                            </div>
+
+                            {viewBooking.status === "pending" && (
+                                <button onClick={() => handleBookingStatus(viewBooking.id, "confirmed")}>Confirm Booking</button>
+                            )}
+                            {viewBooking.status !== "cancelled" && (
+                                <button style={{ background: "#dc2626", color: "#fff" }} onClick={() => handleBookingStatus(viewBooking.id, "cancelled")}>Cancel Booking</button>
+                            )}
+                            <button onClick={() => { setViewBooking(null); setAddGuestCount(1); }}>Close</button>
+
                         </div>
                     </div>
                 </div>
@@ -1650,7 +1664,7 @@ const Events = ({ adminData, setAdminData }) => {
                     <div className="ingredient-modal ae-confirm-modal">
                         <div className="ingredient-modal-header">
                             <h3>Delete Event</h3>
-                            <button className="ingredient-close-btn" onClick={() => setConfirmDeleteId(null)} aria-label="Close" />
+                            <button className="close-btn" onClick={() => setConfirmDeleteId(null)} aria-label="Close" />
                         </div>
                         <div className="ingredient-modal-body">
                             <p style={{ margin: "8px 0 20px", color: "#444", fontSize: 14, lineHeight: 1.6 }}>
@@ -1658,10 +1672,9 @@ const Events = ({ adminData, setAdminData }) => {
                             </p>
                         </div>
                         <div className="ingredient-modal-footer">
-                            <div className="form-actions">
-                                <button onClick={() => setConfirmDeleteId(null)}>Cancel</button>
-                                <button style={{ background: "#dc2626" }} onClick={confirmDelete}>Delete Event</button>
-                            </div>
+                            <button onClick={() => setConfirmDeleteId(null)}>Cancel</button>
+                            <button style={{ background: "#dc2626" }} onClick={confirmDelete}>Delete Event</button>
+
                         </div>
                     </div>
                 </div>

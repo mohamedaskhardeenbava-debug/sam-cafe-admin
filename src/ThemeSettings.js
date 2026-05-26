@@ -556,7 +556,7 @@ const ThemeSettings = () => {
                 </div>
                 <div className="ts-header-actions">
                     <button className="ts-reset-btn" onClick={resetToDefaults}>Reset to Default</button>
-                    <button className={`ts-save-btn${saved ? " ts-saved" : ""}`} onClick={handleSave} disabled={saving}>
+                    <button className={`category-add-btn${saved ? " category-saved" : ""}`} onClick={handleSave} disabled={saving}>
                         {saving ? "Saving…" : saved ? "✓ Saved!" : "Save & Apply"}
                     </button>
                 </div>

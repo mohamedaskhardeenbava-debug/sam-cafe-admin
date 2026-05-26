@@ -60,10 +60,21 @@ export default function StaffAttendance({ adminData, setAdminData }) {
     const [attToDate, setAttToDate] = useState(todayStr);
     const [attPreset, setAttPreset] = useState("month");
     const [attSearch, setAttSearch] = useState("");
+    const [searchOpen, setSearchOpen] = useState(false);
+    const searchRef = useRef(null);
 
     const autoAbsentRan = useRef(false);
     const autoTodayRan = useRef(false);
     const maxDateStr = todayStr;
+
+    // Close search dropdown on outside click
+    useEffect(() => {
+        const handler = (e) => {
+            if (searchRef.current && !searchRef.current.contains(e.target)) setSearchOpen(false);
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
 
     // ── Date range helpers ────────────────────────────────────────
     const getWeekRange = () => {
@@ -263,15 +274,61 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                     </span>
                 </div>
                 <div className="att-header-right">
-                    <button className="orders-export-btn" onClick={exportAttendance}>Export</button>
-                    <button className="att-holiday-btn" onClick={() => setShowHolidayModal(true)}>+ Holiday</button>
+                    <button className="export-btn" onClick={exportAttendance}>Export</button>
+                    <button className="category-add-btn" onClick={() => setShowHolidayModal(true)}>+ Holiday</button>
                 </div>
             </div>
 
             {/* FILTER BAR */}
             <div className="att-filter-bar">
-                <input className="att-search" placeholder="🔍 Search staff…"
-                    value={attSearch} onChange={e => setAttSearch(e.target.value)} />
+                {/* SEARCH WITH STATS DROPDOWN */}
+                <div className="att-search-wrap" ref={searchRef}>
+                    <input className="search-input" placeholder="🔍 Search staff…"
+                        value={attSearch}
+                        onChange={e => { setAttSearch(e.target.value); setSearchOpen(true); }}
+                        onFocus={() => setSearchOpen(true)}
+                    />
+                    {searchOpen && (
+                        <div className="att-search-dropdown">
+                            {staffStats
+                                .filter(s =>
+                                    !attSearch ||
+                                    s.name.toLowerCase().includes(attSearch.toLowerCase()) ||
+                                    (s.role || "").toLowerCase().includes(attSearch.toLowerCase())
+                                )
+                                .map((s, i) => (
+                                    <div key={s.id} className="att-search-suggestion"
+                                        onMouseDown={() => { setAttSearch(s.name); setSearchOpen(false); }}>
+                                        <div className="att-sug-avatar" style={{ background: `hsl(${i * 55 + 180},65%,55%)` }}>
+                                            {s.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div className="att-sug-info">
+                                            <span className="att-sug-name">{s.name}</span>
+                                            {s.role && <span className="att-sug-role">{s.role}</span>}
+                                        </div>
+                                        <div className="att-sug-bar-wrap">
+                                            <div className="att-sug-bar" style={{
+                                                width: `${s.pct}%`,
+                                                background: s.pct >= 80 ? "#16a34a" : s.pct >= 60 ? "#f59e0b" : "#dc2626"
+                                            }} />
+                                        </div>
+                                        <div className="att-sug-nums">
+                                            <span className="att-sug-p">✔{s.present}</span>
+                                            <span className="att-sug-a">✖{s.absent}</span>
+                                            {s.leave > 0 && <span className="att-sug-l">L{s.leave}</span>}
+                                        </div>
+                                        <span className="att-sug-pct" style={{ color: s.pct >= 80 ? "#16a34a" : s.pct >= 60 ? "#f59e0b" : "#dc2626" }}>{s.pct}%</span>
+                                    </div>
+                                ))
+                            }
+                            {staffStats.filter(s =>
+                                !attSearch ||
+                                s.name.toLowerCase().includes(attSearch.toLowerCase()) ||
+                                (s.role || "").toLowerCase().includes(attSearch.toLowerCase())
+                            ).length === 0 && <div className="att-search-no-result">No staff found</div>}
+                        </div>
+                    )}
+                </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                     <span className="att-filter-lbl">Range</span>
                     {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([k, lbl]) => (
@@ -292,8 +349,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                 {(attSearch || attPreset === "custom") && (
                     <button className="ae-clear-filter" onClick={() => { setAttSearch(""); applyAttPreset("month"); }}>Clear</button>
                 )}
-                <button className={`sched-pill-btn att-stats-toggle${statsOpen ? " active" : ""}`}
-                    onClick={() => setStatsOpen(v => !v)}>📊 Stats</button>
+
                 {/* Column-edit all toggle */}
                 <button className="att-col-edit-btn"
                     onClick={() => {
@@ -306,31 +362,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                 </button>
             </div>
 
-            {/* STATS PANEL */}
-            <div className={`att-stats-panel${statsOpen ? " att-stats-open" : ""}`}>
-                <div className="att-stats-row">
-                    {staffStats.map((s, i) => (
-                        <div key={s.id} className="att-stats-card">
-                            <div className="att-stats-avatar" style={{ background: `hsl(${i * 55 + 180},65%,55%)` }}>
-                                {s.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div className="att-stats-info">
-                                <span className="att-stats-name">{s.name}</span>
-                                <div className="att-stats-bar-wrap">
-                                    <div className="att-stats-bar"
-                                        style={{ width: `${s.pct}%`, background: s.pct >= 80 ? "#16a34a" : s.pct >= 60 ? "#f59e0b" : "#dc2626" }} />
-                                </div>
-                                <div className="att-stats-nums">
-                                    <span className="att-stats-p">✔ {s.present}</span>
-                                    <span className="att-stats-a">✖ {s.absent}</span>
-                                    <span className="att-stats-l">L {s.leave}</span>
-                                    <span className="att-stats-pct">{s.pct}%</span>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+
 
             {/* TABLE WRAPPER */}
             <div className="att-scroll-wrap">
@@ -520,29 +552,27 @@ export default function StaffAttendance({ adminData, setAdminData }) {
 
             {/* HOLIDAY MODAL */}
             {showHolidayModal && (
-                <div className="att-modal-overlay">
-                    <div className="att-modal">
-                        <div className="att-modal-header">
+                <div className="modal-overlay">
+                    <div className="modal">
+                        <div className="modal-header">
                             <h3>Add Holiday</h3>
-                            <button className="att-modal-close" onClick={() => setShowHolidayModal(false)} />
+                            <button className="close-btn" onClick={() => setShowHolidayModal(false)} />
                         </div>
-                        <div className="att-modal-body">
-                            <div className="att-form-group">
+                            <div className="form-group">
                                 <label>Date</label>
                                 <CustomDatePicker value={holidayForm.date} max={maxDateStr}
                                     onChange={val => setHolidayForm(prev => ({ ...prev, date: val }))}
                                     placeholder="Select holiday date" />
                             </div>
-                            <div className="att-form-group">
+                            <div className="form-group">
                                 <label>Reason / Name</label>
                                 <input placeholder="e.g. Diwali, Republic Day…"
                                     value={holidayForm.reason}
                                     onChange={e => setHolidayForm(prev => ({ ...prev, reason: e.target.value }))} />
                             </div>
-                        </div>
-                        <div className="att-modal-footer">
-                            <button className="att-btn-primary" onClick={addHoliday}>Save Holiday</button>
-                            <button className="att-btn-secondary" onClick={() => setShowHolidayModal(false)}>Cancel</button>
+                        <div className="modal-footer">
+                            <button onClick={() => setShowHolidayModal(false)}>Cancel</button>
+                            <button onClick={addHoliday}>Save Holiday</button>
                         </div>
                     </div>
                 </div>

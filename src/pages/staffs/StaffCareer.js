@@ -20,6 +20,42 @@ const expLabel = (yrs) => {
     return `${n}+ yrs experience`;
 };
 
+
+// ── CustomDropdown (matches Dishes page style) ───────────────────────────────
+function CustomDropdown({ value, onChange, options, placeholder = "Select…" }) {
+    const [open, setOpen] = React.useState(false);
+    const ref = React.useRef(null);
+    React.useEffect(() => {
+        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+    const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
+    const label = selected ? (selected.label !== undefined ? selected.label : selected) : placeholder;
+    return (
+        <div className="dishes-dropdown-wrapper" ref={ref}>
+            <button type="button" className="dishes-status-dropdown"
+                onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
+                {label}
+            </button>
+            {open && (
+                <div className="dropdown-menu">
+                    {placeholder && (
+                        <div onClick={() => { onChange(""); setOpen(false); }}
+                            style={{ color: "#aaa", fontStyle: "italic" }}>{placeholder}</div>
+                    )}
+                    {options.map((o, i) => {
+                        const val = o.value !== undefined ? o.value : o;
+                        const lbl = o.label !== undefined ? o.label : o;
+                        return (
+                            <div key={i} onClick={() => { onChange(val); setOpen(false); }}>{lbl}</div>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+}
 export default function StaffCareer() {
     const [jobs, setJobs] = useState([]);
     const [showForm, setShowForm] = useState(false);
@@ -72,15 +108,15 @@ export default function StaffCareer() {
             <div className="staff-header">
                 <h2>Career</h2>
                 <div style={{ display: "flex", gap: 8 }}>
-                    <button className="orders-export-btn" onClick={exportJobs}>Export</button>
-                    <button className="staff-add-btn" onClick={() => setShowForm(true)}>+ Add Job Vacancy</button>
+                    <button className="export-btn" onClick={exportJobs}>Export</button>
+                    <button className="category-add-btn" onClick={() => setShowForm(true)}>+ Add Job Vacancy</button>
                 </div>
             </div>
 
             {/* FILTER BAR */}
             <div className="staff-filter-bar">
                 <input
-                    className="staff-search-input"
+                    className="search-input"
                     placeholder="🔍 Search role or description…"
                     value={careerSearch}
                     onChange={e => setCareerSearch(e.target.value)}
@@ -108,48 +144,44 @@ export default function StaffCareer() {
             )}
 
             {/* CARD GRID */}
-            <div className="card-grid">
-                {filteredJobs.map((job, i) => {
-                    const colors = roleColors[job.role] || { bg: "#f5f4f1", color: "#3a3a3a" };
-                    return (
-                        <div className="card sc-card" key={i} onClick={() => setSelected(job)}>
-                            <div className="sc-card-top">
-                                <span
-                                    className="sc-role-chip"
-                                    style={{ background: colors.bg, color: colors.color }}
-                                >
-                                    {job.role}
-                                </span>
-                                <span className="sc-exp-chip">{expLabel(job.experience)}</span>
+            <div className="card-grid-wrapper">
+                <div className="card-grid">
+                    {filteredJobs.map((job, i) => {
+                        const colors = roleColors[job.role] || { bg: "#f5f4f1", color: "#3a3a3a" };
+                        return (
+                            <div className="card sc-card" key={i} onClick={() => setSelected(job)}>
+                                <div className="sc-card-top">
+                                    <span
+                                        className="sc-role-chip"
+                                        style={{ background: colors.bg, color: colors.color }}
+                                    >
+                                        {job.role}
+                                    </span>
+                                    <span className="sc-exp-chip">{expLabel(job.experience)}</span>
+                                </div>
+                                <p className="sc-desc">{job.description || "No description provided."}</p>
+                                <div className="sc-footer">
+                                    <span className="sc-open-label">View details →</span>
+                                </div>
                             </div>
-                            <p className="sc-desc">{job.description || "No description provided."}</p>
-                            <div className="sc-footer">
-                                <span className="sc-open-label">View details →</span>
-                            </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
+                </div>
             </div>
 
             {/* ADD MODAL */}
             {showForm && (
-                <div className="category-modal-overlay">
-                    <form className="category-modal" onSubmit={addJob}>
-                        <div className="category-modal-header">
+                <div className="modal-overlay">
+                    <form className="modal" onSubmit={addJob}>
+                        <div className="modal-header">
                             <h3>Add Job Vacancy</h3>
-                            <button type="button" className="dish-close-btn" onClick={() => setShowForm(false)}>✕</button>
+                            <button type="button" className="close-btn" onClick={() => setShowForm(false)}>✕</button>
                         </div>
 
-                        <div className="category-modal-body">
+                        <div className="modal-body">
                             <div className="form-group">
                                 <label>Role</label>
-                                <select
-                                    value={form.role}
-                                    onChange={e => setForm({ ...form, role: e.target.value })}
-                                >
-                                    <option value="">Select role</option>
-                                    {roles.map(r => <option key={r} value={r}>{r}</option>)}
-                                </select>
+                                <CustomDropdown value={form.role} onChange={v => setForm({ ...form, role: v })} options={roles} placeholder="Select role" />
                             </div>
 
                             <div className="form-group">
@@ -173,9 +205,9 @@ export default function StaffCareer() {
                             </div>
                         </div>
 
-                        <div className="category-modal-footer form-actions">
-                            <button type="submit">Save Vacancy</button>
+                        <div className="modal-footer">
                             <button type="button" onClick={() => setShowForm(false)}>Cancel</button>
+                            <button type="submit">Save Vacancy</button>
                         </div>
                     </form>
                 </div>
@@ -183,17 +215,17 @@ export default function StaffCareer() {
 
             {/* DETAIL MODAL */}
             {selected && (
-                <div className="category-modal-overlay" onClick={() => setSelected(null)}>
-                    <div className="category-modal" onClick={e => e.stopPropagation()}>
-                        <div className="category-modal-header">
+                <div className="modal-overlay" onClick={() => setSelected(null)}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
                             <div>
                                 <h3>{selected.role}</h3>
                                 <span className="sc-modal-sub">Job Vacancy</span>
                             </div>
-                            <button type="button" className="dish-close-btn" onClick={() => setSelected(null)}>✕</button>
+                            <button type="button" className="close-btn" onClick={() => setSelected(null)}>✕</button>
                         </div>
 
-                        <div className="category-modal-body">
+                        <div className="modal-body">
                             <table className="staff-training-table">
                                 <tbody>
                                     <tr><td>Role</td><td>{selected.role}</td></tr>
@@ -203,7 +235,7 @@ export default function StaffCareer() {
                             </table>
                         </div>
 
-                        <div className="category-modal-footer form-actions">
+                        <div className="modal-footer ">
                             <button type="button" onClick={() => setSelected(null)}>Close</button>
                         </div>
                     </div>
