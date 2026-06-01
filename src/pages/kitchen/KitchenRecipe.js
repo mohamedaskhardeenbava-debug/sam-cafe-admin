@@ -72,7 +72,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
       <div className="recipe-filter-bar">
         <input
           className="search-input"
-          placeholder="🔍 Search recipes…"
+          placeholder=" Search recipes…"
           value={recipeSearch}
           onChange={e => setRecipeSearch(e.target.value)}
         />

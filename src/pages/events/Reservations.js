@@ -666,7 +666,7 @@ const Reservations = ({ adminData, setAdminData,
             { label: "Completed", val: completedCount, color: "#2980b9" },
             { label: "Cancelled", val: cancelledCount, color: "#dc2626" },
           ].map((k, i) => (
-            <div key={i} className="evt-kpi" style={{ borderTopColor: k.color }}>
+            <div key={i} className="evt-kpi">
               <div className="evt-kpi-val" style={{ color: k.color }}>{k.val}</div>
               <div className="evt-kpi-label">{k.label}</div>
             </div>

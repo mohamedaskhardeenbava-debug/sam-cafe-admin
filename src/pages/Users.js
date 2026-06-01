@@ -87,7 +87,7 @@ const Users = ({ handleSort, sortConfig, users }) => {
             <div className="users-filter-bar">
                 <input
                     className="search-input"
-                    placeholder="🔍 Search name or mobile…"
+                    placeholder=" Search name or mobile…"
                     value={userSearch}
                     onChange={e => setUserSearch(e.target.value)}
                 />

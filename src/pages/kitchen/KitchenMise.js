@@ -131,7 +131,7 @@ export default function KitchenMise({ adminData, setAdminData }) {
       <div className="mise-filter-bar">
         <input
           className="search-input"
-          placeholder="🔍 Search tasks…"
+          placeholder=" Search tasks…"
           value={miseSearch}
           onChange={e => setMiseSearch(e.target.value)}
         />

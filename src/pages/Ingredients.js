@@ -158,7 +158,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
       <div className="ingredient-filter-bar">
         <input
           className="search-input"
-          placeholder="🔍 Search name or brand…"
+          placeholder=" Search name or brand…"
           value={ingredientSearch}
           onChange={e => setIngredientSearch(e.target.value)}
         />

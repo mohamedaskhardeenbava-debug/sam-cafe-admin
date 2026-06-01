@@ -56,6 +56,13 @@
   will-change: transform;
   contain: layout paint;
   transform: translateZ(0);
+
+  background-color: #e5e7eb;
+  box-shadow:
+    -5px -5px 12px white,
+    5px 5px 12px rgb(153, 161, 175),
+    inset -2px -2px 5px rgb(209, 213, 220);
+  z-index: 100;
 }
 
 .kpi-small.status-placed h3,
@@ -116,11 +123,26 @@
 }
 
 .kpi-card {
-  background: #ffffff;
   padding: 16px;
   border-radius: 10px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   width: 100%;
+
+  background-color: #e5e7eb;
+  box-shadow:
+    -5px -5px 12px white,
+    5px 5px 12px rgb(153, 161, 175),
+    inset -10px -10px 20px rgb(209, 213, 220);
+  z-index: 100;
+}
+
+.kpi-card.kpi-small {
+
+  background-color: #e5e7eb;
+  box-shadow:
+    -5px -5px 10px white,
+    5px 5px 10px rgb(153, 161, 175);
+  z-index: 100;
 }
 
 .kpi-card p {
@@ -331,14 +353,19 @@
 }
 
 .staff-kpi-card {
-  background: #fff;
   border-radius: 12px;
   padding: 14px 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
   gap: 12px;
   transition: all 0.25s ease;
+  z-index: 100;
+
+  background-color: #e5e7eb;
+  box-shadow:
+    -5px -5px 12px white,
+    5px 5px 12px rgb(153, 161, 175),
+    inset -10px -10px 20px rgb(209, 213, 220);
 }
 
 .staff-kpi-card:hover {
@@ -1092,4 +1119,32 @@
   flex: 1;
   min-width: 180px;
   max-height: none;
+}
+
+.kpi-card.kpi-small.status-placed.link {
+  box-shadow:
+    -5px -5px 10px white,
+    5px 5px 10px rgb(153, 161, 175),
+    inset -2px -2px 5px #6d0000;
+}
+
+.kpi-card.kpi-small.status-preparing.link {
+  box-shadow:
+    -5px -5px 10px white,
+    5px 5px 10px rgb(153, 161, 175),
+    inset -2px -2px 5px #664900;
+}
+
+.kpi-card.kpi-small.status-service-pickup.link {
+  box-shadow:
+    -5px -5px 10px white,
+    5px 5px 10px rgb(153, 161, 175),
+    inset -2px -2px 5px #723300;
+}
+
+.kpi-card.kpi-small.status-completed.link {
+  box-shadow:
+    -5px -5px 10px white,
+    5px 5px 10px rgb(153, 161, 175),
+    inset -2px -2px 5px #005504;
 }

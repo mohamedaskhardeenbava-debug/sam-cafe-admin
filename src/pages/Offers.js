@@ -125,7 +125,7 @@ const Offers = ({ adminData, setAdminData }) => {
             <div className="offers-filter-bar">
                 <input
                     className="search-input"
-                    placeholder="🔍 Search dish…"
+                    placeholder=" Search dish…"
                     value={offerSearch}
                     onChange={e => setOfferSearch(e.target.value)}
                 />

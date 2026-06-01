@@ -58,7 +58,7 @@ export default function KitchenActivityLog({ adminData }) {
             </div>
 
             <div className="activity-filter-bar">
-                <input className="search-input" placeholder="🔍 Search work / staff…"
+                <input className="search-input" placeholder=" Search work / staff…"
                     value={searchText} onChange={e => setSearchText(e.target.value)} />
                 <CustomDatePicker label="From" value={fromDate} max={toDate}
                     onChange={(s) => { setFromDate(s); if (s > toDate) setToDate(s); setActivePreset("custom"); }} />

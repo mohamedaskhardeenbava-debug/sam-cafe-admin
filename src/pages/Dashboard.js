@@ -359,7 +359,7 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
         <div className="dashboard-filter-kpis">
           <div className="dashboard-kpi-row">
             <div className="kpi-card kpi-small"><p>Total Items</p><h3>{itemStats.total}</h3></div>
-            <div className={"kpi-card status-placed kpi-small link"} onClick={() => { toggleFilter(setStatusFilters, "placed"); navigate("/orders", { state: { status: "placed", fromDate, toDate } }); }}><p>Placed</p><h3>{itemStats.placed}</h3></div>
+            <div className={"kpi-card kpi-small status-placed link"} onClick={() => { toggleFilter(setStatusFilters, "placed"); navigate("/orders", { state: { status: "placed", fromDate, toDate } }); }}><p>Placed</p><h3>{itemStats.placed}</h3></div>
             <div className={"kpi-card kpi-small status-preparing link"} onClick={() => { toggleFilter(setStatusFilters, "preparing"); navigate("/orders", { state: { status: "preparing", fromDate, toDate } }); }}><p>Preparing</p><h3>{itemStats.preparing}</h3></div>
             <div className={"kpi-card kpi-small status-service-pickup link"} onClick={() => { toggleFilter(setStatusFilters, "service pickup"); navigate("/orders", { state: { status: "service pickup", fromDate, toDate } }); }}><p>Service Pickup</p><h3>{itemStats.servicePickup}</h3></div>
             <div className={"kpi-card kpi-small status-completed link"} onClick={() => { toggleFilter(setStatusFilters, "completed"); navigate("/orders", { state: { status: "completed", fromDate, toDate } }); }}><p>Completed</p><h3>{itemStats.completed}</h3></div>

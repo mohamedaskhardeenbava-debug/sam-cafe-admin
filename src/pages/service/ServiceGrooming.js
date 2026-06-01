@@ -192,7 +192,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
         <div className="sgroom-search-wrap" ref={searchRef}>
           <input
             className="search-input"
-            placeholder="🔍 Search staff…"
+            placeholder=" Search staff…"
             value={sgroomSearch}
             onChange={e => { setSgroomSearch(e.target.value); setSearchOpen(true); }}
             onFocus={() => setSearchOpen(true)}

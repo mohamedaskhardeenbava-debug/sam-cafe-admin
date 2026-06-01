@@ -127,7 +127,7 @@ export default function ServiceMise({ adminData, setAdminData }) {
       <div className="service-mise-filter-bar">
         <input
           className="search-input"
-          placeholder="🔍 Search tasks…"
+          placeholder=" Search tasks…"
           value={miseSearch}
           onChange={e => setMiseSearch(e.target.value)}
         />

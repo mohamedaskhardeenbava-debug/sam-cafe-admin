@@ -1110,7 +1110,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                     <div className="orders-search-wrapper">
                         <input
                             className="search-input"
-                            placeholder="🔍 Search by order ID, customer, dish…"
+                            placeholder=" Search by order ID, customer, dish…"
                             value={orderSearch}
                             onChange={e => setOrderSearch(e.target.value)}
                         />

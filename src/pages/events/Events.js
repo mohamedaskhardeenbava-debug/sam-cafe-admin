@@ -151,6 +151,8 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
     const [showForm, setShowForm] = useState(false);
     const [showSpecForm, setShowSpecForm] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
+    const [isSpecEditMode, setIsSpecEditMode] = useState(false);
+    const [editFormStep, setEditFormStep] = useState(1);;
     const [formData, setFormData] = useState(EMPTY_FORM);
     const [specFormData, setSpecFormData] = useState(EMPTY_SPEC_FORM);
     const [specFormStep, setSpecFormStep] = useState(1);
@@ -340,10 +342,12 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
         setTagInput("");
         setHighlightInput("");
         setUseCurrentLocation(false);
+        setEditFormStep(1);
     };
 
     const resetSpecForm = () => {
         setShowSpecForm(false);
+        setIsSpecEditMode(false);
         setSpecFormData(EMPTY_SPEC_FORM);
         setSpecFormStep(1);
         setSpecTagInput("");
@@ -354,9 +358,17 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
     const openAdd = () => { resetForm(); setShowForm(true); };
     const openSpecAdd = () => { resetSpecForm(); setShowSpecForm(true); };
 
+    const openSpecEdit = (evt) => {
+        setSpecFormData({ ...EMPTY_SPEC_FORM, ...evt, images: evt.images || (evt.image ? [evt.image] : []) });
+        setIsSpecEditMode(true);
+        setSpecFormStep(1);
+        setShowSpecForm(true);
+    };
+
     const openEdit = (evt) => {
         setFormData({ ...EMPTY_FORM, ...evt, images: evt.images || (evt.image ? [evt.image] : []) });
         setIsEditMode(true);
+        setEditFormStep(1);
         setShowForm(true);
     };
 
@@ -433,7 +445,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
         const pkg = SPECIALIZED_PACKAGES.find(p => p.id === specFormData.selectedPackage);
         const payload = {
             ...specFormData,
-            id: generateId(specFormData.title),
+            id: isSpecEditMode ? specFormData.id : generateId(specFormData.title),
             eventType: "special",
             isSpecialized: true,
             image: specFormData.images?.[0] || "",
@@ -443,13 +455,22 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
             maxCapacity: specFormData.guests || 0,
         };
         try {
-            await api.post("/events", payload);
-            setAdminData((p) => {
-                const existing = p.events || [];
-                const deduped = existing.filter(e => e.id !== payload.id);
-                return { ...p, events: [...deduped, payload] };
-            });
-            toast.success("Specialized event created successfully.");
+            if (isSpecEditMode) {
+                await api.put(`/events/${payload.id}`, payload);
+                setAdminData((p) => ({
+                    ...p,
+                    events: p.events.map((e) => (e.id === payload.id ? payload : e)),
+                }));
+                toast.success("Specialized event updated successfully.");
+            } else {
+                await api.post("/events", payload);
+                setAdminData((p) => {
+                    const existing = p.events || [];
+                    const deduped = existing.filter(e => e.id !== payload.id);
+                    return { ...p, events: [...deduped, payload] };
+                });
+                toast.success("Specialized event created successfully.");
+            }
             resetSpecForm();
         } catch (err) {
             console.error("Save failed:", err);
@@ -762,7 +783,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                         <div className="ae-events-filter-top">
                             <input
                                 className="search-input"
-                                placeholder="🔍 Search title, venue, type…"
+                                placeholder=" Search title, venue, type…"
                                 value={evtSearch}
                                 onChange={e => setEvtSearch(e.target.value)}
                             />
@@ -782,7 +803,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                 ].map(([val, label]) => (
                                     <button key={val}
                                         className={`ae-filter-pill${evtFilterStatus === val ? " active" : ""}`}
-                                        style={evtFilterStatus === val && !["all", "upcoming,ongoing"].includes(val) ? { background: STATUS_COLORS[val], borderColor: STATUS_COLORS[val], color: "#fff" } : {}}
+                                        //style={evtFilterStatus === val && !["all", "upcoming,ongoing"].includes(val) ? { background: STATUS_COLORS[val], borderColor: STATUS_COLORS[val], color: "#fff" } : {}}
                                         onClick={() => setEvtFilterStatus(val)}>
                                         {label}
                                     </button>
@@ -934,7 +955,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
 
                                         <div className="ae-event-card-footer">
                                             <button className="ae-card-btn ae-view-btn" onClick={() => { setFilterEventId(evt.id); setActiveTab("bookings"); }}>View Bookings</button>
-                                            <button className="ae-card-btn ae-edit-btn" onClick={() => openEdit(evt)}>Edit</button>
+                                            <button className="ae-card-btn ae-edit-btn" onClick={() => evt.isSpecialized ? openSpecEdit(evt) : openEdit(evt)}>Edit</button>
                                             <button className={`ae-card-btn ae-publish-btn ${evt.isPublished ? "unpublish" : "publish"}`} onClick={() => handleTogglePublish(evt)}>
                                                 {evt.isPublished ? "Unpublish" : "Publish"}
                                             </button>
@@ -1084,151 +1105,242 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
 
             {/* CREATE / EDIT MODAL */}
             {showForm && (
-                <div className="ingredient-modal-overlay">
-                    <div className="ingredient-modal ae-event-modal">
-                        <div className="ingredient-modal-header">
-                            <h3>{isEditMode ? "Edit Event" : "Create New Event"}</h3>
+                <div className="event-modal-overlay">
+                    <div className="event-modal ae-event-modal">
+                        <div className="event-modal-header">
+                            <div>
+                                <h3>{isEditMode ? "Edit Event" : "Create New Event"}</h3>
+                                <div className="ecard">
+                                    {["Details", "Venue & Capacity", "Content", "Dishes & Preview"].map((s, i) => (
+                                        <button key={i} className={`ebutton ${editFormStep === i + 1 ? "active" : ""} ${editFormStep > i + 1 ? "done" : ""}`} onClick={() => setEditFormStep(i + 1)}>
+                                            <span className="eevt-step-num">{editFormStep > i + 1 ? "✓" : i + 1}</span>
+                                            <span className="eevt-step-label">{s}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                             <button className="close-btn" onClick={resetForm} aria-label="Close" />
                         </div>
 
-                        <div className="ingredient-modal-body ae-event-form-body">
-                            <div className="form-group">
-                                <label>Event Title *</label>
-                                <input type="text" value={formData.title} onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))} placeholder="e.g. Sunday Brunch Special" />
-                            </div>
+                        <div className="event-modal-body ae-event-form-body">
 
-                            <div className="ae-form-row">
-                                <div className="form-group">
-                                    <label>Event Type</label>
-                                    <select value={formData.eventType} onChange={(e) => setFormData((p) => ({ ...p, eventType: e.target.value }))}>
-                                        <option value="dining">Dining Experience</option>
-                                        <option value="special">Special Occasion</option>
-                                        <option value="private">Private Booking</option>
-                                        <option value="seasonal">Seasonal</option>
-                                        <option value="live">Live Entertainment</option>
-                                        <option value="workshop">Workshop</option>
-                                    </select>
-                                </div>
-                                <div className="form-group">
-                                    <label>Status</label>
-                                    <select value={formData.status} onChange={(e) => setFormData((p) => ({ ...p, status: e.target.value }))}>
-                                        <option value="upcoming">Upcoming</option>
-                                        <option value="ongoing">Ongoing</option>
-                                        <option value="completed">Completed</option>
-                                        <option value="cancelled">Cancelled</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="ae-form-row">
-                                <div className="form-group">
-                                    <label>Date *</label>
-                                    <CustomDatePicker value={formData.date} onChange={(v) => setFormData((p) => ({ ...p, date: v }))} />
-                                </div>
-                                <div className="form-group">
-                                    <label>Time</label>
-                                    <CustomTimePicker value={formData.time} onChange={(v) => setFormData((p) => ({ ...p, time: v }))} />
-                                </div>
-                            </div>
-
-                            <div className="ae-form-row">
-                                <div className="form-group">
-                                    <label>Last Date to Enroll <span style={{ fontSize: 11, color: "#888", fontWeight: 400 }}>(defaults to 2 days before event)</span></label>
-                                    <CustomDatePicker value={formData.bookingCloseDate || ""} max={formData.date || undefined} onChange={(v) => setFormData((p) => ({ ...p, bookingCloseDate: v }))} label="Select close date" />
-                                </div>
-                                <div className="form-group">
-                                    <label>Last Date to Apply <span style={{ fontSize: 11, color: "#888", fontWeight: 400 }}>(registration deadline)</span></label>
-                                    <CustomDatePicker
-                                        value={formData.lastApplyDate || ""}
-                                        max={formData.date || undefined}
-                                        onChange={(v) => setFormData((p) => ({ ...p, lastApplyDate: v }))}
-                                        label="Select deadline"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="form-group">
-                                <label>Venue / Location</label>
-                                <div className="ae-venue-radio-row">
-                                    <label className={`ae-venue-radio ${formData.venueMode === "restaurant" ? "active" : ""}`}>
-                                        <input type="radio" name="venueMode" value="restaurant" checked={formData.venueMode === "restaurant"} onChange={() => setFormData(p => ({ ...p, venueMode: "restaurant", venue: "Sam Cafe, Madurai" }))} />
-                                        Restaurant
-                                    </label>
-                                    <label className={`ae-venue-radio ${formData.venueMode === "custom" ? "active" : ""}`}>
-                                        <input type="radio" name="venueMode" value="custom" checked={formData.venueMode === "custom"} onChange={() => setFormData(p => ({ ...p, venueMode: "custom", venue: "" }))} />
-                                        Custom
-                                    </label>
-                                </div>
-                                <textarea className="ae-venue-textarea" rows={3} value={formData.venue} disabled={formData.venueMode === "restaurant"} onChange={(e) => setFormData(p => ({ ...p, venue: e.target.value }))} placeholder="Enter full venue address…" />
-                            </div>
-
-                            <div className="ae-form-row">
-                                <div className="form-group">
-                                    <label>Max Capacity</label>
-                                    <input type="number" min="0" value={formData.maxCapacity} onChange={(e) => setFormData((p) => ({ ...p, maxCapacity: e.target.value }))} placeholder="0 = unlimited" />
-                                </div>
-                                <div className="form-group">
-                                    <label>Price per Person (₹)</label>
-                                    <input type="number" min="0" value={formData.price} onChange={(e) => setFormData((p) => ({ ...p, price: e.target.value }))} placeholder="0 = free" />
-                                </div>
-                            </div>
-
-                            <div className="form-group">
-                                <label>Description</label>
-                                <textarea value={formData.description} rows={3} onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value }))} placeholder="Brief description…" />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Event Images (multiple)</label>
-                                <ImageUploadBlock images={formData.images} onUpload={(e) => handleImagesUpload(e, false)} onRemove={(i) => removeImage(i, false)} inputRef={fileInputRef} isSpec={false} />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Tags</label>
-                                <div className="ae-tag-input-row">
-                                    <input type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="Add a tag…" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (!tagInput.trim()) return; setFormData((p) => ({ ...p, tags: [...(p.tags || []), tagInput.trim()] })); setTagInput(""); } }} />
-                                    <button type="button" onClick={() => { if (!tagInput.trim()) return; setFormData((p) => ({ ...p, tags: [...(p.tags || []), tagInput.trim()] })); setTagInput(""); }}>Add</button>
-                                </div>
-                                <div className="ae-tag-chips">
-                                    {(formData.tags || []).map((t, i) => (
-                                        <span key={i} className="ae-chip">{t}<button type="button" onClick={() => setFormData((p) => ({ ...p, tags: p.tags.filter((_, j) => j !== i) }))}>×</button></span>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="form-group">
-                                <label>Event Highlights</label>
-                                <div className="ae-tag-input-row">
-                                    <input type="text" value={highlightInput} onChange={(e) => setHighlightInput(e.target.value)} placeholder="e.g. Live music, Buffet included…" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (!highlightInput.trim()) return; setFormData((p) => ({ ...p, highlights: [...(p.highlights || []), highlightInput.trim()] })); setHighlightInput(""); } }} />
-                                    <button type="button" onClick={() => { if (!highlightInput.trim()) return; setFormData((p) => ({ ...p, highlights: [...(p.highlights || []), highlightInput.trim()] })); setHighlightInput(""); }}>Add</button>
-                                </div>
-                                <div className="ae-tag-chips">
-                                    {(formData.highlights || []).map((h, i) => (
-                                        <span key={i} className="ae-chip ae-chip-green">{h}<button type="button" onClick={() => setFormData((p) => ({ ...p, highlights: p.highlights.filter((_, j) => j !== i) }))}>×</button></span>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="form-group">
-                                <label>Menu Dishes for this Event</label>
-                                <DishSelector selectedDishes={formData.dishes} onToggle={(id) => toggleDish(id, false)} activeCat={formData.selectedCategory || ""} onCatChange={(id) => setFormData(p => ({ ...p, selectedCategory: id }))} isSpec={false} dishQty={formData.dishQty || {}} onQtyChange={(id, delta) => changeDishQty(id, delta, false)} />
-                            </div>
-
-                            <div className="form-group ae-publish-toggle">
-                                <label className="ae-toggle-label">
-                                    <span>Publish Event (visible to users)</span>
-                                    <div className={`ae-toggle ${formData.isPublished ? "on" : "off"}`} onClick={() => setFormData((p) => ({ ...p, isPublished: !p.isPublished }))}>
-                                        <div className="ae-toggle-knob" />
+                            {/* STEP 1 — Details */}
+                            {editFormStep === 1 && (
+                                <>
+                                    <div className="form-group">
+                                        <div className="mat">
+                                            <input className="mat-input" type="text" value={formData.title} onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))} placeholder=" " />
+                                            <label className="mat-label">Event Title <span className="rf-req">*</span></label>
+                                            <span className="mat-bar" />
+                                        </div>
                                     </div>
-                                </label>
-                            </div>
+
+                                    <div className="ae-form-row">
+                                        <div className="form-group">
+                                            <label>Event Type</label>
+                                            <select value={formData.eventType} onChange={(e) => setFormData((p) => ({ ...p, eventType: e.target.value }))}>
+                                                <option value="dining">Dining Experience</option>
+                                                <option value="special">Special Occasion</option>
+                                                <option value="private">Private Booking</option>
+                                                <option value="seasonal">Seasonal</option>
+                                                <option value="live">Live Entertainment</option>
+                                                <option value="workshop">Workshop</option>
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Status</label>
+                                            <select value={formData.status} onChange={(e) => setFormData((p) => ({ ...p, status: e.target.value }))}>
+                                                <option value="upcoming">Upcoming</option>
+                                                <option value="ongoing">Ongoing</option>
+                                                <option value="completed">Completed</option>
+                                                <option value="cancelled">Cancelled</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="ae-form-row">
+                                        <div className="form-group">
+                                            <label>Date *</label>
+                                            <CustomDatePicker value={formData.date} onChange={(v) => setFormData((p) => ({ ...p, date: v }))} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Time</label>
+                                            <CustomTimePicker value={formData.time} onChange={(v) => setFormData((p) => ({ ...p, time: v }))} />
+                                        </div>
+                                    </div>
+
+                                    <div className="ae-form-row">
+                                        <div className="form-group">
+                                            <label>Last Date to Enroll <span style={{ fontSize: 11, color: "#888", fontWeight: 400 }}>(defaults to 2 days before event)</span></label>
+                                            <CustomDatePicker value={formData.bookingCloseDate || ""} max={formData.date || undefined} onChange={(v) => setFormData((p) => ({ ...p, bookingCloseDate: v }))} label="Select close date" />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Last Date to Apply <span style={{ fontSize: 11, color: "#888", fontWeight: 400 }}>(registration deadline)</span></label>
+                                            <CustomDatePicker value={formData.lastApplyDate || ""} max={formData.date || undefined} onChange={(v) => setFormData((p) => ({ ...p, lastApplyDate: v }))} label="Select deadline" />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group ae-publish-toggle">
+                                        <label className="ae-toggle-label">
+                                            <span>Publish Event (visible to users)</span>
+                                            <div className={`ae-toggle ${formData.isPublished ? "on" : "off"}`} onClick={() => setFormData((p) => ({ ...p, isPublished: !p.isPublished }))}>
+                                                <div className="ae-toggle-knob" />
+                                            </div>
+                                        </label>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* STEP 2 — Venue & Capacity */}
+                            {editFormStep === 2 && (
+                                <>
+                                    <div className="form-group">
+                                        <label>Venue / Location</label>
+                                        <div className="ae-venue-radio-row">
+                                            <label className={`ae-venue-radio ${formData.venueMode === "restaurant" ? "active" : ""}`}>
+                                                <input type="radio" name="venueMode" value="restaurant" checked={formData.venueMode === "restaurant"} onChange={() => setFormData(p => ({ ...p, venueMode: "restaurant", venue: "Sam Cafe, Madurai" }))} />
+                                                Restaurant
+                                            </label>
+                                            <label className={`ae-venue-radio ${formData.venueMode === "custom" ? "active" : ""}`}>
+                                                <input type="radio" name="venueMode" value="custom" checked={formData.venueMode === "custom"} onChange={() => setFormData(p => ({ ...p, venueMode: "custom", venue: "" }))} />
+                                                Custom
+                                            </label>
+                                        </div>
+                                        <textarea className="ae-venue-textarea" rows={3} value={formData.venue} disabled={formData.venueMode === "restaurant"} onChange={(e) => setFormData(p => ({ ...p, venue: e.target.value }))} placeholder="Enter full venue address…" />
+                                    </div>
+
+                                    <div className="ae-form-row">
+                                        <div className="form-group">
+                                            <div className="mat">
+                                                <input className="mat-input" type="number" min="0" value={formData.maxCapacity} onChange={(e) => setFormData((p) => ({ ...p, maxCapacity: e.target.value }))} placeholder=" " />
+                                                <label className="mat-label">Max Capacity</label>
+                                                <span className="mat-bar" />
+                                            </div>
+                                        </div>
+                                        <div className="form-group">
+                                            <div className="mat">
+                                                <input className="mat-input" type="number" min="0" value={formData.price} onChange={(e) => setFormData((p) => ({ ...p, price: e.target.value }))} placeholder=" " />
+                                                <label className="mat-label">Price per Person (₹)</label>
+                                                <span className="mat-bar" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* STEP 3 — Content */}
+                            {editFormStep === 3 && (
+                                <>
+                                    <div className="form-group">
+                                        <div className="mat-area">
+                                            <textarea className="mat-input" value={formData.description} rows={3} onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value }))} placeholder=" " style={{ height: "auto", paddingTop: 4 }} />
+                                            <label className="mat-area-label">Description</label>
+                                            <span className="mat-area-bar" />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Event Images (multiple)</label>
+                                        <ImageUploadBlock images={formData.images} onUpload={(e) => handleImagesUpload(e, false)} onRemove={(i) => removeImage(i, false)} inputRef={fileInputRef} isSpec={false} />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Tags</label>
+                                        <div className="ae-tag-input-row">
+                                            <div className="mat" style={{ flex: 1 }}>
+                                                <input className="mat-input" type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder=" " onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (!tagInput.trim()) return; setFormData((p) => ({ ...p, tags: [...(p.tags || []), tagInput.trim()] })); setTagInput(""); } }} />
+                                                <label className="mat-label">Add a tag…</label>
+                                                <span className="mat-bar" />
+                                            </div>
+                                            <button type="button" onClick={() => { if (!tagInput.trim()) return; setFormData((p) => ({ ...p, tags: [...(p.tags || []), tagInput.trim()] })); setTagInput(""); }}>
+                                                <span className="shadow"></span>
+                                                <span className="edge"></span>
+                                                <span className="front">Add</span>
+                                            </button>
+                                        </div>
+                                        <div className="ae-tag-chips">
+                                            {(formData.tags || []).map((t, i) => (
+                                                <span key={i} className="ae-chip">{t}<button type="button" onClick={() => setFormData((p) => ({ ...p, tags: p.tags.filter((_, j) => j !== i) }))}>×</button></span>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Event Highlights</label>
+                                        <div className="ae-tag-input-row">
+                                            <div className="mat" style={{ flex: 1 }}>
+                                                <input className="mat-input" type="text" value={highlightInput} onChange={(e) => setHighlightInput(e.target.value)} placeholder=" " onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (!highlightInput.trim()) return; setFormData((p) => ({ ...p, highlights: [...(p.highlights || []), highlightInput.trim()] })); setHighlightInput(""); } }} />
+                                                <label className="mat-label">e.g. Live music, Buffet included…</label>
+                                                <span className="mat-bar" />
+                                            </div>
+                                            <button type="button" onClick={() => { if (!highlightInput.trim()) return; setFormData((p) => ({ ...p, highlights: [...(p.highlights || []), highlightInput.trim()] })); setHighlightInput(""); }}>
+                                                <span className="shadow"></span>
+                                                <span className="edge"></span>
+                                                <span className="front">Add</span>
+                                            </button>
+                                        </div>
+                                        <div className="ae-tag-chips">
+                                            {(formData.highlights || []).map((h, i) => (
+                                                <span key={i} className="ae-chip ae-chip-green">{h}<button type="button" onClick={() => setFormData((p) => ({ ...p, highlights: p.highlights.filter((_, j) => j !== i) }))}>×</button></span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* STEP 4 — Dishes & Preview */}
+                            {editFormStep === 4 && (
+                                <>
+                                    <div className="form-group">
+                                        <label>Menu Dishes for this Event</label>
+                                        <DishSelector selectedDishes={formData.dishes} onToggle={(id) => toggleDish(id, false)} activeCat={formData.selectedCategory || ""} onCatChange={(id) => setFormData(p => ({ ...p, selectedCategory: id }))} isSpec={false} dishQty={formData.dishQty || {}} onQtyChange={(id, delta) => changeDishQty(id, delta, false)} />
+                                    </div>
+
+                                    {/* Summary preview */}
+                                    <div className="ae-spec-summary">
+                                        <div className="evt-res-form-section-label">Preview</div>
+                                        <div className="ae-summary-grid">
+                                            <div className="ae-summary-row"><span className="ae-summary-key">Title</span><span className="ae-summary-val">{formData.title || "—"}</span></div>
+                                            <div className="ae-summary-row"><span className="ae-summary-key">Type</span><span className="ae-summary-val">{formData.eventType}</span></div>
+                                            <div className="ae-summary-row"><span className="ae-summary-key">Status</span><span className="ae-summary-val">{formData.status}</span></div>
+                                            <div className="ae-summary-row"><span className="ae-summary-key">Date</span><span className="ae-summary-val">{formData.date ? formatDate(formData.date) : "—"}</span></div>
+                                            <div className="ae-summary-row"><span className="ae-summary-key">Time</span><span className="ae-summary-val">{formData.time || "—"}</span></div>
+                                            <div className="ae-summary-row"><span className="ae-summary-key">Venue</span><span className="ae-summary-val">{formData.venue || "—"}</span></div>
+                                            <div className="ae-summary-row"><span className="ae-summary-key">Capacity</span><span className="ae-summary-val">{formData.maxCapacity || "—"}</span></div>
+                                            <div className="ae-summary-row"><span className="ae-summary-key">Price</span><span className="ae-summary-val">{formData.price ? `₹${Number(formData.price).toLocaleString("en-IN")} / person` : "Free"}</span></div>
+                                            <div className="ae-summary-row"><span className="ae-summary-key">Published</span><span className="ae-summary-val">{formData.isPublished ? "Live" : "Draft"}</span></div>
+                                            <div className="ae-summary-row"><span className="ae-summary-key">Tags</span><span className="ae-summary-val">{formData.tags?.length ? formData.tags.join(", ") : "—"}</span></div>
+                                            <div className="ae-summary-row"><span className="ae-summary-key">Highlights</span><span className="ae-summary-val">{formData.highlights?.length ? formData.highlights.join(", ") : "—"}</span></div>
+                                            <div className="ae-summary-row"><span className="ae-summary-key">Dishes</span><span className="ae-summary-val">{formData.dishes?.length ? `${formData.dishes.length} selected` : "None"}</span></div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
                         </div>
 
-                        <div className="ingredient-modal-footer">
-
-                            <button type="button" onClick={handleSave}>{isEditMode ? "Save Changes" : "Create Event"}</button>
-                            <button type="button" onClick={resetForm}>Cancel</button>
-
+                        <div className="event-modal-footer">
+                            <button type="button" className="evt-modal-cancel-btn" onClick={resetForm}>
+                                <span className="shadow"></span><span className="edge"></span>
+                                <span className="front">Cancel</span>
+                            </button>
+                            {editFormStep > 1 && (
+                                <button type="button" className="evt-modal-prev-btn" onClick={() => setEditFormStep(s => s - 1)}>
+                                    <span className="shadow"></span><span className="edge"></span>
+                                    <span className="front">← Back</span>
+                                </button>
+                            )}
+                            {editFormStep < 4 ? (
+                                <button type="button" className="evt-modal-next-btn" onClick={() => setEditFormStep(s => s + 1)}>
+                                    <span className="shadow"></span><span className="edge"></span>
+                                    <span className="front">Next →</span>
+                                </button>
+                            ) : (
+                                <button type="button" className="evt-modal-save-btn" onClick={handleSave}>
+                                    <span className="shadow"></span><span className="edge"></span>
+                                    <span className="front">{isEditMode ? "Save Changes" : "Create Event"}</span>
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -1240,12 +1352,12 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                     <div className="event-modal">
                         <div className="event-modal-header">
                             <div>
-                                <h3>Create Event</h3>
-                                <div className="evt-spec-steps">
+                                <h3>{isSpecEditMode ? "Edit Specialized Event" : "Create Event"}</h3>
+                                <div className="ecard">
                                     {["Event Details", "Packages & Add-ons", "Dishes", "Summary & Preview"].map((s, i) => (
-                                        <button key={i} className={`evt-spec-step ${specFormStep === i + 1 ? "active" : ""} ${specFormStep > i + 1 ? "done" : ""}`} onClick={() => setSpecFormStep(i + 1)}>
-                                            <span className="evt-step-num">{specFormStep > i + 1 ? "✓" : i + 1}</span>
-                                            <span className="evt-step-label">{s}</span>
+                                        <button key={i} className={`ebutton ${specFormStep === i + 1 ? "active" : ""} ${specFormStep > i + 1 ? "done" : ""}`} onClick={() => setSpecFormStep(i + 1)}>
+                                            <span className="eevt-step-num">{specFormStep > i + 1 ? "✓" : i + 1}</span>
+                                            <span className="eevt-step-label">{s}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -1258,17 +1370,26 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                             {specFormStep === 1 && (
                                 <>
                                     <div className="form-group">
-                                        <label>Event Title *</label>
-                                        <input type="text" value={specFormData.title} onChange={(e) => setSpecFormData(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Grand Wedding Reception" />
+                                        <div className="mat">
+                                            <input className="mat-input" type="text" value={specFormData.title} onChange={(e) => setSpecFormData(p => ({ ...p, title: e.target.value }))} placeholder=" " />
+                                            <label className="mat-label">Event Title <span className="rf-req">*</span></label>
+                                            <span className="mat-bar" />
+                                        </div>
                                     </div>
 
                                     <div className="form-group">
                                         <label>Event Category</label>
                                         <div className="ae-category-grid">
                                             {EVENT_CATEGORIES.map(cat => (
-                                                <button key={cat.id} type="button" className={`ae-cat-btn ${specFormData.eventCategory === cat.id ? "active" : ""}`} onClick={() => setSpecFormData(p => ({ ...p, eventCategory: cat.id }))}>
-                                                    <span className="ae-cat-label">{cat.label}</span>
-                                                    <span className="ae-cat-fee">Base ₹{cat.baseFee.toLocaleString("en-IN")}</span>
+                                                <button key={cat.id} type="button"
+                                                    className={`ae-cat-btn ${specFormData.eventCategory === cat.id ? "active" : ""}`}
+                                                    onClick={() => setSpecFormData(p => ({ ...p, eventCategory: cat.id }))}>
+                                                    <input className="ae-cat-radio" type="radio" name="aeCat"
+                                                        readOnly checked={specFormData.eventCategory === cat.id} />
+                                                    <div className="ae-cat-text">
+                                                        <span className="ae-cat-label">{cat.label}</span>
+                                                        <span className="ae-cat-fee">Base ₹{cat.baseFee.toLocaleString("en-IN")}</span>
+                                                    </div>
                                                 </button>
                                             ))}
                                         </div>
@@ -1300,6 +1421,14 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                                             updated.venue = buildAddress(updated);
                                                             return updated;
                                                         });
+                                                    } else {
+                                                        /* Unchecked — clear all address fields so user fills fresh */
+                                                        setSpecFormData(p => ({
+                                                            ...p,
+                                                            addrDoorNo: "", addrStreet: "", addrArea: "",
+                                                            addrLandmark: "", addrCity: "", addrDistrict: "",
+                                                            addrState: "", addrPincode: "", venue: "",
+                                                        }));
                                                     }
                                                 }}
                                             >
@@ -1307,7 +1436,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                             </button>
                                         </label>
 
-                                        <div className="ae-addr-grid">
+                                        {!useRestaurantAddrSpec && <div className="ae-addr-grid">
                                             {[
                                                 { key: "addrDoorNo", label: "Door No.", placeholder: "Door / Flat No.", req: true },
                                                 { key: "addrStreet", label: "Street", placeholder: "Street / Road name", req: true },
@@ -1317,32 +1446,41 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                                 { key: "addrState", label: "State", placeholder: "State", req: true },
                                                 { key: "addrPincode", label: "Pincode", placeholder: "6-digit pincode", req: true },
                                             ].map(field => (
-                                                <div key={field.key} className="ae-addr-field">
-                                                    <label>{field.label} {field.req && <span className="ae-req">*</span>}</label>
-                                                    <input
-                                                        type="text"
-                                                        value={specFormData[field.key]}
-                                                        placeholder={field.placeholder}
-                                                        maxLength={field.key === "addrPincode" ? 6 : undefined}
-                                                        readOnly={useRestaurantAddrSpec}
-                                                        style={useRestaurantAddrSpec ? { background: "#f3f4f6", cursor: "not-allowed", color: "#888" } : {}}
-                                                        onChange={e => {
-                                                            if (useRestaurantAddrSpec) return;
-                                                            const v = field.key === "addrPincode"
-                                                                ? e.target.value.replace(/\D/g, "").slice(0, 6)
-                                                                : e.target.value;
-                                                            setSpecFormData(p => ({ ...p, [field.key]: v, venue: buildAddress({ ...p, [field.key]: v }) }));
-                                                        }}
-                                                    />
+                                                <div key={field.key} className="evt-addr-field">
+                                                    <div className="ae-addr-mat">
+                                                        <input
+                                                            className="ae-addr-input"
+                                                            type="text"
+                                                            value={specFormData[field.key]}
+                                                            placeholder=" "
+                                                            maxLength={field.key === "addrPincode" ? 6 : undefined}
+                                                            readOnly={useRestaurantAddrSpec}
+                                                            disabled={useRestaurantAddrSpec}
+                                                            onChange={e => {
+                                                                if (useRestaurantAddrSpec) return;
+                                                                const v = field.key === "addrPincode"
+                                                                    ? e.target.value.replace(/\D/g, "").slice(0, 6)
+                                                                    : e.target.value;
+                                                                setSpecFormData(p => ({ ...p, [field.key]: v, venue: buildAddress({ ...p, [field.key]: v }) }));
+                                                            }}
+                                                        />
+                                                        <label className="ae-addr-label">
+                                                            {field.label} {field.req && <span className="ae-req">*</span>}
+                                                        </label>
+                                                        <span className="ae-addr-bar" />
+                                                    </div>
                                                 </div>
                                             ))}
-                                        </div>
+                                        </div>}
                                     </div>
 
                                     <div className="ae-form-row">
                                         <div className="form-group">
-                                            <label>Number of Guests</label>
-                                            <input type="number" min="1" value={specFormData.guests} onChange={(e) => setSpecFormData(p => ({ ...p, guests: Number(e.target.value) }))} />
+                                            <div className="mat">
+                                                <input className="mat-input" type="number" min="1" value={specFormData.guests} onChange={(e) => setSpecFormData(p => ({ ...p, guests: Number(e.target.value) }))} placeholder=" " />
+                                                <label className="mat-label">Number of Guests</label>
+                                                <span className="mat-bar" />
+                                            </div>
                                         </div>
                                         <div className="form-group">
                                             <label>Status</label>
@@ -1356,8 +1494,11 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                     </div>
 
                                     <div className="form-group">
-                                        <label>Description</label>
-                                        <textarea value={specFormData.description} rows={3} onChange={(e) => setSpecFormData(p => ({ ...p, description: e.target.value }))} placeholder="Event description…" />
+                                        <div className="mat-area">
+                                            <textarea className="mat-input" value={specFormData.description} rows={3} onChange={(e) => setSpecFormData(p => ({ ...p, description: e.target.value }))} placeholder=" " style={{ height: "auto", paddingTop: 4 }} />
+                                            <label className="mat-area-label">Description</label>
+                                            <span className="mat-area-bar" />
+                                        </div>
                                     </div>
 
                                     <div className="form-group">
@@ -1368,8 +1509,16 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                     <div className="form-group">
                                         <label>Tags</label>
                                         <div className="ae-tag-input-row">
-                                            <input type="text" value={specTagInput} onChange={(e) => setSpecTagInput(e.target.value)} placeholder="Add a tag…" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (!specTagInput.trim()) return; setSpecFormData(p => ({ ...p, tags: [...(p.tags || []), specTagInput.trim()] })); setSpecTagInput(""); } }} />
-                                            <button type="button" onClick={() => { if (!specTagInput.trim()) return; setSpecFormData(p => ({ ...p, tags: [...(p.tags || []), specTagInput.trim()] })); setSpecTagInput(""); }}>Add</button>
+                                            <div className="mat" style={{ flex: 1 }}>
+                                                <input className="mat-input" type="text" value={specTagInput} onChange={(e) => setSpecTagInput(e.target.value)} placeholder=" " onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (!specTagInput.trim()) return; setSpecFormData(p => ({ ...p, tags: [...(p.tags || []), specTagInput.trim()] })); setSpecTagInput(""); } }} />
+                                                <label className="mat-label">Add a tag…</label>
+                                                <span className="mat-bar" />
+                                            </div>
+                                            <button type="button" onClick={() => { if (!specTagInput.trim()) return; setSpecFormData(p => ({ ...p, tags: [...(p.tags || []), specTagInput.trim()] })); setSpecTagInput(""); }}>
+                                                <span className="shadow"></span>
+                                                <span className="edge"></span>
+                                                <span className="front">Add</span>
+                                            </button>
                                         </div>
                                         <div className="ae-tag-chips">
                                             {(specFormData.tags || []).map((t, i) => (
@@ -1381,8 +1530,16 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                     <div className="form-group">
                                         <label>Event Highlights</label>
                                         <div className="ae-tag-input-row">
-                                            <input type="text" value={specHighlightInput} onChange={(e) => setSpecHighlightInput(e.target.value)} placeholder="e.g. Candlelight setup…" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (!specHighlightInput.trim()) return; setSpecFormData(p => ({ ...p, highlights: [...(p.highlights || []), specHighlightInput.trim()] })); setSpecHighlightInput(""); } }} />
-                                            <button type="button" onClick={() => { if (!specHighlightInput.trim()) return; setSpecFormData(p => ({ ...p, highlights: [...(p.highlights || []), specHighlightInput.trim()] })); setSpecHighlightInput(""); }}>Add</button>
+                                            <div className="mat" style={{ flex: 1 }}>
+                                                <input className="mat-input" type="text" value={specHighlightInput} onChange={(e) => setSpecHighlightInput(e.target.value)} placeholder=" " onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (!specHighlightInput.trim()) return; setSpecFormData(p => ({ ...p, highlights: [...(p.highlights || []), specHighlightInput.trim()] })); setSpecHighlightInput(""); } }} />
+                                                <label className="mat-label">e.g. Candlelight setup…</label>
+                                                <span className="mat-bar" />
+                                            </div>
+                                            <button type="button" onClick={() => { if (!specHighlightInput.trim()) return; setSpecFormData(p => ({ ...p, highlights: [...(p.highlights || []), specHighlightInput.trim()] })); setSpecHighlightInput(""); }}>
+                                                <span className="shadow"></span>
+                                                <span className="edge"></span>
+                                                <span className="front">Add</span>
+                                            </button>
                                         </div>
                                         <div className="ae-tag-chips">
                                             {(specFormData.highlights || []).map((h, i) => (
@@ -1510,7 +1667,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                                                     <div style={{ fontWeight: 600, fontSize: 13, color: "#111", lineHeight: 1.3 }}>{d.name}</div>
                                                                     <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>{d.subCat || d.cat || "—"} · qty: {qty}</div>
                                                                 </div>
-                                                                <div style={{ fontWeight: 700, fontSize: 13, color: "#7c3aed", flexShrink: 0 }}>₹{(Number(d.basePrice || 0) * qty).toLocaleString("en-IN")}</div>
+                                                                <div style={{ fontWeight: 700, fontSize: 13, color: "#2563eb", flexShrink: 0 }}>₹{(Number(d.basePrice || 0) * qty).toLocaleString("en-IN")}</div>
                                                                 <button type="button" className="ae-sdt-remove" onClick={() => toggleDish(id, true)} title="Remove">×</button>
                                                             </div>
                                                         );
@@ -1556,15 +1713,27 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                             )}
                         </div>
 
-                        <div className="event-modal-footer">
-                            <button type="button" onClick={resetSpecForm}>Cancel</button>
+                        <div className="evt-modal-footer">
+                            <button type="button" className="evt-modal-cancel-btn" onClick={resetSpecForm}>
+                                <span className="shadow"></span><span className="edge"></span>
+                                <span className="front">Cancel</span>
+                            </button>
                             {specFormStep > 1 && (
-                                <button type="button" className="ae-step-prev-btn" onClick={() => setSpecFormStep(s => s - 1)}>← Back</button>
+                                <button type="button" className="evt-modal-prev-btn" onClick={() => setSpecFormStep(s => s - 1)}>
+                                    <span className="shadow"></span><span className="edge"></span>
+                                    <span className="front">← Back</span>
+                                </button>
                             )}
                             {specFormStep < 4 ? (
-                                <button type="button" onClick={() => setSpecFormStep(s => s + 1)}>Next →</button>
+                                <button type="button" className="evt-modal-next-btn" onClick={() => setSpecFormStep(s => s + 1)}>
+                                    <span className="shadow"></span><span className="edge"></span>
+                                    <span className="front">Next →</span>
+                                </button>
                             ) : (
-                                <button type="button" onClick={handleSpecSave}>Create Event</button>
+                                <button type="button" className="evt-modal-save-btn" onClick={handleSpecSave}>
+                                    <span className="shadow"></span><span className="edge"></span>
+                                    <span className="front">{isSpecEditMode ? "Save Changes" : "Create Event"}</span>
+                                </button>
                             )}
 
                         </div>
@@ -1574,13 +1743,13 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
 
             {/* BOOKING DETAIL MODAL */}
             {viewBooking && (
-                <div className="ingredient-modal-overlay">
-                    <div className="ingredient-modal ae-booking-detail-modal">
-                        <div className="ingredient-modal-header">
+                <div className="event-modal-overlay">
+                    <div className="event-modal ae-booking-detail-modal">
+                        <div className="event-modal-header">
                             <h3>Booking Details</h3>
                             <button className="close-btn" onClick={() => setViewBooking(null)} aria-label="Close" />
                         </div>
-                        <div className="ingredient-modal-body ae-booking-detail-body">
+                        <div className="event-modal-body ae-booking-detail-body">
                             {(() => {
                                 const b = viewBooking;
                                 const evt = events.find((e) => e.id === b.eventId);
@@ -1643,15 +1812,24 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                 );
                             })()}
                         </div>
-                        <div className="ingredient-modal-footer">
+                        <div className="event-modal-footer">
 
                             {viewBooking.status === "pending" && (
-                                <button onClick={() => handleBookingStatus(viewBooking.id, "confirmed")}>Confirm Booking</button>
+                                <button className="evt-modal-confirm-btn" onClick={() => handleBookingStatus(viewBooking.id, "confirmed")}>
+                                    <span className="shadow"></span><span className="edge"></span>
+                                    <span className="front">Confirm Booking</span>
+                                </button>
                             )}
                             {viewBooking.status !== "cancelled" && (
-                                <button style={{ background: "#dc2626", color: "#fff" }} onClick={() => handleBookingStatus(viewBooking.id, "cancelled")}>Cancel Booking</button>
+                                <button className="evt-modal-danger-btn" onClick={() => handleBookingStatus(viewBooking.id, "cancelled")}>
+                                    <span className="shadow"></span><span className="edge"></span>
+                                    <span className="front">Cancel Booking</span>
+                                </button>
                             )}
-                            <button onClick={() => { setViewBooking(null); setAddGuestCount(1); }}>Close</button>
+                            <button className="evt-modal-cancel-btn" onClick={() => { setViewBooking(null); setAddGuestCount(1); }}>
+                                <span className="shadow"></span><span className="edge"></span>
+                                <span className="front">Close</span>
+                            </button>
 
                         </div>
                     </div>
@@ -1660,20 +1838,26 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
 
             {/* DELETE CONFIRM MODAL */}
             {confirmDeleteId && (
-                <div className="ingredient-modal-overlay">
-                    <div className="ingredient-modal ae-confirm-modal">
-                        <div className="ingredient-modal-header">
+                <div className="event-modal-overlay">
+                    <div className="event-modal ae-confirm-modal">
+                        <div className="event-modal-header">
                             <h3>Delete Event</h3>
                             <button className="close-btn" onClick={() => setConfirmDeleteId(null)} aria-label="Close" />
                         </div>
-                        <div className="ingredient-modal-body">
+                        <div className="event-modal-body">
                             <p style={{ margin: "8px 0 20px", color: "#444", fontSize: 14, lineHeight: 1.6 }}>
                                 Are you sure you want to delete this event? All associated bookings will also be removed. This cannot be undone.
                             </p>
                         </div>
-                        <div className="ingredient-modal-footer">
-                            <button onClick={() => setConfirmDeleteId(null)}>Cancel</button>
-                            <button style={{ background: "#dc2626" }} onClick={confirmDelete}>Delete Event</button>
+                        <div className="event-modal-footer">
+                            <button className="evt-modal-cancel-btn" onClick={() => setConfirmDeleteId(null)}>
+                                <span className="shadow"></span><span className="edge"></span>
+                                <span className="front">Cancel</span>
+                            </button>
+                            <button className="evt-modal-danger-btn" onClick={confirmDelete}>
+                                <span className="shadow"></span><span className="edge"></span>
+                                <span className="front">Delete Event</span>
+                            </button>
 
                         </div>
                     </div>

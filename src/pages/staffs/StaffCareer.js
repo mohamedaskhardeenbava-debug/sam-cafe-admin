@@ -20,8 +20,7 @@ const expLabel = (yrs) => {
     return `${n}+ yrs experience`;
 };
 
-
-// ── CustomDropdown (matches Dishes page style) ───────────────────────────────
+// ── CustomDropdown ───────────────────────────────────────────────────────────
 function CustomDropdown({ value, onChange, options, placeholder = "Select…" }) {
     const [open, setOpen] = React.useState(false);
     const ref = React.useRef(null);
@@ -56,6 +55,7 @@ function CustomDropdown({ value, onChange, options, placeholder = "Select…" })
         </div>
     );
 }
+
 export default function StaffCareer() {
     const [jobs, setJobs] = useState([]);
     const [showForm, setShowForm] = useState(false);
@@ -117,7 +117,7 @@ export default function StaffCareer() {
             <div className="staff-filter-bar">
                 <input
                     className="search-input"
-                    placeholder="🔍 Search role or description…"
+                    placeholder=" Search role or description…"
                     value={careerSearch}
                     onChange={e => setCareerSearch(e.target.value)}
                 />
@@ -150,18 +150,29 @@ export default function StaffCareer() {
                         const colors = roleColors[job.role] || { bg: "#f5f4f1", color: "#3a3a3a" };
                         return (
                             <div className="card sc-card" key={i} onClick={() => setSelected(job)}>
-                                <div className="sc-card-top">
-                                    <span
-                                        className="sc-role-chip"
-                                        style={{ background: colors.bg, color: colors.color }}
-                                    >
-                                        {job.role}
-                                    </span>
-                                    <span className="sc-exp-chip">{expLabel(job.experience)}</span>
+                                <div className="st-card-accent" style={{ background: colors.color }} />
+
+                                <div className="sc-card-body">
+                                    <div className="sc-card-top">
+                                        <span
+                                            className="sc-role-chip"
+                                            style={{ background: colors.bg, color: colors.color }}
+                                        >
+                                            {job.role}
+                                        </span>
+                                        <span className="sc-exp-chip">{expLabel(job.experience)}</span>
+                                    </div>
+                                    <p className="sc-desc">{job.description || "No description provided."}</p>
                                 </div>
-                                <p className="sc-desc">{job.description || "No description provided."}</p>
+
                                 <div className="sc-footer">
-                                    <span className="sc-open-label">View details →</span>
+                                    <div className="st-ribbon-wing1"></div>
+                                    <div className="st-ribbon-wing1-sq1"></div>
+                                    <label className="sc-ribbon-label">
+                                        {i < 10 ? `0${i + 1}` : i + 1}
+                                    </label>
+                                    <div className="st-ribbon-wing2"></div>
+                                    <div className="st-ribbon-wing1-sq2"></div>
                                 </div>
                             </div>
                         );
@@ -181,7 +192,12 @@ export default function StaffCareer() {
                         <div className="modal-body">
                             <div className="form-group">
                                 <label>Role</label>
-                                <CustomDropdown value={form.role} onChange={v => setForm({ ...form, role: v })} options={roles} placeholder="Select role" />
+                                <CustomDropdown
+                                    value={form.role}
+                                    onChange={v => setForm({ ...form, role: v })}
+                                    options={roles}
+                                    placeholder="Select role"
+                                />
                             </div>
 
                             <div className="form-group">
@@ -235,79 +251,12 @@ export default function StaffCareer() {
                             </table>
                         </div>
 
-                        <div className="modal-footer ">
+                        <div className="modal-footer">
                             <button type="button" onClick={() => setSelected(null)}>Close</button>
                         </div>
                     </div>
                 </div>
             )}
-
-            {/* LOCAL STYLES */}
-            <style>{`
-        .sc-card {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-        .sc-card-top {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-        .sc-role-chip {
-          font-size: 11px;
-          font-weight: 700;
-          padding: 3px 10px;
-          border-radius: 999px;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-        }
-        .sc-exp-chip {
-          font-size: 11px;
-          color: #a3a3a3;
-          font-weight: 500;
-        }
-        .sc-desc {
-          font-size: 13px;
-          color: #555;
-          line-height: 1.55;
-          margin: 0;
-          display: -webkit-box;
-          -webkit-line-clamp: 3;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        .sc-footer {
-          margin-top: 4px;
-          padding-top: 10px;
-          border-top: 1px solid rgba(0,0,0,0.06);
-        }
-        .sc-open-label {
-          font-size: 12px;
-          font-weight: 600;
-          color: #888;
-        }
-        .sc-modal-sub {
-          font-size: 12px;
-          color: #a3a3a3;
-          margin-top: 2px;
-          display: block;
-        }
-        .sm-empty {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 60px 20px;
-          text-align: center;
-          gap: 6px;
-        }
-        .sm-empty-icon { font-size: 36px; margin-bottom: 6px; }
-        .sm-empty p { font-size: 15px; font-weight: 600; color: #3a3a3a; margin: 0; }
-        .sm-empty span { font-size: 13px; color: #a3a3a3; }
-      `}</style>
 
         </div>
     );

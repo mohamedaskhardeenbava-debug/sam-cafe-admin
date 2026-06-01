@@ -10,15 +10,7 @@ const typeColors = {
     Workshop: { bg: "#ede9fe", color: "#4c1d95" },
 };
 
-const typeIcons = {
-    Online: "🌐",
-    Training: "📋",
-    Internship: "🏢",
-    Workshop: "🔧",
-};
-
-
-// ── CustomDropdown (matches Dishes page style) ───────────────────────────────
+// ── CustomDropdown ───────────────────────────────────────────────────────────
 function CustomDropdown({ value, onChange, options, placeholder = "Select…" }) {
     const [open, setOpen] = React.useState(false);
     const ref = React.useRef(null);
@@ -53,6 +45,7 @@ function CustomDropdown({ value, onChange, options, placeholder = "Select…" })
         </div>
     );
 }
+
 export default function StaffTraining({ adminData, setAdminData }) {
     const [trainings, setTrainings] = useState([]);
     const [showForm, setShowForm] = useState(false);
@@ -141,7 +134,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
             <div className="staff-filter-bar">
                 <input
                     className="search-input"
-                    placeholder="🔍 Search staff, role, type…"
+                    placeholder=" Search staff, role, type…"
                     value={trainingSearch}
                     onChange={e => setTrainingSearch(e.target.value)}
                 />
@@ -161,7 +154,6 @@ export default function StaffTraining({ adminData, setAdminData }) {
             {/* EMPTY STATE */}
             {filteredTrainings.length === 0 && (
                 <div className="sm-empty">
-                    <div className="sm-empty-icon">📚</div>
                     <p>{trainings.length === 0 ? "No training records yet" : "No records match filters"}</p>
                     <span>{trainings.length === 0 ? "Start tracking staff training and certifications" : "Try adjusting your search or filters"}</span>
                 </div>
@@ -172,24 +164,47 @@ export default function StaffTraining({ adminData, setAdminData }) {
                 <div className="card-grid">
                     {filteredTrainings.map((t, i) => {
                         const colors = typeColors[t.type] || { bg: "#f5f4f1", color: "#3a3a3a" };
-                        const icon = typeIcons[t.type] || "📌";
                         return (
                             <div className="card st-card" key={i} onClick={() => setSelected(t)}>
-                                <div className="st-card-header">
-                                    <span className="st-type-chip" style={{ background: colors.bg, color: colors.color }}>
-                                        {icon} {t.type || "General"}
-                                    </span>
-                                </div>
-                                <h3 className="st-card-role">{t.role}</h3>
-                                <div className="st-card-meta">
-                                    <span className="st-meta-item">👤 {t.staffName}</span>
-                                    {t.duration && (
-                                        <span className="st-meta-item">⏱ {t.duration} days</span>
+                                {/* accent bar coloured by type */}
+                                <div className="st-card-accent" style={{ background: colors.color }} />
+
+                                <div className="st-card-body">
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                        {t.type && (
+                                            <span
+                                                className="st-type-chip"
+                                                style={{ background: colors.bg, color: colors.color }}
+                                            >
+                                                {t.type}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* role title */}
+                                    <h3 className="st-card-role">{t.role}</h3>
+
+                                    {/* meta */}
+                                    <div className="st-card-meta">
+                                        <span className="st-meta-item">👤 {t.staffName}</span>
+                                        {t.duration && (
+                                            <span className="st-meta-item">⏱ {t.duration} days</span>
+                                        )}
+                                    </div>
+
+                                    {/* certificate badge */}
+                                    {t.certificate && (
+                                        <div className="st-cert-badge">✔ Certified</div>
                                     )}
                                 </div>
-                                {t.certificate && (
-                                    <div className="st-cert-badge">✔ Certificate attached</div>
-                                )}
+
+                                <div className="st-card-footer">
+                                    <div className="st-ribbon-wing1"></div>
+                                    <div className="st-ribbon-wing1-sq1"></div>
+                                    <label className="st-ribbon-label">{i < 10 ? `0${i + 1}` : i + 1}</label>
+                                    <div className="st-ribbon-wing2"></div>
+                                    <div className="st-ribbon-wing1-sq2"></div>
+                                </div>
                             </div>
                         );
                     })}
@@ -208,12 +223,22 @@ export default function StaffTraining({ adminData, setAdminData }) {
                         <div className="modal-body">
                             <div className="form-group">
                                 <label>Staff Member</label>
-                                <CustomDropdown value={form.staffId || ""} onChange={v => setForm({ ...form, staffId: v })} options={adminData.staff.map(s => ({ value: s.id, label: s.name }))} placeholder="Select staff member" />
+                                <CustomDropdown
+                                    value={form.staffId || ""}
+                                    onChange={v => setForm({ ...form, staffId: v })}
+                                    options={adminData.staff.map(s => ({ value: s.id, label: s.name }))}
+                                    placeholder="Select staff member"
+                                />
                             </div>
 
                             <div className="form-group">
                                 <label>Role</label>
-                                <CustomDropdown value={form.role} onChange={v => setForm({ ...form, role: v })} options={["Chef", "Waiter", "Supervisor"]} placeholder="Select role" />
+                                <CustomDropdown
+                                    value={form.role}
+                                    onChange={v => setForm({ ...form, role: v })}
+                                    options={["Chef", "Waiter", "Supervisor"]}
+                                    placeholder="Select role"
+                                />
                             </div>
 
                             <div className="st-form-row">
@@ -230,7 +255,12 @@ export default function StaffTraining({ adminData, setAdminData }) {
 
                                 <div className="form-group">
                                     <label>Type</label>
-                                    <CustomDropdown value={form.type} onChange={v => setForm({ ...form, type: v })} options={["Online", "Training", "Internship", "Workshop"]} placeholder="Select type" />
+                                    <CustomDropdown
+                                        value={form.type}
+                                        onChange={v => setForm({ ...form, type: v })}
+                                        options={["Online", "Training", "Internship", "Workshop"]}
+                                        placeholder="Select type"
+                                    />
                                 </div>
                             </div>
 
@@ -295,98 +325,12 @@ export default function StaffTraining({ adminData, setAdminData }) {
                             </table>
                         </div>
 
-                        <div className="modal-footer ">
+                        <div className="modal-footer">
                             <button type="button" onClick={() => setSelected(null)}>Close</button>
                         </div>
                     </div>
                 </div>
             )}
-
-            <style>{`
-        .st-card {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-        .st-card-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-        .st-type-chip {
-          font-size: 11px;
-          font-weight: 700;
-          padding: 3px 9px;
-          border-radius: 999px;
-          letter-spacing: 0.03em;
-        }
-        .st-card-role {
-          font-size: 16px;
-          font-weight: 600;
-          color: #0f0f0f;
-          margin: 0;
-          letter-spacing: -0.01em;
-        }
-        .st-card-meta {
-          display: flex;
-          gap: 12px;
-          flex-wrap: wrap;
-        }
-        .st-meta-item {
-          font-size: 12px;
-          color: #6b6b6b;
-        }
-        .st-cert-badge {
-          font-size: 11px;
-          font-weight: 600;
-          color: #065f46;
-          background: #d1fae5;
-          padding: 3px 9px;
-          border-radius: 999px;
-          width: fit-content;
-          margin-top: 2px;
-        }
-        .st-form-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
-        }
-        .st-file-wrap {
-          position: relative;
-          overflow: hidden;
-        }
-        .st-file-input {
-          position: absolute;
-          inset: 0;
-          opacity: 0;
-          cursor: pointer;
-          width: 100% !important;
-          padding: 0 !important;
-          border: none !important;
-        }
-        .st-file-label {
-          padding: 9px 12px;
-          border: 1px dashed rgba(0,0,0,0.18);
-          border-radius: 8px;
-          font-size: 13px;
-          color: #6b6b6b;
-          background: #f5f4f1;
-          cursor: pointer;
-        }
-        .sm-empty {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 60px 20px;
-          text-align: center;
-          gap: 6px;
-        }
-        .sm-empty-icon { font-size: 36px; margin-bottom: 6px; }
-        .sm-empty p { font-size: 15px; font-weight: 600; color: #3a3a3a; margin: 0; }
-        .sm-empty span { font-size: 13px; color: #a3a3a3; }
-        .sc-modal-sub { font-size:12px; color:#a3a3a3; margin-top:2px; display:block; }
-      `}</style>
 
         </div>
     );

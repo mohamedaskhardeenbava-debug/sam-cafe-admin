@@ -119,7 +119,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
             </div>
 
             <div className="ssched-filter-bar">
-                <input className="search-input" placeholder="🔍 Search work / staff…" value={searchText} onChange={e => setSearchText(e.target.value)} />
+                <input className="search-input" placeholder=" Search work / staff…" value={searchText} onChange={e => setSearchText(e.target.value)} />
 
                 <CustomDatePicker label="From" value={fromDate} max={toDate}
                     onChange={s => { setFromDate(s); if (s > toDate) setToDate(s); setActivePreset("custom"); }} />

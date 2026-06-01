@@ -1,3 +1,5 @@
+/* ------------------------------------------------------------------------------------------------------------------------------------ */
+
 /* KPI ROW */
 .evt-kpi-row {
     display: flex;
@@ -9,8 +11,7 @@
     background: #fff;
     border-radius: 12px;
     padding: 6px 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-    border-top: 3px solid;
+    box-shadow: inset 5px 5px 10px #bbb, inset -5px -5px 10px #fff;
     flex: 1;
     min-width: 80px;
 }
@@ -132,24 +133,55 @@
 .event-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.45);
+    background: rgba(10, 10, 20, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 999;
+    animation: evt-overlay-in 0.22s ease;
+}
+
+@keyframes evt-overlay-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 /* ---------- MODAL CARD ---------- */
 .event-modal {
+    padding: 20px;
     background: #ffffff;
     width: 80% !important;
+    min-height: 85vh;
     max-height: 85vh;
-    padding: 24px;
-    border-radius: 14px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    border-radius: 20px;
+    box-shadow:
+        0 32px 80px rgba(0, 0, 0, 0.28),
+        0 8px 24px rgba(0, 0, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    gap: 20px;
+    animation: evt-modal-rise 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes evt-modal-rise {
+    from {
+        transform: scale(0.92) translateY(24px);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
 }
 
 .event-modal-header {
@@ -161,12 +193,19 @@
     background-color: #ffffff;
 }
 
+.event-modal-header h3 {
+    font-size: 17px;
+    font-weight: 700;
+    margin: 0 0 10px;
+    letter-spacing: -0.01em;
+}
+
 .event-modal-body {
     overflow-y: auto;
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    box-sizing: border-box;
 }
 
 /* ================= FOOTER ================= */
@@ -174,15 +213,15 @@
     position: sticky;
     bottom: 0;
     z-index: 2;
-    background-color: #ffffff;
-
+    background: #fff;
     display: flex;
     justify-content: flex-end;
+    align-items: center;
     gap: 10px;
-    padding-top: 10px;
     box-sizing: border-box;
     margin-top: auto;
 }
+
 
 /* BUTTONS */
 .event-modal-footer button {
@@ -192,7 +231,7 @@
     cursor: pointer;
     border: none;
     background: #f0f0f0;
-    color:#333;
+    color: #333;
 }
 
 .event-modal-footer button:last-child {
@@ -202,6 +241,232 @@
 
 .event-modal-footer button:hover {
     transform: scale(1.05);
+}
+
+/* ── Shared wrapper base ── */
+.evt-modal-save-btn,
+.evt-modal-cancel-btn,
+.evt-modal-prev-btn,
+.evt-modal-next-btn,
+.evt-modal-confirm-btn,
+.evt-modal-danger-btn {
+    position: relative;
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    outline-offset: 4px;
+    transition: filter 250ms;
+    user-select: none;
+    touch-action: manipulation;
+    flex-shrink: 0;
+}
+
+.evt-modal-save-btn:hover,
+.evt-modal-cancel-btn:hover,
+.evt-modal-prev-btn:hover,
+.evt-modal-next-btn:hover,
+.evt-modal-confirm-btn:hover,
+.evt-modal-danger-btn:hover {
+    filter: brightness(108%);
+}
+
+.evt-modal-save-btn:focus:not(:focus-visible),
+.evt-modal-cancel-btn:focus:not(:focus-visible),
+.evt-modal-prev-btn:focus:not(:focus-visible),
+.evt-modal-next-btn:focus:not(:focus-visible),
+.evt-modal-confirm-btn:focus:not(:focus-visible),
+.evt-modal-danger-btn:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* ── Shadow layer (shared) ── */
+.evt-modal-save-btn .shadow,
+.evt-modal-cancel-btn .shadow,
+.evt-modal-prev-btn .shadow,
+.evt-modal-next-btn .shadow,
+.evt-modal-confirm-btn .shadow,
+.evt-modal-danger-btn .shadow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    background: hsl(0deg 0% 0% / 0.22);
+    will-change: transform;
+    transform: translateY(2px);
+    transition: transform 600ms cubic-bezier(.3, .7, .4, 1);
+}
+
+.evt-modal-save-btn:hover .shadow,
+.evt-modal-cancel-btn:hover .shadow,
+.evt-modal-prev-btn:hover .shadow,
+.evt-modal-next-btn:hover .shadow,
+.evt-modal-confirm-btn:hover .shadow,
+.evt-modal-danger-btn:hover .shadow {
+    transform: translateY(4px);
+    transition: transform 250ms cubic-bezier(.3, .7, .4, 1.5);
+}
+
+.evt-modal-save-btn:active .shadow,
+.evt-modal-cancel-btn:active .shadow,
+.evt-modal-prev-btn:active .shadow,
+.evt-modal-next-btn:active .shadow,
+.evt-modal-confirm-btn:active .shadow,
+.evt-modal-danger-btn:active .shadow {
+    transform: translateY(1px);
+    transition: transform 34ms;
+}
+
+/* ── Front layer (shared base) ── */
+.evt-modal-save-btn .front,
+.evt-modal-cancel-btn .front,
+.evt-modal-prev-btn .front,
+.evt-modal-next-btn .front,
+.evt-modal-confirm-btn .front,
+.evt-modal-danger-btn .front {
+    display: block;
+    position: relative;
+    padding: 10px 22px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 700;
+    will-change: transform;
+    transform: translateY(-4px);
+    transition: transform 600ms cubic-bezier(.3, .7, .4, 1);
+    white-space: nowrap;
+}
+
+.evt-modal-save-btn:hover .front,
+.evt-modal-cancel-btn:hover .front,
+.evt-modal-prev-btn:hover .front,
+.evt-modal-next-btn:hover .front,
+.evt-modal-confirm-btn:hover .front,
+.evt-modal-danger-btn:hover .front {
+    transform: translateY(-6px);
+    transition: transform 250ms cubic-bezier(.3, .7, .4, 1.5);
+}
+
+.evt-modal-save-btn:active .front,
+.evt-modal-cancel-btn:active .front,
+.evt-modal-prev-btn:active .front,
+.evt-modal-next-btn:active .front,
+.evt-modal-confirm-btn:active .front,
+.evt-modal-danger-btn:active .front {
+    transform: translateY(-2px);
+    transition: transform 34ms;
+}
+
+/* ── SAVE (black) ── */
+.evt-modal-save-btn .edge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(to left,
+                        hsl(221, 83%, 28%) 0%,
+                            hsl(221, 83%, 40%) 8%,
+                            hsl(221, 83%, 40%) 92%,
+                            hsl(221, 83%, 28%) 100%);
+}
+
+.evt-modal-save-btn .front {
+    background: #2563eb;
+    color: #fff;
+}
+
+/* ── CANCEL / CLOSE (grey) ── */
+.evt-modal-cancel-btn .edge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(to left,
+            hsl(0, 0%, 42%) 0%, hsl(0, 0%, 52%) 8%,
+            hsl(0, 0%, 52%) 92%, hsl(0, 0%, 42%) 100%);
+}
+
+.evt-modal-cancel-btn .front {
+    background: #f3f4f6;
+    color: #555;
+}
+
+/* ── PREV / BACK (grey) ── */
+.evt-modal-prev-btn .edge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(to left,
+            hsl(0, 0%, 42%) 0%, hsl(0, 0%, 52%) 8%,
+            hsl(0, 0%, 52%) 92%, hsl(0, 0%, 42%) 100%);
+}
+
+.evt-modal-prev-btn .front {
+    background: #e5e7eb;
+    color: #111;
+}
+
+/* ── NEXT (blue) ── */
+.evt-modal-next-btn .edge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(to left,
+            hsl(221, 83%, 28%) 0%, hsl(221, 83%, 40%) 8%,
+            hsl(221, 83%, 40%) 92%, hsl(221, 83%, 28%) 100%);
+}
+
+.evt-modal-next-btn .front {
+    background: #2563eb;
+    color: #fff;
+}
+
+/* ── CONFIRM (green) ── */
+.evt-modal-confirm-btn .edge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(to left,
+            hsl(142, 72%, 18%) 0%, hsl(142, 72%, 26%) 8%,
+            hsl(142, 72%, 26%) 92%, hsl(142, 72%, 18%) 100%);
+}
+
+.evt-modal-confirm-btn .front {
+    background: #16a34a;
+    color: #fff;
+}
+
+/* ── DANGER / DELETE (red) ── */
+.evt-modal-danger-btn .edge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(to left,
+            hsl(0, 72%, 28%) 0%, hsl(0, 72%, 38%) 8%,
+            hsl(0, 72%, 38%) 92%, hsl(0, 72%, 28%) 100%);
+}
+
+.evt-modal-danger-btn .front {
+    background: #dc2626;
+    color: #fff;
 }
 
 .event-package-body {
@@ -230,74 +495,6 @@
     overflow: visible !important;
     max-height: none !important;
     padding: 0;
-}
-
-/* Step progress */
-.evt-spec-steps {
-    display: flex;
-    gap: 0;
-    margin-top: 10px;
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid #e5e7eb;
-}
-
-.evt-spec-step {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    background: #f9f9f9;
-    border: none;
-    border-right: 1px solid #e5e7eb;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 500;
-    color: #888;
-    transition: all 0.2s;
-}
-
-.evt-spec-step:last-child {
-    border-right: none;
-}
-
-.evt-spec-step.active {
-    background: #111;
-    color: #fff;
-}
-
-.evt-spec-step.done {
-    background: #dcfce7;
-    color: #16a34a;
-}
-
-.evt-step-num {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 700;
-    flex-shrink: 0;
-}
-
-.evt-spec-step.active .evt-step-num {
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-}
-
-.evt-spec-step.done .evt-step-num {
-    background: #16a34a;
-    color: #fff;
-}
-
-.evt-step-label {
-    font-size: 12px;
-    white-space: nowrap;
 }
 
 /* FORM INTERNALS */

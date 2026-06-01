@@ -144,7 +144,7 @@ export default function StaffSalary({ adminData }) {
             <div className="staff-filter-bar">
                 <input
                     className="search-input"
-                    placeholder="🔍 Search name or role…"
+                    placeholder=" Search name or role…"
                     value={salarySearch}
                     onChange={e => setSalarySearch(e.target.value)}
                 />

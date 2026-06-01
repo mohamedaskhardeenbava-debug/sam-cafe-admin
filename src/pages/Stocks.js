@@ -316,7 +316,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       <div className="stocks-filter-bar">
         <input
           className="search-input"
-          placeholder="🔍 Search ingredient or brand…"
+          placeholder=" Search ingredient or brand…"
           value={stockSearch}
           onChange={e => setStockSearch(e.target.value)}
         />

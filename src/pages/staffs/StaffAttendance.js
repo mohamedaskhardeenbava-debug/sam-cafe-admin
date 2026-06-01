@@ -269,9 +269,9 @@ export default function StaffAttendance({ adminData, setAdminData }) {
             <div className="att-header">
                 <div className="att-header-left">
                     <h2 className="att-title">Staff Attendance</h2>
-                    <span className="att-subtitle">
-                        {new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" })}
-                    </span>
+                    <h5 className="att-subtitle">
+                        - {new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" })}
+                    </h5>
                 </div>
                 <div className="att-header-right">
                     <button className="export-btn" onClick={exportAttendance}>Export</button>
@@ -283,7 +283,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
             <div className="att-filter-bar">
                 {/* SEARCH WITH STATS DROPDOWN */}
                 <div className="att-search-wrap" ref={searchRef}>
-                    <input className="search-input" placeholder="🔍 Search staff…"
+                    <input className="search-input" placeholder=" Search staff…"
                         value={attSearch}
                         onChange={e => { setAttSearch(e.target.value); setSearchOpen(true); }}
                         onFocus={() => setSearchOpen(true)}

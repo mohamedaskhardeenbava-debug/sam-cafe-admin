@@ -186,7 +186,7 @@ export default function KitchenAssign({ adminData, setAdminData }) {
       <div className="assign-filter-bar">
         <input
           className="search-input"
-          placeholder="🔍 Search tasks…"
+          placeholder=" Search tasks…"
           value={assignSearch}
           onChange={e => setAssignSearch(e.target.value)}
         />

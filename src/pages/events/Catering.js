@@ -349,6 +349,13 @@ const Catering = ({ adminData, setAdminData,
         addrDoorNo: "", addrStreet: "", addrArea: "",
         addrCity: "", addrDistrict: "", addrState: "", addrPincode: "",
       }));
+    } else {
+      /* Unchecked — clear all address fields so user fills fresh */
+      const cleared = {
+        addrDoorNo: "", addrStreet: "", addrArea: "",
+        addrLandmark: "", addrCity: "", addrDistrict: "", addrState: "", addrPincode: "",
+      };
+      setForm(p => ({ ...p, ...cleared, location: "" }));
     }
   };
 
@@ -805,7 +812,7 @@ const Catering = ({ adminData, setAdminData,
                   </div>
 
 
-                  <div className="ae-addr-grid">
+                  {!useRestaurantAddr && <div className="ae-addr-grid">
                     {[
                       { key: "addrDoorNo", label: "Door No. / Building", placeholder: "Door / Flat No." },
                       { key: "addrStreet", label: "Street Name", placeholder: "Street / Road" },
@@ -837,7 +844,7 @@ const Catering = ({ adminData, setAdminData,
                         {formErrors[field.key] && <span className="evt-res-form-error">{formErrors[field.key]}</span>}
                       </div>
                     ))}
-                  </div>
+                  </div>}
 
                   {/* Decoration */}
                   <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>Decoration</div>

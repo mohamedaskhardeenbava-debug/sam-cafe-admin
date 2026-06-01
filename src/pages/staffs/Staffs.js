@@ -193,7 +193,7 @@ export default function Staffs({
             <div className="staff-filter-bar">
                 <input
                     className="search-input"
-                    placeholder="🔍 Search name, role, contact…"
+                    placeholder=" Search name, role, contact…"
                     value={staffSearch}
                     onChange={e => setStaffSearch(e.target.value)}
                 />

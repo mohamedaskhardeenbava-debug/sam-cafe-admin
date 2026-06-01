@@ -201,7 +201,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
         <div className="kgroom-search-wrap" ref={searchRef}>
           <input
             className="search-input"
-            placeholder="🔍 Search staff…"
+            placeholder=" Search staff…"
             value={groomSearch}
             onChange={e => { setGroomSearch(e.target.value); setSearchOpen(true); }}
             onFocus={() => setSearchOpen(true)}

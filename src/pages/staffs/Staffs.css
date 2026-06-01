@@ -26,7 +26,7 @@
 /* ================= TABLE ================= */
 .staff-table-wrapper {
     width: 100%;
-    height: calc(100vh - 230px);
+    height: calc(100vh - 235px);
     overflow-y: auto;
     padding: 0 10px;
     background: #e9e9e9;
