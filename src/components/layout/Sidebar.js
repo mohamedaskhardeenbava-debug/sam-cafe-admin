@@ -4,9 +4,12 @@ import "./Sidebar.css";
 import dashboardIcon from "../../icon/dashboard-icon.png";
 import categoryIcon from "../../icon/category-icon.png";
 import dishIcon from "../../icon/dish-icon.png";
+import eventIcon from "../../icon/event-icon.png";
 import ingredientIcon from "../../icon/ingredient-icon.png";
 import stockIcon from "../../icon/stock-icon.png";
+import themeIcon from "../../icon/theme-icon.png";
 import orderIcon from "../../icon/order-icon.png";
+import offerIcon from "../../icon/offer-icon.png";
 import userIcon from "../../icon/user-icon.png";
 import favouriteIcon from "../../icon/favourite-icon.png";
 import staffIcon from "../../icon/staff-icon.png";
@@ -24,7 +27,7 @@ const menu = [
   { label: "Orders", path: "/orders", icon: orderIcon },
   {
     label: "Events",
-    icon: orderIcon,
+    icon: eventIcon,
     children: [
       { label: "Events", path: "/events" },
       { label: "Reservations", path: "/reservations" },
@@ -71,8 +74,8 @@ const menu = [
       { label: "Reports", path: "/service-reports" },
     ],
   },
-  { label: "Offers", path: "/offers", icon: dishIcon },
-  {label: "Theme Settings", path: "/theme-settings", icon: dishIcon}
+  { label: "Offers", path: "/offers", icon: offerIcon },
+  { label: "Theme Settings", path: "/theme-settings", icon: themeIcon }
 ];
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
