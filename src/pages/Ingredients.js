@@ -3,12 +3,14 @@ import "./Ingredients.css";
 import "./ModalCSS.css";
 import { useNavigate } from "react-router-dom";
 import deleteIcon from "../icon/delete-icon.png";
+import closeIcon from "../icon/close-icon.png";
 import { allowTextInput } from "../App";
 import { sortArray } from "../App";
 import { EmptyRow } from "../App";
 import api from "../api";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import { useToast } from "../useToast";
 
 
 const EMPTY_FORM = {
@@ -34,10 +36,12 @@ const generateIngredientId = (name) =>
   name.trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
 
 const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCamelCase, handleSort, sortConfig }) => {
+  const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [imagePreview, setImagePreview] = useState("");
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [formErrors, setFormErrors] = useState({});
   const [showBrandInput, setShowBrandInput] = useState(false);
   const [brandInput, setBrandInput] = useState("");
 
@@ -47,6 +51,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
     setIsEditMode(false);
     setFormData(EMPTY_FORM);
     setImagePreview("");
+    setFormErrors({});
   };
 
   const [ingredientSearch, setIngredientSearch] = useState("");
@@ -70,6 +75,19 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
     useInfiniteScroll(filteredIngredients.length, 30);
 
   const handleSave = async () => {
+    const e = {};
+    if (!formData.name.trim()) e.name = true;
+    if (!imagePreview && !formData.image) e.image = true;
+    if (!formData.pricePer100g) e.pricePer100g = true;
+    if (!formData.stockRemaining) e.stockRemaining = true;
+    if (!formData.nutritionPer100g.kcal) e.kcal = true;
+    if (!formData.nutritionPer100g.protein) e.protein = true;
+    if (!formData.nutritionPer100g.fat) e.fat = true;
+    if (!formData.nutritionPer100g.fibre) e.fibre = true;
+    if (!formData.description.trim()) e.description = true;
+    if (!formData.history.trim()) e.history = true;
+    if (Object.keys(e).length) { setFormErrors(e); return; }
+
     const normalizedName = formData.name.trim().toLowerCase();
 
     const duplicate = adminData.ingredients.some(
@@ -79,7 +97,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
     );
 
     if (duplicate) {
-      alert("Ingredient with this name already exists");
+      setFormErrors({ name: true });
       return;
     }
 
@@ -102,21 +120,12 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
 
     if (isEditMode) {
       await api.put(`/ingredients/${payload.id}`, payload);
-
-      setAdminData(prev => ({
-        ...prev,
-        ingredients: prev.ingredients.map(i =>
-          i.id === payload.id ? payload : i
-        )
-      }));
-
+      // State update handled by socket data-change handler in App.js
+      toast.success("Ingredient updated");
     } else {
-      const res = await api.post(`/ingredients`, payload);
-
-      setAdminData(prev => ({
-        ...prev,
-        ingredients: [...prev.ingredients, res.data]
-      }));
+      await api.post(`/ingredients`, payload);
+      // State update handled by socket data-change handler in App.js
+      toast.success("Ingredient added");
     }
 
     resetIngredientForm();
@@ -149,8 +158,10 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
       {/* HEADER */}
       <div className="ingredient-header">
         <h2 className="ingredient-title">Ingredients</h2>
-        <button className="category-add-btn" onClick={openAddForm}>
-          + Add Ingredient
+        <button className="modal-save-btn" onClick={openAddForm}>
+          <span className="shadow"></span>
+          <span className="edge"></span>
+          <span className="front">+ Add Ingredient</span>
         </button>
       </div>
 
@@ -181,55 +192,63 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
               <h3>{isEditMode ? "Edit Ingredient" : "Add New Ingredient"}</h3>
               <button
                 type="button"
-                className="close-btn"
+                className="modal-cancel-btn"
                 aria-label="Close"
                 onClick={resetIngredientForm}
-              ></button>
+              >
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front close-padding"><img src={closeIcon} /></span>
+              </button>
             </div>
 
             <div className="modal-body">
               <div className="form-group">
-                <label>Ingredient Name</label>
-                <input
-                  autoFocus
-                  required
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      name: allowTextInput(
-                        prev.name,
-                        e.target.value,
-                        100,
-                        5
-                      )
-                    }))
-                  }
-                  onBlur={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      name: toCamelCase(e.target.value)
-                    }))
-                  }
-                />
+                <div className="mat">
+                  <input
+                    className={`mat-input ${formErrors.name ? " mat-error" : ""}`}
+                    placeholder=" "
+                    autoFocus
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        name: allowTextInput(
+                          prev.name,
+                          e.target.value,
+                          100,
+                          5
+                        )
+                      }))
+                    }
+                    onBlur={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        name: toCamelCase(e.target.value)
+                      }))
+                    }
+                  />
+                  <label className={`mat-label${formErrors.name ? " mat-label-error" : ""}`}>Ingredient Name<span className="rf-req">*</span></label>
+                  <span className={`mat-bar${formErrors.name ? " mat-bar-error" : ""}`} />
+                </div>
               </div>
 
               <div className="form-group">
-                <label>Ingredient Image</label>
-                <input
-                  required
-                  type="file"
-                  accept="image/*"
-                  onChange={handleIngredientImageUpload}
-                />
-
-                {imagePreview && (
-                  <img
-                    src={imagePreview}
-                    alt="Ingredient preview"
-                    className="ingredient-image-preview"
+                <div className="file-wrap">
+                  <label className={formErrors.image ? "mat-label-error" : ""}>Ingredient Image<span className="rf-req">*</span></label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => { handleIngredientImageUpload(e); setFormErrors(p => ({ ...p, image: false })); }}
+                    className={`file-input${formErrors.image ? " mat-error" : ""}`}
                   />
+                  <div className={`file-label${formErrors.image ? " file-label-error" : ""}`}>
+                    {imagePreview ? "✔ Ingredient Image selected" : "Choose Ingredient Image"}
+                  </div>
+                </div>
+                {imagePreview && (
+                  <img src={imagePreview} alt="Ingredient preview" className="staff-image-preview" />
                 )}
               </div>
 
@@ -305,49 +324,88 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                 <label>Nutrition per 100g</label>
                 <div className="nutrition-grid border">
                   {["kcal", "protein", "fat", "fibre"].map((key) => (
-                    <div key={key}>
-                      <label>{key.toUpperCase()}</label>
-                      <input
-                        required
-                        type="number"
-                        min="1"
-                        step="1"
-                        value={formData.nutritionPer100g[key]}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            nutritionPer100g: {
-                              ...formData.nutritionPer100g,
-                              [key]: e.target.value
-                            }
-                          })
-                        }
-                      />
+                    <div className="form-group" key={key}>
+                      <div className="mat">
+                        <input
+                          className={`mat-input${formErrors[key] ? " mat-error" : ""}`}
+                          placeholder=" "
+
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={formData.nutritionPer100g[key]}
+                          onChange={(e) => {
+                            setFormData({ ...formData, nutritionPer100g: { ...formData.nutritionPer100g, [key]: e.target.value } });
+                            setFormErrors(p => ({ ...p, [key]: false }));
+                          }}
+                        />
+                        <label className={`mat-label${formErrors[key] ? " mat-label-error" : ""}`}>{key}<span className="rf-req">*</span></label>
+                        <span className={`mat-bar${formErrors[key] ? " mat-bar-error" : ""}`} />
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="">Description</label>
-                <textarea
-                  required
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                />
+              <div className="horizontal-form-group">
+                <div className="form-group">
+                  <div className="mat">
+                    <input
+                      className={`mat-input${formErrors.pricePer100g ? " mat-error" : ""}`}
+                      placeholder=" "
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.pricePer100g}
+                      onChange={(e) => { setFormData({ ...formData, pricePer100g: e.target.value }); setFormErrors(p => ({ ...p, pricePer100g: false })); }}
+                    />
+                    <label className={`mat-label${formErrors.pricePer100g ? " mat-label-error" : ""}`}>Price per 100g (₹)<span className="rf-req">*</span></label>
+                    <span className={`mat-bar${formErrors.pricePer100g ? " mat-bar-error" : ""}`} />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <div className="mat">
+                    <input
+                      className={`mat-input${formErrors.stockRemaining ? " mat-error" : ""}`}
+                      placeholder=" "
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={formData.stockRemaining}
+                      onChange={(e) => { setFormData({ ...formData, stockRemaining: e.target.value }); setFormErrors(p => ({ ...p, stockRemaining: false })); }}
+                    />
+                    <label className={`mat-label${formErrors.stockRemaining ? " mat-label-error" : ""}`}>Stock Remaining (g)<span className="rf-req">*</span></label>
+                    <span className={`mat-bar${formErrors.stockRemaining ? " mat-bar-error" : ""}`} />
+                  </div>
+                </div>
               </div>
 
               <div className="form-group">
-                <label htmlFor="">History</label>
-                <textarea
-                  required
-                  value={formData.history}
-                  onChange={(e) =>
-                    setFormData({ ...formData, history: e.target.value })
-                  }
-                />
+                <div className="mat">
+                  <textarea
+                    className={`mat-input mat-textarea${formErrors.description ? " mat-error" : ""}`}
+                    placeholder=" "
+
+                    value={formData.description}
+                    onChange={(e) => { setFormData({ ...formData, description: e.target.value }); setFormErrors(p => ({ ...p, description: false })); }}
+                  />
+                  <label className={`mat-label${formErrors.description ? " mat-label-error" : ""}`}>Description<span className="rf-req">*</span></label>
+                  <span className={`mat-bar${formErrors.description ? " mat-bar-error" : ""}`} />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <div className="mat">
+                  <textarea
+                    className={`mat-input mat-textarea${formErrors.history ? " mat-error" : ""}`}
+                    placeholder=" "
+
+                    value={formData.history}
+                    onChange={(e) => { setFormData({ ...formData, history: e.target.value }); setFormErrors(p => ({ ...p, history: false })); }}
+                  />
+                  <label className={`mat-label${formErrors.history ? " mat-label-error" : ""}`}>History<span className="rf-req">*</span></label>
+                  <span className={`mat-bar${formErrors.history ? " mat-bar-error" : ""}`} />
+                </div>
               </div>
 
               <div className="form-group">
@@ -356,29 +414,52 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                 {!showBrandInput && (
                   <button
                     type="button"
-                    className="add-ingredient-button"
+                    className="modal-save-btn"
                     onClick={() => setShowBrandInput(true)}
                   >
-                    + Add Brand
+                    <span className="shadow"></span>
+                    <span className="edge"></span>
+                    <span className="front">Add Brand</span>
                   </button>
                 )}
 
                 {showBrandInput && (
-                  <div className="inline-input">
-                    <input
-                      autoFocus
-                      type="text"
-                      value={brandInput}
-                      onChange={(e) =>
-                        setBrandInput(
-                          allowTextInput(brandInput, e.target.value, 50, 2)
-                        )
-                      }
-                    />
+                  <div className="form-group">
+
+                    <div className="mat">
+                      <input
+                        className="mat-input"
+                        placeholder=" "
+                        autoFocus
+                        type="text"
+                        value={brandInput}
+                        onChange={(e) =>
+                          setBrandInput(
+                            allowTextInput(brandInput, e.target.value, 50, 2)
+                          )
+                        }
+                      />
+                      <label className="mat-label">Brand Name<span className="rf-req">*</span></label>
+                      <span className="mat-bar" />
+                    </div>
 
                     <div className="action">
                       <button
+                        className="modal-cancel-btn"
                         type="button"
+                        onClick={() => {
+                          setBrandInput("");
+                          setShowBrandInput(false);
+                        }}
+                      >
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front">Cancel</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="modal-save-btn"
                         onClick={() => {
                           if (!brandInput.trim()) return;
 
@@ -391,7 +472,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                               b => b.name.toLowerCase() === brandInput.toLowerCase()
                             )
                           ) {
-                            alert("Brand already added");
+                            toast.warning("Brand already added");
                             return;
                           }
 
@@ -404,24 +485,16 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                           setShowBrandInput(false);
                         }}
                       >
-                        Add
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setBrandInput("");
-                          setShowBrandInput(false);
-                        }}
-                      >
-                        Cancel
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front">Add</span>
                       </button>
                     </div>
                   </div>
                 )}
 
                 {formData.brands.length > 0 && (
-                  <table className="ingredient-form-table">
+                  <table className="preview-table">
                     <thead>
                       <tr>
                         <th>Brand</th>
@@ -454,11 +527,22 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
             </div>
 
             <div className="modal-footer">
-              <button type="button" onClick={resetIngredientForm}>
-                Cancel
+              <button
+                className="modal-cancel-btn"
+                type="button"
+                onClick={resetIngredientForm}
+              >
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">Cancel</span>
               </button>
-              <button type="submit">
-                {isEditMode ? "Save Changes" : "Add Ingredient"}
+              <button
+                className="modal-save-btn"
+                type="submit"
+              >
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">{isEditMode ? "Save Changes" : "Add Ingredient"}</span>
               </button>
             </div>
           </form>
@@ -521,9 +605,30 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                     <button
                       className="ingredient-icon-btn ingredient-delete-btn"
                       onClick={() => {
-                        if (window.confirm("Delete this ingredient?")) {
-                          onDelete(ingredient.id);
-                        }
+                        toast.confirm(
+                          `Delete "${ingredient.name}"?`,
+                          async () => {
+                            // Optimistic update — remove immediately
+                            setAdminData(prev => ({
+                              ...prev,
+                              ingredients: prev.ingredients.filter(
+                                i => i.id !== ingredient.id
+                              )
+                            }));
+                            try {
+                              await api.delete(`/ingredients/${ingredient.id}`);
+                              toast.success("Ingredient deleted");
+                            } catch (err) {
+                              // Revert on true server failure
+                              console.error("Delete ingredient error:", err);
+                              setAdminData(prev => ({
+                                ...prev,
+                                ingredients: [...prev.ingredients, ingredient]
+                              }));
+                              toast.error("Failed to delete ingredient");
+                            }
+                          }
+                        );
                       }}
                     >
                       <img src={deleteIcon} alt="" />

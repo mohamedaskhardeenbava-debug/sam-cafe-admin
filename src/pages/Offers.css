@@ -118,6 +118,7 @@
   font-size: 14px;
   border: none;
   background: #ffffff;
+  height: 36px;
 }
 
 .offers-table tbody tr td:first-child {
@@ -246,7 +247,7 @@
 .offers-price-preview {
   display: flex;
   justify-content: space-between;
-  background: #f5f5f5;
+  background: var(--color-paleblue);
   padding: 10px 14px;
   border-radius: 10px;
 }
@@ -394,46 +395,6 @@
 .offer-inactive {
   background: #fee2e2;
   color: #dc2626;
-}
-
-/* ── Active status pill color overrides ── */
-.sched-pill-btn.offer-pill-active {
-  background: #d1fae5;
-  border-color: #6ee7b7;
-  color: #065f46;
-}
-
-.sched-pill-btn.offer-pill-inactive {
-  background: #fee2e2;
-  border-color: #fca5a5;
-  color: #dc2626;
-}
-
-.sched-pill-btn {
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 1.5px solid #e5e7eb;
-  background: #f9fafb;
-  color: #555;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-  font-family: inherit;
-  white-space: nowrap;
-}
-
-.sched-pill-btn:hover {
-  border-color: #bbb;
-  background: #f3f4f6;
-  color: #111;
-}
-
-.sched-pill-btn.active {
-  background: #111;
-  border-color: #111;
-  color: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .ae-clear-filter {

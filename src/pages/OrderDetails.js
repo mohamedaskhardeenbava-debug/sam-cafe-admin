@@ -77,121 +77,123 @@ const OrderDetails = ({ orders, menu }) => {
           <h2>Order {order.id}</h2>
         </div>
 
-        {/* ORDER INFO */}
-        <div className="section">
-          <div className="section-title">
-            <span>Order Information</span>
-          </div>
-
-          <table className="order-info-table">
-            <tbody>
-              <tr>
-                <td><strong>Date:</strong> {formatDisplayDate(order.date)}</td>
-                <td><strong>Order ID:</strong> {order.id ?? "-"}</td>
-              </tr>
-              <tr>
-                <td>
-                  <strong>Status:</strong>{" "}
-                  <span
-                    className={`dd-status status-${normalizeStatus(order.status).replace(/\s+/g, "-")}`}
-                  >
-                    {order.status}
-                  </span>
-                </td>
-                <td><strong>Customer Name:</strong> {order.userName ?? "-"}</td>
-              </tr>
-              <tr>
-                <td><strong>Mode:</strong> {order.mode}</td>
-                <td><strong>Table No:</strong> {order.tableNo ?? "-"}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* ITEMS */}
-        <div className="section">
-          <div className="section-title">
-            <span>Ordered Items</span>
-          </div>
-
-          <table className="items-table">
-            <thead>
-              <tr>
-                <th>Category</th>
-                <th>Dish</th>
-                <th>Notes</th>
-                <th>Qty</th>
-                <th>Price</th>
-                <th>Subtotal</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {order.items.map((item, index) => {
-                const itemTotal = resolveItemTotal(item);
-
-                return (
-                  <tr key={index}>
-                    <td style={{ textTransform: 'capitalize' }}>{item.categoryName || item.categoryId}</td>
-                    <td
-                      className={item.categoryId === "combo" ? "" : "clickable"}
-                      onClick={() => {
-                        // ✅ Do nothing for combo items
-                        if (item.categoryId === "combo") return;
-
-                        const route = resolveDishRoute(item);
-                        if (route) {
-                          navigate(route, {
-                            state: {
-                              fromOrder: true,
-                              orderItem: item
-                            }
-                          });
-                        }
-                      }}
-                    >
-                      {item.dishName}
-                    </td>
-                    <td>{item.notes?.trim() ? item.notes : "-"}</td>
-                    <td>{item.quantity ?? item.qty}</td>
-                    <td>₹{itemTotal}</td>
-                    <td>₹{itemTotal}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {/* TOTAL */}
-        <div className="section">
-          {/* 🔥 SPLIT INFO */}
-          {order.splitType && (
-            <div className="section">
-              <div className="section-title">
-                <span>Split Details</span>
-              </div>
-
-              {order.splitType === "amount" && (
-                <p>
-                  {order.splitDetails?.customers} People • ₹{order.splitDetails?.perHead} per head
-                </p>
-              )}
-
-              {order.splitType === "bill" && (
-                <div>
-                  {order.splitDetails?.map((bill, i) => (
-                    <p key={i}>
-                      Bill {i + 1}: ₹{bill.total}
-                    </p>
-                  ))}
-                </div>
-              )}
+        <div className="details-body">
+          {/* ORDER INFO */}
+          <div className="section">
+            <div className="section-title">
+              <span>Order Information</span>
             </div>
-          )}
-          <div className="section-title">
-            <span>Total Amount</span>
-            <p className="order-total">₹{totalAmount}</p>
+
+            <table className="data-table">
+              <tbody>
+                <tr>
+                  <td><strong>Date:</strong> {formatDisplayDate(order.date)}</td>
+                  <td><strong>Order ID:</strong> {order.id ?? "-"}</td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Status:</strong>{" "}
+                    <span
+                      className={`dd-status status-${normalizeStatus(order.status).replace(/\s+/g, "-")}`}
+                    >
+                      {order.status}
+                    </span>
+                  </td>
+                  <td><strong>Customer Name:</strong> {order.userName ?? "-"}</td>
+                </tr>
+                <tr>
+                  <td><strong>Mode:</strong> {order.mode}</td>
+                  <td><strong>Table No:</strong> {order.tableNo ?? "-"}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* ITEMS */}
+          <div className="section">
+            <div className="section-title">
+              <span>Ordered Items</span>
+            </div>
+
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Dish</th>
+                  <th>Notes</th>
+                  <th>Qty</th>
+                  <th>Price</th>
+                  <th>Subtotal</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {order.items.map((item, index) => {
+                  const itemTotal = resolveItemTotal(item);
+
+                  return (
+                    <tr key={index}>
+                      <td style={{ textTransform: 'capitalize' }}>{item.categoryName || item.categoryId}</td>
+                      <td
+                        className={item.categoryId === "combo" ? "" : "clickable"}
+                        onClick={() => {
+                          // ✅ Do nothing for combo items
+                          if (item.categoryId === "combo") return;
+
+                          const route = resolveDishRoute(item);
+                          if (route) {
+                            navigate(route, {
+                              state: {
+                                fromOrder: true,
+                                orderItem: item
+                              }
+                            });
+                          }
+                        }}
+                      >
+                        {item.dishName}
+                      </td>
+                      <td>{item.notes?.trim() ? item.notes : "-"}</td>
+                      <td>{item.quantity ?? item.qty}</td>
+                      <td>₹{itemTotal}</td>
+                      <td>₹{itemTotal}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* TOTAL */}
+          <div className="section">
+            {/* 🔥 SPLIT INFO */}
+            {order.splitType && (
+              <div className="section">
+                <div className="section-title">
+                  <span>Split Details</span>
+                </div>
+
+                {order.splitType === "amount" && (
+                  <p>
+                    {order.splitDetails?.customers} People • ₹{order.splitDetails?.perHead} per head
+                  </p>
+                )}
+
+                {order.splitType === "bill" && (
+                  <div>
+                    {order.splitDetails?.map((bill, i) => (
+                      <p key={i}>
+                        Bill {i + 1}: ₹{bill.total}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="section-title">
+              <span>Total Amount</span>
+              <p className="order-total">₹{totalAmount}</p>
+            </div>
           </div>
         </div>
 

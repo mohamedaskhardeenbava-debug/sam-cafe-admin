@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
+import closeIcon from "../../icon/close-icon.png";
 import "./Celebrations.css";
 import "./EvtCommon.css";
 import "../ModalCSS.css";
@@ -163,6 +164,16 @@ const Celebrations = ({ adminData, setAdminData,
   const callWrapRefs = useRef({});
 
   const CREATE_TABS = ["All Details", "Preview"];
+
+  const validateCelebTab0 = () => {
+    const e = {};
+    if (!form.name.trim()) e.name = true;
+    if (!form.mobile || form.mobile.replace(/\D/g, "").length !== 10) e.mobile = true;
+    if (!form.date) e.date = true;
+    if (!form.time) e.time = true;
+    setFormErrors(e);
+    return Object.keys(e).length === 0;
+  };
 
   const data = adminData?.celebrations || [];
 
@@ -438,7 +449,7 @@ const Celebrations = ({ adminData, setAdminData,
             <span className="evt-filter-group-label">Period</span>
             {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
               <button key={preset}
-                className={`evt-filter-btn${filterDatePreset === preset ? " active" : ""}`}
+                className={`filter-pill${filterDatePreset === preset ? " active" : ""}`}
                 onClick={() => {
                   if (filterDatePreset === preset) {
                     setFilterDatePreset(""); setFilterFromDate(""); setFilterToDate("");
@@ -464,7 +475,7 @@ const Celebrations = ({ adminData, setAdminData,
               <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={v => { setFilterToDate(v); setFilterDatePreset(""); }} placeholder="End date" />
             </div>
             {(filterFromDate || filterToDate) && (
-              <button className="evt-filter-btn" title="Clear dates" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }}>✕</button>
+              <button className="filter-pill" title="Clear dates" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }}>✕</button>
             )}
           </div>
 
@@ -474,7 +485,7 @@ const Celebrations = ({ adminData, setAdminData,
             <span className="evt-filter-group-label">Type</span>
             {CELEBRATION_TYPES.map(t => (
               <button key={t.value} title={t.label}
-                className={`evt-filter-btn${filterType === t.value ? " active" : ""}`}
+                className={`filter-pill${filterType === t.value ? " active" : ""}`}
                 onClick={() => setFilterType(p => p === t.value ? "" : t.value)}>
                 {t.label.slice(0, 3)}
               </button>
@@ -484,7 +495,7 @@ const Celebrations = ({ adminData, setAdminData,
             <span className="evt-filter-group-label">Status</span>
             {["pending", "confirmed", "completed"].map(s => (
               <button key={s} title={s}
-                className={`evt-filter-btn${filterStatus === s ? " active clb-status-" + s : ""}`}
+                className={`filter-pill${filterStatus === s ? " active clb-status-" + s : ""}`}
                 onClick={() => setFilterStatus(p => p === s ? "" : s)}>
                 {s === "pending" ? "P" : s === "confirmed" ? "C" : "D"}
               </button>
@@ -666,18 +677,25 @@ const Celebrations = ({ adminData, setAdminData,
             <div className="event-modal-header">
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
                 <h3>Add Celebration</h3>
-                <div className="evt-spec-steps">
+                <div className="ecard">
                   {CREATE_TABS.map((t, i) => (
                     <button key={i}
-                      className={`evt-spec-step${createTab === i ? " active" : ""}${createTab > i ? " done" : ""}`}
-                      onClick={() => setCreateTab(i)}>
-                      <span className="evt-step-num">{createTab > i ? "✓" : i + 1}</span>
-                      <span className="evt-step-label">{t}</span>
+                      className={`ebutton${createTab === i ? " active" : ""}${createTab > i ? " done" : ""}`}
+                      onClick={() => {
+                        if (i > createTab && !validateCelebTab0()) return;
+                        setCreateTab(i);
+                      }}>
+                      <span className="eevt-step-num">{createTab > i ? "✓" : i + 1}</span>
+                      <span className="eevt-step-label">{t}</span>
                     </button>
                   ))}
                 </div>
               </div>
-              <button className="close-btn" onClick={() => setShowCreate(false)} />
+              <button className="modal-cancel-btn" onClick={() => { setShowCreate(false); setFormErrors({}); }} >
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front close-padding"><img src={closeIcon} /></span>
+              </button>
             </div>
 
             <div className="event-modal-body" style={{ padding: "8px 0" }}>
@@ -685,18 +703,18 @@ const Celebrations = ({ adminData, setAdminData,
               {/* ── TAB 0: Event Type & Add-ons ── */}
               {createTab === 0 && (
                 <>
-                  <div className="evt-res-form-section-label">Event Type</div>
+                  <div className="evt-res-form-section-label">Event Type <span className="evt-res-req">*</span></div>
                   <div className="form-group">
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", border: formErrors.type ? "1.5px solid var(--color-red, #ee5253)" : "none", borderRadius: 8, padding: formErrors.type ? "6px" : 0 }}>
                       {CELEBRATION_TYPES.map(t => (
                         <button key={t.value} type="button"
                           className={`evt-res-source-chip${form.type === t.value ? " active" : ""}`}
-                          onClick={() => setType(t.value)}>
+                          onClick={() => { setType(t.value); setFormErrors(p => ({ ...p, type: false })); }}>
                           {t.label}
                         </button>
                       ))}
                     </div>
-                    {formErrors.type && <span className="evt-res-form-error">{formErrors.type}</span>}
+                    {formErrors.type && <span style={{ fontSize: 11, color: "var(--color-red, #ee5253)", marginTop: 4, display: "block" }}>Please select an event type</span>}
                   </div>
 
                   <div className="evt-res-form-section-label" style={{ marginTop: 4 }}>Add-ons</div>
@@ -711,10 +729,13 @@ const Celebrations = ({ adminData, setAdminData,
                       ))}
                     </div>
                     {form.specialMention && (
-                      <textarea rows={2} style={{ marginTop: 8, width: "100%", boxSizing: "border-box", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #e5e7eb", fontSize: 13, fontFamily: "inherit", resize: "vertical" }}
-                        placeholder="Describe what to announce / mention..."
-                        value={form.specialMentionText}
-                        onChange={e => setF("specialMentionText", e.target.value)} />
+                      <div className="mat-area" style={{ marginTop: 8 }}>
+                        <textarea className="mat-input mat-textarea" rows={2} placeholder=" "
+                          value={form.specialMentionText}
+                          onChange={e => setF("specialMentionText", e.target.value)} />
+                        <label className="mat-area-label">Describe what to announce / mention...</label>
+                        <span className="mat-area-bar" />
+                      </div>
                     )}
                   </div>
 
@@ -747,36 +768,40 @@ const Celebrations = ({ adminData, setAdminData,
                   <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>Guest Information</div>
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1.4 }}>
-                      <label>Name <span className="evt-res-req">*</span></label>
-                      <input className={formErrors.name ? "error" : ""}
-                        placeholder="Guest name" value={form.name}
-                        onChange={e => setF("name", e.target.value)} />
-                      {formErrors.name && <span className="evt-res-form-error">{formErrors.name}</span>}
+                      <div className="mat">
+                        <input className={`mat-input${formErrors.name ? " mat-error" : ""}`} placeholder=" "
+                          value={form.name} onChange={e => { setF("name", e.target.value); setFormErrors(p => ({ ...p, name: false })); }} />
+                        <label className={`mat-label${formErrors.name ? " mat-label-error" : ""}`}>Name <span className="evt-res-req">*</span></label>
+                        <span className={`mat-bar${formErrors.name ? " mat-bar-error" : ""}`} />
+                      </div>
                     </div>
                     <div className="form-group" style={{ flex: 1 }}>
-                      <label>Guests <span style={{ fontSize: 10, color: "#aaa" }}>(max 20)</span></label>
-                      <div className="evt-stepper">
-                        <button type="button" onClick={() => setF("guests", Math.max(1, form.guests - 1))}>−</button>
+                      <label className={formErrors.guests ? "mat-label-error" : ""}>Guests <span style={{ fontSize: 10, color: "#aaa" }}>(max 20)</span></label>
+                      <div className={`evt-stepper${formErrors.guests ? " error" : ""}`}>
+                        <button type="button" onClick={() => { setF("guests", Math.max(1, form.guests - 1)); setFormErrors(p => ({ ...p, guests: false })); }}>−</button>
                         <span>{form.guests}</span>
-                        <button type="button" onClick={() => setF("guests", Math.min(20, form.guests + 1))}>+</button>
+                        <button type="button" onClick={() => { setF("guests", Math.min(20, form.guests + 1)); setFormErrors(p => ({ ...p, guests: false })); }}>+</button>
                       </div>
-                      {formErrors.guests && <span className="evt-res-form-error">{formErrors.guests}</span>}
+                      {formErrors.guests && <span style={{ fontSize: 11, color: "var(--color-red, #ee5253)", marginTop: 4, display: "block" }}>Maximum 20 guests allowed</span>}
                     </div>
                   </div>
 
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1 }}>
-                      <label>Mobile <span className="evt-res-req">*</span></label>
-                      <input className={formErrors.mobile ? "error" : ""}
-                        placeholder="10-digit number" type="tel"
-                        value={form.mobile}
-                        onChange={e => setF("mobile", e.target.value.replace(/\D/g, "").slice(0, 10))} />
-                      {formErrors.mobile && <span className="evt-res-form-error">{formErrors.mobile}</span>}
+                      <div className="mat">
+                        <input className={`mat-input${formErrors.mobile ? " mat-error" : ""}`} placeholder=" " type="tel"
+                          value={form.mobile} onChange={e => { setF("mobile", e.target.value.replace(/\D/g, "").slice(0, 10)); setFormErrors(p => ({ ...p, mobile: false })); }} />
+                        <label className={`mat-label${formErrors.mobile ? " mat-label-error" : ""}`}>Mobile <span className="evt-res-req">*</span></label>
+                        <span className={`mat-bar${formErrors.mobile ? " mat-bar-error" : ""}`} />
+                      </div>
                     </div>
                     <div className="form-group" style={{ flex: 1 }}>
-                      <label>Email</label>
-                      <input placeholder="email@example.com"
-                        value={form.email} onChange={e => setF("email", e.target.value)} />
+                      <div className="mat">
+                        <input className="mat-input" placeholder=" "
+                          value={form.email} onChange={e => setF("email", e.target.value)} />
+                        <label className="mat-label">Email</label>
+                        <span className="mat-bar" />
+                      </div>
                     </div>
                   </div>
 
@@ -785,31 +810,38 @@ const Celebrations = ({ adminData, setAdminData,
                       <div className="evt-res-form-section-label" style={{ marginTop: 4 }}>Birthday Details</div>
                       <div className="horizontal-form-group">
                         <div className="form-group" style={{ flex: 1.5 }}>
-                          <label>Birthday Person's Name <span className="evt-res-req">*</span></label>
-                          <input placeholder="Name" value={form.birthdayPersonName}
-                            onChange={e => setF("birthdayPersonName", e.target.value)} />
-                          {formErrors.birthdayPersonName && <span className="evt-res-form-error">{formErrors.birthdayPersonName}</span>}
+                          <div className="mat">
+                            <input className={`mat-input${formErrors.birthdayPersonName ? " mat-error" : ""}`} placeholder=" " value={form.birthdayPersonName}
+                              onChange={e => { setF("birthdayPersonName", e.target.value); setFormErrors(p => ({ ...p, birthdayPersonName: false })); }} />
+                            <label className={`mat-label${formErrors.birthdayPersonName ? " mat-label-error" : ""}`}>Birthday Person's Name <span className="evt-res-req">*</span></label>
+                            <span className={`mat-bar${formErrors.birthdayPersonName ? " mat-bar-error" : ""}`} />
+                          </div>
                         </div>
                         <div className="form-group" style={{ flex: 1 }}>
-                          <label>Age (optional)</label>
-                          <input type="number" min="1" max="120" placeholder="Age"
-                            value={form.birthdayPersonAge} onChange={e => setF("birthdayPersonAge", e.target.value)} />
+                          <div className="mat">
+                            <input className="mat-input" type="number" min="1" max="120" placeholder=" "
+                              value={form.birthdayPersonAge} onChange={e => setF("birthdayPersonAge", e.target.value)} />
+                            <label className="mat-label">Age (optional)</label>
+                            <span className="mat-bar" />
+                          </div>
                         </div>
                       </div>
                     </>
                   )}
 
                   <div className="form-group" style={{ marginTop: 4 }}>
-                    <label>Special Notes</label>
-                    <textarea rows={2} placeholder="Any special requests..."
-                      value={form.specialNote} onChange={e => setF("specialNote", e.target.value)} />
+                    <div className="mat-area">
+                      <textarea className="mat-input mat-textarea" rows={2} placeholder=" "
+                        value={form.specialNote} onChange={e => setF("specialNote", e.target.value)} />
+                      <label className="mat-area-label">Special Notes</label>
+                      <span className="mat-area-bar" />
+                    </div>
                   </div>
 
                   <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>Date & Time</div>
                   <div className="form-group">
-                    <label>Event Date <span className="evt-res-req">*</span></label>
-                    <CustomDatePicker value={form.date} min={tomorrowStr()} onChange={v => { setF("date", v); setF("time", ""); setF("slotGroup", ""); }} placeholder="Select date" />
-                    {formErrors.date && <span className="evt-res-form-error">{formErrors.date}</span>}
+                    <label className={formErrors.date ? "mat-label-error" : ""}>Event Date <span className="evt-res-req">*</span></label>
+                    <CustomDatePicker value={form.date} min={tomorrowStr()} onChange={v => { setF("date", v); setF("time", ""); setF("slotGroup", ""); setFormErrors(p => ({ ...p, date: false })); }} placeholder="Select date" hasError={!!formErrors.date} />
                   </div>
 
                   <div className="form-group">
@@ -831,20 +863,20 @@ const Celebrations = ({ adminData, setAdminData,
                   </div>
 
                   <div className="form-group">
-                    <label>
+                    <label className={formErrors.time ? "mat-label-error" : ""}>
                       Time <span className="evt-res-req">*</span>
                       {form.slotGroup && (() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()}
                     </label>
                     <CustomTimePicker
                       value={form.time}
-                      onChange={v => setF("time", v)}
+                      onChange={v => { setF("time", v); setFormErrors(p => ({ ...p, time: false })); }}
                       slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
                       slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
                       disabled={!form.slotGroup}
                       isToday={false}
+                      hasError={!!formErrors.time}
                     />
                     {!form.slotGroup && <span style={{ fontSize: 11, color: "#aaa", marginTop: 4, display: "block" }}>Select a dining slot first to enable time picker</span>}
-                    {formErrors.time && <span className="evt-res-form-error">{formErrors.time}</span>}
                   </div>
 
                   <div className="evt-res-form-section-label" style={{ marginTop: 4 }}>Decoration</div>
@@ -990,18 +1022,30 @@ const Celebrations = ({ adminData, setAdminData,
             </div>
 
             <div className="event-modal-footer">
-              <button onClick={() => setShowCreate(false)}>Cancel</button>
-                {createTab === 0 ? (
-                  <button type="button" onClick={handleCreateNext}>Preview →</button>
-                ) : (
-                  <>
-                    <button type="button" className="ae-step-prev-btn" onClick={() => setCreateTab(0)}>← Edit</button>
-                    <button onClick={handleCreate} disabled={saving}>
-                      {saving ? "Saving..." : "Create Celebration"}
-                    </button>
-                  </>
-                )}
-              </div>
+              <button className="modal-cancel-btn" onClick={() => { setShowCreate(false); setFormErrors({}); }}>
+                <span className="shadow"></span><span className="edge"></span>
+                <span className="front">Cancel</span>
+              </button>
+              {createTab === 0 ? (
+                <button type="button" className="modal-next-btn" onClick={() => {
+                  if (validateCelebTab0()) handleCreateNext();
+                }}>
+                  <span className="shadow"></span><span className="edge"></span>
+                  <span className="front">Preview →</span>
+                </button>
+              ) : (
+                <>
+                  <button type="button" className="modal-prev-btn" onClick={() => setCreateTab(0)}>
+                    <span className="shadow"></span><span className="edge"></span>
+                    <span className="front">← Edit</span>
+                  </button>
+                  <button className="modal-save-btn" onClick={handleCreate} disabled={saving}>
+                    <span className="shadow"></span><span className="edge"></span>
+                    <span className="front">{saving ? "Saving..." : "Create Celebration"}</span>
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

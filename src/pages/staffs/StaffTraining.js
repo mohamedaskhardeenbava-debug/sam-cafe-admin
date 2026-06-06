@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
 import "./StaffModules.css";
 import api from "../../api";
+import closeIcon from "../../icon/close-icon.png";
 
 const typeColors = {
     Online: { bg: "#dbeafe", color: "#1e40af" },
@@ -11,7 +12,7 @@ const typeColors = {
 };
 
 // ── CustomDropdown ───────────────────────────────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…" }) {
+function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
     const [open, setOpen] = React.useState(false);
     const ref = React.useRef(null);
     React.useEffect(() => {
@@ -20,28 +21,46 @@ function CustomDropdown({ value, onChange, options, placeholder = "Select…" })
         return () => document.removeEventListener("mousedown", handler);
     }, []);
     const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-    const label = selected ? (selected.label !== undefined ? selected.label : selected) : placeholder;
+    const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
+
+    const wrapperClass = [
+        "mat-select",
+        value ? "has-value" : "",
+        open ? "is-open" : "",
+    ].filter(Boolean).join(" ");
+
     return (
-        <div className="dishes-dropdown-wrapper" ref={ref}>
-            <button type="button" className="dishes-status-dropdown"
-                onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-                {label}
-            </button>
-            {open && (
-                <div className="dropdown-menu">
-                    {placeholder && (
-                        <div onClick={() => { onChange(""); setOpen(false); }}
-                            style={{ color: "#aaa", fontStyle: "italic" }}>{placeholder}</div>
-                    )}
-                    {options.map((o, i) => {
-                        const val = o.value !== undefined ? o.value : o;
-                        const lbl = o.label !== undefined ? o.label : o;
-                        return (
-                            <div key={i} onClick={() => { onChange(val); setOpen(false); }}>{lbl}</div>
-                        );
-                    })}
-                </div>
+        <div className={wrapperClass} ref={ref}>
+            {label && (
+                <label className="mat-label">
+                    {label}{required && <span className="rf-req">*</span>}
+                </label>
             )}
+            <div className="dishes-dropdown-wrapper">
+                <button type="button" className="dishes-status-dropdown"
+                    onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
+                    {displayLabel || ""}
+                </button>
+                {open && (
+                    <div className="dropdown-menu">
+                        <div onClick={() => { onChange(""); setOpen(false); }}
+                        >
+                            {placeholder}
+                        </div>
+                        {options.map((o, i) => {
+                            const val = o.value !== undefined ? o.value : o;
+                            const lbl = o.label !== undefined ? o.label : o;
+                            return (
+                                <div key={i} onClick={() => { onChange(val); setOpen(false); }}
+                                >
+                                    {lbl}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+            <span className="mat-bar" />
         </div>
     );
 }
@@ -55,6 +74,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
     const [form, setForm] = useState({
         staffId: "", role: "", duration: "", type: "", certificate: ""
     });
+    const [formErrors, setFormErrors] = useState({});
 
     useEffect(() => {
         const load = async () => {
@@ -69,6 +89,12 @@ export default function StaffTraining({ adminData, setAdminData }) {
 
     const addTraining = async (e) => {
         e.preventDefault();
+        const err = {};
+        if (!form.staffId) err.staffId = true;
+        if (!form.role) err.role = true;
+        if (!form.duration) err.duration = true;
+        if (!form.type) err.type = true;
+        if (Object.keys(err).length) { setFormErrors(err); return; }
         try {
             const staff = adminData.staff.find(s => s.id === form.staffId);
             const updated = { ...staff, training: [...(staff.training || []), form] };
@@ -125,8 +151,19 @@ export default function StaffTraining({ adminData, setAdminData }) {
             <div className="staff-header">
                 <h2>Training</h2>
                 <div style={{ display: "flex", gap: 8 }}>
-                    <button className="export-btn" onClick={exportTrainings}>Export</button>
-                    <button className="category-add-btn" onClick={() => setShowForm(true)}>+ Add Training</button>
+                    <button
+                        className="modal-save-btn"
+                        onClick={exportTrainings}
+                    >
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front">Export</span>
+                    </button>
+                    <button className="modal-save-btn" onClick={() => setShowForm(true)}>
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front">+ Add Training</span>
+                    </button>
                 </div>
             </div>
 
@@ -141,7 +178,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
                 <div className="staff-filter-group">
                     <span className="staff-filter-label">Type</span>
                     {["", "Online", "Training", "Internship", "Workshop"].map(t => (
-                        <button key={t} className={`sched-pill-btn${trainingTypeFilter === t ? " active" : ""}`}
+                        <button key={t} className={`filter-pill${trainingTypeFilter === t ? " active" : ""}`}
                             onClick={() => setTrainingTypeFilter(t)}>{t || "All"}</button>
                     ))}
                 </div>
@@ -217,58 +254,71 @@ export default function StaffTraining({ adminData, setAdminData }) {
                     <form className="modal" onSubmit={addTraining}>
                         <div className="modal-header">
                             <h3>Add Training Record</h3>
-                            <button type="button" className="close-btn" onClick={() => setShowForm(false)}>✕</button>
+                            <button type="button" className="modal-cancel-btn" onClick={() => { setShowForm(false); setFormErrors({}); }}>
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front close-padding"><img src={closeIcon} /></span>
+                            </button>
                         </div>
 
                         <div className="modal-body">
-                            <div className="form-group">
-                                <label>Staff Member</label>
-                                <CustomDropdown
-                                    value={form.staffId || ""}
-                                    onChange={v => setForm({ ...form, staffId: v })}
-                                    options={adminData.staff.map(s => ({ value: s.id, label: s.name }))}
-                                    placeholder="Select staff member"
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Role</label>
-                                <CustomDropdown
-                                    value={form.role}
-                                    onChange={v => setForm({ ...form, role: v })}
-                                    options={["Chef", "Waiter", "Supervisor"]}
-                                    placeholder="Select role"
-                                />
-                            </div>
-
-                            <div className="st-form-row">
-                                <div className="form-group">
-                                    <label>Duration (days)</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        placeholder="e.g. 5"
-                                        value={form.duration}
-                                        onChange={e => setForm({ ...form, duration: e.target.value })}
+                            <div className="horizontal-form-group">
+                                <div className={`form-group${formErrors.staffId ? " mat-select-error" : ""}`}>
+                                    <CustomDropdown
+                                        label="Staff Member"
+                                        value={form.staffId || ""}
+                                        onChange={v => { setForm({ ...form, staffId: v }); setFormErrors(p => ({ ...p, staffId: false })); }}
+                                        options={adminData.staff.map(s => ({ value: s.id, label: s.name }))}
+                                        placeholder="Select staff member"
+                                        hasError={!!formErrors.staffId}
                                     />
                                 </div>
 
-                                <div className="form-group">
-                                    <label>Type</label>
+                                <div className={`form-group${formErrors.role ? " mat-select-error" : ""}`}>
                                     <CustomDropdown
+                                        label="Role"
+                                        value={form.role}
+                                        onChange={v => { setForm({ ...form, role: v }); setFormErrors(p => ({ ...p, role: false })); }}
+                                        options={["Chef", "Waiter", "Supervisor"]}
+                                        placeholder="Select role"
+                                        hasError={!!formErrors.role}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="horizontal-form-group">
+                                <div className="form-group">
+                                    <div className="mat">
+                                        <input
+                                            className={`mat-input${formErrors.duration ? " mat-error" : ""}`}
+                                            placeholder=" "
+                                            type="number"
+                                            min="1"
+                                            value={form.duration}
+                                            onChange={e => { setForm({ ...form, duration: e.target.value }); setFormErrors(p => ({ ...p, duration: false })); }}
+                                        />
+                                        <label className={`mat-label${formErrors.duration ? " mat-label-error" : ""}`}>Duration (days)<span className="rf-req">*</span></label>
+                                        <span className={`mat-bar${formErrors.duration ? " mat-bar-error" : ""}`} />
+                                    </div>
+                                </div>
+
+                                <div className={`form-group${formErrors.type ? " mat-select-error" : ""}`}>
+                                    <CustomDropdown
+                                        label="Type"
                                         value={form.type}
-                                        onChange={v => setForm({ ...form, type: v })}
+                                        onChange={v => { setForm({ ...form, type: v }); setFormErrors(p => ({ ...p, type: false })); }}
                                         options={["Online", "Training", "Internship", "Workshop"]}
                                         placeholder="Select type"
+                                        hasError={!!formErrors.type}
                                     />
                                 </div>
                             </div>
 
                             <div className="form-group">
                                 <label>Certificate (optional)</label>
-                                <div className="st-file-wrap">
-                                    <input type="file" onChange={handleFile} className="st-file-input" />
-                                    <div className="st-file-label">
+                                <div className="file-wrap">
+                                    <input type="file" onChange={handleFile} className="file-input" />
+                                    <div className="file-label">
                                         {form.certificate ? "✔ File selected" : "Choose file…"}
                                     </div>
                                 </div>
@@ -279,8 +329,20 @@ export default function StaffTraining({ adminData, setAdminData }) {
                         </div>
 
                         <div className="modal-footer">
-                            <button type="button" onClick={() => setShowForm(false)}>Cancel</button>
-                            <button type="submit">Save Training</button>
+                            <button
+                                className="modal-cancel-btn"
+                                type="button"
+                                onClick={() => { setShowForm(false); setFormErrors({}); }}
+                            >
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front">Cancel</span>
+                            </button>
+                            <button type="submit" className="modal-save-btn">
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front">Save Training</span>
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -295,7 +357,11 @@ export default function StaffTraining({ adminData, setAdminData }) {
                                 <h3>{selected.role}</h3>
                                 <span className="sc-modal-sub">Training Record</span>
                             </div>
-                            <button type="button" className="close-btn" onClick={() => setSelected(null)}>✕</button>
+                            <button type="button" className="modal-cancel-btn" onClick={() => setSelected(null)}>
+                                <span class="shadow"></span>
+                                <span class="edge"></span>
+                                <span class="front close-padding"><img src={closeIcon} /></span>
+                            </button>
                         </div>
 
                         <div className="modal-body">
@@ -326,7 +392,15 @@ export default function StaffTraining({ adminData, setAdminData }) {
                         </div>
 
                         <div className="modal-footer">
-                            <button type="button" onClick={() => setSelected(null)}>Close</button>
+                            <button
+                                type="button"
+                                onClick={() => setSelected(null)}
+                                className="modal-cancel-btn"
+                            >
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front">Close</span>
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -2,10 +2,14 @@ import React, { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
 import "./StaffModules.css";
 import api from "../../api";
+import closeIcon from "../../icon/close-icon.png";
+import editIcon from "../../icon/edit-icon.png";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+import { useToast } from "../../useToast";
 
-export default function StaffSalary({ adminData }) {
+export default function StaffSalary({ adminData, setAdminData }) {
+    const { toast } = useToast();
     const [selected, setSelected] = useState(null);
     const [staffList, setStaffList] = useState(adminData.staff);
     const [salarySearch, setSalarySearch] = useState("");
@@ -19,64 +23,48 @@ export default function StaffSalary({ adminData }) {
 
     useEffect(() => {
         setStaffList(adminData.staff);
-    }, [adminData]);
+    }, [adminData.staff]);
 
     const openModal = (staff) => {
         setSelected(staff);
 
+        // Use the last saved record as the starting values (absolute, not cumulative)
         const history = staff.remainingSalary || [];
-
-        const totalAdvance = history.reduce((sum, i) => sum + Number(i.advance || 0), 0);
-        const totalDeduction = history.reduce((sum, i) => sum + Number(i.deduction || 0), 0);
-        const totalPenalty = history.reduce((sum, i) => sum + Number(i.penalty || 0), 0);
-        const totalBonus = history.reduce((sum, i) => sum + Number(i.bonus || 0), 0);
-        const totalOvertime = history.reduce((sum, i) => sum + Number(i.overtime || 0), 0);
+        const latest = history.length > 0 ? history[history.length - 1] : null;
 
         setForm({
-            advance: totalAdvance,
-            deduction: totalDeduction,
-            penalty: totalPenalty,
-            bonus: totalBonus,
-            overtime: totalOvertime
+            advance: Number(latest?.advance || 0),
+            deduction: Number(latest?.deduction || 0),
+            penalty: Number(latest?.penalty || 0),
+            bonus: Number(latest?.bonus || 0),
+            overtime: Number(latest?.overtime || 0),
         });
     };
 
     const closeModal = () => setSelected(null);
 
     const handleSave = async () => {
-
-        const history = selected.remainingSalary || [];
-
-        // 👉 add new entry FIRST
-        const newHistory = [
-            ...history,
-            {
-                ...form
-            }
-        ];
-
-        // 👉 calculate totals from FULL history
-        const totalAdvance = newHistory.reduce((sum, i) => sum + Number(i.advance || 0), 0);
-        const totalDeduction = newHistory.reduce((sum, i) => sum + Number(i.deduction || 0), 0);
-        const totalPenalty = newHistory.reduce((sum, i) => sum + Number(i.penalty || 0), 0);
-        const totalBonus = newHistory.reduce((sum, i) => sum + Number(i.bonus || 0), 0);
-        const totalOvertime = newHistory.reduce((sum, i) => sum + Number(i.overtime || 0), 0);
+        // Form holds absolute final values — store as a single record (overwrite, don't append)
+        const advance = Number(form.advance || 0);
+        const deduction = Number(form.deduction || 0);
+        const penalty = Number(form.penalty || 0);
+        const bonus = Number(form.bonus || 0);
+        const overtime = Number(form.overtime || 0);
 
         const remaining =
             Number(selected.salary) +
-            totalBonus +
-            totalOvertime -
-            totalAdvance -
-            totalDeduction -
-            totalPenalty;
+            bonus +
+            overtime -
+            advance -
+            deduction -
+            penalty;
+
+        const record = { advance, deduction, penalty, bonus, overtime, remaining };
 
         const updated = {
             ...selected,
             salaryRemaining: remaining,
-            remainingSalary: newHistory.map(item => ({
-                ...item,
-                remaining // optional snapshot
-            }))
+            remainingSalary: [record],   // single source-of-truth record
         };
 
         try {
@@ -88,8 +76,20 @@ export default function StaffSalary({ adminData }) {
                 )
             );
 
+            if (setAdminData) {
+                setAdminData(prev => ({
+                    ...prev,
+                    staff: prev.staff.map(s =>
+                        s.id === selected.id ? res.data : s
+                    )
+                }));
+            }
+
+            toast.success("Salary updated");
+
         } catch (err) {
             console.error("Salary update failed:", err);
+            toast.error("Failed to update salary");
         }
 
         closeModal();
@@ -110,33 +110,41 @@ export default function StaffSalary({ adminData }) {
             <div className="staff-header">
                 <h2>Salary Management</h2>
                 <div style={{ display: "flex", gap: 8 }}>
-                    <button className="export-btn" onClick={() => {
-                        const rows = filteredList.map((s, i) => {
-                            const totalAdvance = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.advance || 0), 0);
-                            const totalDeduction = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.deduction || 0), 0);
-                            const totalPenalty = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.penalty || 0), 0);
-                            const totalBonus = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.bonus || 0), 0);
-                            const totalOvertime = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.overtime || 0), 0);
-                            const remaining = Number(s.salary) + totalBonus + totalOvertime - totalAdvance - totalDeduction - totalPenalty;
-                            return {
-                                Name: s.name || "—",
-                                Role: s.role || "—",
-                                "Base Salary (₹)": Number(s.salary || 0),
-                                "Advance (₹)": totalAdvance,
-                                "Deduction (₹)": totalDeduction,
-                                "Penalty (₹)": totalPenalty,
-                                "Bonus (₹)": totalBonus,
-                                "Overtime (₹)": totalOvertime,
-                                "Remaining (₹)": remaining,
-                            };
-                        });
-                        if (!rows.length) { alert("No salary data to export"); return; }
-                        const sheet = XLSX.utils.json_to_sheet(rows);
-                        sheet["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2 }));
-                        const wb = XLSX.utils.book_new();
-                        XLSX.utils.book_append_sheet(wb, sheet, "Salary");
-                        XLSX.writeFile(wb, `salary_${new Date().toISOString().slice(0, 10)}.xlsx`);
-                    }}>Export</button>
+                    <button
+                        className="modal-save-btn"
+                        onClick={() => {
+                            const rows = filteredList.map((s, i) => {
+                                const rec = (s.remainingSalary || [])[0] || {};
+                                const totalAdvance = Number(rec.advance || 0);
+                                const totalDeduction = Number(rec.deduction || 0);
+                                const totalPenalty = Number(rec.penalty || 0);
+                                const totalBonus = Number(rec.bonus || 0);
+                                const totalOvertime = Number(rec.overtime || 0);
+                                const remaining = Number(s.salary) + totalBonus + totalOvertime - totalAdvance - totalDeduction - totalPenalty;
+                                return {
+                                    Name: s.name || "—",
+                                    Role: s.role || "—",
+                                    "Base Salary (₹)": Number(s.salary || 0),
+                                    "Advance (₹)": totalAdvance,
+                                    "Deduction (₹)": totalDeduction,
+                                    "Penalty (₹)": totalPenalty,
+                                    "Bonus (₹)": totalBonus,
+                                    "Overtime (₹)": totalOvertime,
+                                    "Remaining (₹)": remaining,
+                                };
+                            });
+                            if (!rows.length) { toast.warning("No salary data to export"); return; }
+                            const sheet = XLSX.utils.json_to_sheet(rows);
+                            sheet["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2 }));
+                            const wb = XLSX.utils.book_new();
+                            XLSX.utils.book_append_sheet(wb, sheet, "Salary");
+                            XLSX.writeFile(wb, `salary_${new Date().toISOString().slice(0, 10)}.xlsx`);
+                        }}
+                    >
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front">Export</span>
+                    </button>
                 </div>
             </div>
 
@@ -175,11 +183,13 @@ export default function StaffSalary({ adminData }) {
                             const PALETTE = ["#4361ee", "#06d6a0", "#ffd166", "#ef476f", "#7209b7", "#4cc9f0", "#f72585", "#3a0ca3", "#fb8500", "#023e8a"];
                             const avatarBg = PALETTE[i % PALETTE.length];
 
-                            const totalAdvance = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.advance || 0), 0);
-                            const totalDeduction = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.deduction || 0), 0);
-                            const totalPenalty = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.penalty || 0), 0);
-                            const totalBonus = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.bonus || 0), 0);
-                            const totalOvertime = (s.remainingSalary || []).reduce((sum, item) => sum + Number(item.overtime || 0), 0);
+                            // Single record — read the latest (or only) entry directly
+                            const rec = (s.remainingSalary || [])[0] || {};
+                            const totalAdvance = Number(rec.advance || 0);
+                            const totalDeduction = Number(rec.deduction || 0);
+                            const totalPenalty = Number(rec.penalty || 0);
+                            const totalBonus = Number(rec.bonus || 0);
+                            const totalOvertime = Number(rec.overtime || 0);
                             const computedRemaining = Number(s.salary) + totalBonus + totalOvertime - totalAdvance - totalDeduction - totalPenalty;
                             const base = Number(s.salary) || 1;
                             const remainPct = Math.max(0, Math.min(100, Math.round((computedRemaining / base) * 100)));
@@ -214,7 +224,9 @@ export default function StaffSalary({ adminData }) {
                                         </div>
                                     </td>
                                     <td>
-                                        <button className="st-edit-btn" onClick={() => openModal(s)}>Edit</button>
+                                        <button className="icon-btn edit-btn" onClick={() => openModal(s)}>
+                                            <img src={editIcon} alt="" />
+                                        </button>
                                     </td>
                                 </tr>
                             );
@@ -233,60 +245,103 @@ export default function StaffSalary({ adminData }) {
 
                         <div className="modal-header">
                             <h3>{selected.name}</h3>
-                            <button onClick={closeModal} className="dish-close-btn"></button>
+                            <button onClick={closeModal} className="modal-cancel-btn">
+                                <span class="shadow"></span>
+                                <span class="edge"></span>
+                                <span class="front close-padding"><img src={closeIcon} /></span>
+                            </button>
                         </div>
 
                         <div className="modal-body">
 
                             <div className="form-group">
-                                <label>Advance</label>
-                                <input
-                                    type="number"
-                                    value={form.advance}
-                                    onChange={e => setForm({ ...form, advance: e.target.value })}
-                                />
+                                <div className="mat">
+                                    <input
+                                        className="mat-input"
+                                        placeholder=" "
+                                        type="number"
+                                        value={form.advance}
+                                        onChange={e => setForm({ ...form, advance: e.target.value })}
+                                    />
+                                    <label className="mat-label">Advance</label>
+                                    <span className="mat-bar" />
+                                </div>
                             </div>
 
                             <div className="form-group">
-                                <label>Deduction</label>
-                                <input
-                                    type="number"
-                                    value={form.deduction}
-                                    onChange={e => setForm({ ...form, deduction: e.target.value })}
-                                />
+                                <div className="mat">
+                                    <input
+                                        className="mat-input"
+                                        placeholder=" "
+                                        type="number"
+                                        value={form.deduction}
+                                        onChange={e => setForm({ ...form, deduction: e.target.value })}
+                                    />
+                                    <label className="mat-label">Deduction</label>
+                                    <span className="mat-bar" />
+                                </div>
                             </div>
 
                             <div className="form-group">
-                                <label>Penalty</label>
-                                <input
-                                    type="number"
-                                    value={form.penalty}
-                                    onChange={e => setForm({ ...form, penalty: e.target.value })}
-                                />
+                                <div className="mat">
+                                    <input
+                                        className="mat-input"
+                                        placeholder=" "
+                                        type="number"
+                                        value={form.penalty}
+                                        onChange={e => setForm({ ...form, penalty: e.target.value })}
+                                    />
+                                    <label className="mat-label">Penalty</label>
+                                    <span className="mat-bar" />
+                                </div>
                             </div>
 
                             <div className="form-group">
-                                <label>Bonus</label>
-                                <input
-                                    type="number"
-                                    value={form.bonus}
-                                    onChange={e => setForm({ ...form, bonus: e.target.value })}
-                                />
+                                <div className="mat">
+                                    <input
+                                        className="mat-input"
+                                        placeholder=" "
+                                        type="number"
+                                        value={form.bonus}
+                                        onChange={e => setForm({ ...form, bonus: e.target.value })}
+                                    />
+                                    <label className="mat-label">Bonus</label>
+                                    <span className="mat-bar" />
+                                </div>
                             </div>
 
                             <div className="form-group">
-                                <label>Overtime</label>
-                                <input
-                                    type="number"
-                                    value={form.overtime}
-                                    onChange={e => setForm({ ...form, overtime: e.target.value })}
-                                />
+                                <div className="mat">
+                                    <input
+                                        className="mat-input"
+                                        placeholder=" "
+                                        type="number"
+                                        value={form.overtime}
+                                        onChange={e => setForm({ ...form, overtime: e.target.value })}
+                                    />
+                                    <label className="mat-label">Overtime</label>
+                                    <span className="mat-bar" />
+                                </div>
                             </div>
                         </div>
 
-                        <div className="modal-footer form-actions">
-                            <button onClick={handleSave}>Save</button>
-                            <button onClick={closeModal}>Cancel</button>
+                        <div className="modal-footer">
+                            <button
+                                className="modal-cancel-btn"
+                                onClick={closeModal}
+                            >
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front">Cancel</span>
+                            </button>
+                            <button
+                                className="modal-save-btn"
+                                onClick={handleSave}>
+
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front">Save</span>
+                            </button>
                         </div>
 
                     </div>

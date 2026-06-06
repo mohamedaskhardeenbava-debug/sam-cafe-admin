@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════
    CustomTimePicker.css
    Clock-face time picker — styled to match CelebrationForm
-   (var(--color-red) accent, clp-style popup + header)
+   (var(--color-blue) accent, clp-style popup + header)
 ═══════════════════════════════════════════════════════ */
 
 /* ── Wrapper ── */
@@ -16,29 +16,30 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    width: 100%;
-    height: 44px;
-    padding: 0 14px;
-    border-radius: 10px;
-    border: 1.5px solid #e5e7eb;
+    height: 38px;
+    padding: 0 16px;
+    border: 1.5px solid #e0e0e0;
     background: #f9f9f9;
-    font-size: 14px;
-    color: var(--text-primary, #111);
     cursor: pointer;
-    transition: all 0.18s;
-    box-sizing: border-box;
-    font-family: inherit;
+    font-size: 13px;
+    color: #333;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    width: 100%;
 }
 
 .ctp-trigger:hover:not(.ctp-disabled) {
-    border-color: #111;
-    background: #fff;
+    border-color: var(--color-offwhite);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        background: #fff;
 }
 
 .ctp-trigger:focus:not(.ctp-disabled) {
     outline: none;
-    border-color: var(--color-red, #e74c3c);
-    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+    border-color: var(--color-blue);
+    box-shadow: 0 0 0 3px rgba(77, 60, 231, 0.1);
     background: #fff;
 }
 
@@ -100,7 +101,7 @@
 
 /* ── Header — red background, matches .clp-ctp-header ── */
 .ctp-header {
-    background: var(--color-red);
+    background: var(--color-blue);
     padding: 14px 16px;
     display: flex;
     align-items: center;
@@ -220,7 +221,7 @@
     padding: 6px 18px;
     border-radius: 8px;
     border: none;
-    background: var(--color-red, #e74c3c);
+    background: var(--color-blue, #e74c3c);
     color: #fff;
     font-size: 13px;
     font-weight: 700;
@@ -230,7 +231,7 @@
 }
 
 .ctp-ok:hover {
-    background: color-mix(in srgb, var(--color-red, #e74c3c) 85%, #000);
+    background: color-mix(in srgb, var(--color-blue, #e74c3c) 85%, #000);
     filter: brightness(0.92);
 }
 

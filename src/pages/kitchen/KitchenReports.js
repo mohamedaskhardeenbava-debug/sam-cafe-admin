@@ -34,25 +34,14 @@ const parseGroomingData = (grooming = {}, staff = [], fromDate = "", toDate = ""
   });
 };
 
-/* ─── Parse mise: picks today's entry, or most recent date entry, or legacy flat tasks ─── */
+/* ─── Parse mise: picks only today's entry ─── */
 const parseMiseData = (mise = {}) => {
   const today = new Date().toISOString().split("T")[0];
 
-  // Separate date-keyed entries from flat task entries
-  const dateKeys = Object.keys(mise).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
-  const taskKeys = Object.keys(mise).filter(k => !/^\d{4}-\d{2}-\d{2}$/.test(k));
+  // Only show today's data
+  if (!(today in mise)) return [];
 
-  // Pick the best entry: today > most recent date > flat tasks
-  let taskMap = {};
-  if (today in mise) {
-    taskMap = mise[today];
-  } else if (dateKeys.length > 0) {
-    taskMap = mise[dateKeys[dateKeys.length - 1]];
-  } else {
-    // Legacy: flat task objects at top level
-    taskKeys.forEach(k => { taskMap[k] = mise[k]; });
-  }
-
+  const taskMap = mise[today];
   return Object.entries(taskMap).map(([task, data]) => ({
     task,
     verified: data.verified ? 1 : 0,
@@ -247,7 +236,11 @@ const KitchenReports = ({ adminData = {} }) => {
           {(reportFrom || reportTo) && (
             <button className="ae-clear-filter" onClick={() => { setReportFrom(""); setReportTo(""); }}>Clear</button>
           )}
-          <button className="export-btn" onClick={exportReport}>Export Report</button>
+          <button className="modal-save-btn" onClick={exportReport}>
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">Export</span>
+          </button>
         </div>
       </div>
 
@@ -310,8 +303,8 @@ const KitchenReports = ({ adminData = {} }) => {
         </div>
 
         <div className="k-card">
-          <SectionTitle accent={K.teal}>Mise en Place Status</SectionTitle>
-          {miseData.length === 0 ? <p className="k-empty">No mise data</p> : (
+          <SectionTitle accent={K.teal}>Mise en Place Status <span style={{ fontSize: 11, fontWeight: 400, color: K.muted, marginLeft: 6 }}>— Today</span></SectionTitle>
+          {miseData.length === 0 ? <p className="k-empty">No mise data for today</p> : (
             <div className="k-mise-grid">
               {miseData.map((m, i) => (
                 <div key={i} className={`k-mise-item ${m.verified ? "verified" : "pending"}`}>

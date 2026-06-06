@@ -3,6 +3,7 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
+import closeIcon from "../../icon/close-icon.png";
 import api from "../../api";
 import "./Catering.css";
 import "./PreviewModal.css";
@@ -13,6 +14,49 @@ import { CustomTimePicker } from "../../components/CustomTimePicker";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+
+// ── CustomDropdown ────────────────────────────────────────────────────────────
+function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
+  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
+  const wrapperClass = ["mat-select", value ? "has-value" : "", open ? "is-open" : ""].filter(Boolean).join(" ");
+  return (
+    <div className={wrapperClass} ref={ref}>
+      {label && <label className="mat-label">{label}{required && <span className="rf-req">*</span>}</label>}
+      <div className="dishes-dropdown-wrapper">
+        <button type="button" className="dishes-status-dropdown"
+          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
+          {displayLabel || ""}
+        </button>
+        {open && (
+          <div className="dropdown-menu">
+            <div onClick={() => { onChange(""); setOpen(false); }}>{placeholder}</div>
+            {options.map((o, i) => {
+              const val = o.value !== undefined ? o.value : o;
+              const lbl = o.label !== undefined ? o.label : o;
+              return (
+                <div key={i} onClick={() => { onChange(val); setOpen(false); }}
+                  style={{ padding: "8px 12px", fontSize: 14, cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"}
+                  onMouseLeave={e => e.currentTarget.style.background = ""}>
+                  {lbl}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      <span className="mat-bar" />
+    </div>
+  );
+}
 
 /* ─── helpers ─── */
 const pad = (n) => String(n).padStart(2, "0");
@@ -144,13 +188,14 @@ const DishPicker = ({ menuData, selectedItems, setSelectedItems, guests }) => {
 
   return (
     <div className="act-dish-picker">
-      <div className="act-cat-dropdown-wrap">
-        <select className="act-cat-dropdown" value={activeCat} onChange={e => setActiveCat(e.target.value)}>
-          <option value="">All Categories</option>
-          {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <span className="act-cat-dropdown-arrow">▾</span>
-      </div>
+      <CustomDropdown
+        value={activeCat}
+        onChange={setActiveCat}
+        options={[
+          { value: "", label: "All Categories" },
+          ...categories.map(c => ({ value: c.id, label: c.name })),
+        ]}
+      />
       {dishes.length === 0 && (
         <div className="act-dish-empty" style={{ color: "#ca8a04", padding: "16px", background: "#fef9c3", borderRadius: 8, fontSize: 13 }}>
           No event food dishes found. Mark dishes as "Event Food" in the Dishes section first.
@@ -484,7 +529,7 @@ const Catering = ({ adminData, setAdminData,
             <span className="evt-filter-group-label">Period</span>
             {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
               <button key={preset}
-                className={`evt-filter-btn${filterDatePreset === preset ? " active evt-status-confirmed" : ""}`}
+                className={`filter-pill${filterDatePreset === preset ? " active evt-status-confirmed" : ""}`}
                 onClick={() => {
                   if (filterDatePreset === preset) {
                     setFilterDatePreset(""); setFilterFromDate(""); setFilterToDate("");
@@ -510,7 +555,7 @@ const Catering = ({ adminData, setAdminData,
               <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={v => { setFilterToDate(v); setFilterDatePreset(""); }} placeholder="End date" />
             </div>
             {(filterFromDate || filterToDate) && (
-              <button className="evt-filter-btn" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
+              <button className="filter-pill" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
             )}
           </div>
         </div>
@@ -520,7 +565,7 @@ const Catering = ({ adminData, setAdminData,
             <span className="evt-filter-group-label">Status</span>
             {["pending", "confirmed", "completed"].map(s => (
               <button key={s}
-                className={`evt-filter-btn${filterStatus === s ? " active act-status-" + s : ""}`}
+                className={`filter-pill${filterStatus === s ? " active act-status-" + s : ""}`}
                 onClick={() => setFilterStatus(p => p === s ? "" : s)}>
                 {s === "pending" ? "P" : s === "confirmed" ? "C" : "D"}
               </button>
@@ -658,7 +703,13 @@ const Catering = ({ adminData, setAdminData,
           <div className="ingredient-modal" style={{ width: 520, maxWidth: "95vw" }} onClick={e => e.stopPropagation()}>
             <div className="ingredient-modal-header">
               <h3>Dishes — {itemsPopup.name} <span style={{ fontSize: 12, fontWeight: 400, color: "#888", marginLeft: 8 }}>#{(itemsPopup.id || "").slice(-6)}</span></h3>
-              <button className="close-btn" onClick={() => setItemsPopup(null)} />
+              <button
+                className="modal-cancel-btn" onClick={() => setItemsPopup(null)}
+              >
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front close-padding"><img src={closeIcon} /></span>
+              </button>
             </div>
             <div className="ingredient-modal-body" style={{ padding: "12px 20px 20px" }}>
               {(!itemsPopup.items || itemsPopup.items.length === 0) ? (
@@ -705,18 +756,28 @@ const Catering = ({ adminData, setAdminData,
             <div className="event-modal-header">
               <div>
                 <h3>Add Catering Order</h3>
-                <div className="evt-spec-steps">
+                <div className="ecard">
                   {TABS.map((t, i) => (
                     <button key={i}
-                      className={`evt-spec-step${tab === i ? " active" : ""}${tab > i ? " done" : ""}`}
-                      onClick={() => i < tab && setTab(i)}>
-                      <span className="evt-step-num">{tab > i ? "✓" : i + 1}</span>
-                      <span className="evt-step-label">{t}</span>
+                      className={`ebutton${tab === i ? " active" : ""}${tab > i ? " done" : ""}`}
+                      onClick={() => {
+                        if (i > tab) {
+                          if (!validateTab0()) return;
+                        } else if (i < tab) {
+                          setTab(i);
+                        }
+                      }}>
+                      <span className="eevt-step-num">{tab > i ? "✓" : i + 1}</span>
+                      <span className="eevt-step-label">{t}</span>
                     </button>
                   ))}
                 </div>
               </div>
-              <button className="close-btn" onClick={() => setShowCreate(false)} />
+              <button className="modal-cancel-btn" onClick={() => setShowCreate(false)} >
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front close-padding"><img src={closeIcon} /></span>
+              </button>
             </div>
 
             <div className={`event-modal-body act-modal-body${tab === 1 ? " act-modal-body--split" : ""}`}>
@@ -727,10 +788,12 @@ const Catering = ({ adminData, setAdminData,
                   <div className="evt-res-form-section-label">Customer Information</div>
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1.4 }}>
-                      <label>Name <span className="evt-res-req">*</span></label>
-                      <input className={formErrors.name ? "error" : ""} placeholder="Customer name"
-                        value={form.name} onChange={e => setF("name", e.target.value)} />
-                      {formErrors.name && <span className="evt-res-form-error">{formErrors.name}</span>}
+                      <div className="mat">
+                        <input className={`mat-input${formErrors.name ? " mat-error" : ""}`} placeholder=" "
+                          value={form.name} onChange={e => setF("name", e.target.value)} />
+                        <label className={`mat-label${formErrors.name ? " mat-label-error" : ""}`}>Name <span className="evt-res-req">*</span></label>
+                        <span className={`mat-bar${formErrors.name ? " mat-bar-error" : ""}`} />
+                      </div>
                     </div>
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Guests</label>
@@ -744,23 +807,27 @@ const Catering = ({ adminData, setAdminData,
 
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1 }}>
-                      <label>Mobile <span className="evt-res-req">*</span></label>
-                      <input className={formErrors.mobile ? "error" : ""} placeholder="10-digit number" type="tel"
-                        value={form.mobile} onChange={e => setF("mobile", e.target.value.replace(/\D/g, "").slice(0, 10))} />
-                      {formErrors.mobile && <span className="evt-res-form-error">{formErrors.mobile}</span>}
+                      <div className="mat">
+                        <input className={`mat-input${formErrors.mobile ? " mat-error" : ""}`} placeholder=" " type="tel"
+                          value={form.mobile} onChange={e => setF("mobile", e.target.value.replace(/\D/g, "").slice(0, 10))} />
+                        <label className={`mat-label${formErrors.mobile ? " mat-label-error" : ""}`}>Mobile <span className="evt-res-req">*</span></label>
+                        <span className={`mat-bar${formErrors.mobile ? " mat-bar-error" : ""}`} />
+                      </div>
                     </div>
                     <div className="form-group" style={{ flex: 1 }}>
-                      <label>Email</label>
-                      <input placeholder="email@example.com" value={form.email} onChange={e => setF("email", e.target.value)} />
+                      <div className="mat">
+                        <input className="mat-input" placeholder=" " value={form.email} onChange={e => setF("email", e.target.value)} />
+                        <label className="mat-label">Email</label>
+                        <span className="mat-bar" />
+                      </div>
                     </div>
                   </div>
 
                   <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>Event Details</div>
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1 }}>
-                      <label>Event Date <span className="evt-res-req">*</span></label>
-                      <CustomDatePicker value={form.eventDate} min={tomorrowStr()} onChange={v => { setF("eventDate", v); setF("time", ""); setF("slotGroup", ""); }} placeholder="Select date" />
-                      {formErrors.eventDate && <span className="evt-res-form-error">{formErrors.eventDate}</span>}
+                      <label className={formErrors.eventDate ? "mat-label-error" : ""}>Event Date <span className="evt-res-req">*</span></label>
+                      <CustomDatePicker value={form.eventDate} min={tomorrowStr()} onChange={v => { setF("eventDate", v); setF("time", ""); setF("slotGroup", ""); setFormErrors(p => ({ ...p, eventDate: false })); }} placeholder="Select date" hasError={!!formErrors.eventDate} />
                     </div>
                   </div>
 
@@ -783,20 +850,20 @@ const Catering = ({ adminData, setAdminData,
                   </div>
 
                   <div className="form-group">
-                    <label>
+                    <label className={formErrors.time ? "mat-label-error" : ""}>
                       Time <span className="evt-res-req">*</span>
                       {form.slotGroup && (() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()}
                     </label>
                     <CustomTimePicker
                       value={form.time}
-                      onChange={v => setF("time", v)}
+                      onChange={v => { setF("time", v); setFormErrors(p => ({ ...p, time: false })); }}
                       slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
                       slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
                       disabled={!form.slotGroup}
+                      hasError={!!formErrors.time}
                       isToday={false}
                     />
                     {!form.slotGroup && <span style={{ fontSize: 11, color: "#aaa", marginTop: 4, display: "block" }}>Select a dining slot first to enable time picker</span>}
-                    {formErrors.time && <span className="evt-res-form-error">{formErrors.time}</span>}
                   </div>
 
                   {/* Address — all mandatory */}
@@ -814,34 +881,39 @@ const Catering = ({ adminData, setAdminData,
 
                   {!useRestaurantAddr && <div className="ae-addr-grid">
                     {[
-                      { key: "addrDoorNo", label: "Door No. / Building", placeholder: "Door / Flat No." },
-                      { key: "addrStreet", label: "Street Name", placeholder: "Street / Road" },
-                      { key: "addrArea", label: "Area / Locality", placeholder: "Area / Colony" },
-                      { key: "addrLandmark", label: "Landmark", placeholder: "Near / Opposite…", optional: true },
-                      { key: "addrCity", label: "City", placeholder: "City" },
-                      { key: "addrDistrict", label: "District", placeholder: "District" },
-                      { key: "addrState", label: "State", placeholder: "State" },
-                      { key: "addrPincode", label: "Pincode", placeholder: "6-digit pincode" },
+                      { key: "addrDoorNo", label: "Door No. / Building", optional: false },
+                      { key: "addrStreet", label: "Street Name", optional: false },
+                      { key: "addrArea", label: "Area / Locality", optional: false },
+                      { key: "addrLandmark", label: "Landmark", optional: true },
+                      { key: "addrCity", label: "City", optional: false },
+                      { key: "addrDistrict", label: "District", optional: false },
+                      { key: "addrState", label: "State", optional: false },
+                      { key: "addrPincode", label: "Pincode", optional: false },
                     ].map(field => (
-                      <div key={field.key} className="ae-addr-field">
-                        <label>{field.label} {!field.optional && <span className="ae-req">*</span>}</label>
-                        <input
-                          type="text"
-                          className={formErrors[field.key] ? "error" : ""}
-                          value={form[field.key]}
-                          placeholder={field.placeholder}
-                          maxLength={field.key === "addrPincode" ? 6 : undefined}
-                          readOnly={useRestaurantAddr}
-                          style={useRestaurantAddr ? { background: "#f3f4f6", cursor: "not-allowed", color: "#888" } : {}}
-                          onChange={e => {
-                            if (useRestaurantAddr) return;
-                            const v = field.key === "addrPincode"
-                              ? e.target.value.replace(/\D/g, "").slice(0, 6)
-                              : e.target.value;
-                            setF(field.key, v);
-                          }}
-                        />
-                        {formErrors[field.key] && <span className="evt-res-form-error">{formErrors[field.key]}</span>}
+                      <div key={field.key} className="form-group">
+                        <div className="mat">
+                          <input
+                            className={`mat-input${formErrors[field.key] ? " mat-error" : ""}`}
+                            type="text"
+                            value={form[field.key]}
+                            placeholder=" "
+                            maxLength={field.key === "addrPincode" ? 6 : undefined}
+                            readOnly={useRestaurantAddr}
+                            disabled={useRestaurantAddr}
+                            onChange={e => {
+                              if (useRestaurantAddr) return;
+                              const v = field.key === "addrPincode"
+                                ? e.target.value.replace(/\D/g, "").slice(0, 6)
+                                : e.target.value;
+                              setF(field.key, v);
+                              setFormErrors(p => ({ ...p, [field.key]: false }));
+                            }}
+                          />
+                          <label className={`mat-label${formErrors[field.key] ? " mat-label-error" : ""}`}>
+                            {field.label} {!field.optional && <span className="rf-req">*</span>}
+                          </label>
+                          <span className={`mat-bar${formErrors[field.key] ? " mat-bar-error" : ""}`} />
+                        </div>
                       </div>
                     ))}
                   </div>}
@@ -884,10 +956,13 @@ const Catering = ({ adminData, setAdminData,
                       ))}
                     </div>
                     {form.specialMention && (
-                      <textarea rows={2} style={{ marginTop: 8, width: "100%", boxSizing: "border-box", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #e5e7eb", fontSize: 13, fontFamily: "inherit", resize: "vertical" }}
-                        placeholder="Describe what to announce / mention..."
-                        value={form.specialMentionText}
-                        onChange={e => setF("specialMentionText", e.target.value)} />
+                      <div className="mat-area" style={{ marginTop: 8 }}>
+                        <textarea className="mat-input mat-textarea" rows={2} placeholder=" "
+                          value={form.specialMentionText}
+                          onChange={e => setF("specialMentionText", e.target.value)} />
+                        <label className="mat-area-label">Describe what to announce / mention...</label>
+                        <span className="mat-area-bar" />
+                      </div>
                     )}
                   </div>
 
@@ -919,8 +994,11 @@ const Catering = ({ adminData, setAdminData,
                   </div>
 
                   <div className="form-group" style={{ marginTop: 4 }}>
-                    <label>Notes</label>
-                    <textarea rows={2} placeholder="Special requirements..." value={form.notes} onChange={e => setF("notes", e.target.value)} />
+                    <div className="mat-area">
+                      <textarea className="mat-input mat-textarea" rows={2} placeholder=" " value={form.notes} onChange={e => setF("notes", e.target.value)} />
+                      <label className="mat-area-label">Notes</label>
+                      <span className="mat-area-bar" />
+                    </div>
                   </div>
                 </>
               )}
@@ -1069,11 +1147,29 @@ const Catering = ({ adminData, setAdminData,
             </div>
 
             <div className="event-modal-footer">
-              <button type="button" onClick={() => setShowCreate(false)}>Cancel</button>
-              {tab > 0 && <button type="button" className="ae-step-prev-btn" onClick={() => setTab(t => t - 1)}>← Back</button>}
+              <button type="button" className="modal-cancel-btn" onClick={() => setShowCreate(false)}>
+                <span className="shadow"></span><span className="edge"></span>
+                <span className="front">Cancel</span>
+              </button>
+              {tab > 0 && (
+                <button type="button" className="modal-prev-btn" onClick={() => setTab(t => t - 1)}>
+                  <span className="shadow"></span><span className="edge"></span>
+                  <span className="front">← Back</span>
+                </button>
+              )}
               {tab < 2
-                ? <button type="button" onClick={handleNext}>Next →</button>
-                : <button type="button" onClick={handleCreate} disabled={saving}>{saving ? "Saving..." : "Create Order"}</button>
+                ? (
+                  <button type="button" className="modal-next-btn" onClick={handleNext}>
+                    <span className="shadow"></span><span className="edge"></span>
+                    <span className="front">Next →</span>
+                  </button>
+                )
+                : (
+                  <button type="button" className="modal-save-btn" onClick={handleCreate} disabled={saving}>
+                    <span className="shadow"></span><span className="edge"></span>
+                    <span className="front">{saving ? "Saving..." : "Create Order"}</span>
+                  </button>
+                )
               }
             </div>
           </div>

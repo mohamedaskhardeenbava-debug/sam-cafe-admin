@@ -4,6 +4,7 @@ import "./ServiceAssign.css";
 import { getTomorrowKey, getTomorrowFormatted } from "../../App";
 import api from "../../api";
 import deleteIcon from "../../icon/delete-icon.png";
+import closeIcon from "../../icon/close-icon.png";
 
 /*
   DATA SHAPE (serviceAssign in db.json):
@@ -19,9 +20,48 @@ import deleteIcon from "../../icon/delete-icon.png";
   { mise: [...], cleaning: [...] }
 */
 
+// ── Floating-label CustomDropdown ────────────────────────────────────────────
+function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
+  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
+  const wrapperClass = ["mat-select", value ? "has-value" : "", open ? "is-open" : ""].filter(Boolean).join(" ");
+  return (
+    <div className={wrapperClass} ref={ref}>
+      {label && <label className="mat-label">{label}{required && <span className="rf-req">*</span>}</label>}
+      <div className="dishes-dropdown-wrapper">
+        <button type="button" className="dishes-status-dropdown"
+          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
+          {displayLabel || ""}
+        </button>
+        {open && (
+          <div className="dropdown-menu">
+            {options.map((o, i) => {
+              const val = o.value !== undefined ? o.value : o;
+              const lbl = o.label !== undefined ? o.label : o;
+              return (
+                <div key={i} onClick={() => { onChange(val); setOpen(false); }}>
+                  {lbl}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      <span className="mat-bar" />
+    </div>
+  );
+}
+
 const SECTION_META = {
-  mise: { label: "Mise en Place", color: "#8b5cf6", icon: "🍽️" },
-  cleaning: { label: "Cleaning", color: "#f59e0b", icon: "✨" },
+  mise: { label: "Mise en Place", color: "#8b5cf6", icon: "" },
+  cleaning: { label: "Cleaning", color: "#f59e0b", icon: "" },
 };
 
 export default function ServiceAssign({ adminData, setAdminData }) {
@@ -32,6 +72,7 @@ export default function ServiceAssign({ adminData, setAdminData }) {
   const [newTask, setNewTask] = useState("");
   const [section, setSection] = useState("mise");
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [taskErrors, setTaskErrors] = useState({});
   const [openDropdown, setOpenDropdown] = useState(null);
 
   // Close section dropdown on outside click
@@ -86,8 +127,11 @@ export default function ServiceAssign({ adminData, setAdminData }) {
 
   // ── Add task ──────────────────────────────────────────────────
   const handleAddTask = async () => {
+    const errs = {};
     const cleanTask = newTask.trim();
-    if (!cleanTask) return;
+    if (!cleanTask) errs.newTask = true;
+    if (!section) errs.section = true;
+    if (Object.keys(errs).length) { setTaskErrors(errs); return; }
     const existing = tasks[section] || [];
     if (existing.includes(cleanTask)) return;
 
@@ -99,6 +143,7 @@ export default function ServiceAssign({ adminData, setAdminData }) {
       await api.put("/tasks/1", updated);
       setAdminData(prev => ({ ...prev, tasks: updated }));
       setNewTask("");
+      setTaskErrors({});
     } catch (err) {
       console.error("ADD TASK FAILED:", err.response?.data || err.message);
     }
@@ -171,12 +216,32 @@ export default function ServiceAssign({ adminData, setAdminData }) {
             <span className="service-assign-progress-num">{assignedCount}/{totalTasks}</span>
             <span className="service-assign-progress-lbl">Assigned</span>
           </div>
-          <button className="service-assign-view-toggle" onClick={() => setListView(v => !v)}
-            title={listView ? "Table view" : "List view"}>
-            {listView ? "⊞ Table" : "≡ List"}
+          <button
+            className="modal-confirm-btn"
+            onClick={() => setListView(v => !v)}
+            title={listView ? "Table view" : "List view"}
+          >
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">
+              {listView ? "⊞ Table" : "≡ List"}
+            </span>
           </button>
-          <button className="export-btn" onClick={exportAssign}>Export</button>
-          <button className="category-add-btn" onClick={() => setShowTaskModal(true)}>+ Task</button>
+          <button
+            className="modal-save-btn"
+            onClick={exportAssign}
+          >
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">Export</span>
+          </button>
+          <button
+            className="modal-save-btn"
+            onClick={() => setShowTaskModal(true)}>
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">+ Task</span>
+          </button>
         </div>
       </div>
 
@@ -192,7 +257,7 @@ export default function ServiceAssign({ adminData, setAdminData }) {
           <span className="service-assign-filter-lbl">Section</span>
           {[["all", "All"], ...Object.keys(tasks).map(s => [s, SECTION_META[s]?.label || s])].map(([k, lbl]) => (
             <button key={k}
-              className={`sched-pill-btn${sectionFilter === k ? " active" : ""}`}
+              className={`filter-pill${sectionFilter === k ? " active" : ""}`}
               onClick={() => setSectionFilter(k)}>{lbl}</button>
           ))}
         </div>
@@ -224,39 +289,55 @@ export default function ServiceAssign({ adminData, setAdminData }) {
       {showTaskModal && (
         <div className="modal-overlay">
           <form className="modal" onSubmit={e => {
-            e.preventDefault(); handleAddTask(); setShowTaskModal(false);
+            e.preventDefault(); handleAddTask();
           }}>
             <div className="modal-header">
               <h3>Add Task</h3>
-              <button type="button" className="close-btn" onClick={() => setShowTaskModal(false)} />
+              <button type="button" className="modal-cancel-btn" onClick={() => { setShowTaskModal(false); setNewTask(""); setTaskErrors({}); }} >
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front close-padding"><img src={closeIcon} /></span>
+              </button>
             </div>
             <div className="modal-body">
               <div className="form-group">
-                <label>Task Name</label>
-                <input required value={newTask} onChange={e => setNewTask(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label>Section</label>
-                <div className="dishes-dropdown-wrapper">
-                  <button type="button" className="dishes-status-dropdown"
-                    onClick={e => { e.stopPropagation(); setOpenDropdown(p => p === "sec" ? null : "sec"); }}>
-                    {SECTION_META[section]?.label || section}
-                  </button>
-                  {openDropdown === "sec" && (
-                    <div className="dropdown-menu">
-                      {Object.entries(SECTION_META).map(([k, v]) => (
-                        <div key={k} onClick={e => { e.stopPropagation(); setSection(k); setOpenDropdown(null); }}>
-                          {v.icon} {v.label}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                <div className="mat">
+                  <input
+                    className={`mat-input${taskErrors.newTask ? " mat-error" : ""}`}
+                    placeholder=" "
+                    value={newTask}
+                    onChange={e => { setNewTask(e.target.value); setTaskErrors(p => ({ ...p, newTask: false })); }}
+                  />
+                  <label className={`mat-label${taskErrors.newTask ? " mat-label-error" : ""}`}>Task Name<span className="rf-req">*</span></label>
+                  <span className={`mat-bar${taskErrors.newTask ? " mat-bar-error" : ""}`} />
                 </div>
+              </div>
+              <div className={`form-group${taskErrors.section ? " mat-select-error" : ""}`}>
+                <CustomDropdown
+                  label="Section"
+                  value={section}
+                  onChange={val => { if (val) { setSection(val); setTaskErrors(p => ({ ...p, section: false })); } }}
+                  options={Object.entries(SECTION_META).map(([k, v]) => ({ value: k, label: `${v.icon} ${v.label}` }))}
+                  placeholder="Select Section"
+                />
               </div>
             </div>
             <div className="modal-footer">
-              <button type="button" onClick={() => setShowTaskModal(false)}>Cancel</button>
-              <button type="submit">Add Task</button>
+              <button
+                type="button"
+                className="modal-cancel-btn"
+                onClick={() => { setShowTaskModal(false); setNewTask(""); setTaskErrors({}); }}>
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">Cancel</span>
+              </button>
+              <button
+                type="submit"
+                className="modal-save-btn">
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">Add Task</span>
+              </button>
             </div>
           </form>
         </div>
@@ -383,32 +464,30 @@ function SListLayout({ filteredTasks, assignedDay, adminData, handleChange, hand
                       <img className="delete-icon" src={deleteIcon} alt="delete" />
                     </div>
                   </div>
-                  <div className="service-assign-list-card-bot">
-                    <div className="dishes-dropdown-wrapper">
-                      <button
-                        type="button"
-                        className="dishes-status-dropdown"
-                        onClick={e => { e.stopPropagation(); setOpenStaffDropdown(p => p === dropKey ? null : dropKey); }}
-                      >
-                        {entry?.staff || "— Select Staff —"}
-                      </button>
-                      {openStaffDropdown === dropKey && (
-                        <div className="dropdown-menu">
-                          <div onClick={e => { e.stopPropagation(); handleChange(task, ""); setOpenStaffDropdown(null); }}>
-                            — Select Staff —
-                          </div>
-                          {adminData.staff.map(s => (
-                            <div key={s.id} onClick={e => { e.stopPropagation(); handleChange(task, s.name); setOpenStaffDropdown(null); }}>
-                              {s.name}
-                            </div>
-                          ))}
+                  <div className="dishes-dropdown-wrapper">
+                    <button
+                      type="button"
+                      className="dishes-status-dropdown"
+                      onClick={e => { e.stopPropagation(); setOpenStaffDropdown(p => p === dropKey ? null : dropKey); }}
+                    >
+                      {entry?.staff || "— Select Staff —"}
+                    </button>
+                    {openStaffDropdown === dropKey && (
+                      <div className="dropdown-menu">
+                        <div onClick={e => { e.stopPropagation(); handleChange(task, ""); setOpenStaffDropdown(null); }}>
+                          — Select Staff —
                         </div>
-                      )}
-                    </div>
-                    {entry?.assignedAt && (
-                      <span className="service-assign-list-time">⏱ {entry.assignedAt}</span>
+                        {adminData.staff.map(s => (
+                          <div key={s.id} onClick={e => { e.stopPropagation(); handleChange(task, s.name); setOpenStaffDropdown(null); }}>
+                            {s.name}
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
+                  {entry?.assignedAt && (
+                    <span className="service-assign-list-time">⏱ {entry.assignedAt}</span>
+                  )}
                 </div>
               );
             })}

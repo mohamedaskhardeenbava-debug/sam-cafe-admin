@@ -205,6 +205,7 @@
     font-size: 15px;
     font-weight: 600;
     margin-bottom: 10px;
+    margin-top: 0;
     color: #111;
   }
 
@@ -786,10 +787,16 @@
     margin: 0 0 8px;
   }
 
-  .phone-list__actions {
-    display: flex;
-    gap: 6px;
-  }
+    .phone-list__actions {
+        display: flex;
+        gap: 6px;
+    }
+
+    .phone-list__actions > button,
+    .phone-list__actions > * {
+        flex: 1 1 0;
+        width: 0;
+    }
 
   .phone-action-btn {
     flex: 1;

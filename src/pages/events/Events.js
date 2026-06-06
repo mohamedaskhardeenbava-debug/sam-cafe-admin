@@ -2,10 +2,54 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import "./Events.css";
 import "../ModalCSS.css";
+import closeIcon from "../../icon/close-icon.png";
 import api from "../../api";
 import { useToast } from "../../useToast";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
+
+// ── CustomDropdown ────────────────────────────────────────────────────────────
+function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
+    const [open, setOpen] = React.useState(false);
+    const ref = React.useRef(null);
+    React.useEffect(() => {
+        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+    const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
+    const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
+    const wrapperClass = ["mat-select", value ? "has-value" : "", open ? "is-open" : ""].filter(Boolean).join(" ");
+    return (
+        <div className={wrapperClass} ref={ref}>
+            {label && <label className="mat-label">{label}{required && <span className="rf-req">*</span>}</label>}
+            <div className="dishes-dropdown-wrapper">
+                <button type="button" className="dishes-status-dropdown"
+                    onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
+                    {displayLabel || ""}
+                </button>
+                {open && (
+                    <div className="dropdown-menu">
+                        <div onClick={() => { onChange(""); setOpen(false); }}>{placeholder}</div>
+                        {options.map((o, i) => {
+                            const val = o.value !== undefined ? o.value : o;
+                            const lbl = o.label !== undefined ? o.label : o;
+                            return (
+                                <div key={i} onClick={() => { onChange(val); setOpen(false); }}
+                                    style={{ padding: "8px 12px", fontSize: 14, cursor: "pointer" }}
+                                    onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"}
+                                    onMouseLeave={e => e.currentTarget.style.background = ""}>
+                                    {lbl}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+            <span className="mat-bar" />
+        </div>
+    );
+}
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const generateId = (name) =>
@@ -156,6 +200,8 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
     const [formData, setFormData] = useState(EMPTY_FORM);
     const [specFormData, setSpecFormData] = useState(EMPTY_SPEC_FORM);
     const [specFormStep, setSpecFormStep] = useState(1);
+    const [formErrors, setFormErrors] = useState({});
+    const [specFormErrors, setSpecFormErrors] = useState({});
     const [tagInput, setTagInput] = useState("");
     const [highlightInput, setHighlightInput] = useState("");
     const [specTagInput, setSpecTagInput] = useState("");
@@ -339,6 +385,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
         setShowForm(false);
         setIsEditMode(false);
         setFormData(EMPTY_FORM);
+        setFormErrors({});
         setTagInput("");
         setHighlightInput("");
         setUseCurrentLocation(false);
@@ -349,6 +396,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
         setShowSpecForm(false);
         setIsSpecEditMode(false);
         setSpecFormData(EMPTY_SPEC_FORM);
+        setSpecFormErrors({});
         setSpecFormStep(1);
         setSpecTagInput("");
         setSpecHighlightInput("");
@@ -394,6 +442,42 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
         } else {
             setFormData(p => ({ ...p, images: p.images.filter((_, i) => i !== idx) }));
         }
+    };
+
+    const validateEvtStep = (step) => {
+        const e = {};
+        if (step === 1) {
+            if (!formData.title.trim()) e.title = true;
+            if (!formData.date) e.date = true;
+        }
+        if (step === 2) {
+            if (!formData.venue?.trim()) e.venue = true;
+            if (!formData.maxCapacity || Number(formData.maxCapacity) < 1) e.maxCapacity = true;
+        }
+        if (step === 3) {
+            if (!formData.description?.trim()) e.description = true;
+        }
+        setFormErrors(prev => ({ ...prev, ...e }));
+        return Object.keys(e).length === 0;
+    };
+
+    const validateSpecStep = (step) => {
+        const e = {};
+        if (step === 1) {
+            if (!specFormData.title.trim()) e.title = true;
+            if (!specFormData.date) e.date = true;
+            if (!specFormData.guests || Number(specFormData.guests) < 1) e.guests = true;
+            if (!useRestaurantAddrSpec) {
+                if (!specFormData.addrDoorNo?.trim()) e.addrDoorNo = true;
+                if (!specFormData.addrStreet?.trim()) e.addrStreet = true;
+                if (!specFormData.addrArea?.trim()) e.addrArea = true;
+                if (!specFormData.addrCity?.trim()) e.addrCity = true;
+                if (!specFormData.addrState?.trim()) e.addrState = true;
+                if (!specFormData.addrPincode || specFormData.addrPincode.length !== 6) e.addrPincode = true;
+            }
+        }
+        setSpecFormErrors(prev => ({ ...prev, ...e }));
+        return Object.keys(e).length === 0;
     };
 
     const handleSave = async () => {
@@ -628,7 +712,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
     };
 
     // ── Category-based Dish Selector ──
-    const DishSelector = ({ selectedDishes, onToggle, activeCat, onCatChange, isSpec = false, hideSelectedTable = false, dishQty = {}, onQtyChange }) => {
+    const DishSelector = ({ selectedDishes, onToggle, activeCat, onCatChange, isSpec = false, hideSelectedTable = false, dishQty = {}, guests = 1 }) => {
         const categories = adminData?.categories || [];
         const catObj = categories.find(c => c.id === activeCat);
         let catDishes = [];
@@ -651,31 +735,26 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
             });
         }
         const selectedDetails = (selectedDishes || []).map(id => allDishes.find(d => d.id === id)).filter(Boolean);
-        const dishesTotalPrice = selectedDetails.reduce((sum, d) => sum + Number(d.basePrice || 0) * (dishQty[d.id] || 1), 0);
+        const effectiveQty = (id) => dishQty[id] ?? guests ?? 1;
+        const dishesTotalPrice = selectedDetails.reduce((sum, d) => sum + Number(d.basePrice || 0) * effectiveQty(d.id), 0);
 
         const isSelected = (id) => (selectedDishes || []).includes(id);
 
         return (
             <div className="ae-dish-selector-v2">
-                <div className="ae-cat-dropdown-wrap">
-                    <select
-                        className="ae-cat-dropdown"
-                        value={activeCat}
-                        onChange={e => onCatChange(e.target.value)}
-                    >
-                        <option value="">All Categories</option>
-                        {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
-                    </select>
-                    <span className="ae-cat-dropdown-arrow">▾</span>
-                </div>
+                <CustomDropdown
+                    value={activeCat}
+                    onChange={onCatChange}
+                    options={[
+                        { value: "", label: "All Categories" },
+                        ...categories.map(cat => ({ value: cat.id, label: cat.name })),
+                    ]}
+                />
 
                 {catDishes.length > 0 && (
                     <div className="act-dish-grid">
                         {catDishes.map(dish => {
                             const sel = isSelected(dish.id);
-                            const qty = dishQty[dish.id] || 1;
                             return (
                                 <div key={dish.id} className={`act-dish-card${sel ? " selected" : ""}`}>
                                     <div className="act-dish-info">
@@ -684,14 +763,17 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                         <span className="act-dish-price">₹{dish.basePrice}</span>
                                     </div>
                                     {sel ? (
-                                        <div className="act-dish-stepper">
-                                            <button type="button" onClick={() => onQtyChange(dish.id, -1)}>−</button>
-                                            <span>{qty}</span>
-                                            <button type="button" onClick={() => onQtyChange(dish.id, 1)}>+</button>
-
-                                        </div>
+                                        <button type="button" className="modal-save-btn" onClick={() => onToggle(dish.id)}>
+                                            <span className="shadow"></span>
+                                            <span className="edge"></span>
+                                            <span className="front close-padding">✓ Added</span>
+                                        </button>
                                     ) : (
-                                        <button type="button" className="act-dish-add-btn" onClick={() => onToggle(dish.id)}>+ Add</button>
+                                        <button type="button" className="modal-cancel-btn" onClick={() => onToggle(dish.id)}>
+                                            <span className="shadow"></span>
+                                            <span className="edge"></span>
+                                            <span className="front close-padding">+ Add</span>
+                                        </button>
                                     )}
                                 </div>
                             );
@@ -708,7 +790,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                         </div>
                         <table className="ae-sdt">
                             <thead>
-                                <tr><th>#</th><th>Dish</th><th>Category</th><th>Qty</th><th>Price</th><th></th></tr>
+                                <tr><th>#</th><th>Dish</th><th>Category</th><th>Qty (guests)</th><th>Price</th><th></th></tr>
                             </thead>
                             <tbody>
                                 {selectedDetails.map((d, i) => (
@@ -716,8 +798,8 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                         <td>{i + 1}</td>
                                         <td><div className="ae-sdt-dish"><span>{d.name}</span></div></td>
                                         <td className="ae-sdt-cat">{d.subCat || d.cat || "—"}</td>
-                                        <td style={{ textAlign: "center" }}>{dishQty[d.id] || 1}</td>
-                                        <td className="ae-sdt-price">₹{(Number(d.basePrice || 0) * (dishQty[d.id] || 1)).toLocaleString("en-IN")}</td>
+                                        <td style={{ textAlign: "center" }}>{effectiveQty(d.id)}</td>
+                                        <td className="ae-sdt-price">₹{(Number(d.basePrice || 0) * effectiveQty(d.id)).toLocaleString("en-IN")}</td>
                                         <td><button type="button" className="ae-sdt-remove" onClick={() => onToggle(d.id)} title="Remove">×</button></td>
                                     </tr>
                                 ))}
@@ -769,7 +851,10 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                     </div>
                     {activeTab === "events" && (
                         <div className="ae-btn-group">
-                            <button className="ae-spec-btn" onClick={openSpecAdd}>Create Event</button>
+                            <button className="modal-save-btn" onClick={openSpecAdd}>
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front">Create Event</span></button>
                         </div>
                     )}
                 </div>
@@ -787,7 +872,11 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                 value={evtSearch}
                                 onChange={e => setEvtSearch(e.target.value)}
                             />
-                            <button className="export-btn" onClick={exportEvents}>Export</button>
+                            <button className="modal-save-btn" onClick={exportEvents}>
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front">Export</span>
+                            </button>
                         </div>
                         <div className="ae-events-filter-groups">
                             {/* Status */}
@@ -802,7 +891,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                     ["cancelled", "Cancelled"],
                                 ].map(([val, label]) => (
                                     <button key={val}
-                                        className={`ae-filter-pill${evtFilterStatus === val ? " active" : ""}`}
+                                        className={`filter-pill${evtFilterStatus === val ? " active" : ""}`}
                                         //style={evtFilterStatus === val && !["all", "upcoming,ongoing"].includes(val) ? { background: STATUS_COLORS[val], borderColor: STATUS_COLORS[val], color: "#fff" } : {}}
                                         onClick={() => setEvtFilterStatus(val)}>
                                         {label}
@@ -814,7 +903,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                 <span className="ae-filter-group-label">Period</span>
                                 {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
                                     <button key={preset}
-                                        className={`ae-filter-pill${evtDatePreset === preset ? " active" : ""}`}
+                                        className={`filter-pill${evtDatePreset === preset ? " active" : ""}`}
                                         onClick={() => {
                                             if (evtDatePreset === preset) {
                                                 setEvtDatePreset(""); setEvtFromDate(""); setEvtToDate("");
@@ -853,7 +942,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                     ["workshop", "Workshop"],
                                 ].map(([val, label]) => (
                                     <button key={val}
-                                        className={`ae-filter-pill${evtFilterType === val ? " active" : ""}`}
+                                        className={`filter-pill${evtFilterType === val ? " active" : ""}`}
                                         onClick={() => setEvtFilterType(val)}>
                                         {label}
                                     </button>
@@ -864,7 +953,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                 <span className="ae-filter-group-label">Publish</span>
                                 {[["all", "All"], ["live", "Live"], ["draft", "Draft"]].map(([val, label]) => (
                                     <button key={val}
-                                        className={`ae-filter-pill${evtFilterPublish === val ? " active" : ""}`}
+                                        className={`filter-pill${evtFilterPublish === val ? " active" : ""}`}
                                         onClick={() => setEvtFilterPublish(val)}>
                                         {label}
                                     </button>
@@ -985,7 +1074,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                 })();
                                 return (
                                     <button key={preset}
-                                        className={`ae-filter-pill${isActive ? " active" : ""}`}
+                                        className={`filter-pill${isActive ? " active" : ""}`}
                                         onClick={() => {
                                             if (isActive) { setFilterFromDate(""); setFilterToDate(""); return; }
                                             if (preset === "today") { const t = todayStr(); setFilterFromDate(t); setFilterToDate(t); }
@@ -1016,10 +1105,14 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                             {/* Event filter */}
                             <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                                 <span className="ae-filter-group-label">Event</span>
-                                <select className="ae-filter-select" value={filterEventId} onChange={(e) => setFilterEventId(e.target.value)}>
-                                    <option value="all">All Events</option>
-                                    {events.map((e) => (<option key={e.id} value={e.id}>{e.title}</option>))}
-                                </select>
+                                <CustomDropdown
+                                    value={filterEventId}
+                                    onChange={setFilterEventId}
+                                    options={[
+                                        { value: "all", label: "All Events" },
+                                        ...events.map(e => ({ value: e.id, label: e.title })),
+                                    ]}
+                                />
                             </div>
 
                             {/* Status pills */}
@@ -1032,7 +1125,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                     ["cancelled", "Cancelled"],
                                 ].map(([val, label]) => (
                                     <button key={val}
-                                        className={`ae-filter-pill${filterStatus === val ? " active" : ""}`}
+                                        className={`filter-pill${filterStatus === val ? " active" : ""}`}
                                         onClick={() => setFilterStatus(val)}>
                                         {label}
                                     </button>
@@ -1046,7 +1139,11 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                 }}>Clear</button>
                             )}
                             <span className="ae-result-count">{filteredBookings.length} result(s)</span>
-                            <button className="export-btn" onClick={exportBookings} style={{ marginLeft: "auto" }}>Export</button>
+                            <button className="moal-save-btn" onClick={exportBookings} style={{ marginLeft: "auto" }}>
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front">Export</span>
+                            </button>
                         </div>
                     </div>
 
@@ -1108,18 +1205,29 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                 <div className="event-modal-overlay">
                     <div className="event-modal ae-event-modal">
                         <div className="event-modal-header">
-                            <div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                                 <h3>{isEditMode ? "Edit Event" : "Create New Event"}</h3>
                                 <div className="ecard">
                                     {["Details", "Venue & Capacity", "Content", "Dishes & Preview"].map((s, i) => (
-                                        <button key={i} className={`ebutton ${editFormStep === i + 1 ? "active" : ""} ${editFormStep > i + 1 ? "done" : ""}`} onClick={() => setEditFormStep(i + 1)}>
+                                        <button key={i} className={`ebutton ${editFormStep === i + 1 ? "active" : ""} ${editFormStep > i + 1 ? "done" : ""}`} onClick={() => {
+                                            if (i + 1 > editFormStep) {
+                                                for (let s = editFormStep; s < i + 1; s++) {
+                                                    if (!validateEvtStep(s)) return;
+                                                }
+                                            }
+                                            setEditFormStep(i + 1);
+                                        }}>
                                             <span className="eevt-step-num">{editFormStep > i + 1 ? "✓" : i + 1}</span>
                                             <span className="eevt-step-label">{s}</span>
                                         </button>
                                     ))}
                                 </div>
                             </div>
-                            <button className="close-btn" onClick={resetForm} aria-label="Close" />
+                            <button className="modal-cancel-btn" onClick={() => { resetForm(); setFormErrors({}); }} aria-label="Close">
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front close-padding"><img src={closeIcon} /></span>
+                            </button>
                         </div>
 
                         <div className="event-modal-body ae-event-form-body">
@@ -1129,39 +1237,47 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                 <>
                                     <div className="form-group">
                                         <div className="mat">
-                                            <input className="mat-input" type="text" value={formData.title} onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))} placeholder=" " />
-                                            <label className="mat-label">Event Title <span className="rf-req">*</span></label>
-                                            <span className="mat-bar" />
+                                            <input className={`mat-input${formErrors.title ? " mat-error" : ""}`} type="text" value={formData.title} onChange={(e) => { setFormData((p) => ({ ...p, title: e.target.value })); setFormErrors(p => ({ ...p, title: false })); }} placeholder=" " />
+                                            <label className={`mat-label${formErrors.title ? " mat-label-error" : ""}`}>Event Title <span className="rf-req">*</span></label>
+                                            <span className={`mat-bar${formErrors.title ? " mat-bar-error" : ""}`} />
                                         </div>
                                     </div>
 
                                     <div className="ae-form-row">
                                         <div className="form-group">
                                             <label>Event Type</label>
-                                            <select value={formData.eventType} onChange={(e) => setFormData((p) => ({ ...p, eventType: e.target.value }))}>
-                                                <option value="dining">Dining Experience</option>
-                                                <option value="special">Special Occasion</option>
-                                                <option value="private">Private Booking</option>
-                                                <option value="seasonal">Seasonal</option>
-                                                <option value="live">Live Entertainment</option>
-                                                <option value="workshop">Workshop</option>
-                                            </select>
+                                            <CustomDropdown
+                                                value={formData.eventType}
+                                                onChange={v => setFormData((p) => ({ ...p, eventType: v }))}
+                                                options={[
+                                                    { value: "dining", label: "Dining Experience" },
+                                                    { value: "special", label: "Special Occasion" },
+                                                    { value: "private", label: "Private Booking" },
+                                                    { value: "seasonal", label: "Seasonal" },
+                                                    { value: "live", label: "Live Entertainment" },
+                                                    { value: "workshop", label: "Workshop" },
+                                                ]}
+                                            />
                                         </div>
                                         <div className="form-group">
                                             <label>Status</label>
-                                            <select value={formData.status} onChange={(e) => setFormData((p) => ({ ...p, status: e.target.value }))}>
-                                                <option value="upcoming">Upcoming</option>
-                                                <option value="ongoing">Ongoing</option>
-                                                <option value="completed">Completed</option>
-                                                <option value="cancelled">Cancelled</option>
-                                            </select>
+                                            <CustomDropdown
+                                                value={formData.status}
+                                                onChange={v => setFormData((p) => ({ ...p, status: v }))}
+                                                options={[
+                                                    { value: "upcoming", label: "Upcoming" },
+                                                    { value: "ongoing", label: "Ongoing" },
+                                                    { value: "completed", label: "Completed" },
+                                                    { value: "cancelled", label: "Cancelled" },
+                                                ]}
+                                            />
                                         </div>
                                     </div>
 
                                     <div className="ae-form-row">
                                         <div className="form-group">
-                                            <label>Date *</label>
-                                            <CustomDatePicker value={formData.date} onChange={(v) => setFormData((p) => ({ ...p, date: v }))} />
+                                            <label className={formErrors.date ? "mat-label-error" : ""}>Date <span className="rf-req">*</span></label>
+                                            <CustomDatePicker value={formData.date} onChange={(v) => { setFormData((p) => ({ ...p, date: v })); setFormErrors(p => ({ ...p, date: false })); }} hasError={!!formErrors.date} />
                                         </div>
                                         <div className="form-group">
                                             <label>Time</label>
@@ -1206,15 +1322,15 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                                 Custom
                                             </label>
                                         </div>
-                                        <textarea className="ae-venue-textarea" rows={3} value={formData.venue} disabled={formData.venueMode === "restaurant"} onChange={(e) => setFormData(p => ({ ...p, venue: e.target.value }))} placeholder="Enter full venue address…" />
+                                        <textarea className={`ae-venue-textarea${formErrors.venue ? " mat-error" : ""}`} rows={3} value={formData.venue} disabled={formData.venueMode === "restaurant"} onChange={(e) => { setFormData(p => ({ ...p, venue: e.target.value })); setFormErrors(p => ({ ...p, venue: false })); }} placeholder="Enter full venue address…" />
                                     </div>
 
                                     <div className="ae-form-row">
                                         <div className="form-group">
                                             <div className="mat">
-                                                <input className="mat-input" type="number" min="0" value={formData.maxCapacity} onChange={(e) => setFormData((p) => ({ ...p, maxCapacity: e.target.value }))} placeholder=" " />
-                                                <label className="mat-label">Max Capacity</label>
-                                                <span className="mat-bar" />
+                                                <input className={`mat-input${formErrors.maxCapacity ? " mat-error" : ""}`} type="number" min="0" value={formData.maxCapacity} onChange={(e) => { setFormData((p) => ({ ...p, maxCapacity: e.target.value })); setFormErrors(p => ({ ...p, maxCapacity: false })); }} placeholder=" " />
+                                                <label className={`mat-label${formErrors.maxCapacity ? " mat-label-error" : ""}`}>Max Capacity <span className="rf-req">*</span></label>
+                                                <span className={`mat-bar${formErrors.maxCapacity ? " mat-bar-error" : ""}`} />
                                             </div>
                                         </div>
                                         <div className="form-group">
@@ -1233,9 +1349,9 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                 <>
                                     <div className="form-group">
                                         <div className="mat-area">
-                                            <textarea className="mat-input" value={formData.description} rows={3} onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value }))} placeholder=" " style={{ height: "auto", paddingTop: 4 }} />
-                                            <label className="mat-area-label">Description</label>
-                                            <span className="mat-area-bar" />
+                                            <textarea className={`mat-input${formErrors.description ? " mat-error" : ""}`} value={formData.description} rows={3} onChange={(e) => { setFormData((p) => ({ ...p, description: e.target.value })); setFormErrors(p => ({ ...p, description: false })); }} placeholder=" " style={{ height: "auto", paddingTop: 4 }} />
+                                            <label className={`mat-area-label${formErrors.description ? " mat-label-error" : ""}`}>Description <span className="rf-req">*</span></label>
+                                            <span className={`mat-area-bar${formErrors.description ? " mat-bar-error" : ""}`} />
                                         </div>
                                     </div>
 
@@ -1293,7 +1409,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                 <>
                                     <div className="form-group">
                                         <label>Menu Dishes for this Event</label>
-                                        <DishSelector selectedDishes={formData.dishes} onToggle={(id) => toggleDish(id, false)} activeCat={formData.selectedCategory || ""} onCatChange={(id) => setFormData(p => ({ ...p, selectedCategory: id }))} isSpec={false} dishQty={formData.dishQty || {}} onQtyChange={(id, delta) => changeDishQty(id, delta, false)} />
+                                        <DishSelector selectedDishes={formData.dishes} onToggle={(id) => toggleDish(id, false)} activeCat={formData.selectedCategory || ""} onCatChange={(id) => setFormData(p => ({ ...p, selectedCategory: id }))} isSpec={false} dishQty={formData.dishQty || {}} guests={Number(formData.maxCapacity) || 1} />
                                     </div>
 
                                     {/* Summary preview */}
@@ -1320,23 +1436,25 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                         </div>
 
                         <div className="event-modal-footer">
-                            <button type="button" className="evt-modal-cancel-btn" onClick={resetForm}>
+                            <button type="button" className="modal-cancel-btn" onClick={resetForm}>
                                 <span className="shadow"></span><span className="edge"></span>
                                 <span className="front">Cancel</span>
                             </button>
                             {editFormStep > 1 && (
-                                <button type="button" className="evt-modal-prev-btn" onClick={() => setEditFormStep(s => s - 1)}>
+                                <button type="button" className="modal-prev-btn" onClick={() => setEditFormStep(s => s - 1)}>
                                     <span className="shadow"></span><span className="edge"></span>
                                     <span className="front">← Back</span>
                                 </button>
                             )}
                             {editFormStep < 4 ? (
-                                <button type="button" className="evt-modal-next-btn" onClick={() => setEditFormStep(s => s + 1)}>
+                                <button type="button" className="modal-next-btn" onClick={() => {
+                                    if (validateEvtStep(editFormStep)) setEditFormStep(s => s + 1);
+                                }}>
                                     <span className="shadow"></span><span className="edge"></span>
                                     <span className="front">Next →</span>
                                 </button>
                             ) : (
-                                <button type="button" className="evt-modal-save-btn" onClick={handleSave}>
+                                <button type="button" className="modal-save-btn" onClick={handleSave}>
                                     <span className="shadow"></span><span className="edge"></span>
                                     <span className="front">{isEditMode ? "Save Changes" : "Create Event"}</span>
                                 </button>
@@ -1351,18 +1469,29 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                 <div className="event-modal-overlay">
                     <div className="event-modal">
                         <div className="event-modal-header">
-                            <div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                                 <h3>{isSpecEditMode ? "Edit Specialized Event" : "Create Event"}</h3>
                                 <div className="ecard">
                                     {["Event Details", "Packages & Add-ons", "Dishes", "Summary & Preview"].map((s, i) => (
-                                        <button key={i} className={`ebutton ${specFormStep === i + 1 ? "active" : ""} ${specFormStep > i + 1 ? "done" : ""}`} onClick={() => setSpecFormStep(i + 1)}>
+                                        <button key={i} className={`ebutton ${specFormStep === i + 1 ? "active" : ""} ${specFormStep > i + 1 ? "done" : ""}`} onClick={() => {
+                                            if (i + 1 > specFormStep) {
+                                                for (let step = specFormStep; step < i + 1; step++) {
+                                                    if (!validateSpecStep(step)) return;
+                                                }
+                                            }
+                                            setSpecFormStep(i + 1);
+                                        }}>
                                             <span className="eevt-step-num">{specFormStep > i + 1 ? "✓" : i + 1}</span>
                                             <span className="eevt-step-label">{s}</span>
                                         </button>
                                     ))}
                                 </div>
                             </div>
-                            <button className="close-btn" onClick={resetSpecForm} aria-label="Close" />
+                            <button className="modal-cancel-btn" onClick={resetSpecForm} aria-label="Close" >
+                                <span class="shadow"></span>
+                                <span class="edge"></span>
+                                <span class="front close-padding"><img src={closeIcon} /></span>
+                            </button>
                         </div>
 
                         <div className={`event-modal-body ae-spec-form-body${specFormStep === 3 ? " ae-spec-form-body--split" : ""}`}>
@@ -1371,9 +1500,9 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                 <>
                                     <div className="form-group">
                                         <div className="mat">
-                                            <input className="mat-input" type="text" value={specFormData.title} onChange={(e) => setSpecFormData(p => ({ ...p, title: e.target.value }))} placeholder=" " />
-                                            <label className="mat-label">Event Title <span className="rf-req">*</span></label>
-                                            <span className="mat-bar" />
+                                            <input className={`mat-input${specFormErrors.title ? " mat-error" : ""}`} type="text" value={specFormData.title} onChange={(e) => { setSpecFormData(p => ({ ...p, title: e.target.value })); setSpecFormErrors(p => ({ ...p, title: false })); }} placeholder=" " />
+                                            <label className={`mat-label${specFormErrors.title ? " mat-label-error" : ""}`}>Event Title <span className="rf-req">*</span></label>
+                                            <span className={`mat-bar${specFormErrors.title ? " mat-bar-error" : ""}`} />
                                         </div>
                                     </div>
 
@@ -1397,8 +1526,8 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
 
                                     <div className="ae-form-row">
                                         <div className="form-group">
-                                            <label>Date *</label>
-                                            <CustomDatePicker value={specFormData.date} onChange={(v) => setSpecFormData(p => ({ ...p, date: v }))} />
+                                            <label className={specFormErrors.date ? "mat-label-error" : ""}>Date <span className="rf-req">*</span></label>
+                                            <CustomDatePicker value={specFormData.date} onChange={(v) => { setSpecFormData(p => ({ ...p, date: v })); setSpecFormErrors(p => ({ ...p, date: false })); }} hasError={!!specFormErrors.date} />
                                         </div>
                                         <div className="form-group">
                                             <label>Time</label>
@@ -1446,10 +1575,10 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                                 { key: "addrState", label: "State", placeholder: "State", req: true },
                                                 { key: "addrPincode", label: "Pincode", placeholder: "6-digit pincode", req: true },
                                             ].map(field => (
-                                                <div key={field.key} className="evt-addr-field">
-                                                    <div className="ae-addr-mat">
+                                                <div key={field.key} className="form-group">
+                                                    <div className="mat">
                                                         <input
-                                                            className="ae-addr-input"
+                                                            className={`mat-input${specFormErrors[field.key] ? " mat-error" : ""}`}
                                                             type="text"
                                                             value={specFormData[field.key]}
                                                             placeholder=" "
@@ -1462,12 +1591,13 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                                                     ? e.target.value.replace(/\D/g, "").slice(0, 6)
                                                                     : e.target.value;
                                                                 setSpecFormData(p => ({ ...p, [field.key]: v, venue: buildAddress({ ...p, [field.key]: v }) }));
+                                                                setSpecFormErrors(p => ({ ...p, [field.key]: false }));
                                                             }}
                                                         />
-                                                        <label className="ae-addr-label">
-                                                            {field.label} {field.req && <span className="ae-req">*</span>}
+                                                        <label className={`mat-label${specFormErrors[field.key] ? " mat-label-error" : ""}`}>
+                                                            {field.label} {field.req && <span className="rf-req">*</span>}
                                                         </label>
-                                                        <span className="ae-addr-bar" />
+                                                        <span className={`mat-bar${specFormErrors[field.key] ? " mat-bar-error" : ""}`} />
                                                     </div>
                                                 </div>
                                             ))}
@@ -1477,19 +1607,23 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                     <div className="ae-form-row">
                                         <div className="form-group">
                                             <div className="mat">
-                                                <input className="mat-input" type="number" min="1" value={specFormData.guests} onChange={(e) => setSpecFormData(p => ({ ...p, guests: Number(e.target.value) }))} placeholder=" " />
-                                                <label className="mat-label">Number of Guests</label>
-                                                <span className="mat-bar" />
+                                                <input className={`mat-input${specFormErrors.guests ? " mat-error" : ""}`} type="number" min="1" value={specFormData.guests} onChange={(e) => { setSpecFormData(p => ({ ...p, guests: Number(e.target.value) })); setSpecFormErrors(p => ({ ...p, guests: false })); }} placeholder=" " />
+                                                <label className={`mat-label${specFormErrors.guests ? " mat-label-error" : ""}`}>Number of Guests <span className="rf-req">*</span></label>
+                                                <span className={`mat-bar${specFormErrors.guests ? " mat-bar-error" : ""}`} />
                                             </div>
                                         </div>
                                         <div className="form-group">
                                             <label>Status</label>
-                                            <select value={specFormData.status} onChange={(e) => setSpecFormData(p => ({ ...p, status: e.target.value }))}>
-                                                <option value="upcoming">Upcoming</option>
-                                                <option value="ongoing">Ongoing</option>
-                                                <option value="completed">Completed</option>
-                                                <option value="cancelled">Cancelled</option>
-                                            </select>
+                                            <CustomDropdown
+                                                value={specFormData.status}
+                                                onChange={v => setSpecFormData(p => ({ ...p, status: v }))}
+                                                options={[
+                                                    { value: "upcoming", label: "Upcoming" },
+                                                    { value: "ongoing", label: "Ongoing" },
+                                                    { value: "completed", label: "Completed" },
+                                                    { value: "cancelled", label: "Cancelled" },
+                                                ]}
+                                            />
                                         </div>
                                     </div>
 
@@ -1638,7 +1772,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                                 isSpec={true}
                                                 hideSelectedTable={true}
                                                 dishQty={specFormData.dishQty || {}}
-                                                onQtyChange={(id, delta) => changeDishQty(id, delta, true)}
+                                                guests={Number(specFormData.guests) || 1}
                                             />
                                         </div>
                                     </div>
@@ -1660,12 +1794,12 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                                     {specFormData.dishes.map(id => {
                                                         const d = allDishes.find(x => x.id === id);
                                                         if (!d) return null;
-                                                        const qty = (specFormData.dishQty || {})[id] || 1;
+                                                        const qty = Number(specFormData.guests) || 1;
                                                         return (
                                                             <div key={id} className="ae-dishes-right-item">
                                                                 <div style={{ flex: 1, minWidth: 0 }}>
                                                                     <div style={{ fontWeight: 600, fontSize: 13, color: "#111", lineHeight: 1.3 }}>{d.name}</div>
-                                                                    <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>{d.subCat || d.cat || "—"} · qty: {qty}</div>
+                                                                    <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>{d.subCat || d.cat || "—"} · qty: {Number(specFormData.guests) || 1} (guests)</div>
                                                                 </div>
                                                                 <div style={{ fontWeight: 700, fontSize: 13, color: "#2563eb", flexShrink: 0 }}>₹{(Number(d.basePrice || 0) * qty).toLocaleString("en-IN")}</div>
                                                                 <button type="button" className="ae-sdt-remove" onClick={() => toggleDish(id, true)} title="Remove">×</button>
@@ -1678,7 +1812,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                                     <span>Food Total</span>
                                                     <span>₹{specFormData.dishes.reduce((sum, id) => {
                                                         const d = allDishes.find(x => x.id === id);
-                                                        const qty = (specFormData.dishQty || {})[id] || 1;
+                                                        const qty = Number(specFormData.guests) || 1;
                                                         return sum + Number(d?.basePrice || 0) * qty;
                                                     }, 0).toLocaleString("en-IN")}</span>
                                                 </div>
@@ -1714,23 +1848,25 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                         </div>
 
                         <div className="evt-modal-footer">
-                            <button type="button" className="evt-modal-cancel-btn" onClick={resetSpecForm}>
+                            <button type="button" className="modal-cancel-btn" onClick={resetSpecForm}>
                                 <span className="shadow"></span><span className="edge"></span>
                                 <span className="front">Cancel</span>
                             </button>
                             {specFormStep > 1 && (
-                                <button type="button" className="evt-modal-prev-btn" onClick={() => setSpecFormStep(s => s - 1)}>
+                                <button type="button" className="modal-prev-btn" onClick={() => setSpecFormStep(s => s - 1)}>
                                     <span className="shadow"></span><span className="edge"></span>
                                     <span className="front">← Back</span>
                                 </button>
                             )}
                             {specFormStep < 4 ? (
-                                <button type="button" className="evt-modal-next-btn" onClick={() => setSpecFormStep(s => s + 1)}>
+                                <button type="button" className="modal-next-btn" onClick={() => {
+                                    if (validateSpecStep(specFormStep)) setSpecFormStep(s => s + 1);
+                                }}>
                                     <span className="shadow"></span><span className="edge"></span>
                                     <span className="front">Next →</span>
                                 </button>
                             ) : (
-                                <button type="button" className="evt-modal-save-btn" onClick={handleSpecSave}>
+                                <button type="button" className="modal-save-btn" onClick={handleSpecSave}>
                                     <span className="shadow"></span><span className="edge"></span>
                                     <span className="front">{isSpecEditMode ? "Save Changes" : "Create Event"}</span>
                                 </button>
@@ -1747,7 +1883,11 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                     <div className="event-modal ae-booking-detail-modal">
                         <div className="event-modal-header">
                             <h3>Booking Details</h3>
-                            <button className="close-btn" onClick={() => setViewBooking(null)} aria-label="Close" />
+                            <button className="modal-cancel-btn" onClick={() => setViewBooking(null)} aria-label="Close">
+                                <span class="shadow"></span>
+                                <span class="edge"></span>
+                                <span class="front close-padding"><img src={closeIcon} /></span>
+                            </button>
                         </div>
                         <div className="event-modal-body ae-booking-detail-body">
                             {(() => {
@@ -1815,18 +1955,18 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                         <div className="event-modal-footer">
 
                             {viewBooking.status === "pending" && (
-                                <button className="evt-modal-confirm-btn" onClick={() => handleBookingStatus(viewBooking.id, "confirmed")}>
+                                <button className="modal-confirm-btn" onClick={() => handleBookingStatus(viewBooking.id, "confirmed")}>
                                     <span className="shadow"></span><span className="edge"></span>
                                     <span className="front">Confirm Booking</span>
                                 </button>
                             )}
                             {viewBooking.status !== "cancelled" && (
-                                <button className="evt-modal-danger-btn" onClick={() => handleBookingStatus(viewBooking.id, "cancelled")}>
+                                <button className="modal-danger-btn" onClick={() => handleBookingStatus(viewBooking.id, "cancelled")}>
                                     <span className="shadow"></span><span className="edge"></span>
                                     <span className="front">Cancel Booking</span>
                                 </button>
                             )}
-                            <button className="evt-modal-cancel-btn" onClick={() => { setViewBooking(null); setAddGuestCount(1); }}>
+                            <button className="modal-cancel-btn" onClick={() => { setViewBooking(null); setAddGuestCount(1); }}>
                                 <span className="shadow"></span><span className="edge"></span>
                                 <span className="front">Close</span>
                             </button>
@@ -1842,7 +1982,11 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                     <div className="event-modal ae-confirm-modal">
                         <div className="event-modal-header">
                             <h3>Delete Event</h3>
-                            <button className="close-btn" onClick={() => setConfirmDeleteId(null)} aria-label="Close" />
+                            <button className="modal-cancel-btn" onClick={() => setConfirmDeleteId(null)} aria-label="Close">
+                                <span class="shadow"></span>
+                                <span class="edge"></span>
+                                <span class="front close-padding"><img src={closeIcon} /></span>
+                            </button>
                         </div>
                         <div className="event-modal-body">
                             <p style={{ margin: "8px 0 20px", color: "#444", fontSize: 14, lineHeight: 1.6 }}>
@@ -1850,11 +1994,11 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                             </p>
                         </div>
                         <div className="event-modal-footer">
-                            <button className="evt-modal-cancel-btn" onClick={() => setConfirmDeleteId(null)}>
+                            <button className="modal-cancel-btn" onClick={() => setConfirmDeleteId(null)}>
                                 <span className="shadow"></span><span className="edge"></span>
                                 <span className="front">Cancel</span>
                             </button>
-                            <button className="evt-modal-danger-btn" onClick={confirmDelete}>
+                            <button className="modal-danger-btn" onClick={confirmDelete}>
                                 <span className="shadow"></span><span className="edge"></span>
                                 <span className="front">Delete Event</span>
                             </button>

@@ -514,11 +514,6 @@
   font-family: inherit;
 }
 
-.kgroom-form-group select:focus,
-.kgroom-form-group textarea:focus {
-  border-color: #111;
-}
-
 .kgroom-modal-footer {
   display: flex;
   gap: 10px;

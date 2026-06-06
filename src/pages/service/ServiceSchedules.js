@@ -4,8 +4,48 @@ import { format } from "date-fns";
 import * as XLSX from "xlsx";
 import "./ServiceSchedules.css";
 import api from "../../api";
+import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
+
+// ── Floating-label CustomDropdown ────────────────────────────────────────────
+function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
+    const [open, setOpen] = React.useState(false);
+    const ref = React.useRef(null);
+    React.useEffect(() => {
+        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+    const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
+    const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
+    const wrapperClass = ["mat-select", value ? "has-value" : "", open ? "is-open" : ""].filter(Boolean).join(" ");
+    return (
+        <div className={wrapperClass} ref={ref}>
+            {label && <label className="mat-label">{label}{required && <span className="rf-req">*</span>}</label>}
+            <div className="dishes-dropdown-wrapper">
+                <button type="button" className="dishes-status-dropdown"
+                    onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
+                    {displayLabel || ""}
+                </button>
+                {open && (
+                    <div className="dropdown-menu">
+                        {options.map((o, i) => {
+                            const val = o.value !== undefined ? o.value : o;
+                            const lbl = o.label !== undefined ? o.label : o;
+                            return (
+                                <div key={i} onClick={(e) => { e.stopPropagation(); onChange(val); setOpen(false); }}>
+                                    {lbl}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+            <span className="mat-bar" />
+        </div>
+    );
+}
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -61,6 +101,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
     const [activePreset, setActivePreset] = useState("Today");
     const [show, setShow] = useState(false);
     const [form, setForm] = useState(EMPTY_FORM);
+    const [formErrors, setFormErrors] = useState({});
     const [sortKey, setSortKey] = useState("date");
     const [sortDir, setSortDir] = useState("asc");
 
@@ -96,14 +137,21 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
     const applyPreset = (p) => { const [f, t] = p.fn(); setFromDate(f); setToDate(t); setActivePreset(p.label); };
 
     const add = async () => {
-        if (!form.work || !form.staff || !form.date) return;
-        // Use string-based IDs to avoid lodash-id issues with json-server
+        const errs = {};
+        if (!form.work.trim()) errs.work = true;
+        if (!form.staff) errs.staff = true;
+        if (!form.date) errs.date = true;
+        if (!form.department) errs.department = true;
+        if (!form.status) errs.status = true;
+        if (!form.lastRate && form.lastRate !== 0 && form.lastRate !== "0") errs.lastRate = true;
+        if (Object.keys(errs).length) { setFormErrors(errs); return; }
         const newId = `ss_${Date.now()}`;
         const newItem = { id: newId, ...form };
         try {
             await api.post("/serviceSchedules", newItem);
             setAdminData(prev => ({ ...prev, serviceSchedules: [...(prev.serviceSchedules || []), newItem] }));
             setForm(EMPTY_FORM);
+            setFormErrors({});
             setShow(false);
             toast.success("Schedule added successfully.");
         } catch (err) {
@@ -112,7 +160,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
         }
     };
 
-    const cancel = () => { setForm(EMPTY_FORM); setShow(false); };
+    const cancel = () => { setForm(EMPTY_FORM); setFormErrors({}); setShow(false); };
 
     // FIX: Only delete expired items, not all. Use string IDs for new items.
     // For old numeric-id items that fail deletion, skip gracefully.
@@ -201,27 +249,35 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
             <div className="schedule-header">
                 <h2>Service Schedules</h2>
                 <div style={{ display: "flex", gap: "8px" }}>
-                    <button className="export-btn" onClick={exportToExcel}>Export</button>
-                    <button onClick={() => setShow(true)}>+ Add Schedule</button>
+                    <button className="modal-save-btn" onClick={exportToExcel}>
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front">Export</span>
+                    </button>
+                    <button className="modal-save-btn" onClick={() => setShow(true)}>
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front">+ Add Schedule</span>
+                    </button>
                 </div>
             </div>
 
             <div className="ssched-filter-bar">
                 <input className="search-input" placeholder="Search work / staff…" value={searchText} onChange={e => setSearchText(e.target.value)} />
-                
+
                 <CustomDatePicker label="From" value={fromDate} max={toDate}
                     onChange={s => { setFromDate(s); if (s > toDate) setToDate(s); setActivePreset("custom"); }} />
                 <CustomDatePicker label="To" value={toDate} min={fromDate}
                     onChange={s => { setToDate(s); setActivePreset("custom"); }} />
                 {PRESETS.map(p => (
-                    <button key={p.label} className={`ssch-pill-btn${activePreset === p.label ? " active" : ""}`} onClick={() => applyPreset(p)}>
+                    <button key={p.label} className={`filter-pill${activePreset === p.label ? " active" : ""}`} onClick={() => applyPreset(p)}>
                         {p.label}
                     </button>
                 ))}
 
                 <div className="sched-status-pills">
                     {["", "Scheduled", "Completed", "Pending"].map(s => (
-                        <button key={s} className={`ssch-pill-btn${statusFilter === s ? " active" : ""}`} onClick={() => setStatusFilter(s)}>
+                        <button key={s} className={`filter-pill${statusFilter === s ? " active" : ""}`} onClick={() => setStatusFilter(s)}>
                             {s || "All"}
                         </button>
                     ))}
@@ -275,85 +331,87 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
                     <form className="modal" onSubmit={e => { e.preventDefault(); add(); }}>
                         <div className="modal-header">
                             <h3>Add Schedule</h3>
-                            <button type="button" className="close-btn" onClick={cancel}></button>
+                            <button type="button" className="modal-cancel-btn" onClick={cancel}>
+                                <span class="shadow"></span>
+                                <span class="edge"></span>
+                                <span class="front close-padding"><img src={closeIcon} /></span>
+                            </button>
                         </div>
                         <div className="modal-body">
-                            <div className="form-group">
-                                <label>Department</label>
-                                <div className="dishes-dropdown-wrapper">
-                                    <button type="button" className="dishes-status-dropdown" onClick={e => { e.stopPropagation(); setOpenDropdown(p => p === "dept" ? null : "dept"); }}>
-                                        {form.department || "Select Department"}
-                                    </button>
-                                    {openDropdown === "dept" && (
-                                        <div className="dropdown-menu">
-                                            {["Pest Control", "Maintenance", "Laundry"].map(dep => (
-                                                <div key={dep} onClick={e => { e.stopPropagation(); setForm({ ...form, department: dep }); setOpenDropdown(null); }}>{dep}</div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label>Work</label>
-                                <input required value={form.work} onChange={e => setForm({ ...form, work: e.target.value })} />
-                            </div>
-                            <div className="form-group">
-                                <label>Staff</label>
-                                <div className="dishes-dropdown-wrapper">
-                                    <button type="button" className="dishes-status-dropdown" onClick={e => { e.stopPropagation(); setOpenDropdown(p => p === "staff" ? null : "staff"); }}>
-                                        {form.staff || "Select Staff"}
-                                    </button>
-                                    {openDropdown === "staff" && (
-                                        <div className="dropdown-menu">
-                                            {adminData.staff?.map(s => (
-                                                <div key={s.id} onClick={e => { e.stopPropagation(); setForm({ ...form, staff: s.name }); setOpenDropdown(null); }}>{s.name}</div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label>Date</label>
-                                <CustomDatePicker
-                                    value={form.date}
-                                    onChange={(v) => setForm({ ...form, date: v })}
-                                    placeholder="Select date"
+                            <div className={`form-group${formErrors.department ? " mat-select-error" : ""}`}>
+                                <CustomDropdown
+                                    label="Department"
+                                    value={form.department}
+                                    onChange={val => { setForm({ ...form, department: val }); setFormErrors(p => ({ ...p, department: false })); }}
+                                    options={["Pest Control", "Maintenance", "Laundry"]}
+                                    placeholder="Select Department"
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Status</label>
-                                <div className="dishes-dropdown-wrapper">
-                                    <button type="button" className="dishes-status-dropdown" onClick={e => { e.stopPropagation(); setOpenDropdown(p => p === "status" ? null : "status"); }}>
-                                        {form.status || "Select Status"}
-                                    </button>
-                                    {openDropdown === "status" && (
-                                        <div className="dropdown-menu">
-                                            {["Scheduled", "Completed", "Pending"].map(st => (
-                                                <div key={st} onClick={e => { e.stopPropagation(); setForm({ ...form, status: st }); setOpenDropdown(null); }}>{st}</div>
-                                            ))}
-                                        </div>
-                                    )}
+                                <div className="mat">
+                                    <input
+                                        className={`mat-input${formErrors.work ? " mat-error" : ""}`}
+                                        placeholder=" "
+                                        value={form.work}
+                                        onChange={e => { setForm({ ...form, work: e.target.value }); setFormErrors(p => ({ ...p, work: false })); }}
+                                    />
+                                    <label className={`mat-label${formErrors.work ? " mat-label-error" : ""}`}>Work<span className="rf-req">*</span></label>
+                                    <span className={`mat-bar${formErrors.work ? " mat-bar-error" : ""}`} />
                                 </div>
                             </div>
+                            <div className={`form-group${formErrors.staff ? " mat-select-error" : ""}`}>
+                                <CustomDropdown
+                                    label="Staff"
+                                    value={form.staff}
+                                    onChange={val => { setForm({ ...form, staff: val }); setFormErrors(p => ({ ...p, staff: false })); }}
+                                    options={(adminData.staff || []).map(s => ({ value: s.name, label: s.name }))}
+                                    placeholder="Select Staff"
+                                />
+                            </div>
                             <div className="form-group">
-                                <label>Response (Days)</label>
-                                <div className="dishes-dropdown-wrapper">
-                                    <button type="button" className="dishes-status-dropdown" onClick={e => { e.stopPropagation(); setOpenDropdown(p => p === "rate" ? null : "rate"); }}>
-                                        {form.lastRate !== "" ? `${form.lastRate} Days` : "Select Days"}
-                                    </button>
-                                    {openDropdown === "rate" && (
-                                        <div className="dropdown-menu">
-                                            {[0, 1, 2, 3].map(day => (
-                                                <div key={day} onClick={e => { e.stopPropagation(); setForm({ ...form, lastRate: String(day) }); setOpenDropdown(null); }}>{day} Days</div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                                <label className={`mat-label${formErrors.date ? " mat-label-error" : ""}`} style={{ position: "static", transform: "none", fontSize: 13, display: "block", marginBottom: 4 }}>Date<span className="rf-req">*</span></label>
+                                <CustomDatePicker
+                                    value={form.date}
+                                    onChange={(v) => { setForm({ ...form, date: v }); setFormErrors(p => ({ ...p, date: false })); }}
+                                    placeholder="Select date"
+                                    hasError={!!formErrors.date}
+                                />
+                            </div>
+                            <div className={`form-group${formErrors.status ? " mat-select-error" : ""}`}>
+                                <CustomDropdown
+                                    label="Status"
+                                    value={form.status}
+                                    onChange={val => { setForm({ ...form, status: val }); setFormErrors(p => ({ ...p, status: false })); }}
+                                    options={["Scheduled", "Completed", "Pending"]}
+                                    placeholder="Select Status"
+                                />
+                            </div>
+                            <div className={`form-group${formErrors.lastRate ? " mat-select-error" : ""}`}>
+                                <CustomDropdown
+                                    label="Response (Days)"
+                                    value={form.lastRate}
+                                    onChange={val => { setForm({ ...form, lastRate: val }); setFormErrors(p => ({ ...p, lastRate: false })); }}
+                                    options={[0, 1, 2, 3].map(d => ({ value: String(d), label: `${d} Days` }))}
+                                    placeholder="Select Days"
+                                />
                             </div>
                         </div>
                         <div className="modal-footer">
-                            <button type="button" onClick={cancel}>Cancel</button>
-                            <button type="submit">Save Schedule</button>
+                            <button
+                                type="button"
+                                className="modal-cancel-btn"
+                                onClick={cancel}>
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front">Cancel</span>
+                            </button>
+                            <button
+                                type="submit"
+                                className="modal-save-btn">
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front">Save Schedule</span>
+                            </button>
                         </div>
                     </form>
                 </div>

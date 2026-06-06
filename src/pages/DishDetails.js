@@ -19,21 +19,14 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
     let subCategory = null;
 
     if (!category) {
-
         for (const cat of adminData.categories) {
-
-            const found = (cat.subCategories || []).find(
-                sub => sub.id === categoryId
-            );
-
+            const found = (cat.subCategories || []).find(sub => sub.id === categoryId);
             if (found) {
                 category = cat;
                 subCategory = found;
                 break;
             }
-
         }
-
     }
 
     let dish = category?.dishes?.find(d => d.id === dishId);
@@ -50,9 +43,9 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
 
     const [openIngredientDropdown, setOpenIngredientDropdown] = useState(false);
     const [localDish, setLocalDish] = useState(null);
-    const [editSection, setEditSection] = useState(null);
-
-    // TEMP buffer ONLY for ingredients editing
+    // Single global edit mode — replaces per-section editSection state
+    const [isEditing, setIsEditing] = useState(false);
+    // Temp buffer for ingredients (still needed because of add/delete row logic)
     const [editingIngredients, setEditingIngredients] = useState(null);
 
     const disabledIngredientsForThisDish = adminData.ingredients
@@ -69,10 +62,7 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
     }, [dish]);
 
     useEffect(() => {
-        const closeDropdowns = () => {
-            setOpenIngredientDropdown(false);
-        };
-
+        const closeDropdowns = () => setOpenIngredientDropdown(false);
         window.addEventListener("click", closeDropdowns);
         return () => window.removeEventListener("click", closeDropdowns);
     }, []);
@@ -81,29 +71,17 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
 
     /* ---------------- SAVE TO JSON ---------------- */
     const persistDish = async (updatedDish) => {
-
         const newDishId = dishId;
 
         let duplicate;
-
         if (subCategory) {
-
             duplicate = (subCategory.dishes || []).some(
-                d =>
-                    d.id !== dishId &&
-                    d.name.trim().toLowerCase() ===
-                    updatedDish.name.trim().toLowerCase()
+                d => d.id !== dishId && d.name.trim().toLowerCase() === updatedDish.name.trim().toLowerCase()
             );
-
         } else {
-
             duplicate = (category.dishes || []).some(
-                d =>
-                    d.id !== dishId &&
-                    d.name.trim().toLowerCase() ===
-                    updatedDish.name.trim().toLowerCase()
+                d => d.id !== dishId && d.name.trim().toLowerCase() === updatedDish.name.trim().toLowerCase()
             );
-
         }
 
         if (duplicate) {
@@ -112,42 +90,29 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
         }
 
         let updatedCategory;
-
         if (subCategory) {
-
             updatedCategory = {
                 ...category,
                 subCategories: (category.subCategories || []).map(sub => {
-
                     if (sub.id !== subCategory.id) return sub;
-
                     return {
                         ...sub,
                         dishes: (sub.dishes || []).map(d =>
-                            d.id === dishId
-                                ? { ...d, ...updatedDish, id: newDishId }
-                                : d
+                            d.id === dishId ? { ...d, ...updatedDish, id: newDishId } : d
                         )
                     };
-
                 })
             };
-
         } else {
-
             updatedCategory = {
                 ...category,
                 dishes: (category.dishes || []).map(d =>
-                    d.id === dishId
-                        ? { ...d, ...updatedDish, id: newDishId }
-                        : d
+                    d.id === dishId ? { ...d, ...updatedDish, id: newDishId } : d
                 )
             };
-
         }
 
         try {
-
             await api.put(`/categories/${category.id}`, updatedCategory);
 
             setAdminData(prev => ({
@@ -157,14 +122,9 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
                 )
             }));
 
-            setEditSection(null);
+            setIsEditing(false);
             setEditingIngredients(null);
-
-            setLocalDish(JSON.parse(JSON.stringify({
-                ...updatedDish,
-                id: newDishId
-            })));
-
+            setLocalDish(JSON.parse(JSON.stringify({ ...updatedDish, id: newDishId })));
             navigate(`/dishes/${categoryId}/${newDishId}`, { replace: true });
 
         } catch (err) {
@@ -173,70 +133,43 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
     };
 
     /* ---------------- INGREDIENT CRUD ---------------- */
-
-    const startIngredientEdit = () => {
-        setEditingIngredients(
-            JSON.parse(JSON.stringify(localDish.ingredients))
-        );
-        setEditSection("ingredients");
-    };
-
     const addIngredient = () => {
-        setEditingIngredients(prev => [
-            ...prev,
-            { name: "", quantity: 0 }
-        ]);
+        setEditingIngredients(prev => [...prev, { name: "", quantity: 0 }]);
     };
 
     const deleteIngredient = (index) => {
-        setEditingIngredients(prev =>
-            prev.filter((_, i) => i !== index)
-        );
+        setEditingIngredients(prev => prev.filter((_, i) => i !== index));
     };
 
-    const resetEditState = () => {
-        setEditSection(null);
+    const startEditing = () => {
+        setEditingIngredients(JSON.parse(JSON.stringify(localDish.ingredients)));
+        setIsEditing(true);
+    };
+
+    const cancelEditing = () => {
+        setIsEditing(false);
         setEditingIngredients(null);
-
-        // Reset localDish back to persisted dish
-        if (dish) {
-            setLocalDish(JSON.parse(JSON.stringify(dish)));
-        }
+        if (dish) setLocalDish(JSON.parse(JSON.stringify(dish)));
     };
 
-    const cancelIngredientEdit = resetEditState;
-
-    const saveIngredientEdit = async () => {
+    const saveAll = async () => {
         const updatedDish = {
             ...localDish,
             ingredients: editingIngredients
         };
-
         await persistDish(updatedDish);
-        setEditSection(null);
-        setEditingIngredients(null);
     };
 
+    /* ---------------- IMAGE UPLOAD (independent, no edit mode needed) ---------------- */
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
         const reader = new FileReader();
-
         reader.onloadend = async () => {
-
-            const updatedDish = {
-                ...localDish,
-                image: reader.result
-            };
-
+            const updatedDish = { ...localDish, image: reader.result };
             setLocalDish(updatedDish);
-
-            // SAVE TO JSON
             await persistDish(updatedDish);
-
         };
-
         reader.readAsDataURL(file);
     };
 
@@ -246,14 +179,10 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
             : (localDish?.ingredients || []);
 
     const displayDishName =
-        fromOrder && orderItem?.isCustomized
-            ? orderItem.dishName
-            : localDish?.name;
+        fromOrder && orderItem?.isCustomized ? orderItem.dishName : localDish?.name;
 
     const displayPrice =
-        fromOrder && orderItem?.isCustomized
-            ? orderItem.totalPrice
-            : localDish?.basePrice;
+        fromOrder && orderItem?.isCustomized ? orderItem.totalPrice : localDish?.basePrice;
 
     if (dishId === "__custom__" && orderItem) {
         return (
@@ -261,14 +190,9 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
                 <div className="details-container">
                     <button className="back-btn" onClick={() => navigate(-1)} />
                     <h2>{orderItem.dishName}</h2>
-
-                    {/* INGREDIENTS FROM ORDER */}
                     <table className="data-table">
                         <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Qty</th>
-                            </tr>
+                            <tr><th>Name</th><th>Qty</th></tr>
                         </thead>
                         <tbody>
                             {orderItem.ingredients.map((ing, i) => (
@@ -292,491 +216,358 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
         <div className="dish-details-page">
             <div className="details-container">
 
+                {/* HEADER */}
                 <div className="details-header">
                     <button
                         type="button"
                         className="back-btn"
                         onClick={() => {
-                            resetEditState();
+                            cancelEditing();
                             navigate(-1);
                         }}
                     ></button>
                     <h2>{displayDishName}</h2>
-                </div>
-
-                <div className="dish-details-image">
-
-                    <img
-                        src={localDish.image || "/placeholder.png"}
-                        alt={localDish.name}
-                    />
-
-                    {!fromOrder && (
-                        <label className="image-upload-btn">
-                            Change Image
-                            <input
-                                type="file"
-                                accept="image/*"
-                                hidden
-                                onChange={handleImageUpload}
-                            />
-                        </label>
+                    {!fromOrder && !isEditing && (
+                        <button className="modal-cancel-btn" onClick={startEditing}>
+                            <span className="shadow"></span>
+                            <span className="edge"></span>
+                            <span className="front">
+                                <img src={editIcon} alt="" />
+                                Edit
+                            </span>
+                        </button>
                     )}
                 </div>
 
+                <div className="details-body">
 
-                {/* NAME */}
-                <div className="section">
-                    <div className="section-title">
-                        <span>Name: </span>
-                        {editSection === "name" ? (
-                            <>
+                    <div 
+                    className="horizontal-form-group"
+                    style={{alignItems: "end"}}
+                    >
+                    <div>
+                        {/* IMAGE */}
+                        <div className="dish-details-image">
+                            <img src={localDish.image || "/placeholder.png"} alt={localDish.name} />
+                        </div>
+                        {!fromOrder && isEditing && (
+                            <div style={{ width: "150px" }}>
+                                <div className="file-wrap">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageUpload}
+                                        className="file-input"
+                                    />
+                                    <div className="file-label">Change Image</div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                        {/* NAME */}
+                        <div className="section">
+                            <div className="section-title">
+                                <span>Name</span>
+                            </div>
+                            {isEditing ? (
                                 <input
-                                    autoFocus
                                     value={localDish.name}
                                     onChange={(e) =>
-                                        setLocalDish((prev) => ({
+                                        setLocalDish(prev => ({
                                             ...prev,
-                                            name: allowTextInput(
-                                                prev.name,
-                                                e.target.value,
-                                                100,
-                                                5
-                                            )
+                                            name: allowTextInput(prev.name, e.target.value, 100, 5)
                                         }))
                                     }
                                     onBlur={(e) =>
-                                        setLocalDish((prev) => ({
-                                            ...prev,
-                                            name: toCamelCase(e.target.value)
-                                        }))
+                                        setLocalDish(prev => ({ ...prev, name: toCamelCase(e.target.value) }))
                                     }
-
                                 />
-                                <div className="action">
-                                    <button onClick={() => persistDish(localDish)}>Save</button>
-                                    <button onClick={resetEditState}>Cancel</button>
-                                </div>
-                            </>
-                        ) : (
-                            <p>{localDish.name}</p>
-                        )}
-                        {!fromOrder && (
-                            <img
-                                className="edit-icon"
-                                onClick={() => setEditSection("name")}
-                                src={editIcon}
-                            />
-                        )}
-                    </div>
-
-
-                </div>
-
-                {/* NOTES (FROM ORDER) */}
-                {fromOrder && (
-                    <div className="section">
-                        <div className="section-title">
-                            <span>Notes</span>
+                            ) : (
+                                <p>{localDish.name}</p>
+                            )}
                         </div>
 
-                        <p>
-                            {orderItem?.notes?.trim()
-                                ? orderItem.notes
-                                : "-"}
-                        </p>
-                    </div>
-                )}
+                        {/* NOTES (FROM ORDER) */}
+                        {fromOrder && (
+                            <div className="section">
+                                <div className="section-title"><span>Notes</span></div>
+                                <p>{orderItem?.notes?.trim() ? orderItem.notes : "-"}</p>
+                            </div>
+                        )}
 
-                {/* PRICE */}
-                <div className="section">
-                    <div className="section-title">
-                        <span>Base Price: </span>
-                        {editSection === "price" ? (
-                            <>
+                        {/* PRICE */}
+                        <div className="section">
+                            <div className="section-title"><span>Base Price</span></div>
+                            {isEditing ? (
                                 <input
-                                    autoFocus
                                     type="number"
                                     min="1"
                                     step="1"
                                     value={localDish.basePrice}
-                                    onChange={e =>
-                                        setLocalDish({
-                                            ...localDish,
-                                            basePrice: Number(e.target.value)
-                                        })
-                                    }
+                                    onChange={e => setLocalDish({ ...localDish, basePrice: Number(e.target.value) })}
                                 />
-                                <div className="action">
-                                    <button onClick={() => persistDish(localDish)}>Save</button>
-                                    <button onClick={resetEditState}>Cancel</button>
+                            ) : (
+                                <p>₹{displayPrice}</p>
+                            )}
+                        </div>
+
+                        {/* VEG / NON-VEG */}
+                        <div className="section">
+                            <div className="section-title"><span>Type</span></div>
+                            {isEditing ? (
+                                <div className="veg-toggle-group" style={{ marginTop: 8 }}>
+                                    <button
+                                        type="button"
+                                        className={`veg-toggle-btn${localDish.isVeg !== false ? " active-veg" : ""}`}
+                                        onClick={() => setLocalDish({ ...localDish, isVeg: true })}
+                                    >
+                                        <span className="veg-dot veg" /> Veg
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`veg-toggle-btn${localDish.isVeg === false ? " active-non-veg" : ""}`}
+                                        onClick={() => setLocalDish({ ...localDish, isVeg: false })}
+                                    >
+                                        <span className="veg-dot non-veg" /> Non-Veg
+                                    </button>
                                 </div>
+                            ) : (
+                                <span
+                                    className={`veg-badge ${localDish.isVeg === false ? "non-veg" : "veg"}`}
+                                    style={{ marginTop: 8, display: "inline-flex" }}
+                                >
+                                    {localDish.isVeg === false ? "Non-Veg" : "Veg"}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* EVENT FOOD */}
+                        <div className="section">
+                            <div className="section-title"><span>Event Food</span></div>
+                            {isEditing ? (
+                                <div className="veg-toggle-group" style={{ marginTop: 8 }}>
+                                    <button
+                                        type="button"
+                                        className={`veg-toggle-btn${localDish.isEventFood ? " active-veg" : ""}`}
+                                        onClick={() => setLocalDish({ ...localDish, isEventFood: true })}
+                                    >
+                                        <span className="veg-dot veg" /> Yes
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`veg-toggle-btn${!localDish.isEventFood ? " active-non-veg" : ""}`}
+                                        onClick={() => setLocalDish({ ...localDish, isEventFood: false })}
+                                    >
+                                        <span className="veg-dot non-veg" /> No
+                                    </button>
+                                </div>
+                            ) : (
+                                <span
+                                    className={`veg-badge ${localDish.isEventFood ? "veg" : "non-veg"}`}
+                                    style={{ marginTop: 8, display: "inline-flex" }}
+                                >
+                                    {localDish.isEventFood ? "Yes" : "No"}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* DESCRIPTION */}
+                    <div className="section">
+                        <div className="section-title"><span>Description</span></div>
+                        {isEditing ? (
+                            <textarea
+                                value={localDish.description}
+                                onChange={e => setLocalDish({ ...localDish, description: e.target.value })}
+                            />
+                        ) : (
+                            <p>{localDish.description}</p>
+                        )}
+                    </div>
+
+                    {/* BENEFITS TABLE */}
+                    {!(fromOrder && orderItem?.isCustomized) && (
+                        <div className="section">
+                            <div className="section-title"><span>Nutrition</span></div>
+                            <table className="data-table">
+                                <thead>
+                                    <th>Nutrition</th>
+                                    <th>Value</th>
+                                </thead>
+                                <tbody>
+                                    {Object.entries(localDish.benefits).map(([k, v]) => (
+                                        <tr key={k}>
+                                            <td>{k}</td>
+                                            <td>
+                                                {isEditing ? (
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        step="1"
+                                                        value={v}
+                                                        onChange={e =>
+                                                            setLocalDish({
+                                                                ...localDish,
+                                                                benefits: {
+                                                                    ...localDish.benefits,
+                                                                    [k]: Number(e.target.value)
+                                                                }
+                                                            })
+                                                        }
+                                                    />
+                                                ) : (
+                                                    v
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {/* INGREDIENTS */}
+                    <div className="section">
+                        <div className="section-title"><span>Ingredients</span></div>
+
+                        {isEditing ? (
+                            <>
+                                <table className="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Qty (g)</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {editingIngredients.map((ing, index) => {
+                                            const isNew = !ing.name;
+                                            return (
+                                                <tr key={index}>
+                                                    <td>
+                                                        {isNew ? (
+                                                            <div className="dishes-dropdown-wrapper">
+                                                                <button
+                                                                    type="button"
+                                                                    className="dishes-status-dropdown"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setOpenIngredientDropdown(prev => !prev);
+                                                                    }}
+                                                                >
+                                                                    {editingIngredients?.[index]?.name || "Select Ingredient"}
+                                                                </button>
+                                                                {openIngredientDropdown && (
+                                                                    <div className="dropdown-menu">
+                                                                        {sortedIngredients.map(ing => (
+                                                                            <div
+                                                                                key={ing.id}
+                                                                                onClick={() => {
+                                                                                    const updated = [...editingIngredients];
+                                                                                    updated[index].name = ing.name;
+                                                                                    setEditingIngredients(updated);
+                                                                                    setOpenIngredientDropdown(false);
+                                                                                }}
+                                                                            >
+                                                                                {ing.name}
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <span>{ing.name}</span>
+                                                        )}
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            id={`qty-${index}`}
+                                                            type="number"
+                                                            min="0"
+                                                            value={ing.quantity}
+                                                            onChange={(e) => {
+                                                                const updated = [...editingIngredients];
+                                                                updated[index].quantity = Number(e.target.value);
+                                                                setEditingIngredients(updated);
+                                                            }}
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <div
+                                                            className="ingredient-delete-btn"
+                                                            onClick={() => deleteIngredient(index)}
+                                                        >
+                                                            <img src={deleteIcon} alt="" />
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                                <button className="modal-save-btn" onClick={addIngredient}>
+                                    <span className="shadow"></span>
+                                    <span className="edge"></span>
+                                    <span className="front">+ Add Ingredient</span>
+                                </button>
                             </>
                         ) : (
-                            <p>₹{displayPrice}</p>
-                        )}
-                        {!fromOrder && (<img className="edit-icon" onClick={() => setEditSection("price")} src={editIcon} />)}
-                    </div>
-
-
-                </div>
-
-                {/* DESCRIPTION */}
-                <div className="section">
-                    <div className="section-title">
-                        <span>Description</span>
-                        {!fromOrder && (<img className="edit-icon" onClick={() => setEditSection("description")} src={editIcon} />)}
-                    </div>
-
-                    {editSection === "description" ? (
-                        <>
-                            <textarea
-                                autoFocus
-                                value={localDish.description}
-                                onChange={e =>
-                                    setLocalDish({
-                                        ...localDish,
-                                        description: e.target.value
-                                    })
-                                }
-                            />
-                            <div className="actions">
-                                <button onClick={() => persistDish(localDish)}>Save</button>
-                                <button onClick={resetEditState}>Cancel</button>
-                            </div>
-                        </>
-                    ) : (
-                        <p>{localDish.description}</p>
-                    )}
-                </div>
-
-                {/* VEG / NON-VEG */}
-                <div className="section">
-                    <div className="section-title">
-                        <span>Type</span>
-                        {!fromOrder && editSection !== "vegType" && (
-                            <img
-                                className="edit-icon"
-                                onClick={() => setEditSection("vegType")}
-                                src={editIcon}
-                            />
-                        )}
-                    </div>
-
-                    {editSection === "vegType" ? (
-                        <>
-                            <div className="veg-toggle-group" style={{ marginTop: 8 }}>
-                                <button
-                                    type="button"
-                                    className={`veg-toggle-btn${localDish.isVeg !== false ? " active-veg" : ""}`}
-                                    onClick={() => setLocalDish({ ...localDish, isVeg: true })}
-                                >
-                                    <span className="veg-dot veg" /> Veg
-                                </button>
-                                <button
-                                    type="button"
-                                    className={`veg-toggle-btn${localDish.isVeg === false ? " active-non-veg" : ""}`}
-                                    onClick={() => setLocalDish({ ...localDish, isVeg: false })}
-                                >
-                                    <span className="veg-dot non-veg" /> Non-Veg
-                                </button>
-                            </div>
-                            <div className="actions">
-                                <button onClick={() => persistDish(localDish)}>Save</button>
-                                <button onClick={resetEditState}>Cancel</button>
-                            </div>
-                        </>
-                    ) : (
-                        <span className={`veg-badge ${localDish.isVeg === false ? "non-veg" : "veg"}`} style={{ marginTop: 8, display: "inline-flex" }}>
-                            {localDish.isVeg === false ? "Non-Veg" : "Veg"}
-                        </span>
-                    )}
-                </div>
-
-                {/* EVENT FOOD */}
-                <div className="section">
-                    <div className="section-title">
-                        <span>Event Food</span>
-                        {!fromOrder && editSection !== "eventFood" && (
-                            <img
-                                className="edit-icon"
-                                onClick={() => setEditSection("eventFood")}
-                                src={editIcon}
-                            />
-                        )}
-                    </div>
-
-                    {editSection === "eventFood" ? (
-                        <>
-                            <div className="veg-toggle-group" style={{ marginTop: 8 }}>
-                                <button
-                                    type="button"
-                                    className={`veg-toggle-btn${localDish.isEventFood ? " active-veg" : ""}`}
-                                    onClick={() => setLocalDish({ ...localDish, isEventFood: true })}
-                                >
-                                    <span className="veg-dot veg" /> Yes
-                                </button>
-                                <button
-                                    type="button"
-                                    className={`veg-toggle-btn${!localDish.isEventFood ? " active-non-veg" : ""}`}
-                                    onClick={() => setLocalDish({ ...localDish, isEventFood: false })}
-                                >
-                                    <span className="veg-dot non-veg" /> No
-                                </button>
-                            </div>
-                            <div className="actions">
-                                <button onClick={() => persistDish(localDish)}>Save</button>
-                                <button onClick={resetEditState}>Cancel</button>
-                            </div>
-                        </>
-                    ) : (
-                        <span className={`veg-badge ${localDish.isEventFood ? "veg" : "non-veg"}`} style={{ marginTop: 8, display: "inline-flex" }}>
-                            {localDish.isEventFood ? "Yes" : "No"}
-                        </span>
-                    )}
-                </div>
-
-                {/* BENEFITS TABLE */}
-                {/* BENEFITS TABLE (HIDE FOR CUSTOMIZED ORDER DISH) */}
-                {!(fromOrder && orderItem?.isCustomized) && (
-                    <div className="section">
-                        <div className="section-title">
-                            <span>Benefits</span>
-                            {!fromOrder && (<img
-                                className="edit-icon"
-                                onClick={() => setEditSection("benefits")}
-                                src={editIcon}
-                            />)}
-                        </div>
-
-                        <table className="data-table">
-                            <tbody>
-                                {Object.entries(localDish.benefits).map(([k, v]) => (
-                                    <tr key={k}>
-                                        <td>{k}</td>
-                                        <td>
-                                            {editSection === "benefits" ? (
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    step="1"
-                                                    value={v}
-                                                    onChange={e =>
-                                                        setLocalDish({
-                                                            ...localDish,
-                                                            benefits: {
-                                                                ...localDish.benefits,
-                                                                [k]: Number(e.target.value)
-                                                            }
-                                                        })
-                                                    }
-                                                />
-                                            ) : (
-                                                v
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-
-                        {editSection === "benefits" && (
-                            <div className="actions">
-                                <button onClick={() => persistDish(localDish)}>Save</button>
-                                <button onClick={resetEditState}>Cancel</button>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* INGREDIENTS TABLE */}
-                {/* INGREDIENTS */}
-                <div className="section">
-
-                    <div className="section-title">
-                        <span>Ingredients</span>
-
-                        {!fromOrder && editSection !== "ingredients" && (
-                            <img
-                                className="edit-icon"
-                                src={editIcon}
-                                alt=""
-                                onClick={startIngredientEdit}
-                            />
-                        )}
-                    </div>
-
-                    {editSection === "ingredients" ? (
-
-                        <>
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Qty (g)</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-
-                                    {editingIngredients.map((ing, index) => {
-
-                                        const isNew = !ing.name;
-
-                                        return (
+                            ingredientsToDisplay.length === 0 ? (
+                                <p>No ingredients available</p>
+                            ) : (
+                                <table className="data-table">
+                                    <thead>
+                                        <tr><th>Name</th><th>Qty (g)</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {ingredientsToDisplay.map((ing, index) => (
                                             <tr key={index}>
-
-                                                <td>
-
-                                                    {isNew ? (
-
-                                                        <div className="dishes-dropdown-wrapper">
-                                                            <button
-                                                                type="button"
-                                                                className="dishes-status-dropdown"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setOpenIngredientDropdown(prev => !prev);
-                                                                }}
-                                                            >
-                                                                {editingIngredients?.[index]?.name || "Select Ingredient"}
-                                                            </button>
-
-                                                            {openIngredientDropdown && (
-                                                                <div className="dishes-dropdown-menu">
-                                                                    {sortedIngredients.map(ing => (
-                                                                        <div
-                                                                            key={ing.id}
-                                                                            onClick={() => {
-                                                                                const updated = [...editingIngredients];
-                                                                                updated[index].name = ing.name;
-                                                                                setEditingIngredients(updated);
-                                                                                setOpenIngredientDropdown(false);
-                                                                            }}
-                                                                        >
-                                                                            {ing.name}
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                    ) : (
-
-                                                        <span>{ing.name}</span>
-
-                                                    )}
-
-                                                </td>
-
-                                                <td>
-
-                                                    <input
-                                                        id={`qty-${index}`}
-                                                        type="number"
-                                                        min="0"
-                                                        value={ing.quantity}
-                                                        onChange={(e) => {
-
-                                                            const updated = [...editingIngredients];
-                                                            updated[index].quantity = Number(e.target.value);
-
-                                                            setEditingIngredients(updated);
-
-                                                        }}
-                                                    />
-
-                                                </td>
-
-                                                <td>
-
-                                                    <div
-                                                        className="ingredient-delete-btn"
-                                                        onClick={() => deleteIngredient(index)}
-                                                    >
-                                                        <img src={deleteIcon} alt="" />
-                                                    </div>
-
-                                                </td>
-
+                                                <td>{ing.name}</td>
+                                                <td>{ing.quantity}</td>
                                             </tr>
-                                        );
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )
+                        )}
+                    </div>
 
-                                    })}
-
-                                </tbody>
-                            </table>
-
-                            <button
-                                className="add-ingredient-button"
-                                onClick={addIngredient}
-                            >
-                                + Add Ingredient
-                            </button>
-
-                            <div className="actions">
-
-                                <button onClick={saveIngredientEdit}>
-                                    Save
-                                </button>
-
-                                <button onClick={cancelIngredientEdit}>
-                                    Cancel
-                                </button>
-
+                    {disabledIngredientsForThisDish.length > 0 && (
+                        <div className="section">
+                            <div className="section-title">
+                                <span>Disabled Ingredients For This Dish</span>
                             </div>
-
-                        </>
-
-                    ) : (
-
-                        ingredientsToDisplay.length === 0 ? (
-                            <p>No ingredients available</p>
-                        ) : (
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Qty (g)</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-
-                                    {ingredientsToDisplay.map((ing, index) => (
-
-                                        <tr key={index}>
-                                            <td>{ing.name}</td>
-                                            <td>{ing.quantity}</td>
-                                        </tr>
-
-                                    ))}
-
-                                </tbody>
-                            </table>
-                        )
-
+                            <p style={{ color: "red", fontWeight: 600 }}>
+                                {disabledIngredientsForThisDish.join(", ")}
+                            </p>
+                        </div>
                     )}
-
                 </div>
 
-                {disabledIngredientsForThisDish.length > 0 && (
-                    <div className="section">
-                        <div className="section-title">
-                            <span>Disabled Ingredients For This Dish</span>
-                        </div>
-
-                        <p
-                            style={{
-                                color: "red",
-                                fontWeight: 600
-                            }}
+                {/* GLOBAL SAVE / CANCEL — shown at bottom when editing */}
+                {isEditing && (
+                    <div className="details-footer">
+                        <button
+                            className="modal-cancel-btn"
+                            onClick={cancelEditing}
                         >
-                            {disabledIngredientsForThisDish.join(", ")}
-                        </p>
+                            <span className="shadow"></span>
+                            <span className="edge"></span>
+                            <span className="front">Cancel</span>
+                        </button>
+                        <button
+                            className="modal-save-btn"
+                            onClick={saveAll}
+                        >
+                            <span className="shadow"></span>
+                            <span className="edge"></span>
+                            <span className="front">Save</span>
+                        </button>
                     </div>
                 )}
+
             </div>
         </div>
     );

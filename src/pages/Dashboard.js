@@ -347,7 +347,7 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
         <div className="dashboard-filter-date">
           <div className="dash-preset-btns">
             {[["today", "Today"], ["weekly", "This Week"], ["monthly", "This Month"]].map(([k, lbl]) => (
-              <button key={k} className={`dash-preset-btn${datePreset === k ? " active" : ""}`} onClick={() => applyPreset(k)}>{lbl}</button>
+              <button key={k} className={`filter-pill${datePreset === k ? " active" : ""}`} onClick={() => applyPreset(k)}>{lbl}</button>
             ))}
           </div>
           <div className="dashboard-custom-datepickers">
@@ -355,7 +355,11 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
             <CustomDatePicker label="To" value={toDate} min={fromDate} max={today} onChange={(s) => { setToDate(s); setDatePreset("custom"); }} />
           </div>
         </div>
-        <button className="export-btn" onClick={handleExport}>Export</button>
+        <button className="modal-save-btn" onClick={handleExport}>
+          <span className="shadow"></span>
+          <span className="edge"></span>
+          <span className="front">Export</span>
+        </button>
         <div className="dashboard-filter-kpis">
           <div className="dashboard-kpi-row">
             <div className="kpi-card kpi-small"><p>Total Items</p><h3>{itemStats.total}</h3></div>

@@ -3,6 +3,7 @@ import "./Categories.css";
 import "./ModalCSS.css";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
+import closeIcon from "../icon/close-icon.png";
 import deleteIcon from "../icon/delete-icon.png";
 import editIcon from "../icon/edit-icon.png";
 import { allowTextInput } from "../App";
@@ -11,9 +12,11 @@ import { sortArray } from "../App";
 import { EmptyRow } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import { useToast } from "../useToast";
 
 const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [imagePreview, setImagePreview] = useState("")
   const [showEditModal, setShowEditModal] = useState(false);
@@ -39,6 +42,8 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
   const [subSizeName, setSubSizeName] = useState("");
   const [subSizeMultiplier, setSubSizeMultiplier] = useState("");
   const [subSizeDescription, setSubSizeDescription] = useState("");
+  const [formErrors, setFormErrors] = useState({});
+  const [editFormErrors, setEditFormErrors] = useState({});
   const [openCategory, setOpenCategory] = useState(null);
   const [editingSizeIndex, setEditingSizeIndex] = useState(null);
   const [editingSubIndex, setEditingSubIndex] = useState(null);
@@ -64,10 +69,10 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
       .replace(/\s+/g, "_");
 
   const handleAddCategory = async () => {
-    if (!newCategory.name.trim()) {
-      alert("Category name is required");
-      return;
-    }
+    const e = {};
+    if (!newCategory.name.trim()) e.name = true;
+    if (!imagePreview) e.image = true;
+    if (Object.keys(e).length) { setFormErrors(e); return; }
 
     const categoryId = generateCategoryId(newCategory.name);
 
@@ -78,7 +83,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
     );
 
     if (exists) {
-      alert("Category already exists");
+      setFormErrors({ name: true });
       return;
     }
 
@@ -93,17 +98,14 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
     };
 
     try {
-      // 1. Get current menu
-      const res = await api.post("/categories", newCategoryPayload);
-
-      setAdminData(prev => ({
-        ...prev,
-        categories: [...prev.categories, res.data]
-      }));
-
+      await api.post("/categories", newCategoryPayload);
+      // State update is handled by the socket data-change handler in App.js.
+      // Do NOT call setAdminData here — it would race the socket and add duplicates.
+      toast.success("Category added");
       resetAddCategoryForm();
     } catch (error) {
       console.error("Failed to add category:", error);
+      toast.error("Failed to add category");
     }
   };
 
@@ -147,25 +149,24 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
     setShowSubCategoryForm(false);
   };
 
-  const deleteSubCategory = async (categoryId, subId) => {
-
+  const deleteSubCategory = (categoryId, subId) => {
     const category = adminData.categories.find(c => c.id === categoryId);
+    if (!category) return;
+    const sub = category.subCategories?.find(s => s.id === subId);
 
-    const updatedSubs = category.subCategories.filter(s => s.id !== subId);
+    toast.confirm(`Delete "${sub?.name || "this sub-category"}"?`, async () => {
+      const updatedSubs = (category.subCategories || []).filter(s => s.id !== subId);
+      const updatedCategory = { ...category, subCategories: updatedSubs };
 
-    const updatedCategory = {
-      ...category,
-      subCategories: updatedSubs
-    };
-
-    await api.put(`/categories/${categoryId}`, updatedCategory);
-
-    setAdminData(prev => ({
-      ...prev,
-      categories: prev.categories.map(c =>
-        c.id === categoryId ? updatedCategory : c
-      )
-    }));
+      try {
+        await api.put(`/categories/${categoryId}`, updatedCategory);
+        // State update handled by socket data-change handler in App.js
+        toast.success("Sub-category deleted");
+      } catch (error) {
+        console.error("Failed to delete sub-category:", error);
+        toast.error("Failed to delete sub-category");
+      }
+    });
   };
 
   const isValidSizeDescription = (text) => {
@@ -189,7 +190,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
     }
 
     if (sizeDescription && !isValidSizeDescription(sizeDescription)) {
-      alert("Description max 3 words and 20 characters");
+      toast.warning("Description max 3 words and 20 characters");
       return;
     }
     const sizeObj = {
@@ -242,35 +243,34 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
     setShowEditModal(true);
   };
 
-  const handleDeleteCategory = async (categoryId) => {
-    const category = adminData.categories.find(
-      (cat) => cat.id === categoryId
-    );
-
+  const handleDeleteCategory = (categoryId) => {
+    const category = adminData.categories.find((cat) => cat.id === categoryId);
     if (!category) return;
 
-    if ((category.dishes || []).length > 0) {
-      const confirmDelete = window.confirm(
-        "This category contains dishes. Are you sure you want to delete it?"
-      );
-      if (!confirmDelete) return;
-    } else {
-      const confirmDelete = window.confirm(
-        "Are you sure you want to delete this category?"
-      );
-      if (!confirmDelete) return;
-    }
+    const hasDishs = (category.dishes || []).length > 0;
+    const msg = hasDishs
+      ? `"${category.name}" has dishes. Delete anyway?`
+      : `Delete "${category.name}"?`;
 
-    try {
-      await api.delete(`/categories/${categoryId}`);
-
+    toast.confirm(msg, async () => {
+      // Optimistic update — remove immediately so the UI responds at once
       setAdminData(prev => ({
         ...prev,
         categories: prev.categories.filter(c => c.id !== categoryId)
       }));
-    } catch (error) {
-      console.error("Failed to delete category:", error);
-    }
+      try {
+        await api.delete(`/categories/${categoryId}`);
+        toast.success("Category deleted");
+      } catch (error) {
+        // Revert the optimistic removal only on a true server failure
+        console.error("Failed to delete category:", error);
+        setAdminData(prev => ({
+          ...prev,
+          categories: [...prev.categories, category]
+        }));
+        toast.error("Failed to delete category");
+      }
+    });
   };
 
   const handleEditImageUpload = (e) => {
@@ -284,7 +284,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
   const handleSaveEdit = async () => {
 
     if (!editName.trim()) {
-      alert("Name cannot be empty");
+      setEditFormErrors({ name: true });
       return;
     }
 
@@ -316,14 +316,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
         };
 
         await api.put(`/categories/${category.id}`, updatedCategory);
-
-        setAdminData(prev => ({
-          ...prev,
-          categories: prev.categories.map(c =>
-            c.id === category.id ? updatedCategory : c
-          )
-        }));
-
+        // State update handled by socket data-change handler in App.js
 
         // -------- CATEGORY EDIT --------
       } else {
@@ -335,7 +328,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
         );
 
         if (duplicate) {
-          alert("Another category with this name already exists");
+          setEditFormErrors({ name: true });
           return;
         }
 
@@ -355,19 +348,15 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
         // ✅ ONLY UPDATE (no delete + no id change)
         await api.put(`/categories/${existing.id}`, updatedCategory);
-
-        setAdminData(prev => ({
-          ...prev,
-          categories: prev.categories.map(cat =>
-            cat.id === existing.id ? updatedCategory : cat
-          )
-        }));
+        // State update handled by socket data-change handler in App.js
       }
 
       resetEditCategoryForm();
+      toast.success("Category updated");
 
     } catch (error) {
       console.error("Failed to update:", error);
+      toast.error("Failed to update category");
     }
 
   };
@@ -416,6 +405,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
       subCategories: []
     });
     setImagePreview("");
+    setFormErrors({});
     setShowForm(false);
   };
 
@@ -427,6 +417,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
     setEditSizes([]);
     setIsEditingSubCategory(false);
     setEditingParentCategoryId(null);
+    setEditFormErrors({});
     setShowEditModal(false);
   };
 
@@ -435,10 +426,12 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
       <div className="category-header">
         <h2 className="category-title">Categories</h2>
         <button
-          className="category-add-btn"
+          className="modal-save-btn"
           onClick={() => setShowForm(true)}
         >
-          + Add Category
+          <span className="shadow"></span>
+          <span className="edge"></span>
+          <span className="front">+ Add Category</span>
         </button>
       </div>
 
@@ -639,109 +632,124 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                 <h3>Add New Category</h3>
                 <button
                   type="button"
-                  className="close-btn"
+                  className="modal-cancel-btn"
                   aria-label="Close"
                   onClick={resetAddCategoryForm}
                 >
+                  <span class="shadow"></span>
+                  <span class="edge"></span>
+                  <span class="front close-padding"><img src={closeIcon} /></span>
                 </button>
               </div>
 
               <div className="modal-body">
                 <div className="form-group">
-                  <input
-                    autoFocus
-                    required
-                    type="text"
-                    placeholder="Category Name"
-                    value={newCategory.name}
-                    onChange={(e) =>
-                      setNewCategory((prev) => ({
-                        ...prev,
-                        name: allowTextInput(
-                          prev.name,
-                          e.target.value,
-                          100,
-                          5
-                        )
-                      }))
-                    }
-                    onBlur={(e) =>
-                      setNewCategory((prev) => ({
-                        ...prev,
-                        name: toCamelCase(e.target.value)
-                      }))
-                    }
-                  />
+                  <div className="mat">
+                    <input
+                      className={`mat-input${formErrors.name ? " mat-error" : ""}`}
+                      autoFocus
+                      type="text"
+                      placeholder=" "
+                      value={newCategory.name}
+                      onChange={(e) => {
+                        setNewCategory((prev) => ({
+                          ...prev,
+                          name: allowTextInput(prev.name, e.target.value, 100, 5)
+                        }));
+                        setFormErrors(p => ({ ...p, name: false }));
+                      }}
+                      onBlur={(e) =>
+                        setNewCategory((prev) => ({
+                          ...prev,
+                          name: toCamelCase(e.target.value)
+                        }))
+                      }
+                    />
+                    <label className={`mat-label${formErrors.name ? " mat-label-error" : ""}`}>Name<span className="rf-req">*</span></label>
+                    <span className={`mat-bar${formErrors.name ? " mat-bar-error" : ""}`} />
+                  </div>
                 </div>
 
                 <div className="form-group">
-                  <input
-                    required
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                  />
+                  <div className={`file-wrap${formErrors.image ? " file-error" : ""}`}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => { handleImageUpload(e); setFormErrors(p => ({ ...p, image: false })); }}
+                      className="file-input"
+                    />
+                    <div className={`file-label${formErrors.image ? " file-label-error" : ""}`}>
+                      {imagePreview ? "✔ Category Image selected" : "Choose Category Image"}
+                    </div>
+                  </div>
+                  {imagePreview && (
+                    <img src={imagePreview} alt="Preview" className="staff-image-preview" />
+                  )}
                 </div>
 
-
-                {imagePreview && (
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    style={{
-                      width: "120px",
-                      height: "120px",
-                      objectFit: "cover",
-                      borderRadius: "8px",
-                      marginTop: "10px"
-                    }}
-                  />
-                )}
-
                 {newCategory.subCategories.length === 0 && (
-                  <div className="form-group">
-
+                  <div className="border">
                     <label>Size Selector</label>
 
-                    <div className="category-size-row">
-
-                      <input
-                        type="text"
-                        placeholder="Size name"
-                        value={sizeName}
-                        onChange={(e) => setSizeName(e.target.value)}
-                      />
-
-                      <input
-                        type="number"
-                        placeholder="Multiplier"
-                        step="0.1"
-                        value={sizeMultiplier}
-                        onChange={(e) => setSizeMultiplier(e.target.value)}
-                      />
-
-                      <input
-                        type="text"
-                        placeholder="Description"
-                        value={sizeDescription}
-                        onChange={(e) => setSizeDescription(e.target.value)}
-                      />
-
-                      <button
-                        type="button"
-                        onClick={addSize}
-                      >
-                        Add
-                      </button>
-
+                    <div className="form-group">
+                      <div className="mat">
+                        <input
+                          className="mat-input"
+                          type="text"
+                          placeholder=" "
+                          value={sizeName}
+                          onChange={(e) => setSizeName(e.target.value)}
+                        />
+                        <label className="mat-label">Size Name<span className="rf-req">*</span></label>
+                        <span className="mat-bar" />
+                      </div>
                     </div>
+
+                    <div className="form-group">
+                      <div className="mat">
+                        <input
+                          className="mat-input"
+                          type="number"
+                          placeholder=" "
+                          step="0.1"
+                          value={sizeMultiplier}
+                          onChange={(e) => setSizeMultiplier(e.target.value)}
+                        />
+                        <label className="mat-label">Price Multiplier<span className="rf-req">*</span></label>
+                        <span className="mat-bar" />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <div className="mat">
+                        <input
+                          className="mat-input"
+                          type="text"
+                          placeholder=" "
+                          value={sizeDescription}
+                          onChange={(e) => setSizeDescription(e.target.value)}
+                        />
+                        <label className="mat-label">Description<span className="rf-req">*</span></label>
+                        <span className="mat-bar" />
+                      </div>
+                    </div>
+
+                    <button
+                      className="modal-save-btn"
+                      type="button"
+                      onClick={addSize}
+                    >
+                      <span className="shadow"></span>
+                      <span className="edge"></span>
+                      <span className="front">Add</span>
+                    </button>
 
                   </div>
                 )}
 
                 {newCategory.sizes.length > 0 && (
 
-                  <table className="size-preview-table">
+                  <table className="preview-table">
 
                     <thead>
                       <tr>
@@ -760,6 +768,8 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                           <td>x{s.priceMultiplier}</td>
                           <td>
                             <button
+                              type="button"
+                              className="modal-danger-btn"
                               onClick={() => {
                                 setNewCategory(prev => ({
                                   ...prev,
@@ -767,7 +777,9 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                                 }))
                               }}
                             >
-                              Remove
+                              <span className="shadow"></span>
+                              <span className="edge"></span>
+                              <span className="front">Remove</span>
                             </button>
                           </td>
                         </tr>
@@ -781,97 +793,132 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                 <div className="form-group">
                   <div style={{ display: "flex", gap: "8px" }}>
                     <button
+                      className="modal-save-btn"
                       type="button"
                       onClick={() => setShowSubCategoryForm(true)}
                     >
-                      Add Sub Category
+                      <span className="shadow"></span>
+                      <span className="edge"></span>
+                      <span className="front">Add Subcategory</span>
                     </button>
                   </div>
                 </div>
 
                 {showSubCategoryForm && (
-                  <div className="subcategory-form">
+                  <div className="border">
 
-                    <h4>
+                    <label>
                       {editingSubIndex !== null ? "Edit Subcategory" : "Add Subcategory"}
-                    </h4>
+                    </label>
 
-                    <div className="subcategory-input-row">
-                      <input
-                        type="text"
-                        placeholder="Subcategory name"
-                        value={newSubCategoryData.name}
-                        onChange={(e) =>
-                          setNewSubCategoryData(prev => ({
-                            ...prev,
-                            name: e.target.value
-                          }))
-                        }
-                      />
+                    <div className="form-group">
+                      <div className="mat">
+                        <input
+                          className="mat-input"
+                          type="text"
+                          placeholder=" "
+                          value={newSubCategoryData.name}
+                          onChange={(e) =>
+                            setNewSubCategoryData(prev => ({
+                              ...prev,
+                              name: e.target.value
+                            }))
+                          }
+                        />
+                        <label className="mat-label">Subcategory Name<span className="rf-req">*</span></label>
+                        <span className="mat-bar" />
+                      </div>
+                    </div>
 
+                    <div className="file-wrap">
                       <input
                         type="file"
                         accept="image/*"
+                        className="file-input"
                         onChange={(e) => {
                           const file = e.target.files[0];
                           if (!file) return;
-
                           const reader = new FileReader();
-
                           reader.onloadend = () => {
                             setNewSubCategoryData(prev => ({
                               ...prev,
                               image: reader.result
                             }))
                           };
-
                           reader.readAsDataURL(file);
                         }}
                       />
+                      <div className="file-label">
+                        {newSubCategoryData.image ? "✔ Subcategory Image selected" : "Choose Subcategory Image..."}
+                      </div>
                     </div>
-
                     {newSubCategoryData.image && (
                       <img
                         src={newSubCategoryData.image}
-                        className="subcategory-preview-image"
+                        className="staff-image-preview"
+                        alt="Subcategory preview"
                       />
                     )}
 
                     <div className="subcategory-size-row">
 
-                      <input
-                        type="text"
-                        placeholder="Size"
-                        value={subSizeName}
-                        onChange={(e) => setSubSizeName(e.target.value)}
-                      />
+                      <div className="form-group">
+                        <div className="mat">
+                          <input
+                            className="mat-input"
+                            type="text"
+                            placeholder=" "
+                            value={subSizeName}
+                            onChange={(e) => setSubSizeName(e.target.value)}
+                          />
+                          <label className="mat-label">Size Name<span className="rf-req">*</span></label>
+                          <span className="mat-bar" />
+                        </div>
+                      </div>
 
-                      <input
-                        type="number"
-                        placeholder="Multiplier"
-                        value={subSizeMultiplier}
-                        onChange={(e) => setSubSizeMultiplier(e.target.value)}
-                      />
+                      <div className="form-group">
+                        <div className="mat">
+                          <input
+                            className="mat-input"
+                            type="number"
+                            placeholder=" "
+                            value={subSizeMultiplier}
+                            onChange={(e) => setSubSizeMultiplier(e.target.value)}
+                          />
+                          <label className="mat-label">Size Multiplier<span className="rf-req">*</span></label>
+                          <span className="mat-bar" />
+                        </div>
+                      </div>
 
-                      <input
-                        type="text"
-                        placeholder="Description"
-                        value={subSizeDescription}
-                        onChange={(e) => setSubSizeDescription(e.target.value)}
-                      />
+                      <div className="form-group">
+                        <div className="mat">
+                          <input
+                            className="mat-input"
+                            type="text"
+                            placeholder=" "
+                            value={subSizeDescription}
+                            onChange={(e) => setSubSizeDescription(e.target.value)}
+                          />
+                          <label className="mat-label">Descripion<span className="rf-req">*</span></label>
+                          <span className="mat-bar" />
+                        </div>
+                      </div>
 
                       <button
+                        className="modal-save-btn"
                         type="button"
                         onClick={() => addSize("subcategory")}
                       >
-                        Add Size
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front">Add Size</span>
                       </button>
 
                     </div>
 
                     {newSubCategoryData.sizes.length > 0 && (
 
-                      <table className="size-preview-table">
+                      <table className="preview-table">
 
                         <thead>
                           <tr>
@@ -893,6 +940,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
                               <td>
                                 <button
+                                  className="modal-danger-btn"
                                   onClick={() => {
                                     setNewSubCategoryData(prev => ({
                                       ...prev,
@@ -900,7 +948,9 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                                     }))
                                   }}
                                 >
-                                  Remove
+                                  <span className="shadow"></span>
+                                  <span className="edge"></span>
+                                  <span className="front">Remove</span>
                                 </button>
                               </td>
 
@@ -927,6 +977,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                         <span>{sub.name}</span>
 
                         <button
+                          className="modal-danger-btn"
                           type="button"
                           onClick={() => {
                             setNewCategory(prev => ({
@@ -935,15 +986,22 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                             }))
                           }}
                         >
-                          Remove
+                          <span className="shadow"></span>
+                          <span className="edge"></span>
+                          <span className="front">Remove</span>
                         </button>
 
                       </div>
 
                     ))}
 
-                    <button type="button" onClick={addSubCategory}>
-                      {editingSubIndex !== null ? "Save Subcategory" : "Add Subcategory"}
+                    <button
+                      className="modal-save-btn"
+                      type="button"
+                      onClick={addSubCategory}>
+                      <span className="shadow"></span>
+                      <span className="edge"></span>
+                      <span className="front">{editingSubIndex !== null ? "Save Subcategory" : "Add Subcategory"}</span>
                     </button>
 
                   </div>
@@ -1028,10 +1086,23 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
               </div>
 
               <div className="modal-footer">
-                <button type="button" onClick={resetAddCategoryForm}>
-                  Cancel
+                <button
+                  className="modal-cancel-btn"
+                  type="button"
+                  onClick={resetAddCategoryForm}
+                >
+                  <span className="shadow"></span>
+                  <span className="edge"></span>
+                  <span className="front">cancel</span>
                 </button>
-                <button type="submit">Add</button>
+                <button
+                  type="submit"
+                  className="modal-save-btn"
+                >
+                  <span className="shadow"></span>
+                  <span className="edge"></span>
+                  <span className="front">Add</span>
+                </button>
               </div>
             </form>
           </div>
@@ -1046,54 +1117,56 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                 <h3>{isEditingSubCategory ? "Edit Subcategory" : "Edit Category"}</h3>
                 <button
                   type="button"
-                  className="close-btn"
+                  className="modal-cancel-btn"
                   aria-label="Close"
                   onClick={resetEditCategoryForm}
-                ></button>
+                >
+                  <span class="shadow"></span>
+                  <span class="edge"></span>
+                  <span class="front close-padding"><img src={closeIcon} /></span>
+                </button>
               </div>
 
               <div className="modal-body">
                 <div className="form-group">
-                  <input
-                    autoFocus
-                    type="text"
-                    value={editName}
-                    onChange={(e) =>
-                      setEditName((prev) =>
-                        allowTextInput(prev, e.target.value, 100, 5)
-                      )
-                    }
-                    onBlur={(e) =>
-                      setEditName(toCamelCase(e.target.value))
-                    }
-                  />
+                  <div className="mat">
+                    <input
+                      className={`mat-input${editFormErrors.name ? " mat-error" : ""}`}
+                      autoFocus
+                      type="text"
+                      value={editName}
+                      onChange={(e) => {
+                        setEditName((prev) => allowTextInput(prev, e.target.value, 100, 5));
+                        setEditFormErrors(p => ({ ...p, name: false }));
+                      }}
+                      onBlur={(e) => setEditName(toCamelCase(e.target.value))}
+                    />
+                    <label className={`mat-label${editFormErrors.name ? " mat-label-error" : ""}`}>Name <span className="rf-req">*</span></label>
+                    <span className={`mat-bar${editFormErrors.name ? " mat-bar-error" : ""}`} />
+                  </div>
                 </div>
+
 
                 <div className="form-group">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleEditImageUpload}
-                  />
+                  <div className="file-wrap">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleEditImageUpload}
+                      className="file-input"
+                    />
+                    <div className="file-label">
+                      Change Category Image...
+                    </div>
+                  </div>
+                  {editImage && (
+                    <img src={editImage} alt="Preview" className="staff-image-preview" />
+                  )}
                 </div>
-
-                {editImage && (
-                  <img
-                    src={editImage}
-                    alt="Preview"
-                    style={{
-                      width: "120px",
-                      height: "120px",
-                      objectFit: "cover",
-                      borderRadius: "8px",
-                      marginTop: "10px"
-                    }}
-                  />
-                )}
 
                 {editSizes.length > 0 && (
 
-                  <table className="size-preview-table">
+                  <table className="preview-table">
 
                     <thead>
                       <tr>
@@ -1136,6 +1209,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
                               <td>
                                 <button
+                                  className="modal-save-btn"
                                   onClick={() => {
                                     setEditSizes(prev =>
                                       prev.map((sz, idx) =>
@@ -1152,7 +1226,9 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                                     setEditingSizeIndex(null)
                                   }}
                                 >
-                                  Save
+                                  <span className="shadow"></span>
+                                  <span className="edge"></span>
+                                  <span className="front">Save</span>
                                 </button>
                               </td>
 
@@ -1169,6 +1245,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                               <td>
 
                                 <button
+                                  className="modal-save-btn"
                                   onClick={() => {
                                     setEditingSizeIndex(i)
                                     setSizeName(s.name)
@@ -1176,7 +1253,9 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                                     setSizeMultiplier(s.priceMultiplier)
                                   }}
                                 >
-                                  Edit
+                                  <span className="shadow"></span>
+                                  <span className="edge"></span>
+                                  <span className="front">Edit</span>
                                 </button>
 
                               </td>
@@ -1184,13 +1263,16 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                               <td>
 
                                 <button
+                                  className="modal-danger-btn"
                                   onClick={() => {
                                     setEditSizes(prev =>
                                       prev.filter((_, x) => x !== i)
                                     )
                                   }}
                                 >
-                                  Delete
+                                  <span className="shadow"></span>
+                                  <span className="edge"></span>
+                                  <span className="front">Delete</span>
                                 </button>
 
                               </td>
@@ -1212,36 +1294,57 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                     (adminData.categories.find(c => c.id === editCategoryId)?.subCategories || []).length === 0)
                 ) && (
                     <div className="category-size-row">
+                      <div className="form-group">
+                        <div className="mat">
+                          <input
+                            className="mat-input"
+                            type="text"
+                            placeholder="Size"
+                            value={sizeName}
+                            onChange={(e) => setSizeName(e.target.value)}
+                          />
+                          <label className="mat-label">Size Name<span className="rf-req">*</span></label>
+                          <span className="mat-bar" />
+                        </div>
+                      </div>
 
-                      <input
-                        type="text"
-                        placeholder="Size"
-                        value={sizeName}
-                        onChange={(e) => setSizeName(e.target.value)}
-                      />
+                      <div className="form-group">
+                        <div className="mat">
+                          <input
+                            className="mat-input"
+                            type="number"
+                            placeholder="Multiplier"
+                            value={sizeMultiplier}
+                            onChange={(e) => setSizeMultiplier(e.target.value)}
+                          />
+                          <label className="mat-label">Price Multiplier<span className="rf-req">*</span></label>
+                          <span className="mat-bar" />
+                        </div>
+                      </div>
 
-                      <input
-                        type="number"
-                        placeholder="Multiplier"
-                        value={sizeMultiplier}
-                        onChange={(e) => setSizeMultiplier(e.target.value)}
-                      />
-
-                      <input
-                        type="text"
-                        placeholder="Description"
-                        value={sizeDescription}
-                        onChange={(e) => setSizeDescription(e.target.value)}
-                      />
+                      <div className="form-group">
+                        <div className="mat">
+                          <input
+                            className="mat-input"
+                            type="text"
+                            placeholder="Description"
+                            value={sizeDescription}
+                            onChange={(e) => setSizeDescription(e.target.value)}
+                          />
+                          <label className="mat-label">Description<span className="rf-req">*</span></label>
+                          <span className="mat-bar" />
+                        </div>
+                      </div>
 
                       <button
+                        className="modal-save-btn"
                         type="button"
                         onClick={() => {
 
                           if (!sizeName.trim()) return;
 
                           if (!isValidSizeDescription(sizeDescription)) {
-                            alert("Description max 3 words and 20 characters");
+                            toast.warning("Description max 3 words and 20 characters");
                             return;
                           }
 
@@ -1262,7 +1365,9 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
                         }}
                       >
-                        Add Size
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front">Add Size</span>
                       </button>
 
                     </div>
@@ -1270,10 +1375,25 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
               </div>
 
               <div className="modal-footer">
-                <button onClick={handleSaveEdit}>Save</button>
-                <button type="button" onClick={resetEditCategoryForm}>
-                  Cancel
-                </button>                
+                <button
+                  className="modal-cancel-btn"
+                  type="button"
+                  onClick={resetEditCategoryForm}
+                >
+                  <span className="shadow"></span>
+                  <span className="edge"></span>
+                  <span className="front">Cancel</span>
+                </button>
+
+                <button
+                  className="modal-save-btn"
+                  type="button"
+                  onClick={handleSaveEdit}
+                >
+                  <span className="shadow"></span>
+                  <span className="edge"></span>
+                  <span className="front">Save</span>
+                </button>
               </div>
             </div>
           </div>

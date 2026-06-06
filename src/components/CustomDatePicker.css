@@ -10,10 +10,10 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    height: 38px;
+    height: 40px;
     padding: 0 16px;
     border: 1.5px solid #e0e0e0;
-    background: #fff;
+    background: #f9f9f9;
     cursor: pointer;
     font-size: 13px;
     color: #333;
@@ -25,8 +25,16 @@
 }
 
 .cdp-trigger:hover {
-    border-color: #111;
+    border-color: var(--color-offwhite);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background-color: var(--color-white);
+}
+
+.cdp-trigger:focus {
+    outline: none;
+    border-color: var(--color-blue);
+    box-shadow: 0 0 0 3px rgba(77, 60, 231, 0.1);
+    background: #fff;
 }
 
 .cdp-icon {
@@ -57,6 +65,7 @@
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
     padding: 16px;
     width: 280px;
+    height: 285px;
     animation: cdpFadeIn 0.18s ease;
 }
 
@@ -158,7 +167,7 @@
 }
 
 .cdp-day.cdp-dis {
-    cursor: not-allowed;
+    cursor: not-allowed !important;
     color: #979797;
 }
 
@@ -173,8 +182,8 @@
 }
 
 .cdp-day.cdp-sel {
-    background: #111 !important;
-    color: #fff !important;
+    background: var(--color-blue) !important;
+    color: var(--color-white) !important;
     font-weight: 700;
     border-radius: 10px;
 }

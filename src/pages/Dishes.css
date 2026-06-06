@@ -30,27 +30,6 @@
   gap: 6px;
 }
 
-.category-btn {
-  padding: 6px 10px !important;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  background: #fff;
-  cursor: pointer;
-  text-align: center;
-  font-weight: 500 !important;
-  font-size: 14px !important;
-}
-
-.category-btn:hover {
-  background: #f3f3f3;
-}
-
-.category-btn.active {
-  background: #111;
-  color: #fff;
-  border-color: #111;
-}
-
 .dish-title {
   font-size: 32px;
   font-weight: 600;
@@ -379,15 +358,6 @@
   background: #fff;
 }
 
-.add-ingredient-button {
-  width: fit-content;
-  margin: 0 auto;
-  padding: 6px;
-  border-radius: 6px;
-  background-color: #111;
-  color: white;
-}
-
 .ingredient-form-table {
   width: 100%;
   max-width: 100%;
@@ -485,9 +455,9 @@
 }
 
 .dishes-status-dropdown {
-  height: 33.75px;
+  height: 46px;
   width: 100%;
-  padding: 0 36px 0 14px;
+  padding: 0 36px 0 0;
   font-size: 14px;
   font-weight: 500;
   color: #111;
@@ -538,4 +508,124 @@
   .dish-table td {
     font-size: 12px;
   }
+}
+
+/* ── Floating label wrapper for CustomDropdown — mirrors .mat exactly ─────── */
+.mat-select {
+  position: relative;
+  width: 100%;
+}
+
+/* The trigger button — styled to look identical to .mat-input */
+.mat-select .dishes-dropdown-wrapper {
+  width: 100%;
+  height: 44.3px;
+  border-bottom: 1px solid #d1d5db;
+}
+
+.mat-select .dishes-status-dropdown {
+  width: 100%;
+  height: 46px;
+  padding: 12px 36px 0 0;
+  /* top padding pushes text down so label has room */
+  font-size: 14px;
+  font-weight: 400;
+  color: #111;
+  background-color: transparent;
+  box-sizing: border-box;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+  /* keep the chevron */
+  background-image: url("data:image/svg+xml;utf8,<svg fill='%23666' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  appearance: none;
+  border: none;
+}
+
+.mat-select.is-open .dishes-status-dropdown,
+.mat-select .dishes-status-dropdown:focus {
+  outline: none;
+  border: none;
+  box-shadow: none;
+}
+
+/* Floating label — identical motion to .mat .mat-label */
+.mat-select>.mat-label {
+  position: absolute;
+  left: 0;
+  top: 68% !important;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: #9ca3af;
+  pointer-events: none;
+  background: #fff;
+  padding: 0 3px;
+  line-height: 1;
+  z-index: 2;
+  transition: top 0.18s ease, transform 0.18s ease, font-size 0.18s ease, color 0.18s ease;
+}
+
+/* Floated — value selected */
+.mat-select.has-value>.mat-label {
+  top: 4px !important;
+  font-size: 10px !important;
+    font-weight: 700 !important;
+    color: var(--color-blue) !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+}
+
+/* Floated + active — dropdown open */
+.mat-select.is-open>.mat-label {
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: #111;
+
+  top: 4px !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    color: var(--color-blue) !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+}
+
+/* Bottom bar — same as .mat .mat-bar */
+.mat-select>.mat-bar {
+  display: block;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  border-radius: 0 0 6px 6px;
+  transition: width 0.25s ease;
+  pointer-events: none;
+}
+
+.mat-select.is-open>.mat-bar {
+  width: 100%;
+}
+
+/* Dropdown menu — must escape the relative wrapper via high z-index */
+.mat-select .dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  overflow-y: auto;
+  max-height: 200px;
+}
+
+/* Required asterisk */
+.mat-select .rf-req {
+  color: #e74c3c;
+  margin-left: 2px;
 }

@@ -79,7 +79,39 @@ const buildShadowFromAccent = (hex) =>
 const buildShadowHoverFromAccent = (hex) =>
     `0 20px 50px ${hexToRgba(hex, 0.50)}, 0 10px 24px ${hexToRgba(hex, 0.36)}`;
 
-// ─── CSS Filter Generator ─────────────────────────────────────────────────────
+// Derive the two edge-gradient stops from the accent colour.
+// The "dark" stop is the accent hue at low lightness (deep shadow edge),
+// the "light" stop is the same hue at mid lightness (raised face edge).
+const deriveEdgeColors = (accentHex) => {
+    try {
+        const { h } = hexToHsl(accentHex);
+        return {
+            "--edge-color-dark": `hsl(${Math.round(h)}deg 100% 16%)`,
+            "--edge-color-light": `hsl(${Math.round(h)}deg 100% 32%)`,
+        };
+    } catch {
+        return {
+            "--edge-color-dark": "hsl(6deg 100% 16%)",
+            "--edge-color-light": "hsl(6deg 100% 32%)",
+        };
+    }
+};
+
+// Same logic as deriveEdgeColors but produces the --edge-color-green-* vars.
+const deriveGreenEdgeColors = (greenHex) => {
+    try {
+        const { "--edge-color-dark": gDark, "--edge-color-light": gLight } = deriveEdgeColors(greenHex);
+        return {
+            "--edge-color-green-dark": gDark,
+            "--edge-color-green-light": gLight,
+        };
+    } catch {
+        return {
+            "--edge-color-green-dark": "hsl(134deg 100% 16%)",
+            "--edge-color-green-light": "hsl(134deg 100% 32%)",
+        };
+    }
+};
 // Converts any hex color to a CSS filter chain that recolors a black SVG/PNG icon.
 //
 // Pipeline:
@@ -148,6 +180,10 @@ const LIGHT_DEFAULTS = {
     "--shadow-card-red-hover": "0 20px 50px rgba(243, 55, 22, 0.50), 0 10px 24px rgba(243, 55, 22, 0.36)",
     // Always computed — never hardcoded, so it stays in sync with --color-red
     "--home-btn-filter": hexToFilter("#f33716"),
+    "--edge-color-dark": "hsl(6deg 100% 16%)",
+    "--edge-color-light": "hsl(6deg 100% 32%)",
+    "--edge-color-green-dark": "hsl(134deg 100% 16%)",
+    "--edge-color-green-light": "hsl(134deg 100% 32%)",
 };
 
 const DARK_DEFAULTS = {
@@ -166,6 +202,10 @@ const DARK_DEFAULTS = {
     "--shadow-card-red-hover": "0 22px 56px rgba(255, 58, 24, 0.60), 0 12px 28px rgba(255, 58, 24, 0.42)",
     // Always computed — never hardcoded
     "--home-btn-filter": hexToFilter("#ff3a18"),
+    "--edge-color-dark": "hsl(6deg 100% 16%)",
+    "--edge-color-light": "hsl(6deg 100% 32%)",
+    "--edge-color-green-dark": "hsl(134deg 100% 16%)",
+    "--edge-color-green-light": "hsl(134deg 100% 32%)",
 };
 
 // ─── Preset themes ────────────────────────────────────────────────────────────
@@ -409,10 +449,14 @@ const ThemeSettings = () => {
                     // Always recompute filter from the saved accent color
                     // so a stale saved string never causes a transparent icon.
                     lt["--home-btn-filter"] = hexToFilter(toHex(lt["--color-red"]));
+                    Object.assign(lt, deriveEdgeColors(toHex(lt["--color-red"])));
+                    Object.assign(lt, deriveGreenEdgeColors(toHex(lt["--color-green"])));
                 }
                 if (data?.dark) {
                     dk = { ...dk, ...data.dark };
                     dk["--home-btn-filter"] = hexToFilter(toHex(dk["--color-red"]));
+                    Object.assign(dk, deriveEdgeColors(toHex(dk["--color-red"])));
+                    Object.assign(dk, deriveGreenEdgeColors(toHex(dk["--color-green"])));
                 }
                 if (data?.activePreset) setActivePreset(data.activePreset);
 
@@ -463,12 +507,17 @@ const ThemeSettings = () => {
                     next["--color-pale-green"] = derivePaleTint(next["--color-green"], isDark);
                     // ✅ Key fix: always recompute filter when accent changes
                     next["--home-btn-filter"] = hexToFilter(hex);
+                    // ✅ Recompute edge gradient colours from the new accent hue
+                    Object.assign(next, deriveEdgeColors(hex));
+                    // ✅ Also recompute green edge from the auto-derived --color-green
+                    Object.assign(next, deriveGreenEdgeColors(next["--color-green"]));
                 } catch { /* keep previous value */ }
             }
             if (key === "--color-green") {
                 try {
                     const hex = val.startsWith("#") ? val : toHex(val);
                     next["--color-pale-green"] = derivePaleTint(hex, isDark);
+                    Object.assign(next, deriveGreenEdgeColors(hex));
                 } catch { }
             }
             return next;
@@ -486,19 +535,19 @@ const ThemeSettings = () => {
         const dkFilter = hexToFilter(toHex(preset.dark["--color-red"]));
 
         setLightTokens((prev) => {
-            const next = { ...prev, ...preset.light, "--home-btn-filter": ltFilter };
+            const next = { ...prev, ...preset.light, "--home-btn-filter": ltFilter, ...deriveEdgeColors(toHex(preset.light["--color-red"])), ...deriveGreenEdgeColors(toHex(preset.light["--color-green"])) };
             return next;
         });
         setDarkTokens((prev) => {
-            const next = { ...prev, ...preset.dark, "--home-btn-filter": dkFilter };
+            const next = { ...prev, ...preset.dark, "--home-btn-filter": dkFilter, ...deriveEdgeColors(toHex(preset.dark["--color-red"])), ...deriveGreenEdgeColors(toHex(preset.dark["--color-green"])) };
             return next;
         });
     };
 
     // ── Reset to factory defaults ─────────────────────────────────────────────
     const resetToDefaults = () => {
-        const lt = { ...LIGHT_DEFAULTS, "--home-btn-filter": hexToFilter("#f33716") };
-        const dk = { ...DARK_DEFAULTS, "--home-btn-filter": hexToFilter("#ff3a18") };
+        const lt = { ...LIGHT_DEFAULTS, "--home-btn-filter": hexToFilter("#f33716"), ...deriveEdgeColors("#f33716"), ...deriveGreenEdgeColors("#0d9e3f") };
+        const dk = { ...DARK_DEFAULTS, "--home-btn-filter": hexToFilter("#ff3a18"), ...deriveEdgeColors("#ff3a18"), ...deriveGreenEdgeColors("#00f050") };
         setLightTokens(lt);
         setDarkTokens(dk);
         setActivePreset("default");
@@ -555,9 +604,15 @@ const ThemeSettings = () => {
                     </p>
                 </div>
                 <div className="ts-header-actions">
-                    <button className="ts-reset-btn" onClick={resetToDefaults}>Reset to Default</button>
-                    <button className={`category-add-btn${saved ? " category-saved" : ""}`} onClick={handleSave} disabled={saving}>
-                        {saving ? "Saving…" : saved ? "✓ Saved!" : "Save & Apply"}
+                    <button className="modal-confirm-btn" onClick={resetToDefaults}>
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front">Reset to Default</span>
+                    </button>
+                    <button className={`modal-save-btn${saved ? " modal-saved" : ""}`} onClick={handleSave} disabled={saving}>
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front">{saving ? "Saving…" : saved ? "✓ Saved!" : "Save & Apply"}</span>
                     </button>
                 </div>
             </div>

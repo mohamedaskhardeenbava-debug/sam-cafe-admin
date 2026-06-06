@@ -24,50 +24,29 @@
 
 .dish-details-image {
   position: relative;
-  width: 50%;
-  aspect-ratio: 1 / 1;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
 }
 
 .dish-details-image img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  border-radius: 12px;
+  object-fit: cover;
+  border-radius: 10px;
 }
 
 .image-upload-btn {
   display: inline-block;
   position: absolute;
   bottom: 0;
-  right: 0;
+  left: 100px;
+  width: max-content;
   padding: 2px;
   background-color: #111;
   font-size: 12px;
   color: white;
   cursor: pointer;
-}
-
-.section {
-  margin-top: 20px;
-}
-
-.section-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  font-weight: 600;
-  padding-bottom: 2px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.section-title p {
-  margin: 0;
-  margin-right: auto;
-}
-
-.section-title.with-action {
-  align-items: center;
 }
 
 .edit-icon {
@@ -127,17 +106,6 @@ textarea {
   background-color: #f0f0f0;
   color: #111;
   transition: all 0.2s ease-in;
-}
-
-.action button:first-child,
-.actions button:first-child {
-  background: #111;
-  color: #fff;
-}
-
-.action button:hover,
-.actions button:hover {
-  scale: 1.05;
 }
 
 td input {
@@ -234,4 +202,27 @@ td input {
 
 .veg-dot.non-veg {
   background: #e74c3c;
+}
+
+/* Global Edit button in header */
+.details-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.details-header h2 {
+  flex: 1;
+  margin: 0;
+}
+
+/* Save/Cancel bar pinned at the bottom of the form */
+.global-edit-actions {
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  padding: 12px 0 4px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  margin-top: 20px;
+  z-index: 10;
 }

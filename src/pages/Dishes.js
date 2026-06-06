@@ -4,20 +4,80 @@ import "./Dishes.css";
 import "./ModalCSS.css";
 import api from "../api";
 import deleteIcon from "../icon/delete-icon.png";
+import closeIcon from "../icon/close-icon.png";
 import { allowTextInput } from "../App";
 import { EmptyRow } from "../App";
 import { resolveCategoryAndSubCategory } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import { useToast } from "../useToast";
+
+// ── CustomDropdown (floating label version) ──────────────────────────────────
+function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
+  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
+
+  const wrapperClass = [
+    "mat-select",
+    value ? "has-value" : "",
+    open ? "is-open" : "",
+  ].filter(Boolean).join(" ");
+
+  return (
+    <div className={wrapperClass} ref={ref}>
+      {label && (
+        <label className="mat-label">
+          {label}{required && <span className="rf-req">*</span>}
+        </label>
+      )}
+      <div className="dishes-dropdown-wrapper">
+        <button type="button" className="dishes-status-dropdown"
+          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
+          {displayLabel || ""}
+        </button>
+        {open && (
+          <div className="dropdown-menu">
+            <div onClick={() => { onChange(""); setOpen(false); }}>
+              {placeholder}
+            </div>
+            {options.map((o, i) => {
+              const val = o.value !== undefined ? o.value : o;
+              const lbl = o.label !== undefined ? o.label : o;
+              return (
+                <div key={i} onClick={() => { onChange(val); setOpen(false); }}
+                  style={{ padding: "8px 12px", fontSize: 14, cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"}
+                  onMouseLeave={e => e.currentTarget.style.background = ""}>
+                  {lbl}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      <span className="mat-bar" />
+    </div>
+  );
+}
 
 const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }) => {
+  const { toast } = useToast();
   const [dishImagePreview, setDishImagePreview] = useState("");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const [editingDish, setEditingDish] = useState(null);
   const [editingDishId, setEditingDishId] = useState(null);
   const [editedPrice, setEditedPrice] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [openIngredientDropdown, setOpenIngredientDropdown] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
+  const [ingErrors, setIngErrors] = useState({});
+
   const [newDish, setNewDish] = useState({
     name: "",
     image: "",
@@ -34,14 +94,6 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     ingredients: []
   });
 
-  useEffect(() => {
-    const closeDropdowns = () => {
-      setOpenIngredientDropdown(false);
-    };
-
-    window.addEventListener("click", closeDropdowns);
-    return () => window.removeEventListener("click", closeDropdowns);
-  }, []);
 
   const availableIngredients = (adminData.ingredients || [])
     .filter(
@@ -57,6 +109,8 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     setEditingDish(null);
     setEditingDishId(null);
     setEditedPrice("");
+    setFormErrors({});
+    setIngErrors({});
 
     setNewDish({
       name: "",
@@ -164,14 +218,18 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     useInfiniteScroll(sortedDishes.length, 30);
 
   const handleSaveDish = async () => {
-
-    if (!newDish.name || !newDish.basePrice) {
-      alert("Dish name and base price are required");
-      return;
-    }
+    const e = {};
+    if (!newDish.name.trim()) e.name = true;
+    if (!newDish.basePrice) e.basePrice = true;
+    if (!newDish.description.trim()) e.description = true;
+    if (!newDish.benefits.calories) e.calories = true;
+    if (!newDish.benefits.protein) e.protein = true;
+    if (!newDish.benefits.fibre) e.fibre = true;
+    if (!newDish.benefits.fat) e.fat = true;
+    if (Object.keys(e).length) { setFormErrors(e); return; }
 
     if (selectedCategoryIds.length !== 1) {
-      alert("Please select exactly one category to add a dish");
+      setFormErrors({ category: true });
       return;
     }
 
@@ -210,7 +268,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     );
 
     if (duplicateDish) {
-      alert("Dish with this name already exists");
+      setFormErrors({ name: true });
       return;
     }
 
@@ -282,14 +340,8 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       }
 
       await api.put(`/categories/${category.id}`, updatedCategory);
-
-      setAdminData(prev => ({
-        ...prev,
-        categories: prev.categories.map(cat =>
-          cat.id === category.id ? updatedCategory : cat
-        )
-      }));
-
+      // State update handled by socket data-change handler in App.js
+      toast.success(editingDish ? "Dish updated" : "Dish added");
       resetDishForm();
 
     } catch (err) {
@@ -298,77 +350,55 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
   };
 
-  const handleDelete = async (dishId) => {
+  const handleDelete = (dishId, dishName) => {
 
     if (selectedCategoryIds.length !== 1) {
-      alert("Please select only one category to delete a dish");
+      toast.warning("Please select only one category to delete a dish");
       return;
     }
 
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this dish?"
-    );
+    toast.confirm(`Delete "${dishName}"?`, async () => {
+      const selectedId = selectedCategoryIds[0];
 
-    if (!confirmed) return;
+      let category = adminData.categories.find(c => c.id === selectedId);
+      let subCategory = null;
 
-    const selectedId = selectedCategoryIds[0];
-
-    let category = adminData.categories.find(c => c.id === selectedId);
-    let subCategory = null;
-
-    if (!category) {
-
-      for (const cat of adminData.categories) {
-
-        const found = (cat.subCategories || []).find(
-          sub => sub.id === selectedId
-        );
-
-        if (found) {
-          category = cat;
-          subCategory = found;
-          break;
+      if (!category) {
+        for (const cat of adminData.categories) {
+          const found = (cat.subCategories || []).find(sub => sub.id === selectedId);
+          if (found) { category = cat; subCategory = found; break; }
         }
-
       }
 
-    }
+      if (!category) return;
 
-    if (!category) return;
+      let updatedCategory;
 
-    let updatedCategory;
+      if (subCategory) {
+        updatedCategory = {
+          ...category,
+          subCategories: (category.subCategories || []).map(sub =>
+            sub.id === subCategory.id
+              ? { ...sub, dishes: (sub.dishes || []).filter(d => d.id !== dishId) }
+              : sub
+          )
+        };
+      } else {
+        updatedCategory = {
+          ...category,
+          dishes: (category.dishes || []).filter(d => d.id !== dishId)
+        };
+      }
 
-    if (subCategory) {
-
-      updatedCategory = {
-        ...category,
-        subCategories: (category.subCategories || []).map(sub =>
-          sub.id === subCategory.id
-            ? {
-              ...sub,
-              dishes: (sub.dishes || []).filter(d => d.id !== dishId)
-            }
-            : sub
-        )
-      };
-
-    } else {
-
-      updatedCategory = {
-        ...category,
-        dishes: (category.dishes || []).filter(d => d.id !== dishId)
-      };
-
-    }
-
-    await api.put(`/categories/${category.id}`, updatedCategory);
-
-    setAdminData(prev => ({
-      ...prev,
-      categories: prev.categories.map(cat =>
-        cat.id === category.id ? updatedCategory : cat
-      )
-    }));
+      try {
+        await api.put(`/categories/${category.id}`, updatedCategory);
+        // State update handled by socket data-change handler in App.js
+        toast.success("Dish deleted");
+      } catch (err) {
+        console.error("Failed to delete dish:", err);
+        toast.error("Failed to delete dish");
+      }
+    });
 
   };
 
@@ -405,7 +435,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     );
 
     if (exists) {
-      alert("Ingredient already added to this dish");
+      setIngErrors({ name: true });
       return;
     }
 
@@ -447,7 +477,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
                 <button
                   key={sub.id}
-                  className={`category-btn ${selectedCategoryIds.includes(sub.id) ? "active" : ""
+                  className={`filter-pill ${selectedCategoryIds.includes(sub.id) ? "active" : ""
                     }`}
                   onClick={() => {
                     setSelectedCategoryIds(prev =>
@@ -468,7 +498,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
               <button
                 key={cat.id}
-                className={`category-btn ${selectedCategoryIds.includes(cat.id) ? "active" : ""
+                className={`filter-pill ${selectedCategoryIds.includes(cat.id) ? "active" : ""
                   }`}
                 onClick={() => {
                   setSelectedCategoryIds(prev =>
@@ -488,10 +518,12 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
         </div>
 
         <button
-          className="category-add-btn"
+          className="modal-save-btn"
           onClick={() => setShowForm(true)}
         >
-          + Add Dish
+          <span className="shadow"></span>
+          <span className="edge"></span>
+          <span className="front">+ Add Dish</span>
         </button>
 
       </div>
@@ -563,7 +595,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                     <button
                       className="icon-btn delete-btn"
                       disabled={showForm}
-                      onClick={() => handleDelete(dish.id)}
+                      onClick={() => handleDelete(dish.id, dish.name)}
                     >
                       <img src={deleteIcon} alt="" />
                     </button>
@@ -619,75 +651,80 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               </h3>
               <button
                 type="button"
-                className="close-btn"
+                className="modal-cancel-btn"
                 aria-label="Close"
                 onClick={resetDishForm}
-              ></button>
+              >
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front close-padding"><img src={closeIcon} /></span>
+              </button>
             </div>
             <div className="modal-body">
               <div className="form-group">
-                <label htmlFor="">Dish name</label>
-                <input
-                  autoFocus
-                  required
-                  value={newDish.name}
-                  onChange={(e) =>
-                    setNewDish((prev) => ({
-                      ...prev,
-                      name: allowTextInput(
-                        prev.name,
-                        e.target.value,
-                        100,
-                        5
-                      )
-                    }))
-                  }
-                  onBlur={(e) =>
-                    setNewDish((prev) => ({
-                      ...prev,
-                      name: toCamelCase(e.target.value)
-                    }))
-                  }
-
-                />
+                <div className="mat">
+                  <input
+                    className={`mat-input${formErrors.name ? " mat-error" : ""}`}
+                    placeholder=" "
+                    autoFocus
+                    value={newDish.name}
+                    onChange={(e) => {
+                      setNewDish((prev) => ({ ...prev, name: allowTextInput(prev.name, e.target.value, 100, 5) }));
+                      setFormErrors(p => ({ ...p, name: false }));
+                    }}
+                    onBlur={(e) =>
+                      setNewDish((prev) => ({ ...prev, name: toCamelCase(e.target.value) }))
+                    }
+                  />
+                  <label className={`mat-label${formErrors.name ? " mat-label-error" : ""}`}>Dish Name<span className="rf-req">*</span></label>
+                  <span className={`mat-bar${formErrors.name ? " mat-bar-error" : ""}`} />
+                </div>
               </div>
 
               <div className="form-group">
-                <label htmlFor="">
-                  Dish image
-                </label>
-                <input required type="file" accept="image/*" onChange={handleDishImageUpload} />
-
-
-                {dishImagePreview && (
-                  <img
-                    src={dishImagePreview}
-                    alt="Preview"
+                <div className="file-wrap">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleDishImageUpload}
+                    className="file-input"
                   />
+                  <div className="file-label">
+                    {dishImagePreview ? "✔ Dish Image selected" : "Choose file for Dish Image…"}
+                  </div>
+                </div>
+                {dishImagePreview && (
+                  <img src={dishImagePreview} alt="Preview" className="staff-image-preview" />
                 )}
               </div>
+
               <div className="form-group">
-                <label htmlFor="">Base price</label>
-                <input
-                  required
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={newDish.basePrice}
-                  onChange={(e) =>
-                    setNewDish({ ...newDish, basePrice: e.target.value })
-                  }
-                />
+                <div className="mat">
+                  <input
+                    className={`mat-input${formErrors.basePrice ? " mat-error" : ""}`}
+                    type="number"
+                    min="1"
+                    step="1"
+                    placeholder=" "
+                    value={newDish.basePrice}
+                    onChange={(e) => { setNewDish({ ...newDish, basePrice: e.target.value }); setFormErrors(p => ({ ...p, basePrice: false })); }}
+                  />
+                  <label className={`mat-label${formErrors.basePrice ? " mat-label-error" : ""}`}>Base Price<span className="rf-req">*</span></label>
+                  <span className={`mat-bar${formErrors.basePrice ? " mat-bar-error" : ""}`} />
+                </div>
               </div>
+
               <div className="form-group">
-                <label htmlFor="">Description</label>
-                <textarea
-                  required
-                  value={newDish.description}
-                  onChange={(e) =>
-                    setNewDish({ ...newDish, description: e.target.value })
-                  }
-                />
+                <div className="mat">
+                  <textarea
+                    className={`mat-input mat-textarea${formErrors.description ? " mat-error" : ""}`}
+                    placeholder=" "
+                    value={newDish.description}
+                    onChange={(e) => { setNewDish({ ...newDish, description: e.target.value }); setFormErrors(p => ({ ...p, description: false })); }}
+                  />
+                  <label className={`mat-label${formErrors.description ? " mat-label-error" : ""}`}>Description<span className="rf-req">*</span></label>
+                  <span className={`mat-bar${formErrors.description ? " mat-bar-error" : ""}`} />
+                </div>
               </div>
 
               <div className="form-group">
@@ -733,24 +770,23 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 <label htmlFor="">Nutrition</label>
                 <div className="benefits-grid border">
                   {["calories", "protein", "fibre", "fat"].map(key => (
-                    <div key={key}>
-                      <label>{key.toUpperCase()}</label>
-                      <input
-                        required
-                        key={key}
-                        type="number"
-                        min="1"
-                        step="1"
-                        onChange={(e) =>
-                          setNewDish({
-                            ...newDish,
-                            benefits: {
-                              ...newDish.benefits,
-                              [key]: e.target.value
-                            }
-                          })
-                        }
-                      />
+                    <div className="form-group" key={key}>
+                      <div className="mat">
+                        <input
+                          className={`mat-input${formErrors[key] ? " mat-error" : ""}`}
+                          type="number"
+                          placeholder=" "
+                          min="1"
+                          step="1"
+                          value={newDish.benefits[key]}
+                          onChange={(e) => {
+                            setNewDish({ ...newDish, benefits: { ...newDish.benefits, [key]: e.target.value } });
+                            setFormErrors(p => ({ ...p, [key]: false }));
+                          }}
+                        />
+                        <label className={`mat-label${formErrors[key] ? " mat-label-error" : ""}`}>{key}<span className="rf-req">*</span></label>
+                        <span className={`mat-bar${formErrors[key] ? " mat-bar-error" : ""}`} />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -760,61 +796,43 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
               <div className="ingredient-form form-group">
                 <label htmlFor="">Ingredients</label>
-                <div className="border">
+                <div className="border form-group">
                   <div className="form-group">
-                    <label htmlFor="">Ingredient Name</label>
-                    <div className="dishes-dropdown-wrapper">
-                      <button
-                        type="button"
-                        className="dishes-status-dropdown"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenIngredientDropdown(prev => !prev);
-                        }}
-                      >
-                        {ingredientForm.name || "Select Ingredient"}
-                      </button>
-
-                      {openIngredientDropdown && (
-                        <div className="dropdown-menu">
-                          {availableIngredients.map(ing => (
-                            <div
-                              key={ing.id}
-                              onClick={() => {
-                                setIngredientForm(prev => ({
-                                  ...prev,
-                                  name: ing.name
-                                }));
-                                setOpenIngredientDropdown(false);
-                              }}
-                            >
-                              {ing.name}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="">Quantity in grams</label>
-                    <input
-
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={ingredientForm.quantity}
-                      onChange={(e) =>
-                        setIngredientForm({ ...ingredientForm, quantity: e.target.value })
-                      }
+                    <CustomDropdown
+                      label="Select Ingredient"
+                      value={ingredientForm.name}
+                      onChange={(val) => setIngredientForm(prev => ({ ...prev, name: val }))}
+                      options={availableIngredients.map(ing => ing.name)}
+                      placeholder="Select Ingredient"
                     />
                   </div>
 
-                  <button className="add-ingredient-button" type="button" onClick={handleAddIngredient}>
-                    Add Ingredient
+                  <div className="form-group">
+                    <div className="mat">
+                      <input
+                        className={`mat-input${ingErrors.quantity ? " mat-error" : ""}`}
+                        placeholder=" "
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={ingredientForm.quantity}
+                        onChange={(e) => { setIngredientForm({ ...ingredientForm, quantity: e.target.value }); setIngErrors(p => ({ ...p, quantity: false })); }}
+                      />
+                      <label className={`mat-label${ingErrors.quantity ? " mat-label-error" : ""}`}>Quantity in grams<span className="rf-req">*</span></label>
+                      <span className={`mat-bar${ingErrors.quantity ? " mat-bar-error" : ""}`} />
+                    </div>
+                  </div>
+
+                  <button
+                    className="modal-save-btn"
+                    type="button"
+                    onClick={handleAddIngredient}>
+                    <span className="shadow"></span>
+                    <span className="edge"></span>
+                    <span className="front">Add Ingredient</span>
                   </button>
                   {newDish.ingredients.length > 0 && (
-                    <table className="ingredient-form-table">
+                    <table className="preview-table">
                       <thead>
                         <tr>
                           <th>Ingredient</th>
@@ -850,10 +868,22 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
             </div>
             <div className="modal-footer">
-                <button type="button" onClick={resetDishForm}>
-                  Cancel
-                </button>
-                <button type="submit">Add Dish</button>
+              <button
+                className="modal-cancel-btn"
+                type="button"
+                onClick={resetDishForm}>
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">Cancel</span>
+              </button>
+              <button
+                className="modal-save-btn"
+                type="submit"
+              >
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">Add Dish</span>
+              </button>
             </div>
           </form>
         </div>

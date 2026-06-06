@@ -152,7 +152,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               return (
                 <div key={index} className="sidebar-group">
                   <button
-                    className={`sidebar-link sidebar-link-parent ${isAnyChildActive ? "parent-active" : ""}`}
+                    className={`sidebar-link ${isAnyChildActive ? "sidebar-link-active" : ""}`}
                     onClick={() => {
                       if (isOpen) {
                         setOpenMenu(isExpanded ? null : index);
@@ -187,7 +187,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                   >
                     <span className="sidebar-icon-wrap">
                       <img src={item.icon} alt="" className="sidebar-icon-img" />
-                      {isAnyChildActive && <span className="sidebar-active-dot" />}
                     </span>
 
                     <AnimatePresence>
@@ -235,7 +234,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                                 `sidebar-sublink ${isActive ? "sublink-active" : ""}`
                               }
                             >
-                              <span className="sublink-dot" />
                               <span className="sublink-label">{sub.label}</span>
                             </NavLink>
                           ))}

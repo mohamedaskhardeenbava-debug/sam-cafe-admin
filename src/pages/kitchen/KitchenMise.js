@@ -115,7 +115,11 @@ export default function KitchenMise({ adminData, setAdminData }) {
             <span className="mise-stat-num">{verifiedCnt}/{allTasks.length}</span>
             <span className="mise-stat-lbl">Verified</span>
           </div>
-          <button className="export-btn" onClick={exportMise}>Export</button>
+          <button className="modal-save-btn" onClick={exportMise}>
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">Export</span>
+          </button>
         </div>
       </div>
 
@@ -139,7 +143,7 @@ export default function KitchenMise({ adminData, setAdminData }) {
           <span className="mise-filter-lbl">Section</span>
           {[["all", "All"], ...Object.keys(tasks).map(s => [s, SECTION_META[s]?.label || s])].map(([k, lbl]) => (
             <button key={k}
-              className={`sched-pill-btn${sectionFilter === k ? " active" : ""}`}
+              className={`filter-pill${sectionFilter === k ? " active" : ""}`}
               onClick={() => setSectionFilter(k)}>{lbl}</button>
           ))}
         </div>

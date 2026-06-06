@@ -257,18 +257,6 @@
   filter: grayscale(0%);
 }
 
-/* Active dot on icon for parent with active child */
-.sidebar-active-dot {
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #111;
-  border: 1.5px solid #fff;
-}
-
 /* ── Label ───────────────────────────────── */
 .sidebar-label {
   flex: 1;
@@ -340,20 +328,6 @@
   background: #f0f0f0;
   color: #111;
   font-weight: 600;
-}
-
-.sublink-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #ccc;
-  flex-shrink: 0;
-  transition: background 0.15s;
-}
-
-.sidebar-sublink:hover .sublink-dot,
-.sublink-active .sublink-dot {
-  background: #111;
 }
 
 .sublink-label {

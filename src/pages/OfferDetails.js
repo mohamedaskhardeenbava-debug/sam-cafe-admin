@@ -1,8 +1,47 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api";
 import editIcon from "../icon/edit-icon.png";
 import "./OfferDetails.css";
+import { CustomDatePicker } from "../components/CustomDatePicker";
+import { CustomTimePicker } from "../components/CustomTimePicker";
+
+// ── CustomDropdown (floating label version) ───────────────────────────────────
+function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
+  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
+  const wrapperClass = ["mat-select", value ? "has-value" : "", open ? "is-open" : ""].filter(Boolean).join(" ");
+  return (
+    <div className={wrapperClass} ref={ref}>
+      <div className="dishes-dropdown-wrapper">
+        <button type="button" className="dishes-status-dropdown"
+          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
+          {displayLabel || ""}
+        </button>
+        {open && (
+          <div className="dropdown-menu">
+            <div onClick={() => { onChange(""); setOpen(false); }}>{placeholder}</div>
+            {options.map((o, i) => {
+              const val = o.value !== undefined ? o.value : o;
+              const lbl = o.label !== undefined ? o.label : o;
+              return (
+                <div key={i} onClick={() => { onChange(val); setOpen(false); }}>{lbl}</div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      <span className="mat-bar" />
+    </div>
+  );
+}
 
 const OfferDetails = ({ adminData, setAdminData }) => {
   const { offerId } = useParams();
@@ -11,27 +50,15 @@ const OfferDetails = ({ adminData, setAdminData }) => {
   const offer = adminData.offers.find(o => o.id === offerId);
 
   const [localOffer, setLocalOffer] = useState(null);
-  const [editSection, setEditSection] = useState(null);
-  const [openDishDropdown, setOpenDishDropdown] = useState(false);
-  const [openStatusDropdown, setOpenStatusDropdown] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
-  // 🔥 flatten dishes (same logic as Offers page)
+  // flatten dishes (same logic as Offers page)
   const allDishes = adminData.categories.flatMap(cat => [
     ...(cat.dishes || []).map(d => ({ ...d, categoryId: cat.id })),
     ...(cat.subCategories || []).flatMap(sub =>
       (sub.dishes || []).map(d => ({ ...d, categoryId: sub.id }))
     )
   ]);
-
-  useEffect(() => {
-    const closeDropdowns = () => {
-      setOpenDishDropdown(false);
-      setOpenStatusDropdown(false);
-    };
-
-    window.addEventListener("click", closeDropdowns);
-    return () => window.removeEventListener("click", closeDropdowns);
-  }, []);
 
   useEffect(() => {
     if (offer) {
@@ -42,18 +69,14 @@ const OfferDetails = ({ adminData, setAdminData }) => {
   if (!localOffer) return <div className="page">Loading offer...</div>;
 
   const selectedDish = allDishes.find(d => d.id === localOffer.dishId);
-
   const originalPrice = selectedDish?.basePrice || localOffer.originalPrice || 0;
-
-  const offerAmount =
-    (originalPrice * (localOffer.percentage || 0)) / 100;
-
+  const offerAmount = (originalPrice * (localOffer.percentage || 0)) / 100;
   const offerPrice = originalPrice - offerAmount;
 
   /* ---------------- SAVE ---------------- */
-  const persistOffer = async (updatedOffer) => {
+  const persistOffer = async () => {
     const payload = {
-      ...updatedOffer,
+      ...localOffer,
       originalPrice,
       offerAmount,
       offerPrice
@@ -70,7 +93,7 @@ const OfferDetails = ({ adminData, setAdminData }) => {
       }));
 
       setLocalOffer(payload);
-      setEditSection(null);
+      setIsEditing(false);
 
     } catch (err) {
       console.error("Failed to update offer", err);
@@ -78,7 +101,7 @@ const OfferDetails = ({ adminData, setAdminData }) => {
   };
 
   const resetEditState = () => {
-    setEditSection(null);
+    setIsEditing(false);
     setLocalOffer(JSON.parse(JSON.stringify(offer)));
   };
 
@@ -89,259 +112,185 @@ const OfferDetails = ({ adminData, setAdminData }) => {
         {/* HEADER */}
         <div className="details-header">
           <button
-            className="offer-back-btn"
+            className="back-btn"
             onClick={() => {
               resetEditState();
               navigate(-1);
             }}
           />
           <h2>{selectedDish?.name || "Offer"}</h2>
+
+          {!isEditing && (
+            <button className="modal-cancel-btn" onClick={() => setIsEditing(true)}>
+              <span className="shadow"></span>
+              <span className="edge"></span>
+              <span className="front">
+                <img src={editIcon} alt="edit" />
+                Edit
+              </span>
+            </button>
+          )}
         </div>
 
-        {/* DISH */}
-        <div className="offer-section">
-          <div className="offer-section-title">
-            <span>Dish</span>
+        <div className="details-body">
+          {/* DISH */}
+          <div className="section">
+            <div className="section-title">
+              <span>Dish</span>
+            </div>
 
-            {editSection === "dish" ? (
-              <>
-                <div className="offers-dropdown-wrapper">
-                  <button
-                    className="offers-status-dropdown"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenDishDropdown(prev => !prev);
-                    }}
-                  >
-                    {selectedDish?.name || "Select Dish"}
-                  </button>
-
-                  {openDishDropdown && (
-                    <div className="offers-dropdown-menu">
-                      {allDishes.map(d => (
-                        <div
-                          key={d.id}
-                          onClick={() => {
-                            setLocalOffer({
-                              ...localOffer,
-                              dishId: d.id,
-                              categoryId: d.categoryId
-                            });
-                            setOpenDishDropdown(false);
-                          }}
-                        >
-                          {d.name}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="offer-action">
-                  <button onClick={() => persistOffer(localOffer)}>Save</button>
-                  <button onClick={resetEditState}>Cancel</button>
-                </div>
-              </>
+            {isEditing ? (
+              <CustomDropdown
+                label="Dish"
+                required
+                value={localOffer.dishId}
+                onChange={(val) => {
+                  const d = allDishes.find(x => x.id === val);
+                  setLocalOffer({ ...localOffer, dishId: val, categoryId: d?.categoryId || "" });
+                }}
+                options={allDishes.map(d => ({ value: d.id, label: d.name }))}
+                placeholder="Select Dish"
+              />
             ) : (
-              <>
-                <p>{selectedDish?.name}</p>
-                <img
-                  className="offer-edit-icon"
-                  src={editIcon}
-                  onClick={() => setEditSection("dish")}
-                />
-              </>
+              <p>{selectedDish?.name}</p>
             )}
           </div>
-        </div>
 
-        {/* PERCENTAGE */}
-        <div className="offer-section">
-          <div className="offer-section-title">
-            <span>Offer %</span>
+          {/* PERCENTAGE */}
+          <div className="section">
+            <div className="section-title">
+              <span>Offer %</span>
+            </div>
 
-            {editSection === "percentage" ? (
-              <>
-                <input
-                  type="number"
-                  value={localOffer.percentage}
-                  onChange={(e) =>
-                    setLocalOffer({
-                      ...localOffer,
-                      percentage: Number(e.target.value)
-                    })
-                  }
-                />
-
-                <div className="offer-action">
-                  <button onClick={() => persistOffer(localOffer)}>Save</button>
-                  <button onClick={resetEditState}>Cancel</button>
-                </div>
-              </>
+            {isEditing ? (
+              <input
+                className="mat-input"
+                placeholder=" "
+                type="number"
+                value={localOffer.percentage}
+                onChange={(e) => setLocalOffer({ ...localOffer, percentage: Number(e.target.value) })}
+              />
             ) : (
-              <>
-                <p>{localOffer.percentage}%</p>
-                <img
-                  className="offer-edit-icon"
-                  src={editIcon}
-                  onClick={() => setEditSection("percentage")}
-                />
-              </>
+              <p>{localOffer.percentage}%</p>
             )}
           </div>
-        </div>
 
-        {/* PRICE BREAKDOWN */}
-        <div className="offer-section">
-          <div className="offer-section-title">
-            <span>Price Details</span>
+          {/* PRICE BREAKDOWN */}
+          <div className="section">
+            <div className="section-title">
+              <span>Price Details</span>
+            </div>
+
+            <table className="data-table">
+              <tbody>
+                <tr>
+                  <td>Original Price</td>
+                  <td>₹{originalPrice}</td>
+                </tr>
+                <tr>
+                  <td>Discount</td>
+                  <td>₹{offerAmount}</td>
+                </tr>
+                <tr>
+                  <td>Final Price</td>
+                  <td>₹{offerPrice}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
-          <table className="offer-data-table">
-            <tbody>
-              <tr>
-                <td>Original Price</td>
-                <td>₹{originalPrice}</td>
-              </tr>
-              <tr>
-                <td>Discount</td>
-                <td>₹{offerAmount}</td>
-              </tr>
-              <tr>
-                <td>Final Price</td>
-                <td>₹{offerPrice}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+          <div className="horizontal-form-group" style={{ flex: "1 1" }}>
+            {/* START DATE */}
+            <div className="section">
+              <div className="section-title">
+                <span>Start Date</span>
+              </div>
 
-        {/* DATE */}
-        <div className="offer-section">
-          <div className="offer-section-title">
-            <span>Start Date</span>
-
-            {editSection === "startDate" ? (
-              <>
-                <input
-                  type="date"
-                  value={localOffer.startDate}
-                  onChange={(e) =>
-                    setLocalOffer({
-                      ...localOffer,
-                      startDate: e.target.value
-                    })
-                  }
-                />
-
-                <div className="offer-action">
-                  <button onClick={() => persistOffer(localOffer)}>Save</button>
-                  <button onClick={resetEditState}>Cancel</button>
+              {isEditing ? (
+                <div className="horizontal-form-group" style={{flex: "1 1"}}>
+                    <CustomDatePicker
+                      value={localOffer.startDate}
+                      onChange={(v) => setLocalOffer({ ...localOffer, startDate: v })}
+                      placeholder="Select date"
+                    />
+                    <CustomTimePicker
+                      value={localOffer.startTime || ""}
+                      onChange={(v) => setLocalOffer({ ...localOffer, startTime: v })}
+                    />
                 </div>
-              </>
-            ) : (
-              <>
-                <p>{localOffer.startDate}</p>
-                <img
-                  className="offer-edit-icon"
-                  src={editIcon}
-                  onClick={() => setEditSection("startDate")}
+              ) : (
+                <p>{localOffer.startDate}{localOffer.startTime ? ` · ${localOffer.startTime}` : ""}</p>
+              )}
+            </div>
+
+            {/* END DATE */}
+            <div className="section">
+              <div className="section-title">
+                <span>End Date</span>
+              </div>
+
+              {isEditing ? (
+                <div className="horizontal-form-group" style={{ flex: "1 1" }}>
+                    <CustomDatePicker
+                      value={localOffer.endDate}
+                      onChange={(v) => setLocalOffer({ ...localOffer, endDate: v })}
+                      placeholder="Select date"
+                    />
+                    <CustomTimePicker
+                      value={localOffer.endTime || ""}
+                      onChange={(v) => setLocalOffer({ ...localOffer, endTime: v })}
+                    />
+                </div>
+              ) : (
+                <p>{localOffer.endDate}{localOffer.endTime ? ` · ${localOffer.endTime}` : ""}</p>
+              )}
+            </div>
+
+            {/* STATUS */}
+            <div className="section">
+              <div className="section-title">
+                <span>Status</span>
+              </div>
+
+              {isEditing ? (
+                <CustomDropdown
+                  label="Status"
+                  value={localOffer.active}
+                  onChange={(val) => setLocalOffer({ ...localOffer, active: val })}
+                  options={[
+                    { value: "yes", label: "Active" },
+                    { value: "no", label: "Inactive" },
+                  ]}
+                  placeholder="Select status"
                 />
-              </>
-            )}
+              ) : (
+                <p>{localOffer.active === "yes" ? "Active" : "Inactive"}</p>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="offer-section">
-          <div className="offer-section-title">
-            <span>End Date</span>
-
-            {editSection === "endDate" ? (
-              <>
-                <input
-                  type="date"
-                  value={localOffer.endDate}
-                  onChange={(e) =>
-                    setLocalOffer({
-                      ...localOffer,
-                      endDate: e.target.value
-                    })
-                  }
-                />
-
-                <div className="offer-action">
-                  <button onClick={() => persistOffer(localOffer)}>Save</button>
-                  <button onClick={resetEditState}>Cancel</button>
-                </div>
-              </>
-            ) : (
-              <>
-                <p>{localOffer.endDate}</p>
-                <img
-                  className="offer-edit-icon"
-                  src={editIcon}
-                  onClick={() => setEditSection("endDate")}
-                />
-              </>
-            )}
+        {/* STICKY SAVE / CANCEL BAR */}
+        {isEditing && (
+          <div className="details-footer">
+            <button
+              className="modal-cancel-btn"
+              onClick={resetEditState}
+            >
+              <span className="shadow"></span>
+              <span className="edge"></span>
+              <span className="front">Cancel</span>
+            </button>
+            <button
+              className="modal-save-btn"
+              onClick={persistOffer}
+            >
+              <span className="shadow"></span>
+              <span className="edge"></span>
+              <span className="front">Save</span>
+            </button>
           </div>
-        </div>
-
-        {/* ACTIVE */}
-        <div className="offer-section">
-          <div className="offer-section-title">
-            <span>Status</span>
-
-            {editSection === "active" ? (
-              <>
-                <div className="offers-dropdown-wrapper">
-                  <button
-                    type="button"
-                    className="offers-status-dropdown"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenStatusDropdown(prev => !prev);
-                    }}
-                  >
-                    {localOffer.active === "yes" ? "Active" : "Inactive"}
-                  </button>
-
-                  {openStatusDropdown && (
-                    <div className="offers-dropdown-menu">
-                      {[
-                        { label: "Active", value: "yes" },
-                        { label: "Inactive", value: "no" }
-                      ].map(opt => (
-                        <div
-                          key={opt.value}
-                          onClick={() => {
-                            setLocalOffer({ ...localOffer, active: opt.value });
-                            setOpenStatusDropdown(false);
-                          }}
-                        >
-                          {opt.label}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="offer-action">
-                  <button onClick={() => persistOffer(localOffer)}>Save</button>
-                  <button onClick={resetEditState}>Cancel</button>
-                </div>
-              </>
-            ) : (
-              <>
-                <p>{localOffer.active}</p>
-                <img
-                  className="offer-edit-icon"
-                  src={editIcon}
-                  onClick={() => setEditSection("active")}
-                />
-              </>
-            )}
-          </div>
-        </div>
+        )}
 
       </div>
     </div>

@@ -25,6 +25,7 @@
   width: 100%;
   display: flex;
   flex-direction: column;
+  gap: 14px;
   font-family: var(--font);
 }
 
@@ -33,14 +34,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
 }
 
 .table-mgmt-title {
-  font-size: 22px;
+  font-size: 24px !important;
   font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--ink);
+  color: #111;
   margin: 0;
 }
 
@@ -48,7 +47,8 @@
 .table-mgmt-add {
   display: flex;
   gap: 10px;
-  margin-bottom: 14px;
+  align-items: center;
+  justify-content: center;
 }
 
 .table-mgmt-input {

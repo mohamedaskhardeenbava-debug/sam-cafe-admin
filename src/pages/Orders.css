@@ -64,7 +64,7 @@
   color: #111;
   background-color: #ffffff;
   border: 1px solid #d1d5db;
-  border-radius: 999px;
+  border-radius: 10px;
   appearance: none;
   cursor: pointer;
   position: relative;
@@ -99,24 +99,6 @@
 .orders-filter {
   display: flex;
   gap: 12px;
-}
-
-.orders-today-btn {
-  height: 38px;
-  padding: 0 16px;
-  border-radius: 999px;
-  border: 1px solid #111;
-  background: #fff;
-  color: #111;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.orders-today-btn.active,
-.orders-today-btn:hover {
-  background: #111;
-  color: #fff;
 }
 
 /* ===============================
@@ -691,9 +673,14 @@
 
 .bill-split-actions {
   display: flex;
+  width: 100%;
   gap: 10px;
   margin-top: 12px;
   justify-content: flex-end;
+  padding: 6px;
+  border-radius: 6px;
+  background-color: var(--color-paleblue);
+  box-sizing: border-box;
 }
 
 .bill-split-actions button {
@@ -801,14 +788,14 @@
 .split-box {
   display: flex;
   gap: 6px;
-  align-items: center;
+  align-items: stretch;
 }
 
 .split-box input {
   width: 90px;
   padding: 6px;
   border: 1px solid #ddd;
-  border-radius: 6px;
+  border-radius: 10px;
   font-size: 12px;
 }
 

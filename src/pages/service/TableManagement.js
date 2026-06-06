@@ -2,7 +2,7 @@ import { useState } from "react";
 import * as XLSX from "xlsx";
 import api from "../../api";
 import "./TableManagement.css";
-
+import closeIcon from "../../icon/close-icon.png";
 import deleteIcon from "../../icon/delete-icon.png";
 import qrIcon from "../../icon/qr-icon.png";
 import logo from "../../icon/logo.png";
@@ -151,29 +151,35 @@ const TableManagement = ({ adminData, setAdminData }) => {
 
             {/* HEADER */}
             <div className="table-mgmt-header">
-                <h2 className="table-mgmt-title">Table Management</h2>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 13, color: "#a3a3a3", fontWeight: 500 }}>
+                    <h2 className="table-mgmt-title">Table Management</h2>
+                    <span style={{ fontSize: 14, color: "#555", fontWeight: 500 }}>
                         {tables.length} table{tables.length !== 1 ? "s" : ""}
                     </span>
-                    <button className="export-btn" onClick={exportTables}>Export</button>
+                    <div className="table-mgmt-add">
+                        <input
+                            type="number"
+                            className="table-mgmt-input"
+                            placeholder="Table number"
+                            value={newTable}
+                            onChange={e => setNewTable(e.target.value)}
+                            onKeyDown={e => e.key === "Enter" && addTable()}
+                            min="1"
+                        />
+                        <button className="modal-save-btn" style={{marginTop: "0px"}} onClick={addTable}>
+                            <span className="shadow"></span>
+                            <span className="edge"></span>
+                            <span className="front">Add Table</span>
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            {/* ADD ROW */}
-            <div className="table-mgmt-add">
-                <input
-                    type="number"
-                    className="table-mgmt-input"
-                    placeholder="Table number"
-                    value={newTable}
-                    onChange={e => setNewTable(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && addTable()}
-                    min="1"
-                />
-                <button className="table-mgmt-btn" onClick={addTable}>
-                    Add Table
+                <button className="modal-save-btn" onClick={exportTables}>
+                    <span className="shadow"></span>
+                    <span className="edge"></span>
+                    <span className="front">Export</span>
                 </button>
+
             </div>
 
             {/* GRID */}
@@ -227,7 +233,7 @@ const TableManagement = ({ adminData, setAdminData }) => {
             {/* QR MODAL */}
             {showQRModal && (
                 <div
-                    className="qr-modal-overlay"
+                    className="modal-overlay"
                     onClick={() => setShowQRModal(false)}
                 >
                     <div
@@ -237,9 +243,13 @@ const TableManagement = ({ adminData, setAdminData }) => {
                         <div className="qr-modal-header">
                             <h3>Table {selectedTable}</h3>
                             <button
-                                className="close-btn"
+                                className="modal-cancel-btn"
                                 onClick={() => setShowQRModal(false)}
-                            />
+                            >
+                                <span class="shadow"></span>
+                                <span class="edge"></span>
+                                <span class="front close-padding"><img src={closeIcon} /></span>
+                            </button>
                         </div>
 
                         <div className="qr-modal-body">
@@ -256,8 +266,13 @@ const TableManagement = ({ adminData, setAdminData }) => {
 
                             <p className="qr-url-label">{getQRValue(selectedTable)}</p>
 
-                            <button className="qr-download-btn" onClick={downloadQR}>
-                                Download QR ↓
+                            <button
+                                className="modal-save-btn"
+                                onClick={downloadQR}
+                            >
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front"> Download QR ↓</span>
                             </button>
                         </div>
                     </div>

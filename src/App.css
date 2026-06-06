@@ -1,5 +1,45 @@
 /* admin panel */
 
+/* ===================VARIABLES=================== */
+:root {
+  --color-red: #e74c3c;
+  --color-blue: #2563eb;
+  --color-green: rgb(0, 168, 0);
+  --color-palered: #f7a9a9;
+  --color-palegreen: #d1fae5;
+  --color-paleblue: #eff6ff;
+  --color-white: #ffffff;
+  --color-offwhite: #e5e7eb;
+  --text-primary: #111;
+  --text-secondary: #333;
+  --text-placeholder: #888;
+  --edge-blue: linear-gradient(to left, hsl(221, 83%, 28%) 0%, hsl(221, 83%, 40%) 8%, hsl(221, 83%, 40%) 92%, hsl(221, 83%, 28%) 100%);
+  --edge-white: linear-gradient(to left, hsl(0, 0%, 42%) 0%, hsl(0, 0%, 52%) 8%, hsl(0, 0%, 52%) 92%, hsl(0, 0%, 42%) 100%);
+  --edge-green: linear-gradient(to left,
+      hsl(142, 72%, 18%) 0%, hsl(142, 72%, 26%) 8%,
+      hsl(142, 72%, 26%) 92%, hsl(142, 72%, 18%) 100%);
+  --edge-red: linear-gradient(to left,
+      hsl(0, 72%, 28%) 0%, hsl(0, 72%, 38%) 8%,
+      hsl(0, 72%, 38%) 92%, hsl(0, 72%, 28%) 100%);
+
+  --ink: #0f0f0f;
+  --ink-2: #3a3a3a;
+  --ink-3: #6b6b6b;
+  --ink-4: #a3a3a3;
+  --surface: #ffffff;
+  --surface-2: #f5f4f1;
+  --surface-3: #eceae5;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-med: rgba(0, 0, 0, 0.14);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.14), 0 4px 16px rgba(0, 0, 0, 0.06);
+  --t: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 html,
 body {
   height: 100%;
@@ -49,6 +89,14 @@ body {
   transition: background 0.3s ease, color 0.3s ease;
 }
 
+input,
+textarea {
+  width: 100%;
+  outline: none;
+  border-radius: 4px;
+  border: 1px solid var(--color-offwhite);
+}
+
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -58,8 +106,6 @@ input[type="number"]::-webkit-inner-spin-button {
 input:focus,
 textarea:focus {
   outline: none !important;
-  border-color: #2563eb !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
 }
 
 .clickable {
@@ -93,27 +139,6 @@ textarea:focus {
 
 .data-table tbody tr:hover {
   background-color: rgb(234, 234, 234);
-}
-
-.data-table th:nth-child(1),
-.data-table td:nth-child(1) {
-  width: 40%;
-}
-
-.data-table th:nth-child(2),
-.data-table td:nth-child(2) {
-  width: 30%;
-}
-
-.data-table th:nth-child(3),
-.data-table td:nth-child(3) {
-  width: 20%;
-}
-
-.data-table th:nth-child(4),
-.data-table td:nth-child(4) {
-  width: 10%;
-  text-align: center;
 }
 
 .th-content {
@@ -260,6 +285,8 @@ textarea {
   resize: none;
   font-family: inherit;
   font-size: 14px !important;
+  min-height: 80px;
+  resize: none;
 }
 
 button {
@@ -290,24 +317,44 @@ img {
   padding: 12px;
 }
 
+.border h4 {
+  margin: 0;
+}
+
 .horizontal-form-group {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  flex-direction: row !important;
+  gap: 10px !important;
   width: 100%;
   box-sizing: border-box;
+}
+
+.horizontal-form-group .cdp-wrap,
+.horizontal-form-group .ctp-wrap {
+  width: 100%;
 }
 
 .form-group {
-  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  gap: 6px;
   width: 100%;
   box-sizing: border-box;
 }
 
+.border {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .horizontal-form-group label,
-.form-group label {
+.form-group label,
+.border label {
   display: block;
-  margin-bottom: 6px;
   font-size: 13px;
   font-weight: 500;
   color: #374151;
@@ -384,21 +431,23 @@ button {
 
 .details-container {
   background: #fff;
-  padding: 0 24px 24px 24px;
+  padding: 24px;
   border-radius: 14px;
   width: 100%;
-  max-width: 900px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
-  height: calc(100vh - 140px);
-  overflow-y: auto;
+  height: calc(100vh - 120px);
+  overflow: hidden;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px
 }
 
 .details-header {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 24px 0 0 0;
-  margin-bottom: 16px;
   position: sticky;
   top: 0;
   background: #fff;
@@ -409,6 +458,322 @@ button {
   margin: 0;
   font-size: 22px;
   font-weight: 600;
+}
+
+.details-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.section {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.section-title {
+  font-weight: 600;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.section p {
+  margin: 0 !important;
+}
+
+.section-title.with-action {
+  align-items: center;
+}
+
+.section a {
+  color: var(--color-blue);
+  font-weight: 600;
+}
+
+.details-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background-color: #ffffff;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  box-sizing: border-box;
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+/* --------------filter pill------------------ */
+
+.filter-pill {
+  padding: 5px 12px;
+  border-radius: 999px;
+  /* border: 1.5px solid #e5e7eb; */
+  background: #f9fafb;
+  /* color: #555; */
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  /* transition: all 0.15s; */
+  font-family: inherit;
+  white-space: nowrap;
+
+  outline: none;
+  background-image: linear-gradient(to top, #D8D9DB 0%, #fff 80%, #FDFDFD 100%);
+  border: 1px solid #b1b1b1;
+  transition: all 0.2s ease;
+  color: #606060;
+  text-shadow: 0 1px #fff;
+}
+
+.filter-pill:hover {
+  /* border-color: #bbb;
+    background: #f3f4f6;
+    color: #111; */
+  box-shadow: 0 3px 2px 1px #FCFCFC, 0 3px 4px #D6D7D9, 0 -2px 2px #CECFD1, 0 -4px 2px #FEFEFE, inset 0 0 1px 1px #CECFD1;
+}
+
+.filter-pill.active {
+  /* background: #111;
+    border-color: #111;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); */
+  box-shadow: inset 0 0 6px 1px #98989c;
+}
+
+/* ==============================3D btns ================================ */
+
+/* ── Shared wrapper base ── */
+.modal-save-btn,
+.modal-cancel-btn,
+.modal-prev-btn,
+.modal-next-btn,
+.modal-confirm-btn,
+.modal-danger-btn {
+  position: relative;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  outline-offset: 4px;
+  transition: filter 250ms;
+  user-select: none;
+  touch-action: manipulation;
+  flex-shrink: 0;
+  width: fit-content;
+  padding: 0 !important;
+  margin-top: 6px;
+}
+
+.modal-save-btn:hover,
+.modal-cancel-btn:hover,
+.modal-prev-btn:hover,
+.modal-next-btn:hover,
+.modal-confirm-btn:hover,
+.modal-danger-btn:hover {
+  filter: brightness(108%);
+}
+
+.modal-save-btn:focus:not(:focus-visible),
+.modal-cancel-btn:focus:not(:focus-visible),
+.modal-prev-btn:focus:not(:focus-visible),
+.modal-next-btn:focus:not(:focus-visible),
+.modal-confirm-btn:focus:not(:focus-visible),
+.modal-danger-btn:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ── Shadow layer (shared) ── */
+.modal-save-btn .shadow,
+.modal-cancel-btn .shadow,
+.modal-prev-btn .shadow,
+.modal-next-btn .shadow,
+.modal-confirm-btn .shadow,
+.modal-danger-btn .shadow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  background: hsl(0deg 0% 0% / 0.22);
+  will-change: transform;
+  transform: translateY(2px);
+  transition: transform 600ms cubic-bezier(.3, .7, .4, 1);
+}
+
+.modal-save-btn:hover .shadow,
+.modal-cancel-btn:hover .shadow,
+.modal-prev-btn:hover .shadow,
+.modal-next-btn:hover .shadow,
+.modal-confirm-btn:hover .shadow,
+.modal-danger-btn:hover .shadow {
+  transform: translateY(4px);
+  transition: transform 250ms cubic-bezier(.3, .7, .4, 1.5);
+}
+
+.modal-save-btn:active .shadow,
+.modal-cancel-btn:active .shadow,
+.modal-prev-btn:active .shadow,
+.modal-next-btn:active .shadow,
+.modal-confirm-btn:active .shadow,
+.modal-danger-btn:active .shadow {
+  transform: translateY(1px);
+  transition: transform 34ms;
+}
+
+/* ── Front layer (shared base) ── */
+.modal-save-btn .front,
+.modal-cancel-btn .front,
+.modal-prev-btn .front,
+.modal-next-btn .front,
+.modal-confirm-btn .front,
+.modal-danger-btn .front {
+  display: block;
+  position: relative;
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 700;
+  will-change: transform;
+  transform: translateY(-4px);
+  transition: transform 600ms cubic-bezier(.3, .7, .4, 1);
+  white-space: nowrap;
+}
+
+.modal-save-btn:hover .front,
+.modal-cancel-btn:hover .front,
+.modal-prev-btn:hover .front,
+.modal-next-btn:hover .front,
+.modal-confirm-btn:hover .front,
+.modal-danger-btn:hover .front {
+  transform: translateY(-6px);
+  transition: transform 250ms cubic-bezier(.3, .7, .4, 1.5);
+}
+
+.modal-save-btn:active .front,
+.modal-cancel-btn:active .front,
+.modal-prev-btn:active .front,
+.modal-next-btn:active .front,
+.modal-confirm-btn:active .front,
+.modal-danger-btn:active .front {
+  transform: translateY(-2px);
+  transition: transform 34ms;
+}
+
+/* ── SAVE (black) ── */
+.modal-save-btn .edge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  background: var(--edge-blue);
+}
+
+.modal-save-btn .front {
+  background: var(--color-blue);
+  color: var(--color-white);
+}
+
+/* ── CANCEL / CLOSE (grey) ── */
+.modal-cancel-btn .edge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  background: var(--edge-white);
+}
+
+.modal-cancel-btn .front {
+  background: var(--color-offwhite);
+  color: var(--text-primary);
+}
+
+/* ── PREV / BACK (grey) ── */
+.modal-prev-btn .edge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  background: var(--edge-white);
+}
+
+.modal-prev-btn .front {
+  background: var(--color-offwhite);
+  color: var(--text-primary);
+}
+
+/* ── NEXT (blue) ── */
+.modal-next-btn .edge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  background: var(--edge-blue);
+}
+
+.modal-next-btn .front {
+  background: var(--color-blue);
+  color: #fff;
+}
+
+/* ── CONFIRM (green) ── */
+.modal-confirm-btn .edge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  background: var(--edge-green);
+}
+
+.modal-confirm-btn .front {
+  background: #16a34a;
+  color: #fff;
+}
+
+/* ── DANGER / DELETE (red) ── */
+.modal-danger-btn .edge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  background: var(--edge-red);
+}
+
+.modal-danger-btn .front {
+  background: #dc2626;
+  color: #fff;
+}
+
+.close-padding {
+  padding: 8px 10px !important;
 }
 
 /* ================= HEADER ================= */
@@ -427,9 +792,10 @@ button {
   left: 0;
   width: 100%;
   box-sizing: border-box;
-  background: #ffffff;
-  border-radius: 6px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+  background-color: var(--color-white);
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   padding: 6px;
   z-index: 2000;
   animation: dropdownFade 0.15s ease;
@@ -469,6 +835,12 @@ button {
   border-color: #111;
   background: #fff;
   box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.07);
+}
+
+.actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
 }
 
 @media (max-width: 768px) {

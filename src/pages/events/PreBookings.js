@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
+import closeIcon from "../../icon/close-icon.png";
 import "./PreBookings.css";
 import "./EvtCommon.css";
 import "../ModalCSS.css";
@@ -12,6 +13,50 @@ import { CustomTimePicker } from "../../components/CustomTimePicker";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+
+
+// ── CustomDropdown ────────────────────────────────────────────────────────────
+function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
+  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
+  const wrapperClass = ["mat-select", value ? "has-value" : "", open ? "is-open" : ""].filter(Boolean).join(" ");
+  return (
+    <div className={wrapperClass} ref={ref}>
+      {label && <label className="mat-label">{label}{required && <span className="rf-req">*</span>}</label>}
+      <div className="dishes-dropdown-wrapper">
+        <button type="button" className="dishes-status-dropdown"
+          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
+          {displayLabel || ""}
+        </button>
+        {open && (
+          <div className="dropdown-menu">
+            <div onClick={() => { onChange(""); setOpen(false); }}>{placeholder}</div>
+            {options.map((o, i) => {
+              const val = o.value !== undefined ? o.value : o;
+              const lbl = o.label !== undefined ? o.label : o;
+              return (
+                <div key={i} onClick={() => { onChange(val); setOpen(false); }}
+                  style={{ padding: "8px 12px", fontSize: 14, cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"}
+                  onMouseLeave={e => e.currentTarget.style.background = ""}>
+                  {lbl}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      <span className="mat-bar" />
+    </div>
+  );
+}
 
 const pad = (n) => String(n).padStart(2, "0");
 const todayStr = () => new Date().toISOString().split("T")[0];
@@ -115,33 +160,101 @@ const PreDishPicker = ({ menuData, selectedItems, setSelectedItems, guests }) =>
 
   const isSelected = (id) => selectedItems.some(i => i.id === id);
 
+  const subtotal = selectedItems.reduce((s, i) => s + (i.totalPrice || 0), 0);
+  const isGroupDiscount = guestCount > 8;
+  const discount = isGroupDiscount ? Math.round(subtotal * 0.1) : 0;
+  const totalAmount = subtotal - discount;
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, height: "100%" }}>
-      <select style={{ padding: "7px 10px", borderRadius: 8, border: "1.5px solid #e5e7eb", fontSize: 13, fontFamily: "inherit" }}
-        value={activeCat} onChange={e => setActiveCat(e.target.value)}>
-        <option value="">All Categories</option>
-        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-      </select>
-      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4, border: "1px solid #e5e7eb", borderRadius: 8, padding: 6 }}>
-        {filteredDishes.length === 0
-          ? <div style={{ textAlign: "center", color: "#aaa", padding: 20, fontSize: 13 }}>No dishes</div>
-          : filteredDishes.map(dish => {
-            const sel = isSelected(dish.id);
-            return (
-              <div key={dish.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 8, background: sel ? "#fff5f5" : "transparent", cursor: "pointer" }}
-                onClick={() => toggle(dish)}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 13, color: "#111" }}>{dish.name}</div>
-                  <div style={{ fontSize: 11, color: "#888" }}>₹{dish.price}/person × {guestCount} = <strong style={{ color: "#e74c3c" }}>₹{(dish.price * guestCount).toLocaleString()}</strong></div>
+    <div className="ae-dishes-split">
+      <div className="ae-dishes-split-left">
+        <div className="ae-dish-selector-v2">
+          <CustomDropdown
+            value={activeCat}
+            onChange={setActiveCat}
+            options={[
+              { value: "", label: "All Categories" },
+              ...categories.map(c => ({ value: c.id, label: c.name })),
+            ]}
+          />
+          {filteredDishes.length === 0 ? (
+            <div className="act-dish-empty">No dishes in this category</div>
+          ) : (
+            <div className="act-dish-grid">
+              {filteredDishes.map(dish => {
+                const sel = isSelected(dish.id);
+                return (
+                  <div key={dish.id} className={`act-dish-card${sel ? " selected" : ""}`}>
+                    <div className="act-dish-info">
+                      <span className="act-dish-name">{dish.name}</span>
+                      {dish.category && <span className="act-dish-cat">{dish.category}</span>}
+                      <span className="act-dish-price">₹{dish.price}/person × {guestCount} = <strong style={{ color: "#e74c3c" }}>₹{(dish.price * guestCount).toLocaleString()}</strong></span>
+                    </div>
+                    {sel ? (
+                      <button type="button" className="modal-save-btn" onClick={() => toggle(dish)}>
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front close-padding">✓ Added</span>
+                      </button>
+                    ) : (
+                      <button type="button" className="modal-cancel-btn" onClick={() => toggle(dish)}>
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front close-padding">+ Add</span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="ae-dishes-split-right">
+        <div className="ae-dishes-right-header">
+          Selected Dishes
+          {selectedItems.length > 0 && <span style={{ fontSize: 11, fontWeight: 500, color: "#888", marginLeft: 6 }}>({selectedItems.length})</span>}
+        </div>
+        <div style={{ fontSize: 11, color: "#888", marginBottom: 8 }}>Price = unit × {guestCount} guests</div>
+        {selectedItems.length === 0 ? (
+          <div className="ae-dishes-empty-right">No dishes selected yet.</div>
+        ) : (
+          <>
+            <div className="ae-dishes-right-list">
+              {selectedItems.map(item => (
+                <div key={item.id} className="ae-dishes-right-item">
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: "#111" }}>{item.name}</div>
+                    <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>
+                      ₹{item.unitPrice || item.price} × {guestCount}
+                    </div>
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "var(--color-red,#e74c3c)", flexShrink: 0 }}>
+                    ₹{item.totalPrice || 0}
+                  </div>
+                  <button type="button" className="ae-sdt-remove"
+                    onClick={() => setSelectedItems(p => p.filter(x => x.id !== item.id))}
+                    title="Remove">×</button>
                 </div>
-                <button type="button"
-                  style={{ padding: "3px 10px", borderRadius: 6, border: sel ? "1.5px solid #e74c3c" : "1.5px solid #e74c3c", background: sel ? "#fee2e2" : "transparent", color: "#e74c3c", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                  {sel ? "✓" : "+ Add"}
-                </button>
+              ))}
+            </div>
+            <div className="ae-dishes-right-total">
+              <span>Subtotal</span>
+              <span>₹{subtotal.toLocaleString()}</span>
+            </div>
+            {isGroupDiscount && (
+              <div className="ae-dishes-right-total" style={{ color: "#065f46", fontSize: 12 }}>
+                <span>Group Discount (10%)</span>
+                <span>−₹{discount.toLocaleString()}</span>
               </div>
-            );
-          })
-        }
+            )}
+            <div className="ae-dishes-right-total" style={{ fontWeight: 700, fontSize: 13 }}>
+              <span>Total</span>
+              <span>₹{totalAmount.toLocaleString()}</span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -216,23 +329,37 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className="event-modal" onClick={e => e.stopPropagation()}>
 
         <div className="modal-header">
           <div>
             <h3>Add PreBooking</h3>
-            <div className="evt-spec-steps">
+            <div className="ecard">
               {["Details", "Dishes", "Preview"].map((t, i) => (
                 <button key={i}
-                  className={`evt-spec-step${tab === i ? " active" : ""}${tab > i ? " done" : ""}`}
-                  onClick={() => i < tab && setTab(i)}>
-                  <span className="evt-step-num">{tab > i ? "✓" : i + 1}</span>
-                  <span className="evt-step-label">{t}</span>
+                  className={`ebutton${tab === i ? " active" : ""}${tab > i ? " done" : ""}`}
+                  onClick={() => {
+                    if (i > tab) {
+                      if (tab === 0) {
+                        const ve = validate();
+                        if (Object.keys(ve).length > 0) { setErrors(ve); return; }
+                      }
+                      setTab(i);
+                    } else {
+                      setTab(i);
+                    }
+                  }}>
+                  <span className="eevt-step-num">{tab > i ? "✓" : i + 1}</span>
+                  <span className="eevt-step-label">{t}</span>
                 </button>
               ))}
             </div>
           </div>
-          <button className="close-btn" onClick={onClose}></button>
+          <button className="modal-cancel-btn" onClick={() => { onClose(); setErrors({}); }}>
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front close-padding"><img src={closeIcon} /></span>
+          </button>
         </div>
 
         <div className="modal-body">
@@ -242,9 +369,12 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
             <>
               <div className="evt-pre-modal-row">
                 <div className="form-group">
-                  <label>Name <span className="evt-pre-req">*</span></label>
-                  <input className={`evt-pre-modal-input${errors.name ? " error" : ""}`} placeholder="Guest name"
-                    value={form.name} onChange={e => setF("name", e.target.value)} />
+                  <div className="mat">
+                    <input className={`mat-input${errors.name ? " mat-error" : ""}`} placeholder=" "
+                      value={form.name} onChange={e => { setF("name", e.target.value); setErrors(p => ({ ...p, name: false })); }} />
+                    <label className={`mat-label${errors.name ? " mat-label-error" : ""}`}>Name <span className="evt-pre-req">*</span></label>
+                    <span className={`mat-bar${errors.name ? " mat-bar-error" : ""}`} />
+                  </div>
                 </div>
                 <div className="form-group" style={{ flex: "0 0 130px" }}>
                   <label>Guests <span className="evt-pre-req">*</span></label>
@@ -259,21 +389,27 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
 
               <div className="evt-pre-modal-row">
                 <div className="form-group">
-                  <label>Mobile <span className="evt-pre-req">*</span></label>
-                  <input className={`evt-pre-modal-input${errors.mobile ? " error" : ""}`} placeholder="10-digit number" type="tel"
-                    value={form.mobile} onChange={e => setF("mobile", e.target.value.replace(/\D/g, "").slice(0, 10))} />
+                  <div className="mat">
+                    <input className={`mat-input${errors.mobile ? " mat-error" : ""}`} placeholder=" " type="tel"
+                      value={form.mobile} onChange={e => { setF("mobile", e.target.value.replace(/\D/g, "").slice(0, 10)); setErrors(p => ({ ...p, mobile: false })); }} />
+                    <label className={`mat-label${errors.mobile ? " mat-label-error" : ""}`}>Mobile <span className="evt-pre-req">*</span></label>
+                    <span className={`mat-bar${errors.mobile ? " mat-bar-error" : ""}`} />
+                  </div>
                 </div>
                 <div className="form-group">
-                  <label>Email <span className="evt-pre-opt">(optional)</span></label>
-                  <input className={`evt-pre-modal-input${errors.email ? " error" : ""}`} placeholder="email@example.com" type="email"
-                    value={form.email} onChange={e => setF("email", e.target.value)} />
+                  <div className="mat">
+                    <input className={`mat-input${errors.email ? " mat-error" : ""}`} placeholder=" " type="email"
+                      value={form.email} onChange={e => { setF("email", e.target.value); setErrors(p => ({ ...p, email: false })); }} />
+                    <label className={`mat-label${errors.email ? " mat-label-error" : ""}`}>Email <span className="evt-pre-opt">(optional)</span></label>
+                    <span className={`mat-bar${errors.email ? " mat-bar-error" : ""}`} />
+                  </div>
                 </div>
               </div>
 
               <div className="evt-pre-modal-row">
                 <div className="form-group">
-                  <label>Date <span className="evt-pre-req">*</span></label>
-                  <CustomDatePicker value={form.date} min={todayStr()} onChange={v => setF("date", v)} hasError={!!errors.date} />
+                  <label className={errors.date ? "mat-label-error" : ""}>Date <span className="evt-pre-req">*</span></label>
+                  <CustomDatePicker value={form.date} min={todayStr()} onChange={v => { setF("date", v); setErrors(p => ({ ...p, date: false })); }} hasError={!!errors.date} />
                 </div>
 
                 <div className="form-group">
@@ -304,11 +440,12 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
 
 
                 <div className="form-group">
-                  <label>Time <span className="evt-pre-req">*</span>{!form.slotGroup && <span className="evt-pre-opt"> (select slot first)</span>}</label>
-                  <CustomTimePicker value={form.time} onChange={v => setF("time", v)}
+                  <label className={errors.time ? "mat-label-error" : ""}>Time <span className="evt-pre-req">*</span>{!form.slotGroup && <span className="evt-pre-opt"> (select slot first)</span>}</label>
+                  <CustomTimePicker value={form.time} onChange={v => { setF("time", v); setErrors(p => ({ ...p, time: false })); }}
                     slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
                     slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
                     disabled={!form.slotGroup}
+                    hasError={!!errors.time}
                     isToday={form.date === todayStr()} />
                 </div>
               </div>
@@ -325,44 +462,20 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
               </div>
 
               <div className="form-group">
-                <label>Notes <span className="evt-pre-opt">(optional)</span></label>
-                <textarea className="evt-pre-modal-textarea" rows={2} placeholder="Special requests..."
-                  value={form.notes} onChange={e => setF("notes", e.target.value)} />
+                <div className="mat-area">
+                  <textarea className="mat-input mat-textarea" rows={2} placeholder=" "
+                    value={form.notes} onChange={e => setF("notes", e.target.value)} />
+                  <label className="mat-area-label">Notes (optional)</label>
+                  <span className="mat-area-bar" />
+                </div>
               </div>
             </>
           )}
 
           {/* TAB 1: Dishes */}
           {tab === 1 && (
-            <div style={{ display: "flex", gap: 12, height: 340 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <PreDishPicker menuData={menuData} selectedItems={selectedItems} setSelectedItems={setSelectedItems} guests={form.guests} />
-              </div>
-              <div style={{ width: 200, display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ fontWeight: 600, fontSize: 13, color: "#111", paddingBottom: 6, borderBottom: "1px solid #f0f0f0" }}>
-                  Selected ({selectedItems.length})
-                </div>
-                <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
-                  {selectedItems.length === 0
-                    ? <div style={{ fontSize: 12, color: "#aaa", padding: "12px 0", textAlign: "center" }}>No dishes yet</div>
-                    : selectedItems.map(item => (
-                      <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, gap: 4 }}>
-                        <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }}>{item.name}</span>
-                        <span style={{ fontWeight: 700, color: "#e74c3c", flexShrink: 0 }}>₹{item.totalPrice}</span>
-                        <button type="button" onClick={() => setSelectedItems(p => p.filter(x => x.id !== item.id))}
-                          style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 14, padding: "0 2px" }}>×</button>
-                      </div>
-                    ))
-                  }
-                </div>
-                {subtotal > 0 && (
-                  <div style={{ borderTop: "1px solid #f0f0f0", paddingTop: 8, fontSize: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}><span>Subtotal</span><span>₹{subtotal.toLocaleString()}</span></div>
-                    {isGroupDiscount && <div style={{ display: "flex", justifyContent: "space-between", color: "#065f46" }}><span>Discount 10%</span><span>−₹{discount}</span></div>}
-                    <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 13, marginTop: 4 }}><span>Total</span><span>₹{totalAmount.toLocaleString()}</span></div>
-                  </div>
-                )}
-              </div>
+            <div style={{ height: 380 }}>
+              <PreDishPicker menuData={menuData} selectedItems={selectedItems} setSelectedItems={setSelectedItems} guests={form.guests} />
             </div>
           )}
 
@@ -457,12 +570,18 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
         </div>
 
         <div className="modal-footer">
-          <button type="button" onClick={onClose}>Cancel</button>
+          <button type="button" className="modal-cancel-btn" onClick={() => { onClose(); setErrors({}); }}>
+            <span className="shadow"></span><span className="edge"></span>
+            <span className="front">Cancel</span>
+          </button>
           {tab > 0 && (
-            <button type="button" className="ae-step-prev-btn" onClick={() => setTab(t => t - 1)}>← Back</button>
+            <button type="button" className="modal-prev-btn" onClick={() => setTab(t => t - 1)}>
+              <span className="shadow"></span><span className="edge"></span>
+              <span className="front">← Back</span>
+            </button>
           )}
           {tab < 2 ? (
-            <button type="button"
+            <button type="button" className="modal-next-btn"
               onClick={() => {
                 if (tab === 0) {
                   const ve = validate();
@@ -470,11 +589,13 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                 }
                 setTab(t => t + 1);
               }}>
-              Next →
+              <span className="shadow"></span><span className="edge"></span>
+              <span className="front">Next →</span>
             </button>
           ) : (
-            <button type="button" disabled={saving} onClick={handleSave}>
-              {saving ? "Saving..." : "Create PreBooking"}
+            <button type="button" className="modal-save-btn" disabled={saving} onClick={handleSave}>
+              <span className="shadow"></span><span className="edge"></span>
+              <span className="front">{saving ? "Saving..." : "Create PreBooking"}</span>
             </button>
           )}
         </div>
@@ -690,7 +811,7 @@ const PreBookings = ({ adminData, setAdminData,
           {/* Quick date presets */}
           {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
             <button key={preset}
-              className={`evt-filter-btn${filterDatePreset === preset ? " active" : ""}`}
+              className={`filter-pill${filterDatePreset === preset ? " active" : ""}`}
               onClick={() => {
                 if (filterDatePreset === preset) {
                   setFilterDatePreset(""); setFilterFromDate(""); setFilterToDate("");
@@ -718,7 +839,7 @@ const PreBookings = ({ adminData, setAdminData,
               <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={v => { setFilterToDate(v); setFilterDatePreset(""); }} placeholder="End date" />
             </div>
             {(filterFromDate || filterToDate) && (
-              <button className="evt-filter-btn" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
+              <button className="filter-pill" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
             )}
           </div>
         </div>
@@ -728,7 +849,7 @@ const PreBookings = ({ adminData, setAdminData,
             <span className="evt-filter-group-label">Slot</span>
             {SLOT_GROUPS.map(sg => (
               <button key={sg.key} title={`${sg.label} (${sg.start}–${sg.end})`}
-                className={`evt-filter-btn${filterSlots.has(sg.key) ? " active" : ""}`}
+                className={`filter-pill${filterSlots.has(sg.key) ? " active" : ""}`}
                 onClick={() => toggleSet(setFilterSlots, sg.key)}>
                 {sg.short}
               </button>
@@ -743,7 +864,7 @@ const PreBookings = ({ adminData, setAdminData,
               ["completed", "D", "status-completed", "Done"],
             ].map(([key, short, cls, title]) => (
               <button key={key} title={title}
-                className={`evt-filter-btn${filterStatuses.has(key) ? " active " + cls : ""}`}
+                className={`filter-pill${filterStatuses.has(key) ? " active " + cls : ""}`}
                 onClick={() => toggleSet(setFilterStatuses, key)}>{short}
               </button>
             ))}

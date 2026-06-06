@@ -280,7 +280,7 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
   };
 
   /* ─────────────────────────────────────
-     📞 Scheduling data — derived from adminData (no separate fetch)
+      Scheduling data — derived from adminData (no separate fetch)
   ───────────────────────────────────── */
   const reservations = adminData.reservations || [];
   const prebookings = adminData.preBookings || [];
@@ -364,7 +364,7 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
   }, [todayChips]);
 
   /* ─────────────────────────────────────
-     📞 Mark a call done — append timestamp to the booking's callHistory
+      Mark a call done — append timestamp to the booking's callHistory
   ───────────────────────────────────── */
   // Map chip.type → adminData key + api endpoint
   const TYPE_TO_RESOURCE = {
@@ -526,7 +526,7 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
                   </div>
                   {phone && (
                     <div className="chip-tooltip__row">
-                      <span className="chip-tooltip__icon">📞</span>
+                      <span className="chip-tooltip__icon"></span>
                       <span>{phone}</span>
                     </div>
                   )}
@@ -610,7 +610,7 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
 
           {showPhone && (
             <div className="dropdown phone-dropdown" onClick={(e) => e.stopPropagation()}>
-              <h4 className="dropdown-title">📞 Calls & Reminders</h4>
+              <h4 className="dropdown-title"> Calls & Reminders</h4>
 
               {/* ── TODAY'S CALLS ── */}
               {todayChips.length > 0 && (
@@ -636,21 +636,25 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
                             </span>
                           </div>
                           <p className="phone-list__name">{chip.label}</p>
-                          <p className="phone-list__phone">📱 {phone} &nbsp;·&nbsp; {formatTime(chip.time)}</p>
+                          <p className="phone-list__phone"> {phone} &nbsp;·&nbsp; {formatTime(chip.time)}</p>
                           <div className="phone-list__actions">
                             <button
                               type="button"
-                              className="phone-action-btn phone-action-btn--call"
+                              className="modal-confirm-btn"
                               onClick={(e) => { e.stopPropagation(); handleCallDone(chip); navigate(meta.route); setShowPhone(false); }}
                             >
-                              ✅ Mark Called
+                              <span className="shadow"></span>
+                              <span className="edge"></span>
+                              <span className="front">Mard Called</span>
                             </button>
                             <button
                               type="button"
-                              className="phone-action-btn phone-action-btn--view"
+                              className="modal-save-btn"
                               onClick={(e) => { e.stopPropagation(); navigate(meta.route); setShowPhone(false); }}
                             >
-                              View
+                              <span className="shadow"></span>
+                              <span className="edge"></span>
+                              <span className="front">View</span>
                             </button>
                           </div>
                         </li>
@@ -681,7 +685,7 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
                             <strong>{name}</strong>
                             <span>{formatDate(item._date || item.date)} {item.time ? `· ${formatTime(item.time)}` : ""}</span>
                           </div>
-                          <span className="phone-list__phone-sm">📱 {phone}</span>
+                          <span className="phone-list__phone-sm"> {phone}</span>
                         </li>
                       );
                     })}
@@ -700,14 +704,9 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
                       const meta = TYPE_META[log.type] || {};
                       return (
                         <li key={log.id} className="phone-list__item phone-list__item--compact phone-list__item--log">
-                          <span
-                            className="phone-list__badge phone-list__badge--sm"
-                            style={{ background: meta.color || "#555" }}
-                          >
-                          </span>
                           <div className="phone-list__compact-info">
                             <strong>{log.name}</strong>
-                            <span>{meta.label || log.type} · 📱 {log.phone}</span>
+                            <span>{meta.label || log.type} ·  {log.phone}</span>
                           </div>
                           <span className="phone-list__phone-sm phone-list__phone-sm--time">
                             {new Date(log.calledAt).toLocaleTimeString("en-IN", {
@@ -774,8 +773,10 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
                   <li><span>No new notifications</span></li>
                 )}
               </ul>
-              <button className="view-all-btn" type="button" onClick={(e) => { e.stopPropagation(); setShowNotifications(false); navigate("/orders"); }}>
-                View all notifications
+              <button className="modal-save-btn" style={{width: "100%", marginTop: "10px"}} type="button" onClick={(e) => { e.stopPropagation(); setShowNotifications(false); navigate("/orders"); }}>
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">View all notifications</span>
               </button>
             </div>
           )}
@@ -809,8 +810,10 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
                 </div>
               </div>
               <div className="dropdown-divider" />
-              <button type="button" className="logout-btn" onClick={(e) => { e.stopPropagation(); setIsAuthenticated(false); }}>
-                Logout
+              <button type="button" style={{width: "100%"}} className="modal-danger-btn" onClick={(e) => { e.stopPropagation(); setIsAuthenticated(false); }}>
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">Logout</span>
               </button>
             </div>
           )}

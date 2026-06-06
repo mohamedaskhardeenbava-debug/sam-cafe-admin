@@ -1,4 +1,4 @@
-import "./App.css"; //admon panel
+import "./App.css"; //admin panel
 import { useState, useEffect, useRef } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import api from "./api";
@@ -344,9 +344,7 @@ function App() {
             return prev;
 
           // ── Other simple flat resources ─────────────────────────────────
-          default:
-            // For any other resource (ingredients, staff, offers…)
-            // do a targeted re-fetch of just that slice
+          default: {
             const RESOURCE_KEY_MAP = {
               ingredients: "ingredients",
               staff: "staff",
@@ -358,12 +356,52 @@ function App() {
               cateringOrders: "cateringOrders",
             };
             const key = RESOURCE_KEY_MAP[resource];
-            if (key) {
-              api.get(`/${resource}`).then(r => {
-                setAdminData(p => ({ ...p, [key]: r.data || [] }));
-              }).catch(() => { });
+            if (!key) return prev;
+
+            // ── deleted: remove by id — NO async re-fetch ─────────────────
+            // Re-fetching after delete races against the page component's own
+            // setAdminData call: the fetch resolves ~50-200 ms later and writes
+            // the stale list back, making the deleted row reappear until reload.
+            if (action === "deleted") {
+              const deletedId = payload?.id ?? payload;
+              if (!deletedId) return prev;
+              return {
+                ...prev,
+                [key]: (prev[key] || []).filter(
+                  item => String(item.id) !== String(deletedId)
+                )
+              };
             }
+
+            // ── created: append in place ──────────────────────────────────
+            if (action === "created" && payload) {
+              const alreadyExists = (prev[key] || []).some(
+                item => String(item.id) === String(payload.id)
+              );
+              if (alreadyExists) return prev;
+              return { ...prev, [key]: [...(prev[key] || []), payload] };
+            }
+
+            // ── updated: patch in place ───────────────────────────────────
+            if (action === "updated" && payload) {
+              const exists = (prev[key] || []).some(
+                item => String(item.id) === String(payload.id)
+              );
+              if (!exists) return prev;
+              return {
+                ...prev,
+                [key]: (prev[key] || []).map(item =>
+                  String(item.id) === String(payload.id) ? payload : item
+                )
+              };
+            }
+
+            // ── unknown action: safe fallback re-fetch ────────────────────
+            api.get(`/${resource}`).then(r => {
+              setAdminData(p => ({ ...p, [key]: r.data || [] }));
+            }).catch(() => { });
             return prev;
+          }
         }
       });
     };
@@ -386,24 +424,16 @@ function App() {
 
   const addStaff = async (staff) => {
     try {
-      const res = await api.post("/staff", staff);
-
-      setAdminData(prev => ({
-        ...prev,
-        staff: [...prev.staff, res.data]
-      }));
+      await api.post("/staff", staff);
+      // State update handled by socket data-change handler
     } catch (err) {
       console.error("Add staff failed:", err.response?.data || err.message);
     }
   };
 
   const updateStaff = async (id, updated) => {
-    const res = await api.put(`/staff/${id}`, updated);
-
-    setAdminData(prev => ({
-      ...prev,
-      staff: prev.staff.map(s => s.id === id ? res.data : s)
-    }));
+    await api.put(`/staff/${id}`, updated);
+    // State update handled by socket data-change handler
   };
 
   const deleteStaff = async (id) => {
@@ -417,14 +447,8 @@ function App() {
 
   const updateIngredient = async (id, updated) => {
     try {
-      const res = await api.put(`/ingredients/${id}`, updated);
-
-      setAdminData(prev => ({
-        ...prev,
-        ingredients: prev.ingredients.map(i =>
-          i.id === id ? res.data : i
-        )
-      }));
+      await api.put(`/ingredients/${id}`, updated);
+      // State update handled by socket data-change handler
     } catch (err) {
       console.error("Update ingredient failed:", err);
     }
@@ -696,6 +720,7 @@ function App() {
               element={
                 <Staffs
                   adminData={adminData}
+                  setAdminData={setAdminData}
                   onAdd={addStaff}
                   onUpdate={updateStaff}
                   onDelete={deleteStaff}
@@ -725,8 +750,8 @@ function App() {
               }
             />
 
-            <Route path="/staff-salary" element={<StaffSalary adminData={adminData} />} />
-            <Route path="/staff-career" element={<StaffCareer adminData={adminData} />} />
+            <Route path="/staff-salary" element={<StaffSalary adminData={adminData} setAdminData={setAdminData} />} />
+            <Route path="/staff-career" element={<StaffCareer adminData={adminData} setAdminData={setAdminData} />} />
             <Route path="/staff-training" element={<StaffTraining adminData={adminData} setAdminData={setAdminData} />} />
 
             <Route

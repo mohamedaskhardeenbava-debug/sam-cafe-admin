@@ -23,9 +23,8 @@
 
 .favourite-details-image {
   position: relative;
-  width: 50%;
+  width: 72px;
   aspect-ratio: 1 / 1;
-  background-color: #f0f0f0;
 }
 
 .favourite-details-image img {
@@ -33,23 +32,6 @@
   height: 100%;
   object-fit: cover;
   border-radius: 12px;
-}
-
-.section {
-  margin-bottom: 22px;
-}
-
-.fav-section-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-weight: 600;
-  padding-bottom: 2px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.fav-section-title p {
-    margin: 0;
 }
 
 .edit-icon {
@@ -110,22 +92,4 @@
   margin-top: 10px;
   display: flex;
   gap: 10px;
-}
-
-.action button,
-.actions button {
-  padding: 6px 14px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-}
-
-.action button:first-child,
-.actions button:first-child {
-  background: #111;
-  color: #fff;
-}
-
-.clickable {
-  cursor: pointer;
 }

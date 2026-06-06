@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import * as XLSX from "xlsx";
 import "./KitchenRecipe.css";
 import deleteIcon from "../../icon/delete-icon.png";
+import closeIcon from "../../icon/close-icon.png";
 import api from "../../api";
 
 export default function KitchenRecipe({ adminData, setAdminData }) {
@@ -9,6 +10,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", description: "" });
   const [recipeSearch, setRecipeSearch] = useState("");
+  const [formErrors, setFormErrors] = useState({});
 
   const filteredRecipes = useMemo(() => {
     const q = recipeSearch.toLowerCase();
@@ -31,11 +33,14 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
     XLSX.writeFile(wb, `recipes_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
-  const resetForm = () => setForm({ name: "", description: "" });
+  const resetForm = () => { setForm({ name: "", description: "" }); setFormErrors({}); };
 
   const addRecipe = async (e) => {
     e.preventDefault();
-    if (!form.name.trim()) return;
+    const errs = {};
+    if (!form.name.trim()) errs.name = true;
+    if (!form.description.trim()) errs.description = true;
+    if (Object.keys(errs).length) { setFormErrors(errs); return; }
 
     const newRecipe = { id: Date.now(), ...form };
     await api.post("/recipes", newRecipe);
@@ -63,8 +68,19 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
       <div className="recipe-header">
         <h2>Recipes</h2>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="export-btn" onClick={exportRecipes}>Export</button>
-          <button className="category-add-btn" onClick={() => setShowForm(true)}>+ Add Recipe</button>
+          <button
+            className="modal-save-btn"
+            onClick={exportRecipes}
+          >
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">Export</span>
+          </button>
+          <button className="modal-save-btn" onClick={() => setShowForm(true)}>
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">+ Add Recipe</span>
+          </button>
         </div>
       </div>
 
@@ -133,43 +149,63 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
               <h3>Add Recipe</h3>
               <button
                 type="button"
-                className="close-btn"
+                className="modal-cancel-btn"
                 onClick={() => { resetForm(); setShowForm(false); }}
               >
-                ✕
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front close-padding"><img src={closeIcon} /></span>
               </button>
             </div>
 
             <div className="modal-body">
               <div className="form-group">
-                <label>Recipe Name</label>
-                <input
-                  autoFocus
-                  placeholder="e.g. Grilled Salmon"
-                  value={form.name}
-                  onChange={e => setForm({ ...form, name: e.target.value })}
-                />
+                <div className="mat">
+                  <input
+                    className={`mat-input${formErrors.name ? " mat-error" : ""}`}
+                    placeholder=" "
+                    autoFocus
+                    value={form.name}
+                    onChange={e => { setForm({ ...form, name: e.target.value }); setFormErrors(p => ({ ...p, name: false })); }}
+                  />
+                  <label className={`mat-label${formErrors.name ? " mat-label-error" : ""}`}>Recipe Name<span className="rf-req">*</span></label>
+                  <span className={`mat-bar${formErrors.name ? " mat-bar-error" : ""}`} />
+                </div>
               </div>
 
               <div className="form-group" style={{ flex: 1 }}>
-                <label>Steps — one per line</label>
-                <textarea
-                  placeholder={"Preheat oven to 200°C\nSeason the salmon with salt and pepper\nGrill for 12 minutes…"}
-                  value={form.description}
-                  onChange={e => setForm({ ...form, description: e.target.value })}
-                  style={{ minHeight: 200 }}
-                />
+                <div className="mat">
+                  <textarea
+                    className={`mat-input mat-textarea${formErrors.description ? " mat-error" : ""}`}
+                    placeholder=" "
+                    value={form.description}
+                    onChange={e => { setForm({ ...form, description: e.target.value }); setFormErrors(p => ({ ...p, description: false })); }}
+                    style={{ minHeight: 200 }}
+                  />
+                  <label className={`mat-label${formErrors.description ? " mat-label-error" : ""}`}>Steps — one per line<span className="rf-req">*</span></label>
+                  <span className={`mat-bar${formErrors.description ? " mat-bar-error" : ""}`} />
+                </div>
               </div>
             </div>
 
             <div className="modal-footer ">
               <button
+                className="modal-cancel-btn"
                 type="button"
                 onClick={() => { resetForm(); setShowForm(false); }}
               >
-                Cancel
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">Cancel</span>
               </button>
-              <button type="submit">Save Recipe</button>
+              <button
+                className="modal-save-btn"
+                type="submit"
+              >
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">Save Recipe</span>
+              </button>
             </div>
           </form>
         </div>
@@ -188,10 +224,12 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
               </div>
               <button
                 type="button"
-                className="close-btn"
+                className="modal-cancel-btn"
                 onClick={() => setSelected(null)}
               >
-                ✕
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front close-padding"><img src={closeIcon} /></span>
               </button>
             </div>
 
@@ -206,8 +244,16 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
               </ul>
             </div>
 
-            <div className="modal-footer ">
-              <button type="button" onClick={() => setSelected(null)}>Close</button>
+            <div className="modal-footer">
+              <button
+                className="modal-cancel-btn"
+                type="button"
+                onClick={() => setSelected(null)}
+              >
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">Close</span>
+              </button>
             </div>
           </div>
         </div>

@@ -62,7 +62,6 @@
     -5px -5px 12px white,
     5px 5px 12px rgb(153, 161, 175),
     inset -2px -2px 5px rgb(209, 213, 220);
-  z-index: 100;
 }
 
 .kpi-small.status-placed h3,
@@ -133,7 +132,6 @@
     -5px -5px 12px white,
     5px 5px 12px rgb(153, 161, 175),
     inset -10px -10px 20px rgb(209, 213, 220);
-  z-index: 100;
 }
 
 .kpi-card.kpi-small {
@@ -142,7 +140,6 @@
   box-shadow:
     -5px -5px 10px white,
     5px 5px 10px rgb(153, 161, 175);
-  z-index: 100;
 }
 
 .kpi-card p {
@@ -927,33 +924,8 @@
 .dash-preset-btns {
   display: flex;
   gap: 6px;
-  align-items: center;
-}
-
-.dash-preset-btn {
+  align-items: stretch;
   height: 38px;
-  padding: 0 14px;
-  border-radius: 999px;
-  border: 1.5px solid #e0e0e0;
-  background: #fff;
-  color: #555;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.18s ease;
-  white-space: nowrap;
-}
-
-.dash-preset-btn:hover {
-  border-color: #bbb;
-  color: #111;
-  background: #f9f9f9;
-}
-
-.dash-preset-btn.active {
-  background: #111;
-  border-color: #111;
-  color: #fff;
 }
 
 .dashboard-filter-date {

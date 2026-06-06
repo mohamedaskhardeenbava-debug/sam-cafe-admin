@@ -54,7 +54,14 @@ export default function KitchenActivityLog({ adminData }) {
         <div className="activity-page">
             <div className="activity-header">
                 <h2 className="activity-title">Kitchen Activity Log</h2>
-                <button className="export-btn" onClick={exportToExcel}>Export</button>
+                <button 
+                className="modal-save-btn" 
+                onClick={exportToExcel}
+                >
+                    <span className="shadow"></span>
+                    <span className="edge"></span>
+                    <span className="front">Export</span>
+                </button>
             </div>
 
             <div className="activity-filter-bar">
@@ -66,7 +73,7 @@ export default function KitchenActivityLog({ adminData }) {
                     onChange={(s) => { setToDate(s); setActivePreset("custom"); }} />
                 {PRESETS.map(p => (
                     <button key={p.label}
-                        className={`sact-pill-btn${activePreset === p.label ? " active" : ""}`}
+                        className={`filter-pill${activePreset === p.label ? " active" : ""}`}
                         onClick={() => applyPreset(p)}>
                         {p.label}
                     </button>

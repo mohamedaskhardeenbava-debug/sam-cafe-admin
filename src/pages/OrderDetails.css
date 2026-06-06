@@ -21,16 +21,6 @@
   transform: translateY(-50%) rotate(45deg);
 }
 
-/* SECTION – SAME AS IngredientDetails */
-.section {
-  margin-bottom: 22px;
-}
-
-.section-title {
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
 /* ORDER INFO TABLE */
 .order-info-table {
   width: 100%;
@@ -92,7 +82,7 @@
 
 /* TOTAL */
 .order-total {
-  font-size: 18px;
-  font-weight: 600;
-  text-align: right;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-green);
 }

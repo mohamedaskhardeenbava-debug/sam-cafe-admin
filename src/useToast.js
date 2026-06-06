@@ -3,16 +3,16 @@
  * Zero external dependencies. Drop-in replacement for alert().
  *
  * SETUP (do once in your root):
- *   1. Wrap app with <ToastProvider>  in index.js or App.js
- *   2. Place <ToastContainer /> once anywhere inside the provider
- *   3. In any component: const { toast } = useToast();
+ *   1. Wrap app with <ToastProvider> in index.js or App.js
+ *   2. In any component: const { toast } = useToast();
  *      then call:  toast.success("Saved!") / toast.error("Failed") /
- *                  toast.warning("Check input") / toast.info("FYI")
+ *                  toast.warning("Check input") / toast.info("FYI") /
+ *                  toast.confirm("Sure?", onConfirm, onCancel)  ← no timer, has buttons
  *
  * EXPORTS:
  *   ToastProvider   — context provider (wrap root)
- *   ToastContainer  — renders the actual toasts (place once in DOM)
  *   useToast        — hook that returns { toast }
+ *   ToastContainer  — no-op kept for backward compat
  */
 
 import React, {
@@ -23,7 +23,7 @@ import "./Toast.css";
 /* ── Context ─────────────────────────────────────────── */
 const ToastCtx = createContext(null);
 
-/* ── Icons (inline SVG – no icon lib needed) ─────────── */
+/* ── Icons ─────────────────────────────────────────────── */
 const ICONS = {
     success: (
         <svg viewBox="0 0 20 20" fill="currentColor">
@@ -53,10 +53,17 @@ const ICONS = {
                 clipRule="evenodd" />
         </svg>
     ),
+    confirm: (
+        <svg viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clipRule="evenodd" />
+        </svg>
+    ),
 };
 
 /* ── Single Toast ────────────────────────────────────── */
-const Toast = ({ id, type, message, onDismiss }) => {
+const Toast = ({ id, type, message, onDismiss, onConfirm, onCancel }) => {
     const [exiting, setExiting] = React.useState(false);
 
     const dismiss = useCallback(() => {
@@ -64,9 +71,21 @@ const Toast = ({ id, type, message, onDismiss }) => {
         setTimeout(() => onDismiss(id), 300);
     }, [id, onDismiss]);
 
+    const handleConfirm = () => {
+        dismiss();
+        if (onConfirm) onConfirm();
+    };
+
+    const handleCancel = () => {
+        dismiss();
+        if (onCancel) onCancel();
+    };
+
+    const isConfirm = type === "confirm";
+
     return (
         <div
-            className={`bs-toast bs-toast-${type} ${exiting ? "bs-toast-exit" : "bs-toast-enter"}`}
+            className={`bs-toast bs-toast-${isConfirm ? "warning" : type} ${exiting ? "bs-toast-exit" : "bs-toast-enter"}`}
             role="alert"
             aria-live="assertive"
         >
@@ -74,22 +93,34 @@ const Toast = ({ id, type, message, onDismiss }) => {
             <div className="bs-toast-accent" />
 
             {/* Icon */}
-            <div className="bs-toast-icon">{ICONS[type]}</div>
+            <div className="bs-toast-icon">{ICONS[type] || ICONS.warning}</div>
 
-            {/* Message */}
-            <div className="bs-toast-body">{message}</div>
+            {/* Message + confirm buttons */}
+            <div className="bs-toast-body">
+                <span>{message}</span>
+                {isConfirm && (
+                    <div className="bs-toast-confirm-actions">
+                        <button className="bs-toast-confirm-yes" onClick={handleConfirm}>
+                            Yes, delete
+                        </button>
+                        <button className="bs-toast-confirm-no" onClick={handleCancel}>
+                            Cancel
+                        </button>
+                    </div>
+                )}
+            </div>
 
-            {/* Close button */}
-            <button
-                className="bs-toast-close"
-                onClick={dismiss}
-                aria-label="Close"
-            >
-                ×
-            </button>
+            {/* Close button — hidden for confirm toasts (use the action buttons) */}
+            {!isConfirm && (
+                <button className="bs-toast-close" onClick={dismiss} aria-label="Close">
+                    ×
+                </button>
+            )}
 
-            {/* Auto-dismiss progress bar */}
-            <div className={`bs-toast-progress bs-toast-progress-${type}`} />
+            {/* Auto-dismiss progress bar — only for non-confirm toasts */}
+            {!isConfirm && (
+                <div className={`bs-toast-progress bs-toast-progress-${type}`} />
+            )}
         </div>
     );
 };
@@ -99,12 +130,16 @@ export const ToastProvider = ({ children }) => {
     const [toasts, setToasts] = useState([]);
     const counter = useRef(0);
 
-    const push = useCallback((type, message, duration = 3500) => {
+    const push = useCallback((type, message, duration = 3500, extras = {}) => {
         const id = ++counter.current;
-        setToasts(p => [...p, { id, type, message }]);
-        setTimeout(() => {
-            setToasts(p => p.filter(t => t.id !== id));
-        }, duration + 350); // +350 for exit animation
+        setToasts(p => [...p, { id, type, message, ...extras }]);
+
+        // Confirm toasts have no auto-dismiss
+        if (type !== "confirm") {
+            setTimeout(() => {
+                setToasts(p => p.filter(t => t.id !== id));
+            }, duration + 350);
+        }
     }, []);
 
     const dismiss = useCallback((id) => {
@@ -116,12 +151,18 @@ export const ToastProvider = ({ children }) => {
         error: (msg, dur) => push("error", msg, dur),
         warning: (msg, dur) => push("warning", msg, dur),
         info: (msg, dur) => push("info", msg, dur),
+        /**
+         * toast.confirm(message, onConfirm, onCancel?)
+         * Shows a persistent toast with "Yes, delete" / "Cancel" buttons.
+         * No auto-dismiss — stays until the user clicks.
+         */
+        confirm: (msg, onConfirm, onCancel) =>
+            push("confirm", msg, 0, { onConfirm, onCancel }),
     };
 
     return (
         <ToastCtx.Provider value={{ toast }}>
             {children}
-            {/* Portal-style container always rendered inside provider */}
             <div className="bs-toast-container" aria-label="Notifications">
                 {toasts.map(t => (
                     <Toast key={t.id} {...t} onDismiss={dismiss} />
@@ -138,7 +179,7 @@ export const useToast = () => {
     return ctx;
 };
 
-/* ── Standalone ToastContainer (optional, kept for compat) ── */
-export const ToastContainer = () => null; // actual container is inside provider
+/* ── Backward-compat no-op ───────────────────────────── */
+export const ToastContainer = () => null;
 
 export default useToast;

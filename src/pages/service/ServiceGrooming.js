@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import "./ServiceGrooming.css";
 import api from "../../api";
+import closeIcon from "../../icon/close-icon.png";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
@@ -17,6 +18,45 @@ import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
   }
   Today's entries start all false by default (seeded by db.json).
 */
+
+// ── Floating-label CustomDropdown ────────────────────────────────────────────
+function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
+  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
+  const wrapperClass = ["mat-select", value ? "has-value" : "", open ? "is-open" : ""].filter(Boolean).join(" ");
+  return (
+    <div className={wrapperClass} ref={ref}>
+      {label && <label className="mat-label">{label}{required && <span className="rf-req">*</span>}</label>}
+      <div className="dishes-dropdown-wrapper">
+        <button type="button" className="dishes-status-dropdown"
+          onMouseDown={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
+          {displayLabel || ""}
+        </button>
+        {open && (
+          <div className="dropdown-menu">
+            {options.map((o, i) => {
+              const val = o.value !== undefined ? o.value : o;
+              const lbl = o.label !== undefined ? o.label : o;
+              return (
+                <div key={i} onMouseDown={(e) => { e.stopPropagation(); onChange(val); setOpen(false); }}>
+                  {lbl}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      <span className="mat-bar" />
+    </div>
+  );
+}
 
 const GROOM_FIELDS = [
   { key: "uniform", label: "Uniform", icon: "👔" },
@@ -54,7 +94,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
   const [selected, setSelected] = useState(null);
   const [showMemo, setShowMemo] = useState(false);
   const [memo, setMemo] = useState({ staffId: "", text: "" });
-  const [openMemoDropdown, setOpenMemoDropdown] = useState(false);
+  const [memoErrors, setMemoErrors] = useState({});
   const [saving, setSaving] = useState({});
   const [sgroomSearch, setSgroomSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -68,7 +108,6 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
         setSearchOpen(false);
       }
-      setOpenMemoDropdown(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -154,7 +193,10 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
   };
 
   const saveMemo = async () => {
-    if (!memo.staffId || !memo.text) return;
+    const errs = {};
+    if (!memo.staffId) errs.staffId = true;
+    if (!memo.text.trim()) errs.text = true;
+    if (Object.keys(errs).length) { setMemoErrors(errs); return; }
     const memoDate = toLocalISO(new Date());
     const prevData = adminData.serviceGrooming || {};
     const updated = {
@@ -168,7 +210,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
       await api.put("/serviceGrooming", updated);
       setAdminData(prev => ({ ...prev, serviceGrooming: updated }));
     } catch (err) { console.error("Memo save failed:", err.message); }
-    setShowMemo(false); setMemo({ staffId: "", text: "" });
+    setShowMemo(false); setMemo({ staffId: "", text: "" }); setMemoErrors({});
   };
 
   return (
@@ -181,8 +223,22 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
           <p className="sgroom-subtitle">Uniform · Shoes · Grooming</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="export-btn" onClick={exportGrooming}>Export</button>
-          <button className="category-add-btn" onClick={() => setShowMemo(true)}>+ Add Memo</button>
+          <button
+            className="modal-save-btn"
+            onClick={exportGrooming}
+          >
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">Export</span>
+          </button>
+          <button
+            className="modal-save-btn"
+            onClick={() => setShowMemo(true)}
+          >
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">+ Add Memo</span>
+          </button>
         </div>
       </div>
 
@@ -246,7 +302,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
           {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([k, lbl]) => (
-            <button key={k} className={`sched-pill-btn${sgroomPreset === k ? " active" : ""}`}
+            <button key={k} className={`filter-pill${sgroomPreset === k ? " active" : ""}`}
               onClick={() => applyPreset(k)}>{lbl}</button>
           ))}
         </div>
@@ -356,7 +412,11 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
           <div className="modal">
             <div className="modal-header">
               <h3>Grooming Details</h3>
-              <button className="close-btn" onClick={() => setSelected(null)} />
+              <button className="modal-cancel-btn" onClick={() => setSelected(null)} >
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front close-padding"><img src={closeIcon} /></span>
+              </button>
             </div>
             <div className="modal-body">
               <div className="sgroom-detail-info">
@@ -385,41 +445,53 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
           <div className="modal">
             <div className="modal-header">
               <h3>Add Memo</h3>
-              <button className="close-btn" onClick={() => setShowMemo(false)} />
+              <button className="modal-cancel-btn" onClick={() => { setShowMemo(false); setMemoErrors({}); }} >
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front close-padding"><img src={closeIcon} /></span>
+              </button>
             </div>
             <div className="modal-body">
-              <div className="sgroom-form-group">
-                <label>Staff Member</label>
-                <div className="dishes-dropdown-wrapper">
-                  <button
-                    type="button"
-                    className="dishes-status-dropdown"
-                    onMouseDown={e => { e.stopPropagation(); setOpenMemoDropdown(p => !p); }}
-                  >
-                    {memo.staffId
-                      ? (adminData.staff.find(s => s.id === memo.staffId)?.name || memo.staffId)
-                      : "Select staff…"}
-                  </button>
-                  {openMemoDropdown && (
-                    <div className="dropdown-menu">
-                      {adminData.staff.map(s => (
-                        <div key={s.id} onMouseDown={e => { e.stopPropagation(); setMemo({ ...memo, staffId: s.id }); setOpenMemoDropdown(false); }}>
-                          {s.name}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+              <div className={`form-group${memoErrors.staffId ? " mat-select-error" : ""}`}>
+                <CustomDropdown
+                  label="Staff Member"
+                  value={memo.staffId}
+                  onChange={val => { setMemo({ ...memo, staffId: val }); setMemoErrors(p => ({ ...p, staffId: false })); }}
+                  options={adminData.staff.map(s => ({ value: s.id, label: s.name }))}
+                  placeholder="Select staff…"
+                />
               </div>
-              <div className="sgroom-form-group">
-                <label>Memo Note</label>
-                <textarea value={memo.text} onChange={e => setMemo({ ...memo, text: e.target.value })}
-                  placeholder="Write your memo here…" rows={4} />
+              <div className="form-group">
+                <div className="mat">
+                  <textarea
+                    className={`mat-input mat-textarea${memoErrors.text ? " mat-error" : ""}`}
+                    placeholder=" "
+                    value={memo.text}
+                    onChange={e => { setMemo({ ...memo, text: e.target.value }); setMemoErrors(p => ({ ...p, text: false })); }}
+                    rows={4}
+                  />
+                  <label className={`mat-label${memoErrors.text ? " mat-label-error" : ""}`}>Memo Note<span className="rf-req">*</span></label>
+                  <span className={`mat-bar${memoErrors.text ? " mat-bar-error" : ""}`} />
+                </div>
               </div>
             </div>
             <div className="modal-footer">
-              <button onClick={() => setShowMemo(false)}>Cancel</button>
-              <button onClick={saveMemo}>Save Memo</button>
+              <button
+                className="modal-cancel-btn"
+                onClick={() => { setShowMemo(false); setMemoErrors({}); }}
+              >
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">Cancel</span>
+              </button>
+              <button
+                className="modal-save-btn"
+                onClick={saveMemo}
+              >
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">Save Memo</span>
+              </button>
             </div>
           </div>
         </div>

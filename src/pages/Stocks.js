@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../api";
 import editIcon from "../icon/edit-icon.png";
 import deleteIcon from "../icon/delete-icon.png";
+import closeIcon from "../icon/close-icon.png";
 import * as XLSX from "xlsx";
 import { EmptyRow } from "../App";
 import { formatDisplayDate } from "../App";
@@ -26,6 +27,61 @@ const applyAutoColumnWidth = (sheet, rows) => {
   }));
 };
 
+// ── CustomDropdown (floating label version) ──────────────────────────────────
+function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
+  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
+
+  const wrapperClass = [
+    "mat-select",
+    value ? "has-value" : "",
+    open ? "is-open" : "",
+  ].filter(Boolean).join(" ");
+
+  return (
+    <div className={wrapperClass} ref={ref}>
+      {label && (
+        <label className="mat-label">
+          {label}{required && <span className="rf-req">*</span>}
+        </label>
+      )}
+      <div className="dishes-dropdown-wrapper">
+        <button type="button" className="dishes-status-dropdown"
+          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
+          {displayLabel || ""}
+        </button>
+        {open && (
+          <div className="dropdown-menu">
+            <div onClick={() => { onChange(""); setOpen(false); }}>
+              {placeholder}
+            </div>
+            {options.map((o, i) => {
+              const val = o.value !== undefined ? o.value : o;
+              const lbl = o.label !== undefined ? o.label : o;
+              return (
+                <div key={i} onClick={() => { onChange(val); setOpen(false); }}
+                  style={{ padding: "8px 12px", fontSize: 14, cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"}
+                  onMouseLeave={e => e.currentTarget.style.background = ""}>
+                  {lbl}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      <span className="mat-bar" />
+    </div>
+  );
+}
+
 const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
   const navigate = useNavigate();
   const today = new Date().toISOString().split("T")[0];
@@ -33,7 +89,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
 
-  const [openDishDropdown, setOpenDishDropdown] = useState(false);
+
   const [openFrom, setOpenFrom] = useState(false);
   const [openTo, setOpenTo] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -46,14 +102,6 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
   const [disableGlobally, setDisableGlobally] = useState(false);
   const [selectedDishToDisable, setSelectedDishToDisable] = useState("");
 
-  useEffect(() => {
-    const closeDropdowns = () => {
-      setOpenDishDropdown(false);
-    };
-
-    window.addEventListener("click", closeDropdowns);
-    return () => window.removeEventListener("click", closeDropdowns);
-  }, []);
 
   const dishesContainingIngredient = useMemo(() => {
     if (!selectedIngredient) return [];
@@ -305,10 +353,12 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         <h2 className="stocks-title">Stocks</h2>
 
         <button
-          className="export-btn"
+          className="modal-save-btn"
           onClick={handleExportStocks}
         >
-          Export
+          <span className="shadow"></span>
+          <span className="edge"></span>
+          <span className="front">Export</span>
         </button>
       </div>
 
@@ -493,44 +543,68 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
             <div className="modal-header">
               <h3>Edit Stock & Price for {selectedIngredient.name}</h3>
               <button
-                className="close-btn"
+                className="modal-cancel-btn"
                 onClick={closeModal}
-              ></button>
+              >
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front close-padding"><img src={closeIcon} /></span>
+              </button>
             </div>
 
             <div className="modal-body">
               <div className="form-group">
-                <label>Price per 100g</label>
-                <input
-                  autoFocus
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={pricePer100g}
-                  onChange={(e) => setPricePer100g(e.target.value)}
-                />
+                <label></label>
+
               </div>
 
               <div className="form-group">
-                <label>Stock Max (kg)</label>
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={stockMax}
-                  onChange={(e) => setStockMax(e.target.value)}
-                />
+                <div className="mat">
+                  <input
+                    className="mat-input"
+                    placeholder=" "
+                    autoFocus
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={pricePer100g}
+                    onChange={(e) => setPricePer100g(e.target.value)}
+                  />
+                  <label className="mat-label">Price per 100g<span className="rf-req">*</span></label>
+                  <span className="mat-bar" />
+                </div>
               </div>
 
               <div className="form-group">
-                <label>Add Stock in kg</label>
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={addStock}
-                  onChange={(e) => setAddStock(e.target.value)}
-                />
+                <div className="mat">
+                  <input
+                    className="mat-input"
+                    placeholder=" "
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={stockMax}
+                    onChange={(e) => setStockMax(e.target.value)}
+                  />
+                  <label className="mat-label">Stock Max (kg)<span className="rf-req">*</span></label>
+                  <span className="mat-bar" />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <div className="mat">
+                  <input
+                    className="mat-input"
+                    placeholder=" "
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={addStock}
+                    onChange={(e) => setAddStock(e.target.value)}
+                  />
+                  <label className="mat-label">Add Stock in kg<span className="rf-req">*</span></label>
+                  <span className="mat-bar" />
+                </div>
               </div>
 
               {addStock && (
@@ -558,7 +632,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
               </div>
 
-              <div className="disable-section border">
+              <div className="form-group border">
                 <h4>Visibility Controls</h4>
 
                 {/* GLOBAL DISABLE */}
@@ -576,41 +650,18 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
                 {/* DISABLE FOR SPECIFIC DISH */}
                 <div className="form-group">
-                  <label>Disable For Dish</label>
-
-                  <div className="form-group-select-container">
-                    <div className="orders-dropdown-wrapper">
-                      <button
-                        type="button"
-                        className="orders-status-dropdown"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenDishDropdown(prev => !prev);
-                        }}
-                      >
-                        {selectedDishToDisable || "Select Dish"}
-                      </button>
-
-                      {openDishDropdown && (
-                        <div className="dropdown-menu">
-                          {dishesContainingIngredient.map(d => (
-                            <div
-                              key={d.id}
-                              onClick={() => {
-                                setSelectedDishToDisable(d.id);
-                                setOpenDishDropdown(false);
-                              }}
-                            >
-                              {d.name}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                  <div className="form-group">
+                    <CustomDropdown
+                      label="Disable For Dish"
+                      value={selectedDishToDisable}
+                      onChange={(val) => setSelectedDishToDisable(val)}
+                      options={dishesContainingIngredient.map(d => ({ value: d.id, label: d.name }))}
+                      placeholder="Select Dish"
+                    />
 
                     <button
                       type="button"
-                      className="add-visibility-button"
+                      className="modal-save-btn"
                       onClick={() => {
                         if (!selectedDishToDisable) return;
 
@@ -625,14 +676,16 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                         setSelectedDishToDisable("");
                       }}
                     >
-                      Add
+                      <span className="shadow"></span>
+                      <span className="edge"></span>
+                      <span className="front">Add</span>
                     </button>
                   </div>
                 </div>
 
                 {/* TABLE OF DISABLED DISHES */}
                 {(selectedIngredient.disabledForDishes || []).length > 0 && (
-                  <table className="stocks-form-table">
+                  <table className="preview-table">
                     <thead>
                       <tr>
                         <th>Dish</th>
@@ -675,8 +728,22 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
             </div>
 
             <div className="modal-footer">
-              <button onClick={closeModal}>Cancel</button>
-              <button onClick={handleSave}>Save</button>
+              <button
+                onClick={closeModal}
+                className="modal-cancel-btn"
+              >
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">Cancel</span>
+              </button>
+              <button
+                className="modal-save-btn"
+                onClick={handleSave}
+              >
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">Save</span>
+              </button>
             </div>
           </div>
         </div>

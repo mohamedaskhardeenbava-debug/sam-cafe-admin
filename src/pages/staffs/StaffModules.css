@@ -1,26 +1,6 @@
 /* ── GOOGLE FONTS ─────────────────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
 
-/* ── TOKENS ───────────────────────────────────── */
-:root {
-    --ink: #0f0f0f;
-    --ink-2: #3a3a3a;
-    --ink-3: #6b6b6b;
-    --ink-4: #a3a3a3;
-    --surface: #ffffff;
-    --surface-2: #f5f4f1;
-    --surface-3: #eceae5;
-    --border: rgba(0, 0, 0, 0.08);
-    --border-med: rgba(0, 0, 0, 0.14);
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 18px;
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
-    --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.14), 0 4px 16px rgba(0, 0, 0, 0.06);
-    --t: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
 /* ── CARD GRID ────────────────────────────────── */
 .card-grid {
     display: grid;
@@ -209,24 +189,6 @@
 .staff-salary-table td:last-child {
     border-top-right-radius: var(--radius-md);
     border-bottom-right-radius: var(--radius-md);
-}
-
-.staff-salary-table button {
-    padding: 7px 0;
-    width: 100%;
-    font-size: 12px;
-    font-weight: 600;
-    background: var(--ink);
-    color: #fff;
-    border: none;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: var(--t);
-    font-family: var(--font);
-}
-
-.staff-salary-table button:hover {
-    background: var(--ink-2);
 }
 
 /* ── MISC VALUES ──────────────────────────────── */
@@ -647,30 +609,6 @@
     background: var(--ink-2);
 }
 
-.preview-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 6px;
-}
-
-.preview-table td,
-.preview-table th {
-    padding: 8px;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-}
-
-.preview-table th {
-    text-align: left;
-    background: var(--surface-2);
-    font-weight: 600;
-}
-
-.preview-table td {
-    width: 50%;
-    color: var(--ink-2);
-}
-
 .preview-header {
     display: flex;
     gap: 14px;
@@ -744,34 +682,6 @@
     border-color: #111;
     background: #111;
     color: #fff;
-}
-
-/* ── Shared: filter pill btn ── */
-.sched-pill-btn {
-    padding: 5px 12px;
-    border-radius: 999px;
-    border: 1.5px solid #e5e7eb;
-    background: #f9fafb;
-    color: #555;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s;
-    font-family: inherit;
-    white-space: nowrap;
-}
-
-.sched-pill-btn:hover {
-    border-color: #bbb;
-    background: #f3f4f6;
-    color: #111;
-}
-
-.sched-pill-btn.active {
-    background: #111;
-    border-color: #111;
-    color: #fff;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 /* ── Shared: clear filter + result count ── */
@@ -1137,12 +1047,16 @@
     gap: 12px;
 }
 
-.st-file-wrap {
+.file-wrap {
     position: relative;
     overflow: hidden;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
-.st-file-input {
+.file-input {
     position: absolute;
     inset: 0;
     opacity: 0;
@@ -1152,13 +1066,13 @@
     border: none !important;
 }
 
-.st-file-label {
+.file-label {
     display: block;
     padding: 9px 12px;
     border: 1px dashed var(--border-med);
     border-radius: var(--radius-sm);
     font-size: 13px;
     color: var(--ink-3);
-    background: var(--surface-2);
+    background: var(--color-paleblue);
     cursor: pointer;
 }

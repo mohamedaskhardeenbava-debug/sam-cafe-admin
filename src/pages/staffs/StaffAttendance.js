@@ -3,6 +3,7 @@ import * as XLSX from "xlsx";
 import "./StaffAttendance.css";
 import api from "../../api";
 import editIcon from "../../icon/edit-icon.png";
+import closeIcon from "../../icon/close-icon.png";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
@@ -53,6 +54,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
     const [loadingHolidays, setLoadingHolidays] = useState(true);
     const [showHolidayModal, setShowHolidayModal] = useState(false);
     const [holidayForm, setHolidayForm] = useState({ date: "", reason: "" });
+    const [holidayErrors, setHolidayErrors] = useState({});
     const [savingCells, setSavingCells] = useState({});
     const [statsOpen, setStatsOpen] = useState(false);
     const [columnEdit, setColumnEdit] = useState({});
@@ -210,7 +212,10 @@ export default function StaffAttendance({ adminData, setAdminData }) {
 
     // ── Add holiday ───────────────────────────────────────────────
     const addHoliday = async () => {
-        if (!holidayForm.date || !holidayForm.reason) { alert("Fill in both date and reason"); return; }
+        const e = {};
+        if (!holidayForm.date) e.date = true;
+        if (!holidayForm.reason.trim()) e.reason = true;
+        if (Object.keys(e).length) { setHolidayErrors(e); return; }
         try {
             const res = await api.post("/holidays", { date: normalizeDate(holidayForm.date), reason: holidayForm.reason });
             setHolidays(prev => ({ ...prev, [normalizeDate(holidayForm.date)]: holidayForm.reason }));
@@ -274,8 +279,19 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                     </h5>
                 </div>
                 <div className="att-header-right">
-                    <button className="export-btn" onClick={exportAttendance}>Export</button>
-                    <button className="category-add-btn" onClick={() => setShowHolidayModal(true)}>+ Holiday</button>
+                    <button
+                        className="modal-save-btn"
+                        onClick={exportAttendance}
+                    >
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front">Export</span>
+                    </button>
+                    <button className="modal-save-btn" onClick={() => setShowHolidayModal(true)}>
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front">+ Add Holiday</span>
+                    </button>
                 </div>
             </div>
 
@@ -332,7 +348,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                     <span className="att-filter-lbl">Range</span>
                     {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([k, lbl]) => (
-                        <button key={k} className={`sched-pill-btn${attPreset === k ? " active" : ""}`}
+                        <button key={k} className={`filter-pill${attPreset === k ? " active" : ""}`}
                             onClick={() => applyAttPreset(k)}>{lbl}</button>
                     ))}
                 </div>
@@ -351,14 +367,19 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                 )}
 
                 {/* Column-edit all toggle */}
-                <button className="att-col-edit-btn"
+                <button
+                    className="modal-cancel-btn"
                     onClick={() => {
                         const allOn = visibleDates.every(d => columnEdit[d]);
                         const next = {};
                         if (!allOn) visibleDates.forEach(d => { next[d] = true; });
                         setColumnEdit(next);
                     }}>
-                    ✏️ {visibleDates.every(d => columnEdit[d]) ? "Lock All" : "Edit All"}
+                    <span className="shadow"></span>
+                    <span className="edge"></span>
+                    <span className="front">
+                        {visibleDates.every(d => columnEdit[d]) ? "Lock All" : "Edit All"}
+                    </span>
                 </button>
             </div>
 
@@ -556,23 +577,53 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                     <div className="modal">
                         <div className="modal-header">
                             <h3>Add Holiday</h3>
-                            <button className="close-btn" onClick={() => setShowHolidayModal(false)} />
+                            <button className="modal-cancel-btn" onClick={() => { setShowHolidayModal(false); setHolidayErrors({}); setHolidayForm({ date: "", reason: "" }); }}>
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front close-padding"><img src={closeIcon} /></span>
+                            </button>
                         </div>
+
+                        <div className="modal-body">
                             <div className="form-group">
-                                <label>Date</label>
+                                <label className={holidayErrors.date ? "mat-label-error" : ""} style={{ fontSize: 13, marginBottom: 4, display: "block" }}>Date<span style={{ color: "red" }}>*</span></label>
                                 <CustomDatePicker value={holidayForm.date} max={maxDateStr}
-                                    onChange={val => setHolidayForm(prev => ({ ...prev, date: val }))}
-                                    placeholder="Select holiday date" />
+                                    onChange={val => { setHolidayForm(prev => ({ ...prev, date: val })); setHolidayErrors(p => ({ ...p, date: false })); }}
+                                    placeholder="Select holiday date"
+                                    hasError={!!holidayErrors.date} />
                             </div>
+
                             <div className="form-group">
-                                <label>Reason / Name</label>
-                                <input placeholder="e.g. Diwali, Republic Day…"
-                                    value={holidayForm.reason}
-                                    onChange={e => setHolidayForm(prev => ({ ...prev, reason: e.target.value }))} />
+                                <div className="mat">
+                                    <input
+                                        className={`mat-input${holidayErrors.reason ? " mat-error" : ""}`}
+                                        placeholder=" "
+                                        value={holidayForm.reason}
+                                        onChange={e => { setHolidayForm(prev => ({ ...prev, reason: e.target.value })); setHolidayErrors(p => ({ ...p, reason: false })); }}
+                                    />
+                                    <label className={`mat-label${holidayErrors.reason ? " mat-label-error" : ""}`}>Reason<span className="rf-req">*</span></label>
+                                    <span className={`mat-bar${holidayErrors.reason ? " mat-bar-error" : ""}`} />
+                                </div>
                             </div>
+                        </div>
+
                         <div className="modal-footer">
-                            <button onClick={() => setShowHolidayModal(false)}>Cancel</button>
-                            <button onClick={addHoliday}>Save Holiday</button>
+                            <button
+                                onClick={() => { setShowHolidayModal(false); setHolidayErrors({}); setHolidayForm({ date: "", reason: "" }); }}
+                                className="modal-cancel-btn"
+                            >
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front">Cancel</span>
+                            </button>
+                            <button
+                                onClick={addHoliday}
+                                className="modal-save-btn"
+                            >
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front">Save Holiday</span>
+                            </button>
                         </div>
                     </div>
                 </div>

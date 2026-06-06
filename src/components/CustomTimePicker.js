@@ -267,10 +267,10 @@ export const CustomTimePicker = ({
                         <line
                             x1={CENTER} y1={CENTER}
                             x2={handTip.x} y2={handTip.y}
-                            stroke="var(--color-red, #e74c3c)" strokeWidth="2.5" strokeLinecap="round"
+                            stroke="var(--color-blue, #e74c3c)" strokeWidth="2.5" strokeLinecap="round"
                         />
-                        <circle cx={CENTER} cy={CENTER} r="4" fill="var(--color-red, #e74c3c)" />
-                        <circle cx={handTip.x} cy={handTip.y} r="18" fill="var(--color-red, #e74c3c)" opacity="0.18" />
+                        <circle cx={CENTER} cy={CENTER} r="4" fill="var(--color-blue, #e74c3c)" />
+                        <circle cx={handTip.x} cy={handTip.y} r="18" fill="var(--color-blue, #e74c3c)" opacity="0.18" />
                         <circle cx={handTip.x} cy={handTip.y} r="5" fill="#fff" />
 
                         {/* Hour numbers */}
@@ -285,7 +285,7 @@ export const CustomTimePicker = ({
                                     onPointerDown={(e) => { e.stopPropagation(); if (!isDis) tapHour(h); }}
                                 >
                                     <circle cx={pos.x} cy={pos.y} r="16"
-                                        fill={isSel ? "var(--color-red, #e74c3c)" : "transparent"} />
+                                        fill={isSel ? "var(--color-blue, #e74c3c)" : "transparent"} />
                                     <text
                                         x={pos.x} y={pos.y}
                                         textAnchor="middle" dominantBaseline="central"
@@ -308,7 +308,7 @@ export const CustomTimePicker = ({
                                     onPointerDown={(e) => { e.stopPropagation(); tapMinute(m); }}
                                 >
                                     <circle cx={pos.x} cy={pos.y} r="16"
-                                        fill={isSel ? "var(--color-red, #e74c3c)" : isDis ? "#f3f4f6" : "transparent"} />
+                                        fill={isSel ? "var(--color-blue, #e74c3c)" : isDis ? "#f3f4f6" : "transparent"} />
                                     <text
                                         x={pos.x} y={pos.y}
                                         textAnchor="middle" dominantBaseline="central"

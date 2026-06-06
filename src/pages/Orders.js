@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from "react"
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../api";
 import "./Orders.css";
+import closeIcon from "../icon/close-icon.png";
 import * as XLSX from "xlsx";
 import { EmptyRow } from "../App";
 import { QRCodeCanvas } from "qrcode.react";
@@ -156,12 +157,17 @@ const BillLayout = React.memo(({
         <div className="bill-receipt">
             <div className="bill-header">
                 <button
-                    className="orders-close-btn"
+                    className="modal-cancel-btn"
+                    style={{ position: "absolute", right: 0 }}
                     onClick={(e) => {
                         e.stopPropagation();
                         onClose();
                     }}
-                ></button>
+                >
+                    <span class="shadow"></span>
+                    <span class="edge"></span>
+                    <span class="front close-padding"><img src={closeIcon} /></span>
+                </button>
                 <h3>Sam Cafe</h3>
                 <p>Contact: +91-9080179608</p>
                 <hr />
@@ -261,8 +267,13 @@ const BillLayout = React.memo(({
                             value={splitPeople}
                             onChange={(e) => setSplitPeople(e.target.value)}
                         />
-                        <button onClick={applySplitAmount}>
-                            Split Amount
+                        <button
+                            className="modal-save-btn"
+                            onClick={applySplitAmount}
+                        >
+                            <span class="shadow"></span>
+                            <span class="edge"></span>
+                            <span class="front close-padding">Split Amount</span>
                         </button>
                     </div>
 
@@ -274,8 +285,13 @@ const BillLayout = React.memo(({
                             value={splitBills}
                             onChange={(e) => setSplitBills(e.target.value)}
                         />
-                        <button onClick={applySplitBill}>
-                            Split Bill
+                        <button
+                            className="modal-save-btn"
+                            onClick={applySplitBill}
+                        >
+                            <span class="shadow"></span>
+                            <span class="edge"></span>
+                            <span class="front close-padding">Split Bill</span>
                         </button>
                     </div>
 
@@ -1122,21 +1138,21 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                     <div className="orders-filter">
                         <button
                             type="button"
-                            className={`orders-today-btn${datePreset === "today" ? " active" : ""}`}
+                            className={`filter-pill${datePreset === "today" ? " active" : ""}`}
                             onClick={() => applyPreset("today")}
                         >
                             Today
                         </button>
                         <button
                             type="button"
-                            className={`orders-today-btn${datePreset === "week" ? " active" : ""}`}
+                            className={`filter-pill${datePreset === "week" ? " active" : ""}`}
                             onClick={() => applyPreset("week")}
                         >
                             This Week
                         </button>
                         <button
                             type="button"
-                            className={`orders-today-btn${datePreset === "month" ? " active" : ""}`}
+                            className={`filter-pill${datePreset === "month" ? " active" : ""}`}
                             onClick={() => applyPreset("month")}
                         >
                             This Month
@@ -1157,10 +1173,12 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                     </div>
 
                     <button
-                        className="export-btn"
+                        className="modal-save-btn"
                         onClick={() => exportOrders(filteredOrders, fromDate, toDate)}
                     >
-                        Export
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front">Export</span>
                     </button>
                 </div>
 
@@ -1472,7 +1490,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
             {editBillOrder && (
                 <div className="overlay">
-                    <div className="bill-modal" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
                         <BillLayout
                             onClose={closeAllBillOverlays}
                             order={editableBill}
@@ -1510,10 +1528,14 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                             }}
                         />
 
-                        <div className="bill-modal-actions">
-                            <button className="secondary" onClick={() => setEditBillOrder(null)}>Cancel</button>
+                        <div className="modal-footer">
+                            <button className="modal-cancel-btn" onClick={() => setEditBillOrder(null)}>
+                                <span class="shadow"></span>
+                                <span class="edge"></span>
+                                <span class="front">Cancel</span>
+                            </button>
                             <button
-                                className="secondary"
+                                className="modal-prev-btn"
                                 onClick={() => {
                                     const previewData = recalcOrderTotals(editableBill);
 
@@ -1521,10 +1543,12 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                                     setPreviewBillOrder(previewData); // ✅ then open Preview modal
                                 }}
                             >
-                                Preview
+                                <span class="shadow"></span>
+                                <span class="edge"></span>
+                                <span class="front">Preview</span>
                             </button>
                             <button
-                                className="primary"
+                                className="modal-save-btn"
                                 onClick={async () => {
                                     try {
                                         const updatedOrder = recalcOrderTotals(
@@ -1548,7 +1572,9 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                                     }
                                 }}
                             >
-                                Save
+                                <span class="shadow"></span>
+                                <span class="edge"></span>
+                                <span class="front">Save</span>
                             </button>
                         </div>
                     </div>
@@ -1557,22 +1583,24 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
             {previewBillOrder && (
                 <div className="overlay">
-                    <div className="bill-modal">
+                    <div className="modal">
                         <BillLayout
                             onClose={closeAllBillOverlays}
                             order={previewBillOrder}
                             buildUpiUrl={buildUpiUrl}
                         />
 
-                        <div className="bill-modal-actions">
+                        <div className="modal-footer">
                             <button
-                                className="primary"
+                                className="modal-confirm-btn"
                                 onClick={() => {
                                     printBill(previewBillOrder);
                                     setPreviewBillOrder(null);
                                 }}
                             >
-                                Print
+                                <span class="shadow"></span>
+                                <span class="edge"></span>
+                                <span class="front">Print</span>
                             </button>
                         </div>
                     </div>

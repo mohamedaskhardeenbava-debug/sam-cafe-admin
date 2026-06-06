@@ -21,8 +21,57 @@
     transform: translateY(-50%) rotate(45deg);
 }
 
-/* ================= IMAGE ================= */
-/* ================= IMAGE + DOC ROW ================= */
+/* HEADER */
+.details-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.details-header h2 {
+    flex: 1;
+    margin: 0;
+}
+
+/* GLOBAL EDIT BUTTON */
+.global-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    color: #111;
+    transition: all 0.2s ease;
+    margin-left: auto;
+}
+
+.global-edit-btn img {
+    width: 16px;
+    height: 16px;
+}
+
+.global-edit-btn:hover {
+    background: #f0f0f0;
+    border-color: #aaa;
+}
+
+/* STICKY SAVE / CANCEL BAR */
+.global-edit-actions {
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    padding: 12px 0 4px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    margin-top: 20px;
+    z-index: 10;
+}
+
+/* IMAGE + DOC ROW */
 .staff-image-row {
     display: flex;
     gap: 20px;
@@ -31,16 +80,17 @@
 }
 
 .staff-details-image {
-  position: relative;
-  width: 50%;
-  aspect-ratio: 1 / 1;
+    position: relative;
+    width: 20%;
+    aspect-ratio: 1 / 1;
+    border: 4px solid var(--text-placeholder);
 }
 
 .staff-details-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 12px;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 12px;
 }
 
 .image-upload-btn {
@@ -59,80 +109,7 @@
     width: 100%;
 }
 
-/* ================= SECTION ================= */
-.section {
-    margin-top: 22px;
-}
-
-/* TITLE */
-.section-title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 600;
-    padding-bottom: 4px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.section-title span {
-    font-size: 15px;
-}
-
-.edit-icon {
-    margin-left: auto;
-    width: 16px;
-    cursor: pointer;
-}
-
-/* ================= TEXT ================= */
-.section p {
-    margin: 8px 0;
-    font-size: 14px;
-    color: #333;
-}
-
-/* ================= INPUT ================= */
-input,
-textarea {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 7px 8px;
-    font-size: 14px;
-    border-radius: 6px;
-    border: 1px solid #ddd;
-}
-
-textarea {
-    min-height: 80px;
-    resize: none;
-}
-
-/* ================= ACTIONS ================= */
-.actions {
-    margin-top: 10px;
-    display: flex;
-    gap: 10px;
-}
-
-.actions button {
-    padding: 6px 12px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    background: #f0f0f0;
-    transition: 0.2s;
-}
-
-.actions button:first-child {
-    background: #111;
-    color: #fff;
-}
-
-.actions button:hover {
-    transform: scale(1.05);
-}
-
-/* ================= ADD BUTTON ================= */
+/* ADD BUTTON */
 .section button {
     padding: 6px 10px;
     border: none;
@@ -140,13 +117,13 @@ textarea {
     cursor: pointer;
 }
 
-/* ================= DELETE ICON ================= */
+/* DELETE ICON */
 .section img[src*="delete"] {
     width: 16px;
     cursor: pointer;
 }
 
-/* ================= DOCUMENT PREVIEW ================= */
+/* DOCUMENT PREVIEW */
 .document-preview {
     display: flex;
     gap: 12px;
@@ -192,7 +169,7 @@ textarea {
     width: 50%;
 }
 
-/* ================= RESPONSIVE ================= */
+/* RESPONSIVE */
 @media (max-width: 768px) {
     .dish-container {
         padding: 16px;

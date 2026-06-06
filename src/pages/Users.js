@@ -78,8 +78,22 @@ const Users = ({ handleSort, sortConfig, users }) => {
             <div className="users-header">
                 <h2 className="users-title">Users</h2>
                 <div style={{ display: "flex", gap: 8 }}>
-                    <button className="export-btn" onClick={exportUsers}>Export</button>
-                    <button className="category-add-btn" onClick={sendCampaignToAllUsers}>Campaign</button>
+                    <button 
+                    className="modal-save-btn" 
+                    onClick={exportUsers}
+                    >
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front">Export</span>
+                    </button>
+                    <button 
+                    className="modal-save-btn" 
+                    onClick={sendCampaignToAllUsers}
+                    >
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front">Campaign</span>
+                    </button>
                 </div>
             </div>
 

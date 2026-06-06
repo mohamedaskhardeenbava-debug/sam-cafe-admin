@@ -16,7 +16,7 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
     );
 
     const [localIngredient, setLocalIngredient] = useState(null);
-    const [editSection, setEditSection] = useState(null);
+    const [isEditing, setIsEditing] = useState(false);
     const [showBrandInput, setShowBrandInput] = useState(false);
     const [brandInput, setBrandInput] = useState("");
 
@@ -27,7 +27,9 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
     }, [ingredient]);
 
     const resetEditState = () => {
-        setEditSection(null);
+        setIsEditing(false);
+        setShowBrandInput(false);
+        setBrandInput("");
 
         // Revert unsaved changes
         if (ingredient) {
@@ -65,7 +67,9 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
             }));
 
             setLocalIngredient(payload);
-            setEditSection(null);
+            setIsEditing(false);
+            setShowBrandInput(false);
+            setBrandInput("");
 
             // update route if id changed
             if (oldId !== newId) {
@@ -151,208 +155,193 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
                         }}
                     />
                     <h2>{localIngredient.name}</h2>
-                </div>
-
-                {/* CARD */}
-
-                {/* IMAGE */}
-                <div className="ingredient-details-image">
-                    <img src={localIngredient.image} alt={localIngredient.name} />
-                    <label className="image-upload-btn">
-                        Change Image
-                        <input
-                            type="file"
-                            accept="image/*"
-                            hidden
-                            onChange={(e) => handleImageUpload(e)}
-                        />
-                    </label>
-                </div>
-
-                {/* NAME */}
-                <div className="section">
-                    <div className="section-title">
-                        <span>
-                            Name:
-                        </span>
-                        {editSection === "name" ? (
-                            <div className="edit-row">
-                                <input
-                                    autoFocus
-                                    value={localIngredient.name}
-                                    onChange={(e) =>
-                                        setLocalIngredient((prev) => ({
-                                            ...prev,
-                                            name: allowTextInput(
-                                                prev.name,
-                                                e.target.value,
-                                                100,
-                                                5
-                                            )
-                                        }))
-                                    }
-                                    onBlur={(e) =>
-                                        setLocalIngredient((prev) => ({
-                                            ...prev,
-                                            name: toCamelCase(e.target.value)
-                                        }))
-                                    }
-
-                                />
-                                <div className="action">
-                                    <button onClick={() => saveIngredient(localIngredient)}>Save</button>
-                                    <button onClick={resetEditState}>Cancel</button>
-                                </div>
-                            </div>
-                        ) : (
-                            <p>{localIngredient.name}</p>
-                        )}
-                        <img
-                            className="edit-icon"
-                            src={editIcon}
-                            alt="edit"
-                            onClick={() => setEditSection("name")}
-                        />
-                    </div>
-                </div>
-
-                <div className="section">
-                    <div className="section-title">
-                        <span>Brands</span>
-                        <img
-                            className="edit-icon"
-                            src={editIcon}
-                            alt="edit"
-                            onClick={() => setEditSection("brands")}
-                        />
-                    </div>
-
-                    {editSection === "brands" ? (
-                        <>
-                            {!showBrandInput && (
-                                <button
-                                    className="add-ingredient-button"
-                                    onClick={() => setShowBrandInput(true)}
-                                >
-                                    + Add Brand
-                                </button>
-                            )}
-
-                            {showBrandInput && (
-                                <div className="inline-input">
-                                    <input
-                                        autoFocus
-                                        value={brandInput}
-                                        onChange={(e) =>
-                                            setBrandInput(
-                                                allowTextInput(brandInput, e.target.value, 50, 2)
-                                            )
-                                        }
-                                    />
-
-                                    <div className="actions">
-                                        <button
-                                            onClick={() => {
-                                                if (!brandInput.trim()) return;
-
-                                                const id = `brand_${brandInput
-                                                    .toLowerCase()
-                                                    .replace(/\s+/g, "_")}`;
-
-                                                if (
-                                                    localIngredient.brands?.some(
-                                                        b => b.name.toLowerCase() === brandInput.toLowerCase()
-                                                    )
-                                                ) {
-                                                    alert("Brand already exists");
-                                                    return;
-                                                }
-
-                                                setLocalIngredient(prev => ({
-                                                    ...prev,
-                                                    brands: [...(prev.brands || []), { id, name: brandInput }]
-                                                }));
-
-                                                setBrandInput("");
-                                                setShowBrandInput(false);
-                                            }}
-                                        >
-                                            Add
-                                        </button>
-
-                                        <button
-                                            onClick={() => {
-                                                setBrandInput("");
-                                                setShowBrandInput(false);
-                                            }}
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {localIngredient.brands?.length > 0 && (
-                                <table className="ingredient-detail-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Brand</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {localIngredient.brands.map((b, index) => (
-                                            <tr key={b.id}>
-                                                <td>{b.name}</td>
-                                                <td>
-                                                    <div
-                                                        className="ingredient-delete-btn"
-                                                        onClick={() =>
-                                                            setLocalIngredient(prev => ({
-                                                                ...prev,
-                                                                brands: prev.brands.filter((_, i) => i !== index)
-                                                            }))
-                                                        }
-                                                    >
-                                                        <img src={deleteIcon} alt="" />
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            )}
-
-                            <div className="actions">
-                                <button onClick={() => saveIngredient(localIngredient)}>
-                                    Save
-                                </button>
-                                <button onClick={resetEditState}>Cancel</button>
-                            </div>
-                        </>
-                    ) : (
-                        <p>
-                            {localIngredient.brands?.length
-                                ? localIngredient.brands.map(b => b.name).join(", ")
-                                : "-"}
-                        </p>
+                    {!isEditing && (
+                        <button
+                            className="modal-cancel-btn"
+                            onClick={() => setIsEditing(true)}
+                        >
+                            <span className="shadow"></span>
+                            <span className="edge"></span>
+                            <span className="front">
+                                <img src={editIcon} alt="edit" />
+                                Edit
+                            </span>
+                        </button>
                     )}
                 </div>
 
-                {/* USED IN */}
-                <div className="section">
-                    <div className="section-title">
-                        <span>Used In</span>
-                        <img
-                            className="edit-icon"
-                            src={editIcon}
-                            alt="edit"
-                            onClick={() => setEditSection("usedIn")}
-                        />
+                <div className="details-body">
+                    {/* IMAGE — thumbnail style (matches DishDetails) */}
+                    <div className="ingredient-details-image">
+                        <img src={localIngredient.image} alt={localIngredient.name} />
                     </div>
 
-                    {editSection === "usedIn" ? (
-                        <>
+
+                    {isEditing && (
+                        <div style={{ width: "150px" }}>
+                            <div className="file-wrap">
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleImageUpload(e)}
+                                    className="file-input"
+                                />
+                                <div className="file-label">Change Image</div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* NAME */}
+                    <div className="section">
+                        <div className="section-title">
+                            <span>Name</span>
+                        </div>
+                        {isEditing ? (
+                            <input
+                                value={localIngredient.name}
+                                onChange={(e) =>
+                                    setLocalIngredient((prev) => ({
+                                        ...prev,
+                                        name: allowTextInput(prev.name, e.target.value, 100, 5)
+                                    }))
+                                }
+                                onBlur={(e) =>
+                                    setLocalIngredient((prev) => ({
+                                        ...prev,
+                                        name: toCamelCase(e.target.value)
+                                    }))
+                                }
+                            />
+                        ) : (
+                            <p>{localIngredient.name}</p>
+                        )}
+                    </div>
+
+                    <div className="section">
+                        <div className="section-title">
+                            <span>Brands</span>
+                        </div>
+
+                        {isEditing ? (
+                            <>
+                                {!showBrandInput && (
+                                    <button
+                                        className="modal-save-btn"
+                                        onClick={() => setShowBrandInput(true)}
+                                    >
+                                        <span className="shadow"></span>
+                                        <span className="edge"></span>
+                                        <span className="front">Add Brand</span>
+                                    </button>
+                                )}
+
+                                {showBrandInput && (
+                                    <div className="inline-input">
+                                        <input
+                                            autoFocus
+                                            value={brandInput}
+                                            onChange={(e) =>
+                                                setBrandInput(
+                                                    allowTextInput(brandInput, e.target.value, 50, 2)
+                                                )
+                                            }
+                                        />
+
+                                        <div className="actions">
+                                            <button
+                                                className="modal-cancel-btn"
+                                                onClick={() => {
+                                                    setBrandInput("");
+                                                    setShowBrandInput(false);
+                                                }}
+                                            >
+                                                <span className="shadow"></span>
+                                                <span className="edge"></span>
+                                                <span className="front">Cancel</span>
+                                            </button>
+
+                                            <button
+                                                className="modal-save-btn"
+                                                onClick={() => {
+                                                    if (!brandInput.trim()) return;
+
+                                                    const id = `brand_${brandInput
+                                                        .toLowerCase()
+                                                        .replace(/\s+/g, "_")}`;
+
+                                                    if (
+                                                        localIngredient.brands?.some(
+                                                            b => b.name.toLowerCase() === brandInput.toLowerCase()
+                                                        )
+                                                    ) {
+                                                        alert("Brand already exists");
+                                                        return;
+                                                    }
+
+                                                    setLocalIngredient(prev => ({
+                                                        ...prev,
+                                                        brands: [...(prev.brands || []), { id, name: brandInput }]
+                                                    }));
+
+                                                    setBrandInput("");
+                                                    setShowBrandInput(false);
+                                                }}
+                                            >
+                                                <span className="shadow"></span>
+                                                <span className="edge"></span>
+                                                <span className="front">Add</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {localIngredient.brands?.length > 0 && (
+                                    <table className="preview-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Brand</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {localIngredient.brands.map((b, index) => (
+                                                <tr key={b.id}>
+                                                    <td>{b.name}</td>
+                                                    <td>
+                                                        <div
+                                                            className="ingredient-delete-btn"
+                                                            onClick={() =>
+                                                                setLocalIngredient(prev => ({
+                                                                    ...prev,
+                                                                    brands: prev.brands.filter((_, i) => i !== index)
+                                                                }))
+                                                            }
+                                                        >
+                                                            <img src={deleteIcon} alt="" />
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </>
+                        ) : (
+                            <p>
+                                {localIngredient.brands?.length
+                                    ? localIngredient.brands.map(b => b.name).join(", ")
+                                    : "-"}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* USED IN */}
+                    <div className="section">
+                        <div className="section-title">
+                            <span>Used In</span>
+                        </div>
+
+                        {isEditing ? (
                             <div className="checkbox-grid">
                                 {adminData.categories.flatMap(cat => {
 
@@ -420,163 +409,136 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
 
                                 })}
                             </div>
+                        ) : (
+                            <div className="tag-list">
+                                {localIngredient.usedInCategories.map((c) => {
+                                    let label = null;
 
-                            <div className="actions">
-                                <button onClick={() => saveIngredient(localIngredient)}>
-                                    Save
-                                </button>
-                                <button onClick={resetEditState}>Cancel</button>
+                                    for (const cat of adminData.categories) {
+
+                                        if (cat.id === c) {
+                                            label = cat.name;
+                                            break;
+                                        }
+
+                                        const sub = (cat.subCategories || []).find(s => s.id === c);
+
+                                        if (sub) {
+                                            label = sub.name;
+                                            break;
+                                        }
+
+                                    }
+
+                                    return (
+                                        <span key={c} className="tag">
+                                            {label || c}
+                                        </span>
+                                    );
+                                })}
                             </div>
-                        </>
-                    ) : (
-                        <div className="tag-list">
-                            {localIngredient.usedInCategories.map((c) => {
-                                let label = null;
+                        )}
+                    </div>
 
-                                for (const cat of adminData.categories) {
-
-                                    if (cat.id === c) {
-                                        label = cat.name;
-                                        break;
-                                    }
-
-                                    const sub = (cat.subCategories || []).find(s => s.id === c);
-
-                                    if (sub) {
-                                        label = sub.name;
-                                        break;
-                                    }
-
-                                }
-
-                                return (
-                                    <span key={c} className="tag">
-                                        {label || c}
-                                    </span>
-                                );
-                            })}
+                    <div className="section">
+                        <div className="section-title">
+                            <span>Stock & Visibility Info</span>
                         </div>
-                    )}
-                </div>
 
-                <div className="section">
-                    <div className="section-title">
-                        <span>Stock & Visibility Info</span>
-                    </div>
-
-                    <table className="stock-visibility-table">
-                        <tbody>
-                            <tr>
-                                <td><strong>Disabled In</strong></td>
-                                <td
-                                    style={{
-                                        fontWeight: 600,
-                                        color:
-                                            getDisabledInfo().type === "all"
-                                                ? "red"
-                                                : getDisabledInfo().type === "partial"
-                                                    ? "#e6a700"
-                                                    : "#888"
-                                    }}
-                                >
-                                    {getDisabledInfo().label}
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <td><strong>Expiry Date</strong></td>
-                                <td
-                                    style={{
-                                        color: isExpiringSoon(localIngredient.expiryDate)
-                                            ? "red"
-                                            : "inherit",
-                                        fontWeight: isExpiringSoon(localIngredient.expiryDate)
-                                            ? 600
-                                            : 400
-                                    }}
-                                >
-                                    {formatDisplayDate(localIngredient.expiryDate) || "-"}
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <td><strong>Last Purchased</strong></td>
-                                <td>{formatDisplayDate(localIngredient.lastUpdated) || "-"}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* NUTRITION TABLE */}
-                <div className="section">
-                    <div className="section-title">
-                        <span>Nutrition per 100g</span>
-                        <img
-                            className="edit-icon"
-                            src={editIcon}
-                            alt="edit"
-                            onClick={() => setEditSection("nutrition")}
-                        />
-                    </div>
-
-                    <table className="data-table">
-                        <tbody>
-                            {Object.entries(localIngredient.nutritionPer100g).map(([key, value]) => (
-                                <tr key={key}>
-                                    <td>{key}</td>
-                                    <td>
-                                        {editSection === "nutrition" ? (
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                step="1"
-                                                value={value}
-                                                onChange={(e) =>
-                                                    setLocalIngredient({
-                                                        ...localIngredient,
-                                                        nutritionPer100g: {
-                                                            ...localIngredient.nutritionPer100g,
-                                                            [key]: Number(e.target.value)
-                                                        }
-                                                    })
-                                                }
-                                            />
-                                        ) : (
-                                            value
-                                        )}
+                        <table className="data-table">
+                            <tbody>
+                                <tr>
+                                    <td><strong>Disabled In</strong></td>
+                                    <td
+                                        style={{
+                                            fontWeight: 600,
+                                            color:
+                                                getDisabledInfo().type === "all"
+                                                    ? "red"
+                                                    : getDisabledInfo().type === "partial"
+                                                        ? "#e6a700"
+                                                        : "#888"
+                                        }}
+                                    >
+                                        {getDisabledInfo().label}
                                     </td>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
 
-                    {editSection === "nutrition" && (
-                        <div className="actions">
-                            <button onClick={() => saveIngredient(localIngredient)}>
-                                Save
-                            </button>
-                            <button onClick={resetEditState}>Cancel</button>
-                        </div>
-                    )}
-                </div>
+                                <tr>
+                                    <td><strong>Expiry Date</strong></td>
+                                    <td
+                                        style={{
+                                            color: isExpiringSoon(localIngredient.expiryDate)
+                                                ? "red"
+                                                : "inherit",
+                                            fontWeight: isExpiringSoon(localIngredient.expiryDate)
+                                                ? 600
+                                                : 400
+                                        }}
+                                    >
+                                        {formatDisplayDate(localIngredient.expiryDate) || "-"}
+                                    </td>
+                                </tr>
 
-
-                {/* DESCRIPTION */}
-                <div className="section">
-                    <div className="section-title">
-                        Description
-                        <img
-                            className="edit-icon"
-                            src={editIcon}
-                            alt="edit"
-                            onClick={() => setEditSection("description")}
-                        />
+                                <tr>
+                                    <td><strong>Last Purchased</strong></td>
+                                    <td>{formatDisplayDate(localIngredient.lastUpdated) || "-"}</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
 
-                    {editSection === "description" ? (
-                        <div className="edit-row">
+                    {/* NUTRITION TABLE */}
+                    <div className="section">
+                        <div className="section-title">
+                            <span>Nutrition per 100g</span>
+                        </div>
+
+                        <table className="data-table">
+                            <thead>
+                                <th>Nutrition</th>
+                                <th>Value</th>
+                            </thead>
+                            <tbody>
+                                {Object.entries(localIngredient.nutritionPer100g).map(([key, value]) => (
+                                    <tr key={key}>
+                                        <td>{key}</td>
+                                        <td>
+                                            {isEditing ? (
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    step="1"
+                                                    value={value}
+                                                    onChange={(e) =>
+                                                        setLocalIngredient({
+                                                            ...localIngredient,
+                                                            nutritionPer100g: {
+                                                                ...localIngredient.nutritionPer100g,
+                                                                [key]: Number(e.target.value)
+                                                            }
+                                                        })
+                                                    }
+                                                />
+                                            ) : (
+                                                value
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+
+                    {/* DESCRIPTION */}
+                    <div className="section">
+                        <div className="section-title">
+                            Description
+                        </div>
+
+                        {isEditing ? (
                             <textarea
-                                autoFocus
                                 value={localIngredient.description}
                                 onChange={(e) =>
                                     setLocalIngredient({
@@ -585,32 +547,19 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
                                     })
                                 }
                             />
-                            <div className="actions">
-                                <button onClick={() => saveIngredient(localIngredient)}>Save</button>
-                                <button onClick={resetEditState}>Cancel</button>
-                            </div>
-                        </div>
-                    ) : (
-                        <p>{localIngredient.description}</p>
-                    )}
-                </div>
-
-                {/* HISTORY */}
-                <div className="section">
-                    <div className="section-title">
-                        History
-                        <img
-                            className="edit-icon"
-                            src={editIcon}
-                            alt="edit"
-                            onClick={() => setEditSection("history")}
-                        />
+                        ) : (
+                            <p>{localIngredient.description}</p>
+                        )}
                     </div>
 
-                    {editSection === "history" ? (
-                        <div className="edit-row">
+                    {/* HISTORY */}
+                    <div className="section">
+                        <div className="section-title">
+                            History
+                        </div>
+
+                        {isEditing ? (
                             <textarea
-                                autoFocus
                                 value={localIngredient.history}
                                 onChange={(e) =>
                                     setLocalIngredient({
@@ -619,15 +568,33 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
                                     })
                                 }
                             />
-                            <div className="actions">
-                                <button onClick={() => saveIngredient(localIngredient)}>Save</button>
-                                <button onClick={resetEditState}>Cancel</button>
-                            </div>
-                        </div>
-                    ) : (
-                        <p>{localIngredient.history}</p>
-                    )}
+                        ) : (
+                            <p>{localIngredient.history}</p>
+                        )}
+                    </div>
                 </div>
+
+                {/* GLOBAL SAVE / CANCEL BAR */}
+                {isEditing && (
+                    <div className="details-footer">
+                        <button
+                            className="modal-cancel-btn"
+                            onClick={resetEditState}
+                        >
+                            <span className="shadow"></span>
+                            <span className="edge"></span>
+                            <span className="front">Cancel</span>
+                        </button>
+                        <button
+                            className="modal-save-btn"
+                            onClick={() => saveIngredient(localIngredient)}
+                        >
+                            <span className="shadow"></span>
+                            <span className="edge"></span>
+                            <span className="front">Save</span>
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

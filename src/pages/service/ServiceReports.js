@@ -19,18 +19,11 @@ const S = {
 /* ─── Helpers ─────────────────────────────────────────── */
 const parseServiceMise = (serviceMise = {}) => {
   const today = new Date().toISOString().split("T")[0];
-  const dateKeys = Object.keys(serviceMise).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
-  const taskKeys = Object.keys(serviceMise).filter(k => !/^\d{4}-\d{2}-\d{2}$/.test(k));
 
-  let taskMap = {};
-  if (today in serviceMise) {
-    taskMap = serviceMise[today];
-  } else if (dateKeys.length > 0) {
-    taskMap = serviceMise[dateKeys[dateKeys.length - 1]];
-  } else {
-    taskKeys.forEach(k => { taskMap[k] = serviceMise[k]; });
-  }
+  // Only show today's data
+  if (!(today in serviceMise)) return [];
 
+  const taskMap = serviceMise[today];
   return Object.entries(taskMap).map(([task, data]) => ({
     task,
     verified: data.verified === true,
@@ -41,18 +34,11 @@ const parseServiceMise = (serviceMise = {}) => {
 
 const parseServiceAssign = (serviceAssign = {}) => {
   const today = new Date().toISOString().split("T")[0];
-  const dateKeys = Object.keys(serviceAssign).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
 
-  let taskMap = {};
-  if (today in serviceAssign) {
-    taskMap = serviceAssign[today];
-  } else if (dateKeys.length > 0) {
-    taskMap = serviceAssign[dateKeys[dateKeys.length - 1]];
-  } else {
-    // Flat structure: { taskName: { staff, time } }
-    Object.keys(serviceAssign).forEach(k => { taskMap[k] = serviceAssign[k]; });
-  }
+  // Only show today's data
+  if (!(today in serviceAssign)) return [];
 
+  const taskMap = serviceAssign[today];
   return Object.entries(taskMap).map(([task, data]) => ({
     task,
     staff: data.staff || "—",
@@ -251,7 +237,11 @@ const ServiceReports = ({ adminData = {} }) => {
           {(reportFrom || reportTo) && (
             <button className="ae-clear-filter" onClick={() => { setReportFrom(""); setReportTo(""); }}>Clear</button>
           )}
-          <button className="export-btn" onClick={exportReport}>Export Report</button>
+          <button className="modal-save-btn" onClick={exportReport}>
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">Export</span>
+          </button>
         </div>
       </div>
 
@@ -368,8 +358,8 @@ const ServiceReports = ({ adminData = {} }) => {
 
         {/* TABLE MISE */}
         <div className="s-card">
-          <SectionTitle accent={S.amber}>Table Mise Status</SectionTitle>
-          {miseData.length === 0 ? <p className="s-empty">No mise data</p> : (
+          <SectionTitle accent={S.amber}>Table Mise Status <span style={{ fontSize: 11, fontWeight: 400, color: S.muted, marginLeft: 6 }}>— Today</span></SectionTitle>
+          {miseData.length === 0 ? <p className="s-empty">No mise data for today</p> : (
             <div className="s-mise-list">
               {miseData.map((m, i) => (
                 <div key={i} className={`s-mise-row ${m.verified ? "ok" : "no"}`}>
@@ -386,8 +376,8 @@ const ServiceReports = ({ adminData = {} }) => {
 
           <div className="s-section-divider" />
 
-          <SectionTitle accent={S.cyan}>Staff Assignment</SectionTitle>
-          {assignData.length === 0 ? <p className="s-empty">No assignments</p> : (
+          <SectionTitle accent={S.cyan}>Staff Assignment <span style={{ fontSize: 11, fontWeight: 400, color: S.muted, marginLeft: 6 }}>— Today</span></SectionTitle>
+          {assignData.length === 0 ? <p className="s-empty">No assignments for today</p> : (
             <div className="s-assign-list">
               {assignData.map((a, i) => (
                 <div key={i} className="s-assign-row">

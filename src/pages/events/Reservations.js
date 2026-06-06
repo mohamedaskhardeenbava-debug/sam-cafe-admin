@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
+import closeIcon from "../../icon/close-icon.png";
 import "./Reservations.css";
 import "./EvtCommon.css";
 import "../ModalCSS.css";
@@ -27,6 +28,7 @@ function CustomDropdown({ value, onChange, options, placeholder = "Select…" })
   return (
     <div className="dishes-dropdown-wrapper" ref={ref}>
       <button type="button" className="dishes-status-dropdown"
+      style={{height: "38px"}}
         onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
         {label}
       </button>
@@ -631,10 +633,12 @@ const Reservations = ({ adminData, setAdminData,
   };
 
   const SortTh = ({ field, children }) => (
-    <th onClick={() => handleSort(field)} style={{ cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}>
-      {children}
-      <span style={{ marginLeft: 4, opacity: sortField === field ? 1 : 0.3, fontSize: 10 }}>
-        {sortField === field ? (sortDir === "asc" ? "▲" : "▼") : "▲"}
+    <th onClick={() => handleSort(field)}>
+      <span className="th-content sort-th">
+        <span>{children}</span>
+        <span className="sort-arrow">
+          {sortField === field ? (sortDir === "asc" ? "▲" : "▼") : "▲"}
+        </span>
       </span>
     </th>
   );
@@ -673,13 +677,19 @@ const Reservations = ({ adminData, setAdminData,
           ))}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="export-btn" onClick={exportToExcel}>Export</button>
+          <button className="modal-save-btn" onClick={exportToExcel}>
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">Export</span>
+          </button>
           <button className="evt-res-pref-manage-btn" onClick={() => setShowPrefModal(true)}>
             🪑 Table Preferences
           </button>
-          <button className="evt-res-create-btn"
+          <button className="modal-save-btn"
             onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setTablePrefImageFile(null); setCreateTab(0); }}>
-            + Add Reservation
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">+ Add Reservation</span>
           </button>
         </div>
       </div>
@@ -693,7 +703,7 @@ const Reservations = ({ adminData, setAdminData,
           {/* Quick date presets */}
           {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
             <button key={preset}
-              className={`evt-filter-btn${filterDatePreset === preset ? " active" : ""}`}
+              className={`filter-pill ${filterDatePreset === preset ? " active" : ""}`}
               onClick={() => {
                 if (filterDatePreset === preset) {
                   setFilterDatePreset(""); setFilterDate(""); setFilterFromDate(""); setFilterToDate("");
@@ -721,7 +731,7 @@ const Reservations = ({ adminData, setAdminData,
               <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={v => { setFilterToDate(v); setFilterDate(""); setFilterDatePreset(""); }} placeholder="End date" />
             </div>
             {(filterFromDate || filterToDate) && (
-              <button className="evt-filter-btn" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); setFilterDate(""); }} title="Clear dates">✕</button>
+              <button className="filter-pill" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); setFilterDate(""); }} title="Clear dates">✕</button>
             )}
           </div>
         </div>
@@ -733,7 +743,7 @@ const Reservations = ({ adminData, setAdminData,
             <span className="evt-filter-group-label">Slot</span>
             {SLOT_GROUPS.map(sg => (
               <button key={sg.key} title={`${sg.label} (${sg.start}–${sg.end})`}
-                className={`evt-filter-btn ${filterSlots.has(sg.key) ? "active" : ""}`}
+                className={`filter-pill ${filterSlots.has(sg.key) ? "active" : ""}`}
                 onClick={() => toggleSet(setFilterSlots, sg.key)}>
                 {sg.short}
               </button>
@@ -750,7 +760,7 @@ const Reservations = ({ adminData, setAdminData,
               ["cancelled", "X", "status-cancelled", "Cancelled"],
             ].map(([key, short, cls, title]) => (
               <button key={key} title={title}
-                className={`evt-filter-btn ${filterStatuses.has(key) ? "active " + cls : ""}`}
+                className={`filter-pill ${filterStatuses.has(key) ? "active " + cls : ""}`}
                 onClick={() => toggleSet(setFilterStatuses, key)}>{short}</button>
             ))}
           </div>
@@ -760,7 +770,7 @@ const Reservations = ({ adminData, setAdminData,
             <span className="evt-filter-group-label">Source</span>
             {SOURCE_OPTIONS.map(s => (
               <button key={s.label} title={s.label}
-                className={`evt-filter-btn ${filterSources.has(s.label) ? "active" : ""}`}
+                className={`filter-pill ${filterSources.has(s.label) ? "active" : ""}`}
                 onClick={() => toggleSet(setFilterSources, s.label)}>{s.icon}</button>
             ))}
           </div>
@@ -955,7 +965,11 @@ const Reservations = ({ adminData, setAdminData,
           <div className="event-modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
             <div className="event-modal-header">
               <h3>Table Preferences</h3>
-              <button className="close-btn" onClick={() => setShowPrefModal(false)} />
+              <button className="modal-cancel-btn" onClick={() => setShowPrefModal(false)} >
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front close-padding"><img src={closeIcon} /></span>
+              </button>
             </div>
             <div className="event-modal-body" style={{ padding: "16px 0" }}>
               <p style={{ fontSize: 13, color: "#666", margin: "0 0 14px" }}>
@@ -1073,18 +1087,25 @@ const Reservations = ({ adminData, setAdminData,
             <div className="event-modal-header">
               <div style={{ display: "flex", flexDirection: "column" }}>
                 <h3>Add Reservation</h3>
-                <div className="evt-spec-steps">
+                <div className="ecard">
                   {CREATE_TABS.map((t, i) => (
                     <button key={i}
-                      className={`evt-spec-step${createTab === i ? " active" : ""}${createTab > i ? " done" : ""}`}
-                      onClick={() => setCreateTab(i)}>
-                      <span className="evt-step-num">{createTab > i ? "✓" : i + 1}</span>
-                      <span className="evt-step-label">{t}</span>
+                      className={`ebutton${createTab === i ? " active" : ""}${createTab > i ? " done" : ""}`}
+                      onClick={() => {
+                        if (i > createTab && !validateResTab()) return;
+                        setCreateTab(i);
+                      }}>
+                      <span className="eevt-step-num">{createTab > i ? "✓" : i + 1}</span>
+                      <span className="eevt-step-label">{t}</span>
                     </button>
                   ))}
                 </div>
               </div>
-              <button className="close-btn" onClick={() => setShowCreate(false)} />
+              <button className="modal-cancel-btn" onClick={() => { setShowCreate(false); setFormErrors({}); }}>
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front close-padding"><img src={closeIcon} /></span>
+              </button>
             </div>
 
             <div className="event-modal-body" style={{ padding: "8px 0" }}>
@@ -1095,11 +1116,12 @@ const Reservations = ({ adminData, setAdminData,
                   <div className="evt-form-section-label">Guest Information</div>
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1.4 }}>
-                      <label>Name <span className="evt-res-req">*</span></label>
-                      <input className={formErrors.name ? "error" : ""}
-                        placeholder="Guest name" value={form.name}
-                        onChange={e => setF("name", e.target.value)} />
-                      {formErrors.name && <span className="evt-res-form-error">{formErrors.name}</span>}
+                      <div className="mat">
+                        <input className={`mat-input${formErrors.name ? " mat-error" : ""}`} placeholder=" "
+                          value={form.name} onChange={e => { setF("name", e.target.value); setFormErrors(p => ({ ...p, name: false })); }} />
+                        <label className={`mat-label${formErrors.name ? " mat-label-error" : ""}`}>Name <span className="evt-res-req">*</span></label>
+                        <span className={`mat-bar${formErrors.name ? " mat-bar-error" : ""}`} />
+                      </div>
                     </div>
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Guests</label>
@@ -1113,21 +1135,24 @@ const Reservations = ({ adminData, setAdminData,
 
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1 }}>
-                      <label>Mobile <span className="evt-res-req">*</span></label>
-                      <input className={formErrors.mobile ? "error" : ""}
-                        placeholder="10-digit number" type="tel"
-                        value={form.mobile}
-                        onChange={e => setF("mobile", e.target.value.replace(/\D/g, "").slice(0, 10))} />
-                      {formErrors.mobile && <span className="evt-res-form-error">{formErrors.mobile}</span>}
+                      <div className="mat">
+                        <input className={`mat-input${formErrors.mobile ? " mat-error" : ""}`} placeholder=" " type="tel"
+                          value={form.mobile} onChange={e => { setF("mobile", e.target.value.replace(/\D/g, "").slice(0, 10)); setFormErrors(p => ({ ...p, mobile: false })); }} />
+                        <label className={`mat-label${formErrors.mobile ? " mat-label-error" : ""}`}>Mobile <span className="evt-res-req">*</span></label>
+                        <span className={`mat-bar${formErrors.mobile ? " mat-bar-error" : ""}`} />
+                      </div>
                     </div>
                     <div className="form-group" style={{ flex: 1 }}>
-                      <label>Email</label>
-                      <input placeholder="email@example.com"
-                        value={form.email} onChange={e => setF("email", e.target.value)} />
+                      <div className="mat">
+                        <input className="mat-input" placeholder=" "
+                          value={form.email} onChange={e => setF("email", e.target.value)} />
+                        <label className="mat-label">Email</label>
+                        <span className="mat-bar" />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="evt-form-section-label" style={{ marginTop: 8 }}>Staff & Source</div>
+                  <div className="evt-form-section-label">Staff & Source</div>
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Source</label>
@@ -1160,28 +1185,36 @@ const Reservations = ({ adminData, setAdminData,
                     {staff.length > 0 ? (
                       <CustomDropdown value={form.inchargePerson} onChange={v => setF("inchargePerson", v)} options={staff.map(s => ({ value: s.name, label: s.name + (s.role ? ` (${s.role})` : "") }))} placeholder="— Assign staff —" />
                     ) : (
-                      <input placeholder="Staff name" value={form.inchargePerson}
-                        onChange={e => setF("inchargePerson", e.target.value)} />
+                      <div className="mat">
+                        <input className="mat-input" placeholder=" " value={form.inchargePerson}
+                          onChange={e => setF("inchargePerson", e.target.value)} />
+                        <label className="mat-label">Staff name</label>
+                        <span className="mat-bar" />
+                      </div>
                     )}
                   </div>
 
                   <div className="form-group">
-                    <label>Notes</label>
-                    <textarea rows={2} placeholder="Special requests, dietary restrictions..."
-                      value={form.notes} onChange={e => setF("notes", e.target.value)} />
+                    <div className="mat-area">
+                      <textarea className="mat-input mat-textarea" rows={2} placeholder=" "
+                        value={form.notes} onChange={e => setF("notes", e.target.value)} />
+                      <label className="mat-area-label">Notes / Special requests</label>
+                      <span className="mat-area-bar" />
+                    </div>
                   </div>
 
-                  <div className="evt-form-section-label" style={{ marginTop: 8 }}>Booking Dates</div>
+                  <div className="evt-form-section-label">Booking Dates</div>
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Booked On <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(date reservation was made)</span></label>
                       <CustomDatePicker value={form.bookedDate} onChange={v => setF("bookedDate", v)} placeholder="Booking date" />
                     </div>
                     <div className="form-group" style={{ flex: 1 }}>
-                      <label>Reserved For <span className="evt-res-req">*</span> <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(table reservation date)</span></label>
-                      <CustomDatePicker value={form.reservedDate} min={todayStr()} onChange={v => {
+                      <label className={formErrors.date ? "mat-label-error" : ""}>Reserved For <span className="evt-res-req">*</span> <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(table reservation date)</span></label>
+                      <CustomDatePicker value={form.reservedDate} min={todayStr()} hasError={!!formErrors.date} onChange={v => {
                         setF("reservedDate", v);
                         setF("date", v);
+                        setFormErrors(p => ({ ...p, date: false }));
                         if (v === todayStr() && form.slotGroup) {
                           const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup);
                           if (sg) {
@@ -1191,11 +1224,10 @@ const Reservations = ({ adminData, setAdminData,
                           }
                         }
                       }} placeholder="Reserved date" />
-                      {formErrors.date && <span className="evt-res-form-error">{formErrors.date}</span>}
                     </div>
                   </div>
 
-                  <div className="evt-form-section-label" style={{ marginTop: 4 }}>Booking Details</div>
+                  <div className="evt-form-section-label">Booking Details</div>
                   <div className="form-group">
                     <label>Dining Slot <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400 }}>(select to restrict time picker)</span></label>
                     <div className="evt-res-slot-grid">
@@ -1229,18 +1261,18 @@ const Reservations = ({ adminData, setAdminData,
 
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1 }}>
-                      <label>Time <span className="evt-res-req">*</span>
+                      <label className={formErrors.time ? "mat-label-error" : ""}>Time <span className="evt-res-req">*</span>
                         {!form.slotGroup
                           ? <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(select slot first)</span>
                           : (() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()
                         }
                       </label>
-                      <CustomTimePicker value={form.time} onChange={v => setF("time", v)}
+                      <CustomTimePicker value={form.time} onChange={v => { setF("time", v); setFormErrors(p => ({ ...p, time: false })); }}
                         slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
                         slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
                         disabled={!form.slotGroup}
+                        hasError={!!formErrors.time}
                         isToday={form.reservedDate === todayStr()} />
-                      {formErrors.time && <span className="evt-res-form-error">{formErrors.time}</span>}
                     </div>
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Table No. <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(available)</span></label>
@@ -1346,18 +1378,29 @@ const Reservations = ({ adminData, setAdminData,
             </div>
 
             <div className="event-modal-footer">
-              <button onClick={() => setShowCreate(false)}>Cancel</button>
+              <button className="modal-cancel-btn" onClick={() => { setShowCreate(false); setFormErrors({}); }}>
+                <span className="shadow"></span><span className="edge"></span>
+                <span className="front">Cancel</span>
+              </button>
               {createTab === 0 ? (
-                <button type="button" onClick={handleResNext}>Preview →</button>
+                <button type="button" className="modal-next-btn" onClick={() => {
+                  if (validateResTab()) handleResNext();
+                }}>
+                  <span className="shadow"></span><span className="edge"></span>
+                  <span className="front">Preview →</span>
+                </button>
               ) : (
                 <>
-                  <button type="button" className="ae-step-prev-btn" onClick={() => setCreateTab(0)}>← Edit</button>
-                  <button onClick={handleCreate} disabled={saving}>
-                    {saving ? "Saving..." : "Create Reservation"}
+                  <button type="button" className="modal-prev-btn" onClick={() => setCreateTab(0)}>
+                    <span className="shadow"></span><span className="edge"></span>
+                    <span className="front">← Edit</span>
+                  </button>
+                  <button className="modal-save-btn" onClick={handleCreate} disabled={saving}>
+                    <span className="shadow"></span><span className="edge"></span>
+                    <span className="front">{saving ? "Saving..." : "Create Reservation"}</span>
                   </button>
                 </>
               )}
-
             </div>
           </div>
         </div>
