@@ -235,20 +235,28 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
               </div>
 
               <div className="form-group">
-                <div className="file-wrap">
-                  <label className={formErrors.image ? "mat-label-error" : ""}>Ingredient Image<span className="rf-req">*</span></label>
+                <div className={`file-wrap${formErrors.image ? " file-error" : ""}`}>
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => { handleIngredientImageUpload(e); setFormErrors(p => ({ ...p, image: false })); }}
+                    onChange={(e) => {
+                      handleIngredientImageUpload(e);
+                      setFormErrors(p => ({ ...p, image: false }));
+                    }}
                     className={`file-input${formErrors.image ? " mat-error" : ""}`}
                   />
+
                   <div className={`file-label${formErrors.image ? " file-label-error" : ""}`}>
                     {imagePreview ? "✔ Ingredient Image selected" : "Choose Ingredient Image"}
                   </div>
                 </div>
+
                 {imagePreview && (
-                  <img src={imagePreview} alt="Ingredient preview" className="staff-image-preview" />
+                  <img
+                    src={imagePreview}
+                    alt="Ingredient preview"
+                    className="staff-image-preview"
+                  />
                 )}
               </div>
 

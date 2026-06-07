@@ -602,7 +602,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                     value={addStock}
                     onChange={(e) => setAddStock(e.target.value)}
                   />
-                  <label className="mat-label">Add Stock in kg<span className="rf-req">*</span></label>
+                  <label className="mat-label">Add Stock in kg</label>
                   <span className="mat-bar" />
                 </div>
               </div>

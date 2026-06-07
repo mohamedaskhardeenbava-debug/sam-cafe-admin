@@ -109,50 +109,25 @@ function App() {
   };
 
   // ── Filter state owned here so it survives route unmount/remount ──
+  // Sorting is local to each page — no need to persist across navigation.
   const _today = () => new Date().toISOString().split("T")[0];
 
-  // Reservations
-  const [resFilterDate, setResFilterDate] = useState("");
-  const [resFromDate, setResFromDate] = useState(_today);
-  const [resToDate, setResToDate] = useState(_today);
-  const [resPreset, setResPreset] = useState("today");
-  const [resSlots, setResSlots] = useState(() => new Set());
-  const [resStatuses, setResStatuses] = useState(() => new Set());
-  const [resSources, setResSources] = useState(() => new Set());
-  const [resSearch, setResSearch] = useState("");
-  const [resSortField, setResSortField] = useState("date");
-  const [resSortDir, setResSortDir] = useState("asc");
+  const [resFilters, setResFilters] = useState({ filterDate: "", fromDate: _today(), toDate: _today(), preset: "today", slots: new Set(), statuses: new Set(), sources: new Set(), search: "" });
+  const [celFilters, setCelFilters] = useState({ fromDate: _today(), toDate: _today(), preset: "today", type: "", status: "", search: "" });
+  const [preFilters, setPreFilters] = useState({ fromDate: _today(), toDate: _today(), preset: "today", slots: new Set(), statuses: new Set(), search: "" });
+  const [catFilters, setCatFilters] = useState({ fromDate: _today(), toDate: _today(), preset: "today", status: "", search: "" });
+  const [evtFilters, setEvtFilters] = useState({ activeTab: "events", filterEventId: "all", filterStatus: "all", filterFromDate: "", filterToDate: "", searchQuery: "", evtSearch: "", evtFilterStatus: "upcoming,ongoing", evtFilterType: "all", evtFilterPublish: "all", evtFromDate: "", evtToDate: "", evtDatePreset: "" });
 
-  // Celebrations
-  const [celFromDate, setCelFromDate] = useState(_today);
-  const [celToDate, setCelToDate] = useState(_today);
-  const [celPreset, setCelPreset] = useState("today");
-  const [celType, setCelType] = useState("");
-  const [celStatus, setCelStatus] = useState("");
-  const [celSearch, setCelSearch] = useState("");
+  const patchRes = (patch) => setResFilters(p => ({ ...p, ...patch }));
+  const patchCel = (patch) => setCelFilters(p => ({ ...p, ...patch }));
+  const patchPre = (patch) => setPreFilters(p => ({ ...p, ...patch }));
+  const patchCat = (patch) => setCatFilters(p => ({ ...p, ...patch }));
+  const patchEvt = (patch) => setEvtFilters(p => ({ ...p, ...patch }));
 
-  // PreBookings
-  const [preFromDate, setPreFromDate] = useState(_today);
-  const [presToDate, setPreToDate] = useState(_today);
-  const [prePreset, setPrePreset] = useState("today");
-  const [preSlots, setPreSlots] = useState(() => new Set());
-  const [preStatuses, setPreStatuses] = useState(() => new Set());
-  const [preSearch, setPreSearch] = useState("");
-  const [preSortField, setPreSortField] = useState("date");
-  const [preSortDir, setPreSortDir] = useState("asc");
-
-  // Catering
-  const [catFromDate, setCatFromDate] = useState(_today);
-  const [catToDate, setCatToDate] = useState(_today);
-  const [catPreset, setCatPreset] = useState("today");
-  const [catStatus, setCatStatus] = useState("");
-  const [catSearch, setCatSearch] = useState("");
-
-  // Reset to today — called when navigating to the page from anywhere except its own detail
-  const resetResFilters = () => { const t = _today(); setResFilterDate(""); setResFromDate(t); setResToDate(t); setResPreset("today"); setResSlots(new Set()); setResStatuses(new Set()); setResSources(new Set()); setResSearch(""); setResSortField("date"); setResSortDir("asc"); };
-  const resetCelFilters = () => { const t = _today(); setCelFromDate(t); setCelToDate(t); setCelPreset("today"); setCelType(""); setCelStatus(""); setCelSearch(""); };
-  const resetPreFilters = () => { const t = _today(); setPreFromDate(t); setPreToDate(t); setPrePreset("today"); setPreSlots(new Set()); setPreStatuses(new Set()); setPreSearch(""); setPreSortField("date"); setPreSortDir("asc"); };
-  const resetCatFilters = () => { const t = _today(); setCatFromDate(t); setCatToDate(t); setCatPreset("today"); setCatStatus(""); setCatSearch(""); };
+  const resetResFilters = () => setResFilters({ filterDate: "", fromDate: _today(), toDate: _today(), preset: "today", slots: new Set(), statuses: new Set(), sources: new Set(), search: "" });
+  const resetCelFilters = () => setCelFilters({ fromDate: _today(), toDate: _today(), preset: "today", type: "", status: "", search: "" });
+  const resetPreFilters = () => setPreFilters({ fromDate: _today(), toDate: _today(), preset: "today", slots: new Set(), statuses: new Set(), search: "" });
+  const resetCatFilters = () => setCatFilters({ fromDate: _today(), toDate: _today(), preset: "today", status: "", search: "" });
 
   const [adminData, setAdminData] = useState({
     categories: [],
@@ -631,53 +606,28 @@ function App() {
 
             <Route path="/reservations" element={
               <Reservations adminData={adminData} setAdminData={setAdminData}
-                filterDate={resFilterDate} setFilterDate={setResFilterDate}
-                filterFromDate={resFromDate} setFilterFromDate={setResFromDate}
-                filterToDate={resToDate} setFilterToDate={setResToDate}
-                filterDatePreset={resPreset} setFilterDatePreset={setResPreset}
-                filterSlots={resSlots} setFilterSlots={setResSlots}
-                filterStatuses={resStatuses} setFilterStatuses={setResStatuses}
-                filterSources={resSources} setFilterSources={setResSources}
-                search={resSearch} setSearch={setResSearch}
-                sortField={resSortField} setSortField={setResSortField}
-                sortDir={resSortDir} setSortDir={setResSortDir}
+                filters={resFilters} patchFilters={patchRes}
                 onResetFilters={resetResFilters}
               />} />
             <Route path="/reservations/:id" element={<ReservationDetails adminData={adminData} setAdminData={setAdminData} />} />
 
             <Route path="/celebrations" element={
               <Celebrations adminData={adminData} setAdminData={setAdminData}
-                filterFromDate={celFromDate} setFilterFromDate={setCelFromDate}
-                filterToDate={celToDate} setFilterToDate={setCelToDate}
-                filterDatePreset={celPreset} setFilterDatePreset={setCelPreset}
-                filterType={celType} setFilterType={setCelType}
-                filterStatus={celStatus} setFilterStatus={setCelStatus}
-                search={celSearch} setSearch={setCelSearch}
+                filters={celFilters} patchFilters={patchCel}
                 onResetFilters={resetCelFilters}
               />} />
             <Route path="/celebrations/:id" element={<CelebrationDetails adminData={adminData} setAdminData={setAdminData} />} />
 
             <Route path="/prebookings" element={
               <PreBookings adminData={adminData} setAdminData={setAdminData}
-                filterFromDate={preFromDate} setFilterFromDate={setPreFromDate}
-                filterToDate={presToDate} setFilterToDate={setPreToDate}
-                filterDatePreset={prePreset} setFilterDatePreset={setPrePreset}
-                filterSlots={preSlots} setFilterSlots={setPreSlots}
-                filterStatuses={preStatuses} setFilterStatuses={setPreStatuses}
-                search={preSearch} setSearch={setPreSearch}
-                sortField={preSortField} setSortField={setPreSortField}
-                sortDir={preSortDir} setSortDir={setPreSortDir}
+                filters={preFilters} patchFilters={patchPre}
                 onResetFilters={resetPreFilters}
               />} />
             <Route path="/prebookings/:id" element={<PreBookingDetails adminData={adminData} />} />
 
             <Route path="/catering" element={
               <Catering adminData={adminData} setAdminData={setAdminData}
-                filterFromDate={catFromDate} setFilterFromDate={setCatFromDate}
-                filterToDate={catToDate} setFilterToDate={setCatToDate}
-                filterDatePreset={catPreset} setFilterDatePreset={setCatPreset}
-                filterStatus={catStatus} setFilterStatus={setCatStatus}
-                search={catSearch} setSearch={setCatSearch}
+                filters={catFilters} patchFilters={patchCat}
                 onResetFilters={resetCatFilters}
               />} />
             <Route path="/catering/:id" element={<CateringDetails adminData={adminData} />} />
@@ -688,6 +638,8 @@ function App() {
                 <Events
                   adminData={adminData}
                   setAdminData={setAdminData}
+                  filters={evtFilters}
+                  patchFilters={patchEvt}
                 />
               }
             />

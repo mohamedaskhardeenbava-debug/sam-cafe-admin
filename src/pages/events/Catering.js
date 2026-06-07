@@ -219,11 +219,17 @@ const DishPicker = ({ menuData, selectedItems, setSelectedItems, guests }) => {
                   {dish.category && <div className="act-dish-cat">{dish.category}</div>}
                 </div>
                 {sel ? (
-                  <button type="button" className="act-dish-add-btn"
-                    style={{ background: "#fee2e2", borderColor: "#fca5a5", color: "#dc2626" }}
-                    onClick={() => toggle(dish)}>✓ Added</button>
+                  <button type="button" className="modal-save-btn" onClick={() => toggle(dish)}>
+                    <span className="shadow"></span>
+                    <span className="edge"></span>
+                    <span className="front close-padding">✓ Added</span>
+                  </button>
                 ) : (
-                  <button className="act-dish-add-btn" onClick={() => toggle(dish)}>+ Add</button>
+                  <button type="button" className="modal-cancel-btn" onClick={() => toggle(dish)}>
+                    <span className="shadow"></span>
+                    <span className="edge"></span>
+                    <span className="front close-padding">+ Add</span>
+                  </button>
                 )}
               </div>
             );
@@ -258,14 +264,13 @@ const EMPTY_FORM = {
 /* ══════════════════════════════════════
    Main Component — Admin Catering
 ══════════════════════════════════════ */
-const Catering = ({ adminData, setAdminData,
-  filterFromDate, setFilterFromDate,
-  filterToDate, setFilterToDate,
-  filterDatePreset, setFilterDatePreset,
-  filterStatus, setFilterStatus,
-  search, setSearch,
-  onResetFilters,
-}) => {
+const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilters }) => {
+  const { fromDate: filterFromDate, toDate: filterToDate, preset: filterDatePreset, status: filterStatus, search } = filters;
+  const setFilterFromDate = (v) => patchFilters({ fromDate: v });
+  const setFilterToDate = (v) => patchFilters({ toDate: v });
+  const setFilterDatePreset = (v) => patchFilters({ preset: v });
+  const setFilterStatus = (v) => patchFilters({ status: v });
+  const setSearch = (v) => patchFilters({ search: v });
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -281,6 +286,13 @@ const Catering = ({ adminData, setAdminData,
   const [callTooltipId, setCallTooltipId] = useState(null);
   const [callTooltipPos, setCallTooltipPos] = useState({ top: 0, left: 0 });
   const callWrapRefs = useRef({});
+
+  const [sortField, setSortField] = useState("createdAt");
+  const [sortDir, setSortDir] = useState("desc");
+  const handleSort = (field) => {
+    if (sortField === field) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortField(field); setSortDir("asc"); }
+  };
 
   const data = adminData?.cateringOrders || [];
 
@@ -311,9 +323,25 @@ const Catering = ({ adminData, setAdminData,
   const completedCount = filteredData.filter(r => r.status === "completed").length;
   const cancelledCount = filteredData.filter(r => r.status === "cancelled").length;
 
-  const sortedData = useMemo(() =>
-    [...filteredData].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
-    [filteredData]);
+  const sortedData = useMemo(() => {
+    const d = [...filteredData];
+    d.sort((a, b) => {
+      let va, vb;
+      if (sortField === "createdAt" || sortField === "eventDate") {
+        va = new Date(sortField === "eventDate" ? (a.date || a.eventDate || "") : (a.createdAt || ""));
+        vb = new Date(sortField === "eventDate" ? (b.date || b.eventDate || "") : (b.createdAt || ""));
+      } else if (sortField === "guests" || sortField === "totalAmount") {
+        va = Number(a[sortField] || 0); vb = Number(b[sortField] || 0);
+      } else {
+        va = (a[sortField] || "").toString().toLowerCase();
+        vb = (b[sortField] || "").toString().toLowerCase();
+      }
+      if (va < vb) return sortDir === "asc" ? -1 : 1;
+      if (va > vb) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return d;
+  }, [filteredData, sortField, sortDir]);
 
   const { displayLimit, sentinelRef, containerRef, hasMore } =
     useInfiniteScroll(sortedData.length, 30);
@@ -517,8 +545,14 @@ const Catering = ({ adminData, setAdminData,
           ))}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="export-btn" onClick={exportToExcel}>Export</button>
-          <button className="evt-res-create-btn" onClick={openCreate}>+ Add Catering Order</button>
+          <button className="modal-save-btn" onClick={exportToExcel}>
+            <span className="shadow"></span><span className="edge"></span>
+            <span className="front">Export</span>
+          </button>
+          <button className="modal-save-btn" onClick={openCreate}>
+            <span className="shadow"></span><span className="edge"></span>
+            <span className="front">+ Add Catering Order</span>
+          </button>
         </div>
       </div>
 
@@ -581,8 +615,41 @@ const Catering = ({ adminData, setAdminData,
         <table className="act-table">
           <thead>
             <tr>
-              <th>Guest</th><th>Contact</th><th>Date</th><th>Time</th>
-              <th>Guests</th><th>Items</th><th>Total</th><th>Location</th><th>Status</th><th>Actions</th>
+              <th onClick={() => handleSort("name")} className={sortField === "name" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Guest</span>
+                  <span className="sort-arrow">{sortField === "name" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
+              <th>Contact</th>
+              <th onClick={() => handleSort("eventDate")} className={sortField === "eventDate" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Date</span>
+                  <span className="sort-arrow">{sortField === "eventDate" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
+              <th>Time</th>
+              <th onClick={() => handleSort("guests")} className={sortField === "guests" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Guests</span>
+                  <span className="sort-arrow">{sortField === "guests" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
+              <th>Items</th>
+              <th onClick={() => handleSort("totalAmount")} className={sortField === "totalAmount" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Total</span>
+                  <span className="sort-arrow">{sortField === "totalAmount" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
+              <th>Location</th>
+              <th onClick={() => handleSort("status")} className={sortField === "status" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Status</span>
+                  <span className="sort-arrow">{sortField === "status" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -706,9 +773,9 @@ const Catering = ({ adminData, setAdminData,
               <button
                 className="modal-cancel-btn" onClick={() => setItemsPopup(null)}
               >
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front close-padding"><img src={closeIcon} /></span>
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front close-padding"><img src={closeIcon} /></span>
               </button>
             </div>
             <div className="ingredient-modal-body" style={{ padding: "12px 20px 20px" }}>
@@ -753,8 +820,8 @@ const Catering = ({ adminData, setAdminData,
         <div className="event-modal-overlay" onClick={() => setShowCreate(false)}>
           <div className="event-modal act-modal" onClick={e => e.stopPropagation()}>
 
-            <div className="event-modal-header">
-              <div>
+            <div className="modal-header">
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 <h3>Add Catering Order</h3>
                 <div className="ecard">
                   {TABS.map((t, i) => (
@@ -774,9 +841,9 @@ const Catering = ({ adminData, setAdminData,
                 </div>
               </div>
               <button className="modal-cancel-btn" onClick={() => setShowCreate(false)} >
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front close-padding"><img src={closeIcon} /></span>
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front close-padding"><img src={closeIcon} /></span>
               </button>
             </div>
 
@@ -833,10 +900,10 @@ const Catering = ({ adminData, setAdminData,
 
                   <div className="form-group">
                     <label>Dining Slot <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400 }}>(select to restrict time picker)</span></label>
-                    <div className="evt-res-slot-grid">
+                    <div className="evt-res-pref-grid">
                       {SLOT_GROUPS.map(sg => (
                         <button key={sg.key} type="button"
-                          className={`evt-res-slot-chip${form.slotGroup === sg.key ? " active" : ""}`}
+                          className={`evt-res-pref-card${form.slotGroup === sg.key ? " active" : ""}`}
                           onClick={() => {
                             const next = form.slotGroup === sg.key ? "" : sg.key;
                             setF("slotGroup", next);
@@ -864,6 +931,20 @@ const Catering = ({ adminData, setAdminData,
                       isToday={false}
                     />
                     {!form.slotGroup && <span style={{ fontSize: 11, color: "#aaa", marginTop: 4, display: "block" }}>Select a dining slot first to enable time picker</span>}
+                  </div>
+
+                  <div className="evt-res-source-chips">
+                    {SOURCE_OPTIONS.map(src => (
+                      <button
+                        key={src}
+                        type="button"
+                        className={`evt-res-source-chip ${form.source === src ? "active" : ""
+                          }`}
+                        onClick={() => setF("source", src)}
+                      >
+                        {src}
+                      </button>
+                    ))}
                   </div>
 
                   {/* Address — all mandatory */}
@@ -921,7 +1002,7 @@ const Catering = ({ adminData, setAdminData,
                   {/* Decoration */}
                   <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>Decoration</div>
                   <div className="form-group">
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <div className="evt-res-source-chips">
                       <button type="button" className={`evt-res-source-chip${!form.decoration ? " active" : ""}`} onClick={() => setF("decoration", null)}>None</button>
                       {DECORATION_TIERS.map(d => (
                         <button key={d.value} type="button"
@@ -936,7 +1017,7 @@ const Catering = ({ adminData, setAdminData,
                   {/* Add-ons — celebration fields + catering extras (no Get Together, no event type) */}
                   <div className="evt-res-form-section-label" style={{ marginTop: 4 }}>Add-ons & Services</div>
                   <div className="form-group">
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    <div className="evt-res-source-chips">
                       {[
                         { k: "cake", l: "Cake +₹500" },
                         { k: "specialMention", l: "Special Mention" },
@@ -971,7 +1052,7 @@ const Catering = ({ adminData, setAdminData,
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Source</label>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <div className="evt-res-source-chips">
                         {SOURCE_OPTIONS.map(s => (
                           <button key={s} type="button"
                             className={`evt-res-source-chip${form.source === s ? " active" : ""}`}
@@ -981,10 +1062,10 @@ const Catering = ({ adminData, setAdminData,
                     </div>
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Status</label>
-                      <div style={{ display: "flex", gap: 6 }}>
+                      <div className="evt-res-source-chips">
                         {["pending", "confirmed"].map(s => (
                           <button key={s} type="button"
-                            className={`evt-res-source-chip${form.status === s ? " active" : ""}`}
+                            className={`evt-res-source-chip ${form.status === s ? "active status-" + s : ""}`}
                             onClick={() => setF("status", s)}>
                             {s.charAt(0).toUpperCase() + s.slice(1)}
                           </button>

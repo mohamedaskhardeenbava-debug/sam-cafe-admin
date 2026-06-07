@@ -80,7 +80,7 @@
 .modal-header {
     position: sticky;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     top: 0;
     z-index: 2;

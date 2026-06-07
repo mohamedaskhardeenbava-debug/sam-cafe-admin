@@ -174,7 +174,7 @@ const getMonthRange = () => {
 };
 
 // ─── Main Component ─────────────────────────────────────────────────────────
-const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
+const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
     const { toast } = useToast();
     const events = adminData?.events || [];
     const bookings = adminData?.eventBookings || [];
@@ -191,12 +191,28 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
         return list;
     }, [adminData]);
 
-    const sf = savedFilters;
+    // Destructure persisted filter state from App
+    const { activeTab, filterEventId, filterStatus, filterFromDate, filterToDate, searchQuery,
+        evtSearch, evtFilterStatus, evtFilterType, evtFilterPublish, evtFromDate, evtToDate, evtDatePreset } = filters;
+    const setActiveTab = (v) => patchFilters({ activeTab: v });
+    const setFilterEventId = (v) => patchFilters({ filterEventId: v });
+    const setFilterStatus = (v) => patchFilters({ filterStatus: v });
+    const setFilterFromDate = (v) => patchFilters({ filterFromDate: v });
+    const setFilterToDate = (v) => patchFilters({ filterToDate: v });
+    const setSearchQuery = (v) => patchFilters({ searchQuery: v });
+    const setEvtSearch = (v) => patchFilters({ evtSearch: v });
+    const setEvtFilterStatus = (v) => patchFilters({ evtFilterStatus: v });
+    const setEvtFilterType = (v) => patchFilters({ evtFilterType: v });
+    const setEvtFilterPublish = (v) => patchFilters({ evtFilterPublish: v });
+    const setEvtFromDate = (v) => patchFilters({ evtFromDate: v });
+    const setEvtToDate = (v) => patchFilters({ evtToDate: v });
+    const setEvtDatePreset = (v) => patchFilters({ evtDatePreset: v });
+
     const [showForm, setShowForm] = useState(false);
     const [showSpecForm, setShowSpecForm] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [isSpecEditMode, setIsSpecEditMode] = useState(false);
-    const [editFormStep, setEditFormStep] = useState(1);;
+    const [editFormStep, setEditFormStep] = useState(1);
     const [formData, setFormData] = useState(EMPTY_FORM);
     const [specFormData, setSpecFormData] = useState(EMPTY_SPEC_FORM);
     const [specFormStep, setSpecFormStep] = useState(1);
@@ -206,28 +222,13 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
     const [highlightInput, setHighlightInput] = useState("");
     const [specTagInput, setSpecTagInput] = useState("");
     const [specHighlightInput, setSpecHighlightInput] = useState("");
-    const [activeTab, setActiveTab] = useState(sf?.activeTab ?? "events");
-    const [filterEventId, setFilterEventId] = useState(sf?.filterEventId ?? "all");
-    const [filterStatus, setFilterStatus] = useState(sf?.filterStatus ?? "all");
-    const [filterFromDate, setFilterFromDate] = useState(sf?.filterFromDate ?? "");
-    const [filterToDate, setFilterToDate] = useState(sf?.filterToDate ?? "");
     const [viewBooking, setViewBooking] = useState(null);
-
-    // Events tab filters
-    const [evtSearch, setEvtSearch] = useState(sf?.evtSearch ?? "");
-    const [evtFilterStatus, setEvtFilterStatus] = useState(sf?.evtFilterStatus ?? "upcoming,ongoing");
-    const [evtFilterType, setEvtFilterType] = useState(sf?.evtFilterType ?? "all");
-    const [evtFilterPublish, setEvtFilterPublish] = useState(sf?.evtFilterPublish ?? "all");
-    const [evtFromDate, setEvtFromDate] = useState(sf?.evtFromDate ?? "");
-    const [evtToDate, setEvtToDate] = useState(sf?.evtToDate ?? "");
-    const [evtDatePreset, setEvtDatePreset] = useState(sf?.evtDatePreset ?? "");
     const [addGuestCount, setAddGuestCount] = useState(1);
     const [addGuestSaving, setAddGuestSaving] = useState(false);
-    const [searchQuery, setSearchQuery] = useState(sf?.searchQuery ?? "");
     const [useCurrentLocation, setUseCurrentLocation] = useState(false);
     const [useRestaurantAddrSpec, setUseRestaurantAddrSpec] = useState(false);
 
-    // Booking table sorting
+    // Booking table sorting — local only, no need to persist
     const [bookSortKey, setBookSortKey] = useState("bookedAt");
     const [bookSortDir, setBookSortDir] = useState("desc");
 
@@ -288,18 +289,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
         return list;
     }, [events, evtSearch, evtFilterStatus, evtFilterType, evtFilterPublish, evtFromDate, evtToDate]);
 
-    // ── Persist filters for back-navigation restore ──
-    useEffect(() => {
-        if (typeof onSaveFilters === "function") {
-            onSaveFilters({
-                activeTab, filterEventId, filterStatus, filterFromDate, filterToDate,
-                evtSearch, evtFilterStatus, evtFilterType, evtFilterPublish,
-                evtFromDate, evtToDate, evtDatePreset, searchQuery,
-            });
-        }
-    }, [activeTab, filterEventId, filterStatus, filterFromDate, filterToDate,
-        evtSearch, evtFilterStatus, evtFilterType, evtFilterPublish,
-        evtFromDate, evtToDate, evtDatePreset, searchQuery]);
+
 
     const exportEvents = () => {
         if (!filteredEvents.length) { alert("No events to export"); return; }
@@ -1204,7 +1194,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
             {showForm && (
                 <div className="event-modal-overlay">
                     <div className="event-modal ae-event-modal">
-                        <div className="event-modal-header">
+                        <div className="modal-header">
                             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                                 <h3>{isEditMode ? "Edit Event" : "Create New Event"}</h3>
                                 <div className="ecard">
@@ -1468,7 +1458,7 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
             {showSpecForm && (
                 <div className="event-modal-overlay">
                     <div className="event-modal">
-                        <div className="event-modal-header">
+                        <div className="modal-header">
                             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                                 <h3>{isSpecEditMode ? "Edit Specialized Event" : "Create Event"}</h3>
                                 <div className="ecard">
@@ -1488,9 +1478,9 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
                                 </div>
                             </div>
                             <button className="modal-cancel-btn" onClick={resetSpecForm} aria-label="Close" >
-                                <span class="shadow"></span>
-                                <span class="edge"></span>
-                                <span class="front close-padding"><img src={closeIcon} /></span>
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front close-padding"><img src={closeIcon} /></span>
                             </button>
                         </div>
 
@@ -1881,12 +1871,12 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
             {viewBooking && (
                 <div className="event-modal-overlay">
                     <div className="event-modal ae-booking-detail-modal">
-                        <div className="event-modal-header">
+                        <div className="modal-header">
                             <h3>Booking Details</h3>
                             <button className="modal-cancel-btn" onClick={() => setViewBooking(null)} aria-label="Close">
-                                <span class="shadow"></span>
-                                <span class="edge"></span>
-                                <span class="front close-padding"><img src={closeIcon} /></span>
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front close-padding"><img src={closeIcon} /></span>
                             </button>
                         </div>
                         <div className="event-modal-body ae-booking-detail-body">
@@ -1980,12 +1970,12 @@ const Events = ({ adminData, setAdminData, savedFilters, onSaveFilters }) => {
             {confirmDeleteId && (
                 <div className="event-modal-overlay">
                     <div className="event-modal ae-confirm-modal">
-                        <div className="event-modal-header">
+                        <div className="modal-header">
                             <h3>Delete Event</h3>
                             <button className="modal-cancel-btn" onClick={() => setConfirmDeleteId(null)} aria-label="Close">
-                                <span class="shadow"></span>
-                                <span class="edge"></span>
-                                <span class="front close-padding"><img src={closeIcon} /></span>
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front close-padding"><img src={closeIcon} /></span>
                             </button>
                         </div>
                         <div className="event-modal-body">

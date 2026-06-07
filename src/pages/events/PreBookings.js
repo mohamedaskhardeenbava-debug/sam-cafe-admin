@@ -110,7 +110,18 @@ const fmtDateTime = (iso) => {
 /* ══════════════════════════════════════════════
    Add PreBooking Modal (admin)
 ══════════════════════════════════════════════ */
-const EMPTY_FORM = { name: "", mobile: "", email: "", guests: 1, date: todayStr(), time: "", slotGroup: "", notes: "", source: "Phone" };
+const EMPTY_FORM = {
+  name: "",
+  mobile: "",
+  email: "",
+  guests: 1,
+  date: todayStr(),
+  time: "",
+  slotGroup: "",
+  notes: "",
+  source: "Phone",
+  status: "pending",
+};
 const SOURCE_OPTIONS = ["Phone", "WhatsApp", "In Person", "User App"];
 
 /* ── Dish Picker for admin pre-booking (all dishes, no qty, price × guests) ── */
@@ -311,7 +322,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
         slotGroup: form.slotGroup || "", notes: form.notes || "",
         source: form.source || "Phone",
         items: selectedItems, subtotal, discount, totalAmount,
-        status: "scheduled",
+        status: form.status || "pending",
         createdAt: new Date().toISOString(),
       };
       await api.post("/preBookings", body);
@@ -332,7 +343,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
       <div className="event-modal" onClick={e => e.stopPropagation()}>
 
         <div className="modal-header">
-          <div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <h3>Add PreBooking</h3>
             <div className="ecard">
               {["Details", "Dishes", "Preview"].map((t, i) => (
@@ -367,6 +378,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
           {/* TAB 0: Details */}
           {tab === 0 && (
             <>
+              <div className="evt-res-form-section-label">Guest Information</div>
               <div className="evt-pre-modal-row">
                 <div className="form-group">
                   <div className="mat">
@@ -406,6 +418,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                 </div>
               </div>
 
+              <div className="evt-res-form-section-label">Booking Details</div>
               <div className="evt-pre-modal-row">
                 <div className="form-group">
                   <label className={errors.date ? "mat-label-error" : ""}>Date <span className="evt-pre-req">*</span></label>
@@ -414,14 +427,14 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
 
                 <div className="form-group">
                   <label>Dining Slot <span className="evt-pre-opt">(optional)</span></label>
-                  <div className="evt-pre-modal-slots">
+                  <div className="evt-res-pref-grid">
                     {SLOT_GROUPS.map(sg => {
                       const slotEndH = parseInt(sg.end.split(":")[0]);
                       const slotEndM = parseInt(sg.end.split(":")[1] || "0");
                       const isPast = form.date === todayStr() && nowMinutes >= slotEndH * 60 + slotEndM;
                       return (
                         <button key={sg.key} type="button"
-                          className={`evt-pre-modal-slot-chip${form.slotGroup === sg.key ? " active" : ""}${isPast ? " chip-disabled" : ""}`}
+                          className={`evt-res-pref-card${form.slotGroup === sg.key ? " active" : ""}${isPast ? " chip-disabled" : ""}`}
                           title={isPast ? "This slot has passed today" : ""}
                           onClick={() => {
                             if (isPast) return;
@@ -450,13 +463,19 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                 </div>
               </div>
 
+              <div className="evt-res-form-section-label">Source & Notes</div>
               <div className="form-group">
                 <label>Source</label>
-                <div className="evt-pre-modal-source-row">
-                  {SOURCE_OPTIONS.map(s => (
-                    <button key={s} type="button"
-                      className={`evt-pre-modal-source-btn${form.source === s ? " active" : ""}`}
-                      onClick={() => setF("source", s)}>{s}</button>
+                <div className="evt-res-source-chips">
+                  {["pending", "confirmed"].map(s => (
+                    <button
+                      key={s}
+                      type="button"
+                      className={`evt-res-source-chip ${form.status === s ? "active status-" + s : ""}`}
+                      onClick={() => setF("status", s)}
+                    >
+                      {s.charAt(0).toUpperCase() + s.slice(1)}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -608,17 +627,14 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
 /* ══════════════════════════════════════════════
    Main Component
 ══════════════════════════════════════════════ */
-const PreBookings = ({ adminData, setAdminData,
-  filterFromDate, setFilterFromDate,
-  filterToDate, setFilterToDate,
-  filterDatePreset, setFilterDatePreset,
-  filterSlots, setFilterSlots,
-  filterStatuses, setFilterStatuses,
-  search, setSearch,
-  sortField, setSortField,
-  sortDir, setSortDir,
-  onResetFilters,
-}) => {
+const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFilters }) => {
+  const { fromDate: filterFromDate, toDate: filterToDate, preset: filterDatePreset, slots: filterSlots, statuses: filterStatuses, search } = filters;
+  const setFilterFromDate = (v) => patchFilters({ fromDate: v });
+  const setFilterToDate = (v) => patchFilters({ toDate: v });
+  const setFilterDatePreset = (v) => patchFilters({ preset: v });
+  const setFilterSlots = (v) => patchFilters({ slots: typeof v === "function" ? v(filterSlots) : v });
+  const setFilterStatuses = (v) => patchFilters({ statuses: typeof v === "function" ? v(filterStatuses) : v });
+  const setSearch = (v) => patchFilters({ search: v });
   const { toast } = useToast();
   const navigate = useNavigate();
   const [callTooltipId, setCallTooltipId] = useState(null);
@@ -631,6 +647,8 @@ const PreBookings = ({ adminData, setAdminData,
   const toggleSet = (setter, val) =>
     setter(prev => { const next = new Set(prev); next.has(val) ? next.delete(val) : next.add(val); return next; });
 
+  const [sortField, setSortField] = useState("date");
+  const [sortDir, setSortDir] = useState("asc");
   const handleSort = (field) => {
     if (sortField === field) setSortDir(d => d === "asc" ? "desc" : "asc");
     else { setSortField(field); setSortDir("asc"); }
@@ -761,14 +779,7 @@ const PreBookings = ({ adminData, setAdminData,
     XLSX.writeFile(wb, `prebookings_${suffix}.xlsx`);
   };
 
-  const SortTh = ({ field, children }) => (
-    <th onClick={() => handleSort(field)} style={{ cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}>
-      {children}
-      <span style={{ marginLeft: 4, opacity: sortField === field ? 1 : 0.3, fontSize: 10 }}>
-        {sortField === field ? (sortDir === "asc" ? "▲" : "▼") : "▲"}
-      </span>
-    </th>
-  );
+
 
   return (
     <div className="evt-pre-page">
@@ -795,9 +806,13 @@ const PreBookings = ({ adminData, setAdminData,
           ))}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="export-btn" onClick={exportToExcel}>Export</button>
-          <button className="evt-pre-add-btn" onClick={() => setShowAddModal(true)}>
-            + Add PreBooking
+          <button className="modal-save-btn" onClick={exportToExcel}>
+            <span className="shadow"></span><span className="edge"></span>
+            <span className="front">Export</span>
+          </button>
+          <button className="modal-save-btn" onClick={() => setShowAddModal(true)}>
+            <span className="shadow"></span><span className="edge"></span>
+            <span className="front">+ Add PreBooking</span>
           </button>
         </div>
       </div>
@@ -883,15 +898,40 @@ const PreBookings = ({ adminData, setAdminData,
         <table className="evt-pre-table">
           <thead>
             <tr>
-              <SortTh field="name">Guest Name</SortTh>
+              <th onClick={() => handleSort("name")} className={sortField === "name" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Guest Name</span>
+                  <span className="sort-arrow">{sortField === "name" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
               <th>Contact</th>
-              <SortTh field="date">Date</SortTh>
+              <th onClick={() => handleSort("date")} className={sortField === "date" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Date</span>
+                  <span className="sort-arrow">{sortField === "date" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
               <th>Slot</th>
               <th>Time</th>
-              <SortTh field="guests">Guests</SortTh>
+              <th onClick={() => handleSort("guests")} className={sortField === "guests" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Guests</span>
+                  <span className="sort-arrow">{sortField === "guests" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
               <th>Items</th>
-              <SortTh field="totalAmount">Total</SortTh>
-              <SortTh field="status">Status</SortTh>
+              <th onClick={() => handleSort("totalAmount")} className={sortField === "totalAmount" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Total</span>
+                  <span className="sort-arrow">{sortField === "totalAmount" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("status")} className={sortField === "status" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Status</span>
+                  <span className="sort-arrow">{sortField === "status" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
               <th>Actions</th>
             </tr>
           </thead>

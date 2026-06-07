@@ -514,13 +514,14 @@
 }
 
 .evt-res-source-chip:hover {
-  border-color: #999;
+  border-color: #777;
+  background-color: var(--off-white);
 }
 
 .evt-res-source-chip.active {
-  background: #111;
+  background: var(--color-blue);
   color: #fff;
-  border-color: #111;
+  border-color: var(--color-blue);
 }
 
 .evt-res-source-chip.active.status-pending {
@@ -538,8 +539,8 @@
 /* ══ SEATING PREFERENCE GRID ══ */
 .evt-res-pref-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 2px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
 }
 
 .evt-res-pref-card {
@@ -561,8 +562,8 @@
 }
 
 .evt-res-pref-card.active {
-  border-color: #111;
-  background: #f0f0f0;
+  border-color: var(--color-blue);
+  background: var(--color-paleblue);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -978,8 +979,8 @@
 }
 
 .evt-res-slot-chip.active {
-  background: #222;
-  border-color: #222;
+  background: var(--color-blue);
+  border-color: var(--color-blue);
   color: #fff;
 }
 

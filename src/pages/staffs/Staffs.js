@@ -281,12 +281,37 @@ export default function Staffs({
         <table className="staff-table">
           <thead>
             <tr>
-              <th style={{ width: 200 }}>Name</th>
-              <th>Role</th>
-              <th>Salary</th>
-              <th>Exp</th>
+              <th style={{ width: 200 }} onClick={() => handleSort("name")} className={sortConfig.key === "name" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Name</span>
+                  <span className="sort-arrow">{sortConfig.key === "name" ? (sortConfig.direction === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("role")} className={sortConfig.key === "role" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Role</span>
+                  <span className="sort-arrow">{sortConfig.key === "role" ? (sortConfig.direction === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("salary")} className={sortConfig.key === "salary" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Salary</span>
+                  <span className="sort-arrow">{sortConfig.key === "salary" ? (sortConfig.direction === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("experience")} className={sortConfig.key === "experience" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Exp</span>
+                  <span className="sort-arrow">{sortConfig.key === "experience" ? (sortConfig.direction === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
               <th>Contact</th>
-              <th>Work Type</th>
+              <th onClick={() => handleSort("workType")} className={sortConfig.key === "workType" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Work Type</span>
+                  <span className="sort-arrow">{sortConfig.key === "workType" ? (sortConfig.direction === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
               <th style={{ width: 80 }}>Actions</th>
             </tr>
           </thead>

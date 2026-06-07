@@ -700,7 +700,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                           value={sizeName}
                           onChange={(e) => setSizeName(e.target.value)}
                         />
-                        <label className="mat-label">Size Name<span className="rf-req">*</span></label>
+                        <label className="mat-label">Size Name</label>
                         <span className="mat-bar" />
                       </div>
                     </div>
@@ -715,7 +715,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                           value={sizeMultiplier}
                           onChange={(e) => setSizeMultiplier(e.target.value)}
                         />
-                        <label className="mat-label">Price Multiplier<span className="rf-req">*</span></label>
+                        <label className="mat-label">Price Multiplier</label>
                         <span className="mat-bar" />
                       </div>
                     </div>
@@ -729,7 +729,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                           value={sizeDescription}
                           onChange={(e) => setSizeDescription(e.target.value)}
                         />
-                        <label className="mat-label">Description<span className="rf-req">*</span></label>
+                        <label className="mat-label">Description</label>
                         <span className="mat-bar" />
                       </div>
                     </div>
@@ -825,7 +825,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                             }))
                           }
                         />
-                        <label className="mat-label">Subcategory Name<span className="rf-req">*</span></label>
+                        <label className="mat-label">Subcategory Name</label>
                         <span className="mat-bar" />
                       </div>
                     </div>
@@ -871,7 +871,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                             value={subSizeName}
                             onChange={(e) => setSubSizeName(e.target.value)}
                           />
-                          <label className="mat-label">Size Name<span className="rf-req">*</span></label>
+                          <label className="mat-label">Size Name</label>
                           <span className="mat-bar" />
                         </div>
                       </div>
@@ -885,7 +885,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                             value={subSizeMultiplier}
                             onChange={(e) => setSubSizeMultiplier(e.target.value)}
                           />
-                          <label className="mat-label">Size Multiplier<span className="rf-req">*</span></label>
+                          <label className="mat-label">Size Multiplier</label>
                           <span className="mat-bar" />
                         </div>
                       </div>
@@ -899,7 +899,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                             value={subSizeDescription}
                             onChange={(e) => setSubSizeDescription(e.target.value)}
                           />
-                          <label className="mat-label">Descripion<span className="rf-req">*</span></label>
+                          <label className="mat-label">Descripion</label>
                           <span className="mat-bar" />
                         </div>
                       </div>

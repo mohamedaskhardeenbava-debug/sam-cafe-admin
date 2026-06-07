@@ -220,6 +220,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
   const handleSaveDish = async () => {
     const e = {};
     if (!newDish.name.trim()) e.name = true;
+    if (!dishImagePreview) e.image = true;
     if (!newDish.basePrice) e.basePrice = true;
     if (!newDish.description.trim()) e.description = true;
     if (!newDish.benefits.calories) e.calories = true;
@@ -682,19 +683,29 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               </div>
 
               <div className="form-group">
-                <div className="file-wrap">
+                <div className={`file-wrap${formErrors.image ? " file-error" : ""}`}>
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={handleDishImageUpload}
+                    onChange={(e) => {
+                      handleDishImageUpload(e);
+                      setFormErrors(prev => ({ ...prev, image: false }));
+                    }}
                     className="file-input"
                   />
-                  <div className="file-label">
-                    {dishImagePreview ? "✔ Dish Image selected" : "Choose file for Dish Image…"}
+                  <div className={`file-label${formErrors.image ? " file-label-error" : ""}`}>
+                    {dishImagePreview
+                      ? "✔ Dish Image selected"
+                      : "Choose Dish Image"}
                   </div>
                 </div>
+
                 {dishImagePreview && (
-                  <img src={dishImagePreview} alt="Preview" className="staff-image-preview" />
+                  <img
+                    src={dishImagePreview}
+                    alt="Preview"
+                    className="staff-image-preview"
+                  />
                 )}
               </div>
 
@@ -818,7 +829,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                         value={ingredientForm.quantity}
                         onChange={(e) => { setIngredientForm({ ...ingredientForm, quantity: e.target.value }); setIngErrors(p => ({ ...p, quantity: false })); }}
                       />
-                      <label className={`mat-label${ingErrors.quantity ? " mat-label-error" : ""}`}>Quantity in grams<span className="rf-req">*</span></label>
+                      <label className={`mat-label${ingErrors.quantity ? " mat-label-error" : ""}`}>Quantity in grams</label>
                       <span className={`mat-bar${ingErrors.quantity ? " mat-bar-error" : ""}`} />
                     </div>
                   </div>

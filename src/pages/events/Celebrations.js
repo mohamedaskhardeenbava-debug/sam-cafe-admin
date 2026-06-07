@@ -142,15 +142,14 @@ const EMPTY_FORM = {
 /* ══════════════════════════════════════
    Main Component
 ══════════════════════════════════════ */
-const Celebrations = ({ adminData, setAdminData,
-  filterFromDate, setFilterFromDate,
-  filterToDate, setFilterToDate,
-  filterDatePreset, setFilterDatePreset,
-  filterType, setFilterType,
-  filterStatus, setFilterStatus,
-  search, setSearch,
-  onResetFilters,
-}) => {
+const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetFilters }) => {
+  const { fromDate: filterFromDate, toDate: filterToDate, preset: filterDatePreset, type: filterType, status: filterStatus, search } = filters;
+  const setFilterFromDate = (v) => patchFilters({ fromDate: v });
+  const setFilterToDate = (v) => patchFilters({ toDate: v });
+  const setFilterDatePreset = (v) => patchFilters({ preset: v });
+  const setFilterType = (v) => patchFilters({ type: v });
+  const setFilterStatus = (v) => patchFilters({ status: v });
+  const setSearch = (v) => patchFilters({ search: v });
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -162,6 +161,13 @@ const Celebrations = ({ adminData, setAdminData,
   const [callTooltipId, setCallTooltipId] = useState(null);
   const [callTooltipPos, setCallTooltipPos] = useState({ top: 0, left: 0 });
   const callWrapRefs = useRef({});
+
+  const [sortField, setSortField] = useState("createdAt");
+  const [sortDir, setSortDir] = useState("desc");
+  const handleSort = (field) => {
+    if (sortField === field) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortField(field); setSortDir("asc"); }
+  };
 
   const CREATE_TABS = ["All Details", "Preview"];
 
@@ -202,8 +208,25 @@ const Celebrations = ({ adminData, setAdminData,
   const cancelledCount = filteredData.filter(r => r.status === "cancelled").length;
 
   const sortedData = useMemo(() => {
-    return [...filteredData].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  }, [filteredData]);
+    const d = [...filteredData];
+    d.sort((a, b) => {
+      let va, vb;
+      if (sortField === "createdAt") {
+        va = new Date(a.createdAt || ""); vb = new Date(b.createdAt || "");
+      } else if (sortField === "date") {
+        va = new Date(a.date || ""); vb = new Date(b.date || "");
+      } else if (sortField === "guests" || sortField === "totalAmount") {
+        va = Number(a[sortField] || 0); vb = Number(b[sortField] || 0);
+      } else {
+        va = (a[sortField] || "").toString().toLowerCase();
+        vb = (b[sortField] || "").toString().toLowerCase();
+      }
+      if (va < vb) return sortDir === "asc" ? -1 : 1;
+      if (va > vb) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return d;
+  }, [filteredData, sortField, sortDir]);
 
   const { displayLimit, sentinelRef, containerRef, hasMore } =
     useInfiniteScroll(sortedData.length, 30);
@@ -427,9 +450,13 @@ const Celebrations = ({ adminData, setAdminData,
         </div>
 
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="export-btn" onClick={exportToExcel}>Export</button>
-          <button className="evt-res-create-btn" onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setCreateTab(0); }}>
-            + Add Celebration
+          <button className="modal-save-btn" onClick={exportToExcel}>
+            <span className="shadow"></span><span className="edge"></span>
+            <span className="front">Export</span>
+          </button>
+          <button className="modal-save-btn" onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setCreateTab(0); }}>
+            <span className="shadow"></span><span className="edge"></span>
+            <span className="front">+ Add Celebration</span>
           </button>
         </div>
       </div>
@@ -514,16 +541,46 @@ const Celebrations = ({ adminData, setAdminData,
         <table className="evt-clb-table">
           <thead>
             <tr>
-              <th>Guest</th>
+              <th onClick={() => handleSort("name")} className={sortField === "name" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Guest</span>
+                  <span className="sort-arrow">{sortField === "name" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
               <th>Contact</th>
-              <th>Type</th>
-              <th>Date</th>
+              <th onClick={() => handleSort("type")} className={sortField === "type" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Type</span>
+                  <span className="sort-arrow">{sortField === "type" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("date")} className={sortField === "date" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Date</span>
+                  <span className="sort-arrow">{sortField === "date" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
               <th>Time</th>
-              <th>Guests</th>
+              <th onClick={() => handleSort("guests")} className={sortField === "guests" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Guests</span>
+                  <span className="sort-arrow">{sortField === "guests" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
               <th>Decoration</th>
               <th>Extras</th>
-              <th>Est. Total</th>
-              <th>Status</th>
+              <th onClick={() => handleSort("totalAmount")} className={sortField === "totalAmount" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Est. Total</span>
+                  <span className="sort-arrow">{sortField === "totalAmount" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("status")} className={sortField === "status" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Status</span>
+                  <span className="sort-arrow">{sortField === "status" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                </span>
+              </th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -674,8 +731,8 @@ const Celebrations = ({ adminData, setAdminData,
       {showCreate && (
         <div className="event-modal-overlay" onClick={() => setShowCreate(false)}>
           <div className="event-modal" style={{ width: 640 }} onClick={e => e.stopPropagation()}>
-            <div className="event-modal-header">
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+            <div className="modal-header">
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 <h3>Add Celebration</h3>
                 <div className="ecard">
                   {CREATE_TABS.map((t, i) => (
@@ -705,7 +762,7 @@ const Celebrations = ({ adminData, setAdminData,
                 <>
                   <div className="evt-res-form-section-label">Event Type <span className="evt-res-req">*</span></div>
                   <div className="form-group">
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", border: formErrors.type ? "1.5px solid var(--color-red, #ee5253)" : "none", borderRadius: 8, padding: formErrors.type ? "6px" : 0 }}>
+                    <div className="evt-res-source-chips">
                       {CELEBRATION_TYPES.map(t => (
                         <button key={t.value} type="button"
                           className={`evt-res-source-chip${form.type === t.value ? " active" : ""}`}
@@ -717,9 +774,9 @@ const Celebrations = ({ adminData, setAdminData,
                     {formErrors.type && <span style={{ fontSize: 11, color: "var(--color-red, #ee5253)", marginTop: 4, display: "block" }}>Please select an event type</span>}
                   </div>
 
-                  <div className="evt-res-form-section-label" style={{ marginTop: 4 }}>Add-ons</div>
+                  <div className="evt-res-form-section-label">Add-ons</div>
                   <div className="form-group">
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    <div className="evt-res-source-chips">
                       {(EVENT_ADDONS[form.type] || []).map(ex => (
                         <button key={ex.k} type="button"
                           className={`evt-res-source-chip${form[ex.k] ? " active" : ""}`}
@@ -739,11 +796,11 @@ const Celebrations = ({ adminData, setAdminData,
                     )}
                   </div>
 
-                  <div className="evt-res-form-section-label" style={{ marginTop: 4 }}>Source & Status</div>
+                  <div className="evt-res-form-section-label">Source & Status</div>
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Source</label>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <div className="evt-res-source-chips">
                         {SOURCE_OPTIONS.map(s => (
                           <button key={s} type="button"
                             className={`evt-res-source-chip${form.source === s ? " active" : ""}`}
@@ -753,7 +810,7 @@ const Celebrations = ({ adminData, setAdminData,
                     </div>
                     <div className="form-group" style={{ flex: 1 }}>
                       <label>Status</label>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <div className="evt-res-source-chips">
                         {["pending", "confirmed"].map(s => (
                           <button key={s} type="button"
                             className={`evt-res-source-chip${form.status === s ? " active status-" + s : ""}`}
@@ -765,7 +822,7 @@ const Celebrations = ({ adminData, setAdminData,
                     </div>
                   </div>
 
-                  <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>Guest Information</div>
+                  <div className="evt-res-form-section-label">Guest Information</div>
                   <div className="horizontal-form-group">
                     <div className="form-group" style={{ flex: 1.4 }}>
                       <div className="mat">
@@ -807,7 +864,7 @@ const Celebrations = ({ adminData, setAdminData,
 
                   {form.type === "birthday" && (
                     <>
-                      <div className="evt-res-form-section-label" style={{ marginTop: 4 }}>Birthday Details</div>
+                      <div className="evt-res-form-section-label">Birthday Details</div>
                       <div className="horizontal-form-group">
                         <div className="form-group" style={{ flex: 1.5 }}>
                           <div className="mat">
@@ -838,7 +895,7 @@ const Celebrations = ({ adminData, setAdminData,
                     </div>
                   </div>
 
-                  <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>Date & Time</div>
+                  <div className="evt-res-form-section-label">Date & Time</div>
                   <div className="form-group">
                     <label className={formErrors.date ? "mat-label-error" : ""}>Event Date <span className="evt-res-req">*</span></label>
                     <CustomDatePicker value={form.date} min={tomorrowStr()} onChange={v => { setF("date", v); setF("time", ""); setF("slotGroup", ""); setFormErrors(p => ({ ...p, date: false })); }} placeholder="Select date" hasError={!!formErrors.date} />
@@ -846,10 +903,10 @@ const Celebrations = ({ adminData, setAdminData,
 
                   <div className="form-group">
                     <label>Dining Slot <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400 }}>(select to restrict time picker)</span></label>
-                    <div className="evt-res-slot-grid">
+                    <div className="evt-res-pref-grid">
                       {SLOT_GROUPS.map(sg => (
                         <button key={sg.key} type="button"
-                          className={`evt-res-slot-chip${form.slotGroup === sg.key ? " active" : ""}`}
+                          className={`evt-res-pref-card${form.slotGroup === sg.key ? " active" : ""}`}
                           onClick={() => {
                             const next = form.slotGroup === sg.key ? "" : sg.key;
                             setF("slotGroup", next);
@@ -879,9 +936,9 @@ const Celebrations = ({ adminData, setAdminData,
                     {!form.slotGroup && <span style={{ fontSize: 11, color: "#aaa", marginTop: 4, display: "block" }}>Select a dining slot first to enable time picker</span>}
                   </div>
 
-                  <div className="evt-res-form-section-label" style={{ marginTop: 4 }}>Decoration</div>
+                  <div className="evt-res-form-section-label">Decoration</div>
                   <div className="form-group">
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <div className="evt-res-source-chips">
                       <button type="button"
                         className={`evt-res-source-chip${!form.decoration ? " active" : ""}`}
                         onClick={() => setF("decoration", null)}>None</button>
