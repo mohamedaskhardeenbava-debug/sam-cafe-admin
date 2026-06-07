@@ -98,8 +98,10 @@ const EMPTY_FORM = {
   reference: ""
 };
 
-const generateStaffId = (name) =>
-  "staff_" + name.toLowerCase().replace(/\s+/g, "_");
+const generateStaffId = (name) => {
+  const base = name.toLowerCase().replace(/\s+/g, "_");
+  return "staff_" + (base || "member") + "_" + Date.now();
+};
 
 export default function Staffs({
   adminData,

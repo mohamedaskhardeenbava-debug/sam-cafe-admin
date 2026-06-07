@@ -32,8 +32,10 @@ const EMPTY_FORM = {
 };
 
 
-const generateIngredientId = (name) =>
-  name.trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
+const generateIngredientId = (name) => {
+  const base = name.trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
+  return "ing_" + (base || "item") + "_" + Date.now();
+};
 
 const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCamelCase, handleSort, sortConfig }) => {
   const { toast } = useToast();

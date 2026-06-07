@@ -51,9 +51,19 @@
     align-items: center;
     gap: 10px;
     flex-wrap: nowrap;
-    /* No overflow-x: auto here — it would clip absolute/fixed dropdowns */
-    max-width: calc(100vw - 160px);
-    overflow: visible;
+    flex-shrink: 0;
+    overflow-x: auto;
+    overflow-y: visible;
+    /* Hide scrollbar but keep scrollability */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    max-width: calc(100vw - 280px);
+    padding-bottom: 2px;
+    /* optical for scrollbar-less */
+  }
+
+  .topbar-right::-webkit-scrollbar {
+    display: none;
   }
 
   .topbar-icon-wrapper {
@@ -787,16 +797,16 @@
     margin: 0 0 8px;
   }
 
-    .phone-list__actions {
-        display: flex;
-        gap: 6px;
-    }
+  .phone-list__actions {
+    display: flex;
+    gap: 6px;
+  }
 
-    .phone-list__actions > button,
-    .phone-list__actions > * {
-        flex: 1 1 0;
-        width: 0;
-    }
+  .phone-list__actions>button,
+  .phone-list__actions>* {
+    flex: 1 1 0;
+    width: 0;
+  }
 
   .phone-action-btn {
     flex: 1;

@@ -347,10 +347,11 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
         XLSX.writeFile(wb, `event_bookings_${suffix}.xlsx`);
     };
 
-    const BookSortIcon = ({ col }) => {
-        if (bookSortKey !== col) return <span style={{ color: "#bbb", fontSize: 10 }}>⇅</span>;
-        return <span style={{ fontSize: 10 }}>{bookSortDir === "asc" ? "↑" : "↓"}</span>;
-    };
+    const BookSortIcon = ({ col }) => (
+        <span className="sort-arrow">
+            {bookSortKey === col ? (bookSortDir === "asc" ? "▲" : "▼") : "▼"}
+        </span>
+    );
 
     const statsForEvent = (eventId) => ({
         total: bookings.filter((b) => b.eventId === eventId).length,
@@ -1145,12 +1146,42 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                                 <thead>
                                     <tr>
                                         <th>#</th>
-                                        <th onClick={() => toggleBookSort("name")} style={{ cursor: "pointer" }}>Name <BookSortIcon col="name" /></th>
-                                        <th onClick={() => toggleBookSort("eventId")} style={{ cursor: "pointer" }}>Event <BookSortIcon col="eventId" /></th>
-                                        <th onClick={() => toggleBookSort("bookedAt")} style={{ cursor: "pointer" }}>Date <BookSortIcon col="bookedAt" /></th>
-                                        <th onClick={() => toggleBookSort("guests")} style={{ cursor: "pointer" }}>Guests <BookSortIcon col="guests" /></th>
-                                        <th onClick={() => toggleBookSort("totalAmount")} style={{ cursor: "pointer" }}>Amount <BookSortIcon col="totalAmount" /></th>
-                                        <th onClick={() => toggleBookSort("status")} style={{ cursor: "pointer" }}>Status <BookSortIcon col="status" /></th>
+                                        <th onClick={() => toggleBookSort("name")} className={bookSortKey === "name" ? "sorted" : ""}>
+                                            <span className="th-content sort-th">
+                                                <span>Name</span>
+                                                <BookSortIcon col="name" />
+                                            </span>
+                                        </th>
+                                        <th onClick={() => toggleBookSort("eventId")} className={bookSortKey === "eventId" ? "sorted" : ""}>
+                                            <span className="th-content sort-th">
+                                                <span>Event</span>
+                                                <BookSortIcon col="eventId" />
+                                            </span>
+                                        </th>
+                                        <th onClick={() => toggleBookSort("bookedAt")} className={bookSortKey === "bookedAt" ? "sorted" : ""}>
+                                            <span className="th-content sort-th">
+                                                <span>Date</span>
+                                                <BookSortIcon col="bookedAt" />
+                                            </span>
+                                        </th>
+                                        <th onClick={() => toggleBookSort("guests")} className={bookSortKey === "guests" ? "sorted" : ""}>
+                                            <span className="th-content sort-th">
+                                                <span>Guests</span>
+                                                <BookSortIcon col="guests" />
+                                            </span>
+                                        </th>
+                                        <th onClick={() => toggleBookSort("totalAmount")} className={bookSortKey === "totalAmount" ? "sorted" : ""}>
+                                            <span className="th-content sort-th">
+                                                <span>Amount</span>
+                                                <BookSortIcon col="totalAmount" />
+                                            </span>
+                                        </th>
+                                        <th onClick={() => toggleBookSort("status")} className={bookSortKey === "status" ? "sorted" : ""}>
+                                            <span className="th-content sort-th">
+                                                <span>Status</span>
+                                                <BookSortIcon col="status" />
+                                            </span>
+                                        </th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>

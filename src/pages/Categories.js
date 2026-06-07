@@ -61,12 +61,11 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
   const { displayLimit, sentinelRef, containerRef, hasMore } =
     useInfiniteScroll(sortedCategories.length, 30);
 
-  const generateCategoryId = (name) =>
-    name
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9\s]/g, "")
-      .replace(/\s+/g, "_");
+  const generateCategoryId = (name) => {
+    const base = name.toLowerCase().trim()
+      .replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, "_");
+    return "cat_" + (base || "item") + "_" + Date.now();
+  };
 
   const handleAddCategory = async () => {
     const e = {};
@@ -636,9 +635,9 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                   aria-label="Close"
                   onClick={resetAddCategoryForm}
                 >
-                  <span class="shadow"></span>
-                  <span class="edge"></span>
-                  <span class="front close-padding"><img src={closeIcon} /></span>
+                  <span className="shadow"></span>
+                  <span className="edge"></span>
+                  <span className="front close-padding"><img src={closeIcon} /></span>
                 </button>
               </div>
 
@@ -1121,9 +1120,9 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                   aria-label="Close"
                   onClick={resetEditCategoryForm}
                 >
-                  <span class="shadow"></span>
-                  <span class="edge"></span>
-                  <span class="front close-padding"><img src={closeIcon} /></span>
+                  <span className="shadow"></span>
+                  <span className="edge"></span>
+                  <span className="front close-padding"><img src={closeIcon} /></span>
                 </button>
               </div>
 
