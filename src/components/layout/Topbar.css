@@ -38,7 +38,7 @@
   .topbar-center {
     max-width: 800px;
     overflow-x: auto;
-    overflow-y: hidden;
+    overflow-y: visible;
     scrollbar-width: none;
     display: flex;
     align-items: center;
@@ -392,6 +392,44 @@
       chipPulse 1.2s ease-in-out infinite;
   }
 
+  .today-chip--urgent {
+    background: #fff0f0;
+    border-color: #e53935 !important;
+    /* transition must be off so keyframe changes aren't smoothed away */
+    transition: none !important;
+    position: relative;
+  }
+
+  /* Blink via a pseudo-element ring — completely separate from the chip's
+     background/border so no transition interference */
+  .today-chip--urgent::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 15px;
+    border: 2px solid #e53935;
+    animation: urgentRingBlink 0.8s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .today-chip--urgent:hover {
+    background: #ffd6d6;
+  }
+
+  @keyframes urgentRingBlink {
+
+    0%,
+    100% {
+      opacity: 1;
+      box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.5);
+    }
+
+    50% {
+      opacity: 0.3;
+      box-shadow: 0 0 0 5px rgba(229, 57, 53, 0);
+    }
+  }
+
   /* Top row: emoji + name */
   .today-chip__header {
     font-size: 11px;
@@ -566,18 +604,18 @@
 
   .chip-tooltip {
     position: absolute;
-    top: calc(100% + 10px);
+    top: calc(100% + 12px);
     left: 50%;
-    transform: translateX(-50%) translateY(-4px);
-    width: 240px;
+    transform: translateX(-50%) translateY(-6px);
+    width: 250px;
     background: #fff;
     border-radius: 14px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.08);
     padding: 14px;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 0.18s ease, transform 0.18s ease;
-    z-index: 200;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 9999;
     border-top: 3px solid var(--chip-color, #7c3aed);
   }
 
@@ -888,4 +926,130 @@
   .phone-list__item--log {
     opacity: 0.85;
   }
+}
+
+/* ─────────────────────────────────────────
+   🔍 CHIP TOOLTIP PORTAL (rendered in document.body)
+───────────────────────────────────────── */
+.chip-tooltip--portal {
+  position: fixed;
+  width: 250px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 14px;
+  z-index: 9999;
+  border-top: 3px solid var(--chip-color, #7c3aed);
+  animation: tooltipFadeIn 0.15s ease both;
+}
+
+.chip-tooltip--portal::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom-color: var(--chip-color, #7c3aed);
+  border-top: 0;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.chip-tooltip--portal .chip-tooltip__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 6px;
+}
+
+.chip-tooltip--portal .chip-tooltip__type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.chip-tooltip--portal .chip-tooltip__status {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.chip-tooltip--portal .chip-tooltip__status--confirmed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.chip-tooltip--portal .chip-tooltip__status--pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.chip-tooltip--portal .chip-tooltip__status--arrived {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.chip-tooltip--portal .chip-tooltip__status--active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.chip-tooltip--portal .chip-tooltip__name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chip-tooltip--portal .chip-tooltip__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chip-tooltip--portal .chip-tooltip__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 12px;
+  color: #444;
+  line-height: 1.4;
+}
+
+.chip-tooltip--portal .chip-tooltip__row--note {
+  color: #666;
+  font-style: italic;
+}
+
+.chip-tooltip--portal .chip-tooltip__icon {
+  font-size: 13px;
+  flex-shrink: 0;
+  line-height: 1.4;
 }

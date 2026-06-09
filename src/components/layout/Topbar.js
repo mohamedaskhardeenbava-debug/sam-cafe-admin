@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import "./Topbar.css";
 import human from "../../icon/human.png";
@@ -165,6 +166,9 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
 
   /* ── Bell state ── */
   const [activeBells, setActiveBells] = useState({});
+
+  /* ── Tooltip state — id of hovered chip + anchor rect ── */
+  const [tooltipState, setTooltipState] = useState(null); // { chip, meta, ms, rect }
 
   /* ── Phone / scheduling data — read from adminData ── */
   const [countdown, setCountdown] = useState({});   // id → ms remaining
@@ -477,11 +481,19 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
             Table {tableNo}
           </button>
         ))}
-        
-        {todayChips.map(chip => {
+
+        {[...todayChips].sort((a, b) => {
+          const msA = countdown[a.id] ?? 0;
+          const msB = countdown[b.id] ?? 0;
+          if (msA <= 0 && msB <= 0) return msA - msB;
+          if (msA <= 0) return -1;
+          if (msB <= 0) return 1;
+          return msA - msB;
+        }).map(chip => {
           const meta = TYPE_META[chip.type] || {};
           const ms = countdown[chip.id] ?? 0;
           const isPast = ms <= 0;
+          const isUrgent = isPast || ms <= 30 * 60 * 1000;
           const totalSec = Math.max(0, Math.floor(ms / 1000));
           const hh = String(Math.floor(totalSec / 3600)).padStart(2, "0");
           const mm = String(Math.floor((totalSec % 3600) / 60)).padStart(2, "0");
@@ -494,10 +506,18 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
           const venue = d.venue || d.venueName || d.tableNumber ? `Table ${d.tableNumber}` : null;
           const occasion = d.occasion || d.eventType || d.celebrationType || null;
           return (
-            <div key={chip.id} className="today-chip-wrapper">
+            <div
+              key={chip.id}
+              className="today-chip-wrapper"
+              onMouseEnter={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                setTooltipState({ chip, meta, ms, isPast, hh, mm, phone, guests, status, note, venue, occasion, rect });
+              }}
+              onMouseLeave={() => setTooltipState(null)}
+            >
               <button
                 type="button"
-                className={`today-chip ${isPast ? "today-chip--past" : ""}`}
+                className={`today-chip ${isPast ? "today-chip--past" : ""} ${isUrgent ? "today-chip--urgent" : ""}`}
                 style={{ "--chip-color": meta.color }}
                 onClick={(e) => { e.stopPropagation(); navigate(meta.route || "/"); }}
               >
@@ -518,57 +538,6 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
                   )}
                 </span>
               </button>
-
-              {/* ── TOOLTIP ── */}
-              <div className="chip-tooltip" style={{ "--chip-color": meta.color }}>
-                <div className="chip-tooltip__header">
-                  <span className="chip-tooltip__type-badge" style={{ background: meta.color }}>
-                    {meta.label}
-                  </span>
-                  {status && (
-                    <span className={`chip-tooltip__status chip-tooltip__status--${status}`}>
-                      {status}
-                    </span>
-                  )}
-                </div>
-                <p className="chip-tooltip__name">{chip.label}</p>
-                <div className="chip-tooltip__rows">
-                  <div className="chip-tooltip__row">
-                    <span className="chip-tooltip__icon">🕐</span>
-                    <span>{formatTime(chip.time)}{isPast ? " · Now!" : ` · in ${hh}h ${mm}m`}</span>
-                  </div>
-                  {phone && (
-                    <div className="chip-tooltip__row">
-                      <span className="chip-tooltip__icon"></span>
-                      <span>{phone}</span>
-                    </div>
-                  )}
-                  {guests && (
-                    <div className="chip-tooltip__row">
-                      <span className="chip-tooltip__icon">👥</span>
-                      <span>{guests} guest{guests > 1 ? "s" : ""}</span>
-                    </div>
-                  )}
-                  {occasion && (
-                    <div className="chip-tooltip__row">
-                      <span className="chip-tooltip__icon">🎉</span>
-                      <span>{occasion}</span>
-                    </div>
-                  )}
-                  {venue && (
-                    <div className="chip-tooltip__row">
-                      <span className="chip-tooltip__icon">📍</span>
-                      <span>{venue}</span>
-                    </div>
-                  )}
-                  {note && (
-                    <div className="chip-tooltip__row chip-tooltip__row--note">
-                      <span className="chip-tooltip__icon">📝</span>
-                      <span>{note}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
           );
         })}
@@ -772,7 +741,7 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
                   <li><span>No new notifications</span></li>
                 )}
               </ul>
-              <button className="modal-save-btn" style={{width: "100%", marginTop: "10px"}} type="button" onClick={(e) => { e.stopPropagation(); setShowNotifications(false); navigate("/orders"); }}>
+              <button className="modal-save-btn" style={{ width: "100%", marginTop: "10px" }} type="button" onClick={(e) => { e.stopPropagation(); setShowNotifications(false); navigate("/orders"); }}>
                 <span className="shadow"></span>
                 <span className="edge"></span>
                 <span className="front">View all notifications</span>
@@ -809,7 +778,7 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
                 </div>
               </div>
               <div className="dropdown-divider" />
-              <button type="button" style={{width: "100%"}} className="modal-danger-btn" onClick={(e) => { e.stopPropagation(); setIsAuthenticated(false); }}>
+              <button type="button" style={{ width: "100%" }} className="modal-danger-btn" onClick={(e) => { e.stopPropagation(); setIsAuthenticated(false); }}>
                 <span className="shadow"></span>
                 <span className="edge"></span>
                 <span className="front">Logout</span>
@@ -818,6 +787,80 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
           )}
         </div>
       </div>
+
+      {/* ── CHIP TOOLTIP PORTAL — renders outside topbar to escape overflow clipping ── */}
+      {tooltipState && createPortal(
+        (() => {
+          const { chip: tc, meta: tm, ms: tms, isPast: tip, hh: thh, mm: tmm,
+            phone: tphone, guests: tguests, status: tstatus,
+            note: tnote, venue: tvenue, occasion: tocc, rect } = tooltipState;
+          const left = rect.left + rect.width / 2;
+          const top = rect.bottom + 10;
+          return (
+            <div
+              className="chip-tooltip chip-tooltip--portal"
+              style={{
+                "--chip-color": tm.color,
+                position: "fixed",
+                left: `${left}px`,
+                top: `${top}px`,
+                transform: "translateX(-50%)",
+                opacity: 1,
+                pointerEvents: "none",
+              }}
+            >
+              <div className="chip-tooltip__header">
+                <span className="chip-tooltip__type-badge" style={{ background: tm.color }}>
+                  {tm.label}
+                </span>
+                {tstatus && (
+                  <span className={`chip-tooltip__status chip-tooltip__status--${tstatus}`}>
+                    {tstatus}
+                  </span>
+                )}
+              </div>
+              <p className="chip-tooltip__name">{tc.label}</p>
+              <div className="chip-tooltip__rows">
+                <div className="chip-tooltip__row">
+                  <span className="chip-tooltip__icon">🕐</span>
+                  <span>{formatTime(tc.time)}{tip ? " · Now!" : ` · in ${thh}h ${tmm}m`}</span>
+                </div>
+                {tphone && (
+                  <div className="chip-tooltip__row">
+                    <span className="chip-tooltip__icon">📞</span>
+                    <span>{tphone}</span>
+                  </div>
+                )}
+                {tguests && (
+                  <div className="chip-tooltip__row">
+                    <span className="chip-tooltip__icon">👥</span>
+                    <span>{tguests} guest{tguests > 1 ? "s" : ""}</span>
+                  </div>
+                )}
+                {tocc && (
+                  <div className="chip-tooltip__row">
+                    <span className="chip-tooltip__icon">🎉</span>
+                    <span>{tocc}</span>
+                  </div>
+                )}
+                {tvenue && (
+                  <div className="chip-tooltip__row">
+                    <span className="chip-tooltip__icon">📍</span>
+                    <span>{tvenue}</span>
+                  </div>
+                )}
+                {tnote && (
+                  <div className="chip-tooltip__row chip-tooltip__row--note">
+                    <span className="chip-tooltip__icon">📝</span>
+                    <span>{tnote}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })(),
+        document.body
+      )}
     </header>
   );
 };
