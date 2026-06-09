@@ -497,25 +497,33 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
                       <td>
                         <button
-                          className="icon-btn edit-btn"
+                          className="modal-cancel-btn"
                           onClick={(e) => {
                             openEditModal(category)
                             e.stopPropagation()
                           }}
                         >
-                          <img src={editIcon} alt="" />
+                          <span className="shadow"></span>
+                          <span className="edge"></span>
+                          <span className="front close-padding">
+                            <img src={editIcon} alt="" />
+                          </span>
                         </button>
                       </td>
 
                       <td>
                         <button
-                          className="icon-btn delete-btn"
+                          className="modal-cancel-btn"
                           onClick={(e) => {
                             handleDeleteCategory(category.id)
                             e.stopPropagation()
                           }}
                         >
-                          <img src={deleteIcon} alt="" />
+                          <span className="shadow"></span>
+                          <span className="edge"></span>
+                          <span className="front close-padding">
+                            <img src={deleteIcon} alt="" />
+                          </span>
                         </button>
                       </td>
 
@@ -560,7 +568,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                                       <td>
 
                                         <button
-                                          className="icon-btn edit-btn"
+                                          className="modal-cancel-btn"
                                           onClick={(e) => {
                                             e.stopPropagation();
 
@@ -575,7 +583,9 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                                             setShowEditModal(true);
                                           }}
                                         >
-                                          <img src={editIcon} alt="" />
+                                          <span className="shadow"></span>
+                                          <span className="edge"></span>
+                                          <span className="front close-padding"><img src={editIcon} /></span>
                                         </button>
 
                                       </td>
@@ -583,13 +593,15 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                                       <td>
 
                                         <button
-                                          className="icon-btn delete-btn"
+                                          className="modal-cancel-btn"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             deleteSubCategory(category.id, sub.id);
                                           }}
                                         >
-                                          <img src={deleteIcon} alt="" />
+                                          <span className="shadow"></span>
+                                          <span className="edge"></span>
+                                          <span className="front close-padding"><img src={deleteIcon} /></span>
                                         </button>
 
                                       </td>
@@ -778,7 +790,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                             >
                               <span className="shadow"></span>
                               <span className="edge"></span>
-                              <span className="front">Remove</span>
+                              <span className="front close-padding">Remove</span>
                             </button>
                           </td>
                         </tr>
@@ -949,7 +961,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                                 >
                                   <span className="shadow"></span>
                                   <span className="edge"></span>
-                                  <span className="front">Remove</span>
+                                  <span className="front close-padding">Remove</span>
                                 </button>
                               </td>
 
@@ -987,7 +999,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                         >
                           <span className="shadow"></span>
                           <span className="edge"></span>
-                          <span className="front">Remove</span>
+                          <span className="front close-padding">Remove</span>
                         </button>
 
                       </div>
@@ -1042,7 +1054,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                             <div className="subcategory-actions">
 
                               <button
-                                className="sub-edit-btn"
+                                className="modal-cancel-btn"
                                 onClick={(e) => {
                                   e.stopPropagation()
 
@@ -1057,7 +1069,9 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                                   setShowEditModal(true);
                                 }}
                               >
-                                Edit
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front close-padding"><img src={editIcon} /></span>
                               </button>
 
                               <button

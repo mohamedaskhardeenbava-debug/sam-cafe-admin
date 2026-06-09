@@ -31,7 +31,7 @@
 /* MATCH UI */
 .schedule-table-wrapper {
     width: 100%;
-    height: calc(100vh - 270px);
+    height: calc(100vh - 290px);
     overflow-y: auto;
     padding: 0 10px;
     background: #e9e9e9;

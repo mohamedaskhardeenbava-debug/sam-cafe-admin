@@ -166,7 +166,7 @@ const TableManagement = ({ adminData, setAdminData }) => {
                             onKeyDown={e => e.key === "Enter" && addTable()}
                             min="1"
                         />
-                        <button className="modal-save-btn" style={{marginTop: "0px"}} onClick={addTable}>
+                        <button className="modal-save-btn" style={{ marginTop: "0px" }} onClick={addTable}>
                             <span className="shadow"></span>
                             <span className="edge"></span>
                             <span className="front">Add Table</span>
@@ -199,7 +199,7 @@ const TableManagement = ({ adminData, setAdminData }) => {
 
                                 <div className="table-actions">
                                     <button
-                                        className="table-icon-btn"
+                                        className="modal-cancel-btn"
                                         title="Show QR"
                                         onClick={e => {
                                             e.stopPropagation();
@@ -207,16 +207,23 @@ const TableManagement = ({ adminData, setAdminData }) => {
                                             setShowQRModal(true);
                                         }}
                                     >
-                                        <img src={qrIcon} alt="QR" className="qr-icon" />
+                                        <span className="shadow"></span>
+                                        <span className="edge"></span>
+                                        <span className="front close-padding">
+                                            <img src={qrIcon} alt="QR" className="qr-icon" />
+                                        </span>
                                     </button>
 
                                     <button
-                                        className="table-icon-btn"
+                                        className="modal-cancel-btn"
                                         title="Remove table"
                                         onClick={() => removeTable(t)}
                                     >
-                                        <img src={deleteIcon} alt="Delete" className="delete-icon" />
-                                    </button>
+                                        <span className="shadow"></span>
+                                        <span className="edge"></span>
+                                        <span className="front close-padding">
+                                            <img src={deleteIcon} alt="" />
+                                        </span>                                    </button>
                                 </div>
                             </div>
                         ))}

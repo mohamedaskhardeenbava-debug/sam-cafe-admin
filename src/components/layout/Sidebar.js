@@ -312,7 +312,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             transition={{ duration: 0.2 }}
           >
             <div className="sidebar-footer-inner">
-              <div className="sidebar-footer-avatar">S</div>
               <div className="sidebar-footer-info">
                 <span className="sidebar-footer-name">Sam Cafe</span>
                 <span className="sidebar-footer-role">Admin Panel</span>

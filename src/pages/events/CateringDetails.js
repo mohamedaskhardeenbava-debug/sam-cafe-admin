@@ -78,18 +78,19 @@ const CateringDetails = ({ adminData, setAdminData }) => {
 
   return (
     <div className="details-container">
-      <div className="evt-catd-container">
 
-        {/* ── HEADER ── */}
-        <div className="details-header">
-          <button className="back-btn" onClick={() => navigate(-1)} />
-          <div>
-            <h2 className="evt-catd-title">Catering Detail</h2>
-            <p className="evt-catd-id">ID: <code>{data.id}</code></p>
-          </div>
-          <span className={`evt-catd-status-badge evt-catd-status-${localStatus}`}>{localStatus}</span>
+
+      {/* ── HEADER ── */}
+      <div className="details-header">
+        <button className="back-btn" onClick={() => navigate(-1)} />
+        <div>
+          <h2 className="evt-catd-title">Catering Detail</h2>
+          <p className="evt-catd-id">ID: <code>{data.id}</code></p>
         </div>
+        <span className={`evt-catd-status-badge evt-catd-status-${localStatus}`}>{localStatus}</span>
+      </div>
 
+      <div className="details-body">
         {/* ── HERO CARD ── */}
         <div className="evt-catd-hero">
           <div className="evt-catd-hero-avatar">
@@ -212,11 +213,15 @@ const CateringDetails = ({ adminData, setAdminData }) => {
             {["pending", "confirmed", "completed", "cancelled"].map(s => (
               <button
                 key={s}
-                className={`evt-catd-status-btn evt-catd-sb-${s}${localStatus === s ? " active" : ""}`}
+                className="modal-cancel-btn"
                 onClick={() => handleStatusChange(s)}
                 disabled={saving || localStatus === s}
               >
-                {saving && localStatus !== s ? "…" : s.charAt(0).toUpperCase() + s.slice(1)}
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">
+                  {saving && localStatus !== s ? "…" : s.charAt(0).toUpperCase() + s.slice(1)}
+                  </span>
               </button>
             ))}
           </div>
@@ -230,11 +235,15 @@ const CateringDetails = ({ adminData, setAdminData }) => {
             <div className="evt-catd-reminder-num">{data.mobile || "—"}</div>
           </div>
           <a
-            className="evt-catd-call-btn"
+            className="modal-save-btn"
             href={data.mobile ? `tel:${data.mobile}` : undefined}
             onClick={e => !data.mobile && e.preventDefault()}
           >
-            Call Now
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">
+              Call Now
+            </span>
           </a>
         </div>
 

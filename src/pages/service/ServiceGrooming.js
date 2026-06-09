@@ -59,9 +59,9 @@ function CustomDropdown({ value, onChange, options, placeholder = "Select…", l
 }
 
 const GROOM_FIELDS = [
-  { key: "uniform", label: "Uniform", icon: "👔" },
-  { key: "shoes", label: "Shoes", icon: "👟" },
-  { key: "groom", label: "Groom", icon: "✂️" },
+  { key: "uniform", label: "Uniform", icon: "" },
+  { key: "shoes", label: "Shoes", icon: "" },
+  { key: "groom", label: "Groom", icon: "" },
 ];
 
 const WEEKDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

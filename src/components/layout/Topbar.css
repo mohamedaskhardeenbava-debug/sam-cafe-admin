@@ -9,6 +9,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   padding: 0 20px;
   border-bottom: 1px solid #e6e6e6;
   z-index: 20;
@@ -35,14 +36,14 @@
    ⏰ CENTER CHIPS CONTAINER
 ───────────────────────────────────────── */
   .topbar-center {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
+    max-width: 800px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
     display: flex;
     align-items: center;
-    gap: 8px;
-    pointer-events: auto;
-    max-width: 800px;
+    padding: 0 10px;
+    gap: 10px;
   }
 
   /* Right Section */
@@ -306,11 +307,12 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 14px;
+    height: 36px;
     border-radius: 999px;
     border: 2px solid #e53935;
     background: #fff3f3;
     color: #c62828;
+    box-shadow: 0 0 0 3px rgba(235, 37, 37, 0.2);
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;

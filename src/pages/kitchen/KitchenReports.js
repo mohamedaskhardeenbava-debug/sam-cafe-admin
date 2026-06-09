@@ -81,6 +81,15 @@ const parseOrderCategoryData = (orders = [], fromDate = "", toDate = "") => {
   return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([name, qty]) => ({ name, qty }));
 };
 
+/* ─── Parse kitchen assign: today only ─── */
+const parseKitchenAssign = (kitchenAssign = {}) => {
+  const today = new Date().toISOString().slice(0, 10);
+  if (!(today in kitchenAssign)) return [];
+  return Object.entries(kitchenAssign[today])
+    .filter(([, d]) => d.staff)
+    .map(([task, d]) => ({ task, staff: d.staff || "—", time: d.assignedAt || d.time || "—" }));
+};
+
 /* ─── Sub-components ──────────────────────────────────── */
 const KpiCard = ({ label, value, sub, color = K.orange }) => (
   <div className="k-kpi-card">
@@ -126,7 +135,7 @@ const renderActiveShape = (props) => {
 
 /* ─── Main ────────────────────────────────────────────── */
 const KitchenReports = ({ adminData = {} }) => {
-  const { grooming = {}, mise = {}, recipes = [], orders = [], staff = [], ingredients = [] } = adminData;
+  const { grooming = {}, mise = {}, kitchenAssign = {}, recipes = [], orders = [], staff = [], ingredients = [] } = adminData;
 
   const roundTo = (v, d = 2) => Math.round((Number(v) + Number.EPSILON) * 10 ** d) / 10 ** d;
   const [activePie, setActivePie] = useState(null);
@@ -146,6 +155,7 @@ const KitchenReports = ({ adminData = {} }) => {
   /* derived */
   const groomData = useMemo(() => parseGroomingData(grooming, staff, reportFrom, reportTo), [grooming, staff, reportFrom, reportTo]);
   const miseData = useMemo(() => parseMiseData(mise), [mise]);
+  const assignData = useMemo(() => parseKitchenAssign(kitchenAssign), [kitchenAssign]);
   const attData = useMemo(() => parseAttendanceStats(staff, reportFrom, reportTo), [staff, reportFrom, reportTo]);
   const catData = useMemo(() => parseOrderCategoryData(filteredOrders), [filteredOrders]);
 
@@ -200,7 +210,6 @@ const KitchenReports = ({ adminData = {} }) => {
     ].filter(d => d.value > 0);
   }, [ingredients]);
 
-  const radarData = groomData.map(g => ({ subject: g.name, Score: g.score, fullMark: 100 }));
   const stockColor = (pct) => pct >= 60 ? K.green : pct >= 35 ? K.amber : K.red;
 
   const StockTooltip = ({ active, payload }) => {
@@ -270,55 +279,61 @@ const KitchenReports = ({ adminData = {} }) => {
         </div>
       </div>
 
-      {/* GROOMING + MISE */}
-      <div className="k-grid-2">
-        <div className="k-card">
-          <SectionTitle accent={K.purple}>Staff Grooming Compliance</SectionTitle>
-          {groomData.length === 0 ? <p className="k-empty">No grooming data</p> : (
-            <>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={radarData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={K.border} vertical={false} />
-                  <XAxis dataKey="subject" tick={{ fontSize: 11, fill: K.muted }} axisLine={false} tickLine={false} />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: K.muted }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="Score" radius={[8, 8, 0, 0]} barSize={24}>
-                    {radarData.map((entry, i) => <Cell key={i} fill={entry.Score >= 80 ? K.green : entry.Score >= 50 ? K.amber : K.red} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-              <div className="k-groom-bars">
-                {groomData.map((g, i) => (
-                  <div key={i} className="k-groom-row">
-                    <span className="k-groom-name">{g.name}</span>
-                    <div className="k-groom-track">
-                      <div className="k-groom-fill" style={{ width: `${g.score}%`, background: g.score >= 80 ? K.green : g.score >= 50 ? K.amber : K.red }} />
-                    </div>
-                    <span className="k-groom-score" style={{ color: g.score >= 80 ? K.green : g.score >= 50 ? K.amber : K.red }}>{g.score}%</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+      {/* MISE | ASSIGN | GROOMING */}
+      <div className="k-grid-3">
 
-        <div className="k-card">
-          <SectionTitle accent={K.teal}>Mise en Place Status <span style={{ fontSize: 11, fontWeight: 400, color: K.muted, marginLeft: 6 }}>— Today</span></SectionTitle>
+        <div className="k-card rpt-fixed-card">
+          <SectionTitle accent={K.teal}>Mise en Place <span style={{ fontSize: 11, fontWeight: 400, color: K.muted, marginLeft: 4 }}>— Today</span></SectionTitle>
           {miseData.length === 0 ? <p className="k-empty">No mise data for today</p> : (
-            <div className="k-mise-grid">
+            <div className="rpt-mise-grid rpt-inner-scroll">
               {miseData.map((m, i) => (
-                <div key={i} className={`k-mise-item ${m.verified ? "verified" : "pending"}`}>
-                  <div className="k-mise-check">{m.verified ? "✓" : "○"}</div>
-                  <div className="k-mise-info">
-                    <p className="k-mise-task">{m.task}</p>
-                    <p className="k-mise-detail">{m.staff !== "—" ? `by ${m.staff}` : ""} {m.time !== "—" ? `· ${m.time}` : ""}</p>
+                <div key={i} className={`rpt-mise-item ${m.verified ? "verified" : "pending"}`}>
+                  <div className="rpt-mise-check">{m.verified ? "✓" : "○"}</div>
+                  <div className="rpt-mise-info">
+                    <p className="rpt-mise-task">{m.task}</p>
+                    <p className="rpt-mise-detail">{m.staff !== "—" ? `by ${m.staff}` : ""}{m.staff !== "—" && m.time !== "—" ? " · " : ""}{m.time !== "—" ? m.time : ""}</p>
                   </div>
-                  <span className={`k-mise-badge ${m.verified ? "done" : "todo"}`}>{m.label}</span>
+                  <span className={`rpt-mise-badge ${m.verified ? "done" : "todo"}`}>{m.label}</span>
                 </div>
               ))}
             </div>
           )}
         </div>
+
+        <div className="k-card rpt-fixed-card">
+          <SectionTitle accent={K.blue}>Staff Assignment <span style={{ fontSize: 11, fontWeight: 400, color: K.muted, marginLeft: 4 }}>— Today</span></SectionTitle>
+          {assignData.length === 0 ? <p className="k-empty">No assignments for today</p> : (
+            <div className="rpt-assign-list rpt-inner-scroll">
+              {assignData.map((a, i) => (
+                <div key={i} className="rpt-assign-row">
+                  <div className="rpt-assign-icon">👤</div>
+                  <div className="rpt-assign-body">
+                    <p className="rpt-assign-task">{a.task}</p>
+                    <p className="rpt-assign-staff">{a.staff} · {a.time}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="k-card rpt-fixed-card">
+          <SectionTitle accent={K.purple}>Staff Grooming</SectionTitle>
+          {groomData.length === 0 ? <p className="k-empty">No grooming data</p> : (
+            <div className="rpt-groom-bars rpt-inner-scroll">
+              {groomData.map((g, i) => (
+                <div key={i} className="rpt-groom-row">
+                  <span className="rpt-groom-name">{g.name}</span>
+                  <div className="rpt-groom-track">
+                    <div className="rpt-groom-fill" style={{ width: `${g.score}%`, background: g.score >= 80 ? K.green : g.score >= 50 ? K.amber : K.red }} />
+                  </div>
+                  <span className="rpt-groom-score" style={{ color: g.score >= 80 ? K.green : g.score >= 50 ? K.amber : K.red }}>{g.score}%</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* ATTENDANCE CHART */}
@@ -357,42 +372,44 @@ const KitchenReports = ({ adminData = {} }) => {
         )}
       </div>
 
-      {/* STOCK */}
-      <div className="k-card k-card-split">
-        <div>
-          <SectionTitle accent={K.red}>Stock Health Overview</SectionTitle>
-          {stockPie.length === 0 ? <p className="k-empty">No stock data</p> : (
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Pie data={stockPie} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={80} outerRadius={100}
-                  animationEasing="cubic-bezier(0.4,0,0.2,1)" activeIndex={activePie} activeShape={renderActiveShape}
-                  onMouseEnter={(_, idx) => setActivePie(idx)} onMouseLeave={() => setActivePie(null)}
-                  isAnimationActive animationDuration={800}>
-                  {stockPie.map((e, i) => <Cell key={i} fill={e.color} />)}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-          )}
+      <div className="k-grid-2">
+        {/* STOCK */}
+        <div className="k-card k-card-split">
+          <div style={{display:"flex", flexDirection:"column", gap:"70px"}}>
+            <SectionTitle accent={K.red}>Stock Health Overview</SectionTitle>
+            {stockPie.length === 0 ? <p className="k-empty">No stock data</p> : (
+              <ResponsiveContainer width="100%" height={180}>
+                <PieChart>
+                  <Pie data={stockPie} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={80} outerRadius={100}
+                    animationEasing="cubic-bezier(0.4,0,0.2,1)" activeIndex={activePie} activeShape={renderActiveShape}
+                    onMouseEnter={(_, idx) => setActivePie(idx)} onMouseLeave={() => setActivePie(null)}
+                    isAnimationActive animationDuration={800}>
+                    {stockPie.map((e, i) => <Cell key={i} fill={e.color} />)}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
         </div>
 
-        <div className="k-divider" />
-
-        <div>
-          <SectionTitle accent={K.amber}>Ingredient Stock Levels (critical — {lowStock})</SectionTitle>
-          {stockData.length === 0 ? <p className="k-empty">No stock data</p> : (
-            <div className="k-stock-scroll">
-              <ResponsiveContainer width="100%" height={Math.max(stockData.length * 20, 100)}>
-                <BarChart data={stockData} layout="vertical" barCategoryGap={4}>
-                  <XAxis type="number" />
-                  <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 10, fill: "#111" }} />
-                  <Tooltip content={<StockTooltip />} />
-                  <Bar dataKey="stock" barSize={4} radius={[0, 6, 6, 0]}>
-                    {stockData.map((e, i) => <Cell key={i} fill={stockColor(e.percent)} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+        <div className="k-card k-card-split">
+          <div>
+            <SectionTitle accent={K.amber}>Ingredient Stock Levels (critical — {lowStock})</SectionTitle>
+            {stockData.length === 0 ? <p className="k-empty">No stock data</p> : (
+              <div className="k-stock-scroll">
+                <ResponsiveContainer width="100%" height={Math.max(stockData.length * 20, 100)}>
+                  <BarChart data={stockData} layout="vertical" barCategoryGap={4}>
+                    <XAxis type="number" />
+                    <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 10, fill: "#111" }} />
+                    <Tooltip content={<StockTooltip />} />
+                    <Bar dataKey="stock" barSize={4} radius={[0, 6, 6, 0]}>
+                      {stockData.map((e, i) => <Cell key={i} fill={stockColor(e.percent)} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

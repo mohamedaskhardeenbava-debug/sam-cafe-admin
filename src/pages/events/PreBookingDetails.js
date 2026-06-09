@@ -113,18 +113,19 @@ const PreBookingDetails = ({ adminData, setAdminData }) => {
 
   return (
     <div className="details-container">
-      <div className="evt-pbd-container">
 
-        {/* ── HEADER ── */}
-        <div className="details-header">
-          <button className="back-btn" onClick={() => navigate(-1)} />
-          <div>
-            <h2 className="evt-pbd-title">PreBooking Detail</h2>
-            <p className="evt-pbd-id">ID: <code>{data.id}</code></p>
-          </div>
-          <span className={`evt-pbd-status-badge evt-pbd-status-${localStatus}`}>{localStatus}</span>
+
+      {/* ── HEADER ── */}
+      <div className="details-header">
+        <button className="back-btn" onClick={() => navigate(-1)} />
+        <div>
+          <h2 className="evt-pbd-title">PreBooking Detail</h2>
+          <p className="evt-pbd-id">ID: <code>{data.id}</code></p>
         </div>
+        <span className={`evt-pbd-status-badge evt-pbd-status-${localStatus}`}>{localStatus}</span>
+      </div>
 
+      <div className="details-body">
         {/* ── HERO CARD ── */}
         <div className="evt-pbd-hero">
           <div className="evt-pbd-hero-avatar">
@@ -238,14 +239,18 @@ const PreBookingDetails = ({ adminData, setAdminData }) => {
         <div className="evt-pbd-section">
           <div className="evt-pbd-section-title">Update Status</div>
           <div className="evt-pbd-status-row">
-            {["scheduled", "preparing", "completed"].map(s => (
+            {["pending", "confirmed", "completed", "cancelled"].map(s => (
               <button
                 key={s}
-                className={`evt-pbd-status-btn evt-pbd-sb-${s}${localStatus === s ? " active" : ""}`}
+                className="modal-cancel-btn"
                 onClick={() => handleStatusChange(s)}
                 disabled={saving || localStatus === s}
               >
-                {saving && localStatus !== s ? "…" : s.charAt(0).toUpperCase() + s.slice(1)}
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">
+                  {saving && localStatus !== s ? "…" : s.charAt(0).toUpperCase() + s.slice(1)}
+                </span>
               </button>
             ))}
           </div>
@@ -259,16 +264,21 @@ const PreBookingDetails = ({ adminData, setAdminData }) => {
             <div className="evt-pbd-reminder-num">{data.mobile || "—"}</div>
           </div>
           <a
-            className="evt-pbd-call-btn"
+            className="modal-save-btn"
             href={data.mobile ? `tel:${data.mobile}` : undefined}
             onClick={e => !data.mobile && e.preventDefault()}
           >
-            Call Now
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">
+              Call Now
+            </span>
           </a>
         </div>
 
       </div>
     </div>
+
   );
 };
 

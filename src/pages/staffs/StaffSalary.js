@@ -224,8 +224,12 @@ export default function StaffSalary({ adminData, setAdminData }) {
                                         </div>
                                     </td>
                                     <td>
-                                        <button className="icon-btn edit-btn" onClick={() => openModal(s)}>
-                                            <img src={editIcon} alt="" />
+                                        <button className="modal-cancel-btn" onClick={() => openModal(s)}>
+                                            <span className="shadow"></span>
+                                            <span className="edge"></span>
+                                            <span className="front close-padding">
+                                                <img src={editIcon} alt="" />
+                                            </span>
                                         </button>
                                     </td>
                                 </tr>

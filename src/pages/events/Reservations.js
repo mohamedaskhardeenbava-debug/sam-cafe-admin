@@ -28,16 +28,12 @@ function CustomDropdown({ value, onChange, options, placeholder = "Select…" })
   return (
     <div className="dishes-dropdown-wrapper" ref={ref}>
       <button type="button" className="dishes-status-dropdown"
-        style={{ height: "38px" }}
+        style={{ height: "36px", padding: "0 36px 0 10px" }}
         onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
         {label}
       </button>
       {open && (
         <div className="dropdown-menu">
-          {placeholder && (
-            <div onClick={() => { onChange(""); setOpen(false); }}
-              style={{ color: "#aaa", fontStyle: "italic" }}>{placeholder}</div>
-          )}
           {options.map((o, i) => {
             const val = o.value !== undefined ? o.value : o;
             const lbl = o.label !== undefined ? o.label : o;
@@ -302,7 +298,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
         svg: <img src={img} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 6 }} />,
       };
     }
-    return found ? { ...found, desc } : { label, desc, svg: <span style={{ fontSize: 22 }}>🪑</span> };
+    return found ? { ...found, desc } : { label, desc, svg: <span style={{ fontSize: 22 }}></span> };
   });
 
   const toggleSet = (setter, val) =>
@@ -481,9 +477,6 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
         tablePrefImage: tablePrefImageFile || null,
       };
       await api.post("/reservations", payload);
-      if (typeof setAdminData === "function") {
-        setAdminData(p => ({ ...p, reservations: [...(p.reservations || []), payload] }));
-      }
       toast.success("Reservation created successfully.");
       setShowCreate(false);
       setForm({ ...EMPTY_FORM });
@@ -667,14 +660,18 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
           ))}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
+          <button className="modal-cancel-btn" onClick={() => setShowPrefModal(true)}>
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">Table Preferences</span>
+          </button>
+
           <button className="modal-save-btn" onClick={exportToExcel}>
             <span className="shadow"></span>
             <span className="edge"></span>
             <span className="front">Export</span>
           </button>
-          <button className="evt-res-pref-manage-btn" onClick={() => setShowPrefModal(true)}>
-            🪑 Table Preferences
-          </button>
+
           <button className="modal-save-btn"
             onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setTablePrefImageFile(null); setCreateTab(0); }}>
             <span className="shadow"></span>
@@ -766,7 +763,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
           </div>
 
           {activeFilters && (
-            <button className="evt-res-clear-all" onClick={onResetFilters}>Clear</button>
+            <button className="evt-clb-clear-btn" onClick={onResetFilters}>Clear</button>
           )}
         </div>
       </div>
@@ -887,7 +884,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
                     {/* Table assign */}
                     <td onClick={e => e.stopPropagation()}>
-                      <CustomDropdown value={item.tableNo || ""} onChange={v => updateTable(null, item.id, v)} options={rowAvailTables.map(t => ({ value: t, label: `T-${t}` }))} placeholder="— Table —" />
+                      <CustomDropdown value={item.tableNo || ""} onChange={v => updateTable(null, item.id, v)} options={rowAvailTables.map(t => ({ value: t, label: `T-${t}` }))} placeholder="Select" />
                     </td>
 
                     {/* Incharge */}
@@ -922,9 +919,13 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                           }
                         }}
                         onMouseLeave={() => setCallTooltipId(null)}>
-                        <button className="evt-res-act-btn evt-res-act-remind"
+                        <button className="modal-cancel-btn"
                           onClick={e => handleCall(e, item.id)} title="Log a call">
-                          📞 Call{history.length > 0 ? ` (${history.length})` : ""}
+                          <span className="shadow"></span>
+                          <span className="edge"></span>
+                          <span className="front close-padding">
+                            📞 Call{history.length > 0 ? ` (${history.length})` : ""}
+                          </span>
                         </button>
                       </div>
                     </td>
@@ -995,14 +996,14 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                       {prefImages[label]
                         ? <img src={prefImages[label]} alt={label} className="evt-res-pref-thumb-sm" />
                         : <div className="evt-res-pref-thumb-sm evt-res-pref-thumb-empty">
-                          {DEFAULT_PREF_OPTIONS.find(p => p.label === label)?.svg || "🪑"}
+                          {DEFAULT_PREF_OPTIONS.find(p => p.label === label)?.svg}
                         </div>
                       }
                     </div>
 
                     {/* Label + editable description */}
                     <div style={{ flex: 1, minWidth: 120 }}>
-                      <div style={{ fontWeight: 600, fontSize: 13 }}>🪑 {label}</div>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>{label}</div>
                       <input
                         className="evt-res-form-input"
                         style={{ marginTop: 4, fontSize: 12, padding: "3px 8px" }}

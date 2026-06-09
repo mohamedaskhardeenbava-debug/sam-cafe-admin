@@ -480,9 +480,6 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
         createdAt: new Date().toISOString(),
       };
       await api.post("/cateringOrders", payload);
-      if (typeof setAdminData === "function") {
-        setAdminData(p => ({ ...p, cateringOrders: [...(p.cateringOrders || []), payload] }));
-      }
       toast.success("Catering order created.");
       setShowCreate(false);
       setForm({ ...EMPTY_FORM });
@@ -597,16 +594,21 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
 
           <div className="evt-filter-group">
             <span className="evt-filter-group-label">Status</span>
-            {["pending", "confirmed", "completed"].map(s => (
-              <button key={s}
-                className={`filter-pill${filterStatus === s ? " active act-status-" + s : ""}`}
-                onClick={() => setFilterStatus(p => p === s ? "" : s)}>
-                {s === "pending" ? "P" : s === "confirmed" ? "C" : "D"}
+            {[
+              ["pending", "P", "clb-status-pending", "Pending"],
+              ["confirmed", "C", "clb-status-confirmed", "Confirmed"],
+              ["completed", "D", "clb-status-completed", "Done"],
+              ["cancelled", "X", "clb-status-cancelled", "Cancelled"],
+            ].map(([key, short, cls, title]) => (
+              <button key={key} title={title}
+                className={`filter-pill${filterStatus === key ? " active " + cls : ""}`}
+                onClick={() => setFilterStatus(p => p === key ? "" : key)}>
+                {short}
               </button>
             ))}
           </div>
           {activeFilters && (
-            <button className="act-clear-btn" onClick={onResetFilters}>Clear</button>
+            <button className="evt-clb-clear-btn" onClick={onResetFilters}>Clear</button>
           )}
         </div>
       </div>
@@ -719,8 +721,12 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                               }
                             }}
                             onMouseLeave={() => setCallTooltipId(null)}>
-                            <button className="evt-pre-act-btn" onClick={e => handleCall(e, item.id)}>
-                              📞 Call{history.length > 0 ? ` (${history.length})` : ""}
+                            <button className="modal-cancel-btn" onClick={e => handleCall(e, item.id)}>
+                              <span className="shadow"></span>
+                              <span className="edge"></span>
+                              <span className="front close-padding">
+                                📞 Call{history.length > 0 ? ` (${history.length})` : ""}
+                              </span>
                             </button>
                           </div>
                         );

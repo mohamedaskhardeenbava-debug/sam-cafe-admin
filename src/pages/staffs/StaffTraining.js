@@ -197,7 +197,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
             )}
 
             {/* CARD GRID */}
-            <div className="card-grid-wrapper">
+            <div className="career-grid-wrapper">
                 <div className="card-grid">
                     {filteredTrainings.map((t, i) => {
                         const colors = typeColors[t.type] || { bg: "#f5f4f1", color: "#3a3a3a" };

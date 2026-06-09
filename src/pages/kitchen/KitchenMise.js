@@ -18,8 +18,8 @@ import api from "../../api";
 */
 
 const SECTION_META = {
-  mise: { label: "Mise en Place", color: "#3b82f6", icon: "🍳" },
-  cleaning: { label: "Cleaning", color: "#10b981", icon: "🧹" },
+  mise: { label: "Mise en Place", color: "#3b82f6", icon: "" },
+  cleaning: { label: "Cleaning", color: "#10b981", icon: "" },
 };
 
 export default function KitchenMise({ adminData, setAdminData }) {

@@ -212,7 +212,7 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
   }, [orders]);
 
   /* ─────────────────────────────────────
-     🔔 Bell audio helpers
+     Bell audio helpers
   ───────────────────────────────────── */
   const startBellAudio = useCallback(() => {
     const audio = bellAudioRef.current;
@@ -236,7 +236,7 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
   }, []);
 
   /* ─────────────────────────────────────
-     🔔 Socket listeners — bell events
+     Socket listeners — bell events
   ───────────────────────────────────── */
   useEffect(() => {
     const handleSync = (bells) => {
@@ -465,6 +465,19 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
 
       {/* ── CENTER: TODAY COUNTDOWN CHIPS ── */}
       <div className="topbar-center">
+        {/* ── BELL CALL BUTTONS ── */}
+        {bellTableList.map(tableNo => (
+          <button
+            key={tableNo}
+            type="button"
+            className="bell-call-btn blinking"
+            onClick={(e) => { e.stopPropagation(); handleDismissBell(tableNo); }}
+            title={`Table ${tableNo} is calling. Click to dismiss.`}
+          >
+            Table {tableNo}
+          </button>
+        ))}
+        
         {todayChips.map(chip => {
           const meta = TYPE_META[chip.type] || {};
           const ms = countdown[chip.id] ?? 0;
@@ -563,20 +576,6 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
 
       {/* ── RIGHT ── */}
       <div className="topbar-right">
-
-        {/* ── BELL CALL BUTTONS ── */}
-        {bellTableList.map(tableNo => (
-          <button
-            key={tableNo}
-            type="button"
-            className="bell-call-btn blinking"
-            onClick={(e) => { e.stopPropagation(); handleDismissBell(tableNo); }}
-            title={`Table ${tableNo} is calling. Click to dismiss.`}
-          >
-            🔔 Table {tableNo}
-          </button>
-        ))}
-
         {/* ── PHONE ICON ── */}
         <div className="topbar-icon-wrapper" ref={phoneRef}>
           <button

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import * as XLSX from "xlsx";
 import "./KitchenAssign.css";
 import { getTomorrowKey, getTomorrowFormatted } from "../../App";
@@ -26,7 +26,7 @@ const SECTION_META = {
 };
 
 // ── CustomDropdown (floating label version) ──────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
+function CustomDropdown({ value, onChange, options, placeholder = "— Select Staff —", label, required }) {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef(null);
   React.useEffect(() => {
@@ -38,18 +38,18 @@ function CustomDropdown({ value, onChange, options, placeholder = "Select…", l
   const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
   const wrapperClass = ["mat-select", value ? "has-value" : "", open ? "is-open" : ""].filter(Boolean).join(" ");
   return (
-    <div className={wrapperClass} ref={ref}>
+    <div ref={ref} className={wrapperClass}>
       {label && <label className="mat-label">{label}{required && <span className="rf-req">*</span>}</label>}
-      <div className="dishes-dropdown-wrapper">
-        <button type="button" className="dishes-status-dropdown"
+      <div className="dishes-dropdown-wrapper" style={{ height: "32px" }}>
+        <button type="button" className="dishes-status-dropdown" style={{ paddingTop: "0px", paddingLeft: "10px", height: "32px" }}
           onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-          {displayLabel || ""}
+          {displayLabel || <span className="dropdown-placeholder">{placeholder}</span>}
         </button>
         {open && (
           <div className="dropdown-menu">
-            <div onClick={() => { onChange(""); setOpen(false); }}
-
-            >{placeholder}</div>
+            <div onClick={() => { onChange(""); setOpen(false); }}>
+              {placeholder}
+            </div>
             {options.map((o, i) => {
               const val = o.value !== undefined ? o.value : o;
               const lbl = o.label !== undefined ? o.label : o;
@@ -309,7 +309,6 @@ export default function KitchenAssign({ adminData, setAdminData }) {
               </div>
               <div className={`form-group${taskErrors.section ? " mat-select-error" : ""}`}>
                 <CustomDropdown
-                  label="Section"
                   value={section}
                   onChange={(val) => { if (val) { setSection(val); setTaskErrors(p => ({ ...p, section: false })); } }}
                   options={Object.entries(SECTION_META).map(([k, v]) => ({ value: k, label: `${v.icon} ${v.label}` }))}
@@ -345,6 +344,14 @@ export default function KitchenAssign({ adminData, setAdminData }) {
 
 /* ─── TABLE LAYOUT ──────────────────────────────────────────── */
 function TableLayout({ filteredTasks, assignedDay, adminData, handleChange, handleDelete }) {
+  const [openStaffDropdown, setOpenStaffDropdown] = useState(null);
+
+  useEffect(() => {
+    const close = () => setOpenStaffDropdown(null);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, []);
+
   return (
     <div className="assign-table-wrapper">
       <table className="assign-table">
@@ -360,7 +367,7 @@ function TableLayout({ filteredTasks, assignedDay, adminData, handleChange, hand
           {Object.entries(filteredTasks).map(([sec, items]) => (
             <React.Fragment key={sec}>
               <tr className="assign-section-row">
-                <td colSpan="4">
+                <td colSpan="4" style={{ fontSize: "12px" }}>
                   <span className="assign-section-icon">{SECTION_META[sec]?.icon}</span>
                   {SECTION_META[sec]?.label || sec.toUpperCase()}
                 </td>
@@ -368,6 +375,7 @@ function TableLayout({ filteredTasks, assignedDay, adminData, handleChange, hand
               {items.map(task => {
                 const entry = assignedDay[task];
                 const isAssigned = !!entry?.staff;
+                const dropKey = `table_${task}`;
                 return (
                   <tr key={task} className={isAssigned ? "assign-row-assigned" : ""}>
                     <td>
@@ -375,19 +383,39 @@ function TableLayout({ filteredTasks, assignedDay, adminData, handleChange, hand
                       {task}
                     </td>
                     <td>
-                      <CustomDropdown
-                        value={entry?.staff || ""}
-                        onChange={(val) => handleChange(task, val)}
-                        options={adminData.staff.map(s => s.name)}
-                        placeholder="— Select —"
-                      />
+                      <div className="dishes-dropdown-wrapper" style={{ height: "32px" }}>
+                        <button
+                          type="button"
+                          className="dishes-status-dropdown"
+                          style={{ height: "32px", paddingTop: "0px", paddingLeft: "10px" }}
+                          onClick={e => { e.stopPropagation(); setOpenStaffDropdown(p => p === dropKey ? null : dropKey); }}
+                        >
+                          {entry?.staff || "— Select Staff —"}
+                        </button>
+                        {openStaffDropdown === dropKey && (
+                          <div className="dropdown-menu">
+                            <div onClick={e => { e.stopPropagation(); handleChange(task, ""); setOpenStaffDropdown(null); }}>
+                              — Select Staff —
+                            </div>
+                            {adminData.staff.map(s => (
+                              <div key={s.id} onClick={e => { e.stopPropagation(); handleChange(task, s.name); setOpenStaffDropdown(null); }}>
+                                {s.name}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="assign-time">{entry?.assignedAt || "—"}</td>
                     <td>
-                      <div role="button" className="assign-del-btn"
+                      <button role="button" className="modal-cancel-btn"
                         onClick={() => handleDelete(task, sec)}>
-                        <img className="delete-icon" src={deleteIcon} alt="delete" />
-                      </div>
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front close-padding">
+                          <img src={deleteIcon} alt="" />
+                        </span>
+                      </button>
                     </td>
                   </tr>
                 );
@@ -402,6 +430,14 @@ function TableLayout({ filteredTasks, assignedDay, adminData, handleChange, hand
 
 /* ─── LIST LAYOUT ───────────────────────────────────────────── */
 function ListLayout({ filteredTasks, assignedDay, adminData, handleChange, handleDelete }) {
+  const [openStaffDropdown, setOpenStaffDropdown] = useState(null);
+
+  useEffect(() => {
+    const close = () => setOpenStaffDropdown(null);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, []);
+
   return (
     <div className="assign-list-container">
       {Object.entries(filteredTasks).map(([sec, items]) => (
@@ -416,6 +452,7 @@ function ListLayout({ filteredTasks, assignedDay, adminData, handleChange, handl
             {items.map(task => {
               const entry = assignedDay[task];
               const isAssigned = !!entry?.staff;
+              const dropKey = `list_${task}`;
               return (
                 <div key={task} className={`assign-list-card ${isAssigned ? "card-assigned" : ""}`}>
                   <div className="assign-list-card-top">
@@ -423,18 +460,38 @@ function ListLayout({ filteredTasks, assignedDay, adminData, handleChange, handl
                       <span className={`assign-task-dot ${isAssigned ? "dot-filled" : ""}`} />
                       {task}
                     </div>
-                    <div role="button" className="assign-del-btn"
+                    <button role="button" className="modal-cancel-btn"
                       onClick={() => handleDelete(task, sec)}>
-                      <img className="delete-icon" src={deleteIcon} alt="delete" />
-                    </div>
+                      <span className="shadow"></span>
+                      <span className="edge"></span>
+                      <span className="front close-padding">
+                        <img src={deleteIcon} alt="" />
+                      </span>
+                    </button>
                   </div>
                   <div className="assign-list-card-bot">
-                    <CustomDropdown
-                      value={entry?.staff || ""}
-                      onChange={(val) => handleChange(task, val)}
-                      options={adminData.staff.map(s => s.name)}
-                      placeholder="— Select Staff —"
-                    />
+                    <div className="dishes-dropdown-wrapper" style={{ height: "32px" }}>
+                      <button
+                        type="button"
+                        className="dishes-status-dropdown"
+                        style={{ height: "32px", paddingLeft: "10px", paddingTop: "0px" }}
+                        onClick={e => { e.stopPropagation(); setOpenStaffDropdown(p => p === dropKey ? null : dropKey); }}
+                      >
+                        {entry?.staff || "— Select Staff —"}
+                      </button>
+                      {openStaffDropdown === dropKey && (
+                        <div className="dropdown-menu">
+                          <div onClick={e => { e.stopPropagation(); handleChange(task, ""); setOpenStaffDropdown(null); }}>
+                            — Select Staff —
+                          </div>
+                          {adminData.staff.map(s => (
+                            <div key={s.id} onClick={e => { e.stopPropagation(); handleChange(task, s.name); setOpenStaffDropdown(null); }}>
+                              {s.name}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     {entry?.assignedAt && (
                       <span className="assign-list-time">⏱ {entry.assignedAt}</span>
                     )}

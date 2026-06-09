@@ -3,7 +3,6 @@ import "./Stocks.css";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 import editIcon from "../icon/edit-icon.png";
-import deleteIcon from "../icon/delete-icon.png";
 import closeIcon from "../icon/close-icon.png";
 import * as XLSX from "xlsx";
 import { EmptyRow } from "../App";
@@ -521,10 +520,12 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                   </td>
                   <td>
                     <button
-                      className="stocks-edit-btn"
+                      className="modal-cancel-btn"
                       onClick={() => openEditModal(ing)}
                     >
-                      <img src={editIcon} alt="" />
+                      <span className="shadow"></span>
+                      <span className="edge"></span>
+                      <span className="front close-padding"><img src={editIcon} /></span>
                     </button>
                   </td>
                 </tr>
@@ -704,7 +705,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                             <td>{dish?.name || dishId}</td>
                             <td>
                               <div
-                                className="ingredient-delete-btn"
+                                className="modal-danger-btn"
                                 onClick={() =>
                                   setSelectedIngredient(prev => ({
                                     ...prev,
@@ -715,7 +716,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                                   }))
                                 }
                               >
-                                <img src={deleteIcon} alt="" />
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front close-padding">Remove</span>
                               </div>
                             </td>
                           </tr>

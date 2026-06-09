@@ -471,7 +471,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                     <button
                       key={s}
                       type="button"
-                      className={`evt-res-source-chip ${form.status === s ? "active status-" + s : ""}`}
+                      className={`evt-res-source-chip ${form.status === s ? "active clb-status-" + s : ""}`}
                       onClick={() => setF("status", s)}
                     >
                       {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -512,7 +512,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                 </div>
                 <div style={{ marginLeft: "auto", display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {form.slotGroup && <span className={`evt-pre-slot-badge slot-${form.slotGroup.toLowerCase()}`} style={{ fontSize: 12, padding: "3px 10px", borderRadius: 999, fontWeight: 600 }}>{slotLabel}</span>}
-                  <span className="prv-status-badge scheduled">scheduled</span>
+                  <span className={`prv-status-badge clb-status-${form.status || "pending"}`}>{form.status || "pending"}</span>
                 </div>
               </div>
 
@@ -525,7 +525,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                     ["Slot", slotLabel],
                     ["Guests", form.guests ?? "—"],
                     ["Source", form.source || "—"],
-                    ["Status", "scheduled"],
+                    ["Status", form.status || "pending"],
                   ].map(([l, v]) => (
                     <div key={l} className="prv-cell"><div className="prv-cell-label">{l}</div><div className="prv-cell-val" style={{ textTransform: "capitalize" }}>{v}</div></div>
                   ))}
@@ -660,7 +660,7 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
     if (filterFromDate) d = d.filter(r => (r.date || "") >= filterFromDate);
     if (filterToDate) d = d.filter(r => (r.date || "") <= filterToDate);
     if (filterSlots.size > 0) d = d.filter(r => { const k = resolveSlotKey(r); return k && filterSlots.has(k); });
-    if (filterStatuses.size > 0) d = d.filter(r => filterStatuses.has(r.status || "scheduled"));
+    if (filterStatuses.size > 0) d = d.filter(r => filterStatuses.has(r.status || "pending"));
     if (search.trim()) {
       const q = search.toLowerCase();
       d = d.filter(r => (r.name || "").toLowerCase().includes(q) || (r.mobile || "").includes(q) || (r.id || "").toLowerCase().includes(q));
@@ -669,8 +669,8 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
   }, [data, filterFromDate, filterToDate, filterSlots, filterStatuses, search]);
 
   const today = todayStr();
-  const scheduledCount = filteredData.filter(r => (r.status || "scheduled") === "scheduled").length;
-  const preparingCount = filteredData.filter(r => r.status === "preparing").length;
+  const pendingCount = filteredData.filter(r => (r.status || "pending") === "pending").length;
+  const confirmedCount = filteredData.filter(r => r.status === "confirmed").length;
   const completedCount = filteredData.filter(r => r.status === "completed").length;
   const cancelledCount = filteredData.filter(r => r.status === "cancelled").length;
 
@@ -742,12 +742,8 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
     }
   };
 
-  /* modal saved callback */
-  const handleModalSaved = (newRecord) => {
-    if (typeof setAdminData === "function") {
-      setAdminData(p => ({ ...p, preBookings: [newRecord, ...(p.preBookings || [])] }));
-    }
-  };
+  /* modal saved callback — state update handled by socket data-change */
+  const handleModalSaved = (_newRecord) => { };
 
   const isDefaultFilter = filterFromDate === todayStr() && filterToDate === todayStr() && filterDatePreset === "today" && filterSlots.size === 0 && filterStatuses.size === 0 && !search.trim();
   const activeFilters = !isDefaultFilter;
@@ -794,9 +790,9 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
         <div className="evt-kpi-row">
           {[
             { label: "Total", val: filteredData.length, color: "#111" },
-            { label: "Scheduled", val: scheduledCount, color: "#ca8a04" },
-            { label: "Preparing", val: preparingCount, color: "#7c3aed" },
-            { label: "Completed", val: completedCount, color: "#16a34a" },
+            { label: "Pending", val: pendingCount, color: "#ca8a04" },
+            { label: "Confirmed", val: confirmedCount, color: "#16a34a" },
+            { label: "Completed", val: completedCount, color: "#2980b9" },
             { label: "Cancelled", val: cancelledCount, color: "#dc2626" },
           ].map((k, i) => (
             <div key={i} className="evt-kpi" style={{ borderTopColor: k.color }}>
@@ -874,19 +870,21 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
           <div className="evt-filter-group">
             <span className="evt-filter-group-label">Status</span>
             {[
-              ["scheduled", "S", "status-scheduled", "Scheduled"],
-              ["preparing", "P", "status-preparing", "Preparing"],
-              ["completed", "D", "status-completed", "Done"],
+              ["pending", "P", "clb-status-pending", "Pending"],
+              ["confirmed", "C", "clb-status-confirmed", "Confirmed"],
+              ["completed", "D", "clb-status-completed", "Done"],
+              ["cancelled", "X", "clb-status-cancelled", "Cancelled"],
             ].map(([key, short, cls, title]) => (
               <button key={key} title={title}
                 className={`filter-pill${filterStatuses.has(key) ? " active " + cls : ""}`}
-                onClick={() => toggleSet(setFilterStatuses, key)}>{short}
+                onClick={() => toggleSet(setFilterStatuses, key)}>
+                {short}
               </button>
             ))}
           </div>
 
           {activeFilters && (
-            <button className="evt-pre-clear-all" onClick={onResetFilters}>
+            <button className="evt-clb-clear-btn" onClick={onResetFilters}>
               Clear
             </button>
           )}
@@ -999,12 +997,12 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
                     {/* Status inline */}
                     <td onClick={e => e.stopPropagation()}>
                       <div className="evt-pre-inline-status">
-                        {["scheduled", "preparing", "completed"].map(s => (
+                        {["pending", "confirmed", "completed", "cancelled"].map(s => (
                           <button key={s}
-                            className={`evt-pre-istatus-btn evt-pre-istatus-${s}${status === s ? " active" : ""}`}
+                            className={`evt-res-istatus-btn evt-res-istatus-${s}${status === s ? " active" : ""}`}
                             title={s}
                             onClick={e => updateStatus(e, item.id, s)}>
-                            {s === "scheduled" ? "S" : s === "preparing" ? "P" : "D"}
+                            {s === "pending" ? "P" : s === "confirmed" ? "C" : s === "completed" ? "D" : "X"}
                           </button>
                         ))}
                       </div>
@@ -1025,8 +1023,12 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
                           }
                         }}
                         onMouseLeave={() => setCallTooltipId(null)}>
-                        <button className="evt-pre-act-btn" onClick={e => handleCall(e, item.id)}>
-                          📞 Call{history.length > 0 ? ` (${history.length})` : ""}
+                        <button className="modal-cancel-btn" onClick={e => handleCall(e, item.id)}>
+                          <span className="shadow"></span>
+                          <span className="edge"></span>
+                          <span className="front close-padding">
+                            📞 Call{history.length > 0 ? ` (${history.length})` : ""}
+                          </span>
                         </button>
                       </div>
                     </td>

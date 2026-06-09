@@ -1,8 +1,9 @@
 import "./App.css"; //admin panel
 import { useState, useEffect, useRef } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import api from "./api";
 import socket from "./socket";
+import { useToast } from "./useToast";
 
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
@@ -89,6 +90,8 @@ export const allowTextInput = (
 };
 
 function App() {
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [sortConfig, setSortConfig] = useState({
@@ -383,8 +386,15 @@ function App() {
 
     socket.on("data-change", handleDataChange);
 
+    // 🔔 Booking notifications
+    const handleNewBooking = ({ message, route }) => {
+      toast.booking(message, () => navigate(route));
+    };
+    socket.on("new-booking", handleNewBooking);
+
     return () => {
       socket.off("data-change", handleDataChange);
+      socket.off("new-booking", handleNewBooking);
     };
   }, [isAuthenticated]);
 

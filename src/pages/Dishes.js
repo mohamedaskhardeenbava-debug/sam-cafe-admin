@@ -594,11 +594,15 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
                   <td>
                     <button
-                      className="icon-btn delete-btn"
+                      className="modal-cancel-btn"
                       disabled={showForm}
                       onClick={() => handleDelete(dish.id, dish.name)}
                     >
-                      <img src={deleteIcon} alt="" />
+                      <span className="shadow"></span>
+                      <span className="edge"></span>
+                      <span className="front close-padding">
+                        <img src={deleteIcon} alt="" />
+                      </span>
                     </button>
 
                   </td>
@@ -860,13 +864,17 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                             <td>{ing.quantity}</td>
                             <td>{ing.calories}</td>
                             <td>
-                              <div
+                              <button
                                 type="button"
-                                className="ingredient-delete-btn"
+                                className="modal-danger-btn"
                                 onClick={() => handleRemoveIngredient(index)}
                               >
-                                <img src={deleteIcon} alt="" />
-                              </div>
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front close-padding">
+                                  Remove
+                                </span>
+                              </button>
                             </td>
                           </tr>
                         ))}

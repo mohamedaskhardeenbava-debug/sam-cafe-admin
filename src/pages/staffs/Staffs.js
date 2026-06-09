@@ -314,7 +314,8 @@ export default function Staffs({
                   <span className="sort-arrow">{sortConfig.key === "workType" ? (sortConfig.direction === "asc" ? "▲" : "▼") : "▼"}</span>
                 </span>
               </th>
-              <th style={{ width: 80 }}>Actions</th>
+              <th>Edit</th>
+              <th>Delete</th>
             </tr>
           </thead>
           <tbody>
@@ -352,37 +353,50 @@ export default function Staffs({
                     </span>
                   </td>
                   <td onClick={e => e.stopPropagation()}>
-                    <div className="st-actions">
-                      <button className="st-act-btn st-edit"
-                        onClick={() => { setFormData(staff); setIsEditMode(true); setShowModal(true); }}
-                        title="Edit">✏️</button>
-                      <button className="st-act-btn st-delete"
-                        onClick={() => {
-                          toast.confirm(
-                            `Delete "${staff.name}"?`,
-                            async () => {
-                              // Optimistic update — remove immediately
+                    <button className="modal-cancel-btn"
+                      onClick={() => { setFormData(staff); setIsEditMode(true); setShowModal(true); }}
+                      title="Edit">
+                      <span className="shadow"></span>
+                      <span className="edge"></span>
+                      <span className="front close-padding">
+                        <img src={editIcon} alt="" />
+                      </span>
+                    </button>
+                  </td>
+
+                  <td onClick={e => e.stopPropagation()}>
+                    <button className="modal-cancel-btn"
+                      onClick={() => {
+                        toast.confirm(
+                          `Delete "${staff.name}"?`,
+                          async () => {
+                            // Optimistic update — remove immediately
+                            setAdminData(prev => ({
+                              ...prev,
+                              staff: prev.staff.filter(s => s.id !== staff.id)
+                            }));
+                            try {
+                              await api.delete(`/staff/${staff.id}`);
+                              toast.success("Staff deleted");
+                            } catch (err) {
+                              // Revert on true server failure
+                              console.error("Delete staff error:", err);
                               setAdminData(prev => ({
                                 ...prev,
-                                staff: prev.staff.filter(s => s.id !== staff.id)
+                                staff: [...prev.staff, staff]
                               }));
-                              try {
-                                await api.delete(`/staff/${staff.id}`);
-                                toast.success("Staff deleted");
-                              } catch (err) {
-                                // Revert on true server failure
-                                console.error("Delete staff error:", err);
-                                setAdminData(prev => ({
-                                  ...prev,
-                                  staff: [...prev.staff, staff]
-                                }));
-                                toast.error("Failed to delete staff");
-                              }
+                              toast.error("Failed to delete staff");
                             }
-                          );
-                        }}
-                        title="Delete">🗑️</button>
-                    </div>
+                          }
+                        );
+                      }}
+                      title="Delete">
+                      <span className="shadow"></span>
+                      <span className="edge"></span>
+                      <span className="front close-padding">
+                        <img src={deleteIcon} alt="" />
+                      </span>
+                    </button>
                   </td>
                 </tr>
               );

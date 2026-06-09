@@ -21,7 +21,7 @@ import closeIcon from "../../icon/close-icon.png";
 */
 
 // ── Floating-label CustomDropdown ────────────────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
+function CustomDropdown({ value, onChange, options, placeholder = "Select Staff", label, required }) {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef(null);
   React.useEffect(() => {
@@ -35,13 +35,16 @@ function CustomDropdown({ value, onChange, options, placeholder = "Select…", l
   return (
     <div className={wrapperClass} ref={ref}>
       {label && <label className="mat-label">{label}{required && <span className="rf-req">*</span>}</label>}
-      <div className="dishes-dropdown-wrapper">
-        <button type="button" className="dishes-status-dropdown"
+      <div className="dishes-dropdown-wrapper" style={{ height: "32px" }}>
+        <button type="button" className="dishes-status-dropdown" style={{ height: "32px", paddingLeft: "10px", paddingTop: "0px" }}
           onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-          {displayLabel || ""}
+          {displayLabel || <span className="dropdown-placeholder">{placeholder}</span>}
         </button>
         {open && (
           <div className="dropdown-menu">
+            <div onClick={() => { onChange(""); setOpen(false); }}>
+              {placeholder}
+            </div>
             {options.map((o, i) => {
               const val = o.value !== undefined ? o.value : o;
               const lbl = o.label !== undefined ? o.label : o;
@@ -314,7 +317,6 @@ export default function ServiceAssign({ adminData, setAdminData }) {
               </div>
               <div className={`form-group${taskErrors.section ? " mat-select-error" : ""}`}>
                 <CustomDropdown
-                  label="Section"
                   value={section}
                   onChange={val => { if (val) { setSection(val); setTaskErrors(p => ({ ...p, section: false })); } }}
                   options={Object.entries(SECTION_META).map(([k, v]) => ({ value: k, label: `${v.icon} ${v.label}` }))}
@@ -380,16 +382,17 @@ function STableLayout({ filteredTasks, assignedDay, adminData, handleChange, han
                 const isAssigned = !!entry?.staff;
                 const dropKey = `table_${task}`;
                 return (
-                  <tr key={task} className={isAssigned ? "service-assign-row-assigned" : ""}>
+                  <tr key={task} className={isAssigned ? "assign-row-assigned" : ""}>
                     <td>
-                      <span className={`service-assign-task-dot ${isAssigned ? "dot-filled" : ""}`} />
+                      <span className={`assign-task-dot ${isAssigned ? "dot-filled" : ""}`} />
                       {task}
                     </td>
                     <td>
-                      <div className="dishes-dropdown-wrapper">
+                      <div className="dishes-dropdown-wrapper" style={{ height: "32px" }}>
                         <button
                           type="button"
                           className="dishes-status-dropdown"
+                          style={{ height: "32px", paddingTop: "0px", paddingLeft: "10px" }}
                           onClick={e => { e.stopPropagation(); setOpenStaffDropdown(p => p === dropKey ? null : dropKey); }}
                         >
                           {entry?.staff || "— Select —"}
@@ -410,10 +413,14 @@ function STableLayout({ filteredTasks, assignedDay, adminData, handleChange, han
                     </td>
                     <td className="service-assign-time">{entry?.assignedAt || "—"}</td>
                     <td>
-                      <div role="button" className="service-assign-del-btn"
+                      <button role="button" className="modal-cancel-btn"
                         onClick={() => handleDelete(task, sec)}>
-                        <img className="delete-icon" src={deleteIcon} alt="delete" />
-                      </div>
+                        <span className="shadow"></span>
+                        <span className="edge"></span>
+                        <span className="front close-padding">
+                          <img src={deleteIcon} alt="" />
+                        </span>
+                      </button>
                     </td>
                   </tr>
                 );
@@ -459,35 +466,43 @@ function SListLayout({ filteredTasks, assignedDay, adminData, handleChange, hand
                       <span className={`service-assign-task-dot ${isAssigned ? "dot-filled" : ""}`} />
                       {task}
                     </div>
-                    <div role="button" className="service-assign-del-btn"
+                    <button role="button" className="modal-cancel-btn"
                       onClick={() => handleDelete(task, sec)}>
-                      <img className="delete-icon" src={deleteIcon} alt="delete" />
-                    </div>
-                  </div>
-                  <div className="dishes-dropdown-wrapper">
-                    <button
-                      type="button"
-                      className="dishes-status-dropdown"
-                      onClick={e => { e.stopPropagation(); setOpenStaffDropdown(p => p === dropKey ? null : dropKey); }}
-                    >
-                      {entry?.staff || "— Select Staff —"}
+                      <span className="shadow"></span>
+                      <span className="edge"></span>
+                      <span className="front close-padding">
+                        <img src={deleteIcon} alt="" />
+                      </span>
                     </button>
-                    {openStaffDropdown === dropKey && (
-                      <div className="dropdown-menu">
-                        <div onClick={e => { e.stopPropagation(); handleChange(task, ""); setOpenStaffDropdown(null); }}>
-                          — Select Staff —
-                        </div>
-                        {adminData.staff.map(s => (
-                          <div key={s.id} onClick={e => { e.stopPropagation(); handleChange(task, s.name); setOpenStaffDropdown(null); }}>
-                            {s.name}
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
-                  {entry?.assignedAt && (
-                    <span className="service-assign-list-time">⏱ {entry.assignedAt}</span>
-                  )}
+                  <div className="assign-list-card-bot">
+                    <div className="dishes-dropdown-wrapper" style={{ height: "32px" }}>
+                      <button
+                        type="button"
+                        className="dishes-status-dropdown" style={{ height: "32px", paddingLeft: "10px", paddingTop: "0px" }}
+                        onClick={e => { e.stopPropagation(); setOpenStaffDropdown(p => p === dropKey ? null : dropKey); }}
+                      >
+                        {entry?.staff || "— Select Staff —"}
+                      </button>
+                      {openStaffDropdown === dropKey && (
+                        <div className="dropdown-menu">
+                          <div onClick={e => { e.stopPropagation(); handleChange(task, ""); setOpenStaffDropdown(null); }}>
+                            — Select Staff —
+                          </div>
+                          {adminData.staff.map(s => (
+                            <div key={s.id} onClick={e => { e.stopPropagation(); handleChange(task, s.name); setOpenStaffDropdown(null); }}>
+                              {s.name}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {entry?.assignedAt && (
+                      <span className="service-assign-list-time">⏱ {entry.assignedAt}</span>
+                    )}
+
+                  </div>
+
                 </div>
               );
             })}

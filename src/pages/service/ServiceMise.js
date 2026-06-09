@@ -16,8 +16,8 @@ import api from "../../api";
 */
 
 const SECTION_META = {
-  mise: { label: "Mise en Place", color: "#8b5cf6", icon: "🍽️" },
-  cleaning: { label: "Cleaning", color: "#f59e0b", icon: "✨" },
+  mise: { label: "Mise en Place", color: "#8b5cf6", icon: "" },
+  cleaning: { label: "Cleaning", color: "#f59e0b", icon: "" },
 };
 
 export default function ServiceMise({ adminData, setAdminData }) {
@@ -150,8 +150,8 @@ export default function ServiceMise({ adminData, setAdminData }) {
       </div>
 
       {/* UNIFIED TABLE */}
-      <div className="service-mise-table-wrapper">
-        <table className="service-mise-table">
+      <div className="mise-table-wrapper">
+        <table className="mise-table">
           <thead>
             <tr>
               <th>Task</th>
@@ -163,11 +163,11 @@ export default function ServiceMise({ adminData, setAdminData }) {
           <tbody>
             {Object.entries(filteredTasks).map(([sec, items]) => (
               <React.Fragment key={sec}>
-                <tr className="service-mise-section-row">
+                <tr className="mise-section-row">
                   <td colSpan="4">
-                    <span className="service-mise-section-icon">{SECTION_META[sec]?.icon}</span>
+                    <span className="mise-section-icon">{SECTION_META[sec]?.icon}</span>
                     {SECTION_META[sec]?.label || sec.toUpperCase()}
-                    <span className="service-mise-section-row-count">
+                    <span className="mise-section-row-count">
                       {items.filter(t => miseDay[t]?.verified).length}/{items.length} verified
                     </span>
                   </td>

@@ -161,14 +161,14 @@
 }
 
 .ts-preset-card:hover {
-    border-color: #9ca3af;
+    border-color: var(--color-blue);
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
 }
 
 .ts-preset-card.active {
-    border-color: #111;
-    background: #fff;
+    border-color: var(--color-blue);
+    background: var(--color-paleblue);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 

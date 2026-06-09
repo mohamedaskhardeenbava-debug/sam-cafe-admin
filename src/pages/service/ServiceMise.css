@@ -31,7 +31,7 @@
 }
 
 /* TABLE WRAPPER */
-.service-mise-table-wrapper {
+.mise-table-wrapper {
   width: 100%;
   height: calc(100vh - 290px);
   overflow-y: auto;
@@ -41,21 +41,21 @@
 }
 
 /* TABLE */
-.service-mise-table {
+.mise-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0 5px;
   table-layout: fixed;
 }
 
-.service-mise-table thead {
+.mise-table thead {
   position: sticky;
   top: 0;
   z-index: 5;
   background-color: #414141;
 }
 
-.service-mise-table th {
+.mise-table th {
   padding: 16px 12px;
   font-size: 13px;
   font-weight: 600;
@@ -66,7 +66,7 @@
   text-align: left;
 }
 
-.service-mise-table td {
+.mise-table td {
   font-size: 14px;
   text-align: left;
   white-space: nowrap;
@@ -76,37 +76,37 @@
 }
 
 /* ROW STYLE */
-.service-mise-table tbody tr {
+.mise-table tbody tr {
   background: #ffffff;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
   transition: 0.25s ease;
 }
 
-.service-mise-table tbody tr:hover {
+.mise-table tbody tr:hover {
   background-color: rgb(234, 234, 234);
 }
 
-.service-mise-table tbody tr td {
+.mise-table tbody tr td {
   padding: 10px;
   border: none;
 }
 
 /* ROUNDED ROW */
-.service-mise-table tbody tr td:first-child {
+.mise-table tbody tr td:first-child {
   border-top-left-radius: 16px;
   border-bottom-left-radius: 16px;
 }
 
-.service-mise-table tbody tr td:last-child {
+.mise-table tbody tr td:last-child {
   border-top-right-radius: 16px;
   border-bottom-right-radius: 16px;
 }
 
 /* COLUMN WIDTH */
-.service-mise-table th:nth-child(3),
-.service-mise-table td:nth-child(3),
-.service-mise-table th:nth-child(4),
-.service-mise-table td:nth-child(4) {
+.mise-table th:nth-child(3),
+.mise-table td:nth-child(3),
+.mise-table th:nth-child(4),
+.mise-table td:nth-child(4) {
   width: 150px;
   max-width: 150px;
 }
@@ -346,9 +346,9 @@
 }
 
 /* ── Section row (matches assign-section-row pattern) ── */
-.service-mise-section-row td {
+.mise-section-row td {
   padding: 10px 12px 6px !important;
-  font-size: 12px;
+  font-size: 12px !important;
   font-weight: 700;
   color: #555;
   text-transform: uppercase;
@@ -357,12 +357,12 @@
   border-radius: 0 !important;
 }
 
-.service-mise-section-icon {
+.mise-section-icon {
   margin-right: 6px;
   font-size: 14px;
 }
 
-.service-mise-section-row-count {
+.mise-section-row-count {
   margin-left: 10px;
   font-size: 11px;
   font-weight: 600;
@@ -389,7 +389,7 @@
   color: #333;
 }
 
-.service-mise-section-icon {
+.mise-section-icon {
   font-size: 16px;
 }
 

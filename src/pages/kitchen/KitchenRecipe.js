@@ -126,14 +126,18 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
                 </div>
 
                 <button
-                  className="recipe-delete-btn"
+                  className="modal-cancel-btn"
                   title="Delete recipe"
                   onClick={e => {
                     e.stopPropagation();
                     deleteRecipe(r.id);
                   }}
                 >
-                  <img src={deleteIcon} alt="Delete" />
+                  <span className="shadow"></span>
+                  <span className="edge"></span>
+                  <span className="front close-padding">
+                    <img src={deleteIcon} alt="" />
+                  </span>
                 </button>
               </div>
             );

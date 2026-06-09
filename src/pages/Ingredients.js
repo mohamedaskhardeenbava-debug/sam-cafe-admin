@@ -517,7 +517,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                           <td>{b.name}</td>
                           <td>
                             <div
-                              className="ingredient-delete-btn"
+                              className="modal-danger-btn"
                               onClick={() =>
                                 setFormData(prev => ({
                                   ...prev,
@@ -525,7 +525,9 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                                 }))
                               }
                             >
-                              <img src={deleteIcon} alt="" />
+                              <span className="shadow"></span>
+                              <span className="edge"></span>
+                              <span className="front close-padding">Remove</span>
                             </div>
                           </td>
                         </tr>
@@ -613,7 +615,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
 
                   <td>
                     <button
-                      className="ingredient-icon-btn ingredient-delete-btn"
+                      className="modal-cancel-btn"
                       onClick={() => {
                         toast.confirm(
                           `Delete "${ingredient.name}"?`,
@@ -641,7 +643,9 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                         );
                       }}
                     >
-                      <img src={deleteIcon} alt="" />
+                      <span className="shadow"></span>
+                      <span className="edge"></span>
+                      <span className="front close-padding"><img src={deleteIcon} /></span>
                     </button>
                   </td>
                 </tr>

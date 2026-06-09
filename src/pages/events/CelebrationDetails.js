@@ -127,8 +127,8 @@ const CelebrationDetails = ({ adminData, setAdminData }) => {
   ];
 
   return (
-    <div className="details-container">
-      <div className="evt-clbd-container">
+      <div className="details-container">
+
 
         {/* ── HEADER ── */}
         <div className="details-header">
@@ -140,170 +140,180 @@ const CelebrationDetails = ({ adminData, setAdminData }) => {
           <span className={`evt-clbd-status-badge evt-clbd-status-${localStatus}`}>{localStatus}</span>
         </div>
 
-        {/* ── HERO CARD ── */}
-        <div className="evt-clbd-hero">
-          <div className="evt-clbd-hero-avatar">
-            {(data.name || "?").charAt(0).toUpperCase()}
-          </div>
-          <div className="evt-clbd-hero-info">
-            <div className="evt-clbd-hero-name">{data.name || "—"}</div>
-            <div className="evt-clbd-hero-sub">
-              {data.mobile}{data.email ? ` · ${data.email}` : ""}
+        <div className="details-body">
+          {/* ── HERO CARD ── */}
+          <div className="evt-clbd-hero">
+            <div className="evt-clbd-hero-avatar">
+              {(data.name || "?").charAt(0).toUpperCase()}
             </div>
-            <div className="evt-clbd-hero-meta">
-              <span>{typeInfo.label}</span>
-              <span>📅 {data.date || "—"}</span>
-              <span>⏰ {fmtTime(data.time)}</span>
-              <span>👥 {data.guests} guests</span>
-              {data.source && <span>🌐 {data.source}</span>}
-            </div>
-          </div>
-        </div>
-
-        {/* ── INFO GRID ── */}
-        <div className="evt-clbd-section">
-          <div className="evt-clbd-section-title">Celebration Information</div>
-          <div className="evt-clbd-info-grid">
-            {infoRows.map((row, i) => (
-              <div key={i} className="evt-clbd-info-cell">
-                <span className="evt-clbd-info-icon">{row.icon}</span>
-                <div>
-                  <div className="evt-clbd-info-label">{row.label}</div>
-                  <div className="evt-clbd-info-val">{row.val}</div>
-                </div>
+            <div className="evt-clbd-hero-info">
+              <div className="evt-clbd-hero-name">{data.name || "—"}</div>
+              <div className="evt-clbd-hero-sub">
+                {data.mobile}{data.email ? ` · ${data.email}` : ""}
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── ADD-ONS ── */}
-        <div className="evt-clbd-section">
-          <div className="evt-clbd-section-title">Add-on Services</div>
-          <div className="evt-clbd-extras-grid">
-            {EXTRAS_MAP.map(ex => (
-              <div
-                key={ex.key}
-                className={`evt-clbd-extra-item${data[ex.key] ? " selected" : " not-selected"}`}
-              >
-                <span style={{ fontSize: 14, marginRight: 4 }}>{ex.icon}</span>
-                <span className="evt-clbd-extra-label">{ex.label}</span>
-                <span className="evt-clbd-extra-check">{data[ex.key] ? "✓" : "—"}</span>
+              <div className="evt-clbd-hero-meta">
+                <span>{typeInfo.label}</span>
+                <span>📅 {data.date || "—"}</span>
+                <span>⏰ {fmtTime(data.time)}</span>
+                <span>👥 {data.guests} guests</span>
+                {data.source && <span>🌐 {data.source}</span>}
               </div>
-            ))}
-          </div>
-
-          {/* Special mention text */}
-          {data.specialMention && data.specialMentionText && (
-            <div className="evt-clbd-mention-box">
-              <div className="evt-clbd-info-label" style={{ marginBottom: 4 }}>Special Mention Details</div>
-              <p className="evt-clbd-mention-text">{data.specialMentionText}</p>
-            </div>
-          )}
-        </div>
-
-        {/* ── PRICING ── */}
-        {(decoInfo || avPrice > 0 || data.eventMenu || totalAmount > 0) && (
-          <div className="evt-clbd-section">
-            <div className="evt-clbd-section-title">Decoration & Pricing</div>
-            <div className="evt-clbd-pricing-card">
-              {decoInfo && (
-                <div className="evt-clbd-pricing-row">
-                  <div className="evt-clbd-pricing-label">Decoration</div>
-                  <div className="evt-clbd-pricing-val">
-                    <span
-                      className="evt-clbd-deco-badge"
-                      style={{ background: decoInfo.bg, color: decoInfo.color }}
-                    >
-                      {decoInfo.label} — ₹{decoInfo.price.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              )}
-              {avPrice > 0 && (
-                <div className="evt-clbd-pricing-row">
-                  <div className="evt-clbd-pricing-label">Audio & Video</div>
-                  <div className="evt-clbd-pricing-val">₹{avPrice.toLocaleString()}</div>
-                </div>
-              )}
-              {data.eventMenu && (
-                <div className="evt-clbd-pricing-row">
-                  <div className="evt-clbd-pricing-label">Event Menu</div>
-                  <div className="evt-clbd-pricing-val">
-                    <span className="evt-clbd-menu-badge">{data.eventMenu}</span>
-                  </div>
-                </div>
-              )}
-              {totalAmount > 0 && (
-                <div className="evt-clbd-pricing-row evt-clbd-pricing-total">
-                  <div className="evt-clbd-pricing-label">
-                    {data.totalAmount ? "Total Amount" : "Estimated Add-ons Total"}
-                  </div>
-                  <div className="evt-clbd-pricing-val">₹{totalAmount.toLocaleString()}</div>
-                </div>
-              )}
             </div>
           </div>
-        )}
 
-        {/* ── SPECIAL NOTES ── */}
-        {data.specialNote && data.specialNote.replace(/-/g, "").trim() && (
+          {/* ── INFO GRID ── */}
           <div className="evt-clbd-section">
-            <div className="evt-clbd-section-title">Special Notes</div>
-            <div className="evt-clbd-notes-box">{data.specialNote}</div>
-          </div>
-        )}
-
-        {/* ── CALL HISTORY ── */}
-        {data.callHistory?.length > 0 && (
-          <div className="evt-clbd-section">
-            <div className="evt-clbd-section-title">Call History ({data.callHistory.length})</div>
-            <div className="evt-clbd-call-history">
-              {data.callHistory.map((ts, i) => (
-                <div key={i} className="evt-clbd-call-history-item">
-                  <span>📞</span>
-                  <span>Call #{i + 1}</span>
-                  <span style={{ marginLeft: "auto", color: "#a3a3a3" }}>{fmtDateTime(ts)}</span>
+            <div className="evt-clbd-section-title">Celebration Information</div>
+            <div className="evt-clbd-info-grid">
+              {infoRows.map((row, i) => (
+                <div key={i} className="evt-clbd-info-cell">
+                  <span className="evt-clbd-info-icon">{row.icon}</span>
+                  <div>
+                    <div className="evt-clbd-info-label">{row.label}</div>
+                    <div className="evt-clbd-info-val">{row.val}</div>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
-        )}
 
-        {/* ── STATUS UPDATE ── */}
-        <div className="evt-clbd-section">
-          <div className="evt-clbd-section-title">Update Status</div>
-          <div className="evt-clbd-status-row">
-            {["pending", "confirmed", "completed", "cancelled"].map(s => (
-              <button
-                key={s}
-                className={`evt-clbd-status-btn evt-clbd-sb-${s}${localStatus === s ? " active" : ""}`}
-                onClick={() => handleStatusChange(s)}
-                disabled={saving || localStatus === s}
-              >
-                {saving && localStatus !== s ? "…" : s.charAt(0).toUpperCase() + s.slice(1)}
-              </button>
-            ))}
+          {/* ── ADD-ONS ── */}
+          <div className="evt-clbd-section">
+            <div className="evt-clbd-section-title">Add-on Services</div>
+            <div className="evt-clbd-extras-grid">
+              {EXTRAS_MAP.map(ex => (
+                <div
+                  key={ex.key}
+                  className={`evt-clbd-extra-item${data[ex.key] ? " selected" : " not-selected"}`}
+                >
+                  <span style={{ fontSize: 14, marginRight: 4 }}>{ex.icon}</span>
+                  <span className="evt-clbd-extra-label">{ex.label}</span>
+                  <span className="evt-clbd-extra-check">{data[ex.key] ? "✓" : "—"}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Special mention text */}
+            {data.specialMention && data.specialMentionText && (
+              <div className="evt-clbd-mention-box">
+                <div className="evt-clbd-info-label" style={{ marginBottom: 4 }}>Special Mention Details</div>
+                <p className="evt-clbd-mention-text">{data.specialMentionText}</p>
+              </div>
+            )}
           </div>
-        </div>
 
-        {/* ── CALL CARD ── */}
-        <div className="evt-clbd-reminder">
-          <span className="evt-clbd-reminder-icon">📞</span>
-          <div>
-            <div className="evt-clbd-reminder-label">Reminder Call</div>
-            <div className="evt-clbd-reminder-num">{data.mobile || "—"}</div>
+          {/* ── PRICING ── */}
+          {(decoInfo || avPrice > 0 || data.eventMenu || totalAmount > 0) && (
+            <div className="evt-clbd-section">
+              <div className="evt-clbd-section-title">Decoration & Pricing</div>
+              <div className="evt-clbd-pricing-card">
+                {decoInfo && (
+                  <div className="evt-clbd-pricing-row">
+                    <div className="evt-clbd-pricing-label">Decoration</div>
+                    <div className="evt-clbd-pricing-val">
+                      <span
+                        className="evt-clbd-deco-badge"
+                        style={{ background: decoInfo.bg, color: decoInfo.color }}
+                      >
+                        {decoInfo.label} — ₹{decoInfo.price.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {avPrice > 0 && (
+                  <div className="evt-clbd-pricing-row">
+                    <div className="evt-clbd-pricing-label">Audio & Video</div>
+                    <div className="evt-clbd-pricing-val">₹{avPrice.toLocaleString()}</div>
+                  </div>
+                )}
+                {data.eventMenu && (
+                  <div className="evt-clbd-pricing-row">
+                    <div className="evt-clbd-pricing-label">Event Menu</div>
+                    <div className="evt-clbd-pricing-val">
+                      <span className="evt-clbd-menu-badge">{data.eventMenu}</span>
+                    </div>
+                  </div>
+                )}
+                {totalAmount > 0 && (
+                  <div className="evt-clbd-pricing-row evt-clbd-pricing-total">
+                    <div className="evt-clbd-pricing-label">
+                      {data.totalAmount ? "Total Amount" : "Estimated Add-ons Total"}
+                    </div>
+                    <div className="evt-clbd-pricing-val">₹{totalAmount.toLocaleString()}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── SPECIAL NOTES ── */}
+          {data.specialNote && data.specialNote.replace(/-/g, "").trim() && (
+            <div className="evt-clbd-section">
+              <div className="evt-clbd-section-title">Special Notes</div>
+              <div className="evt-clbd-notes-box">{data.specialNote}</div>
+            </div>
+          )}
+
+          {/* ── CALL HISTORY ── */}
+          {data.callHistory?.length > 0 && (
+            <div className="evt-clbd-section">
+              <div className="evt-clbd-section-title">Call History ({data.callHistory.length})</div>
+              <div className="evt-clbd-call-history">
+                {data.callHistory.map((ts, i) => (
+                  <div key={i} className="evt-clbd-call-history-item">
+                    <span>📞</span>
+                    <span>Call #{i + 1}</span>
+                    <span style={{ marginLeft: "auto", color: "#a3a3a3" }}>{fmtDateTime(ts)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── STATUS UPDATE ── */}
+          <div className="evt-clbd-section">
+            <div className="evt-clbd-section-title">Update Status</div>
+            <div className="evt-clbd-status-row">
+              {["pending", "confirmed", "completed", "cancelled"].map(s => (
+                <button
+                  key={s}
+                  className="modal-cancel-btn"
+                  onClick={() => handleStatusChange(s)}
+                  disabled={saving || localStatus === s}
+                >
+                  <span className="shadow"></span>
+                  <span className="edge"></span>
+                  <span className="front">
+                    {saving && localStatus !== s ? "…" : s.charAt(0).toUpperCase() + s.slice(1)}
+                    </span>
+                </button>
+              ))}
+            </div>
           </div>
-          <a
-            className="evt-clbd-call-btn"
-            href={data.mobile ? `tel:${data.mobile}` : undefined}
-            onClick={e => !data.mobile && e.preventDefault()}
-          >
-            Call Now
-          </a>
-        </div>
 
+          {/* ── CALL CARD ── */}
+          <div className="evt-clbd-reminder">
+            <span className="evt-clbd-reminder-icon">📞</span>
+            <div>
+              <div className="evt-clbd-reminder-label">Reminder Call</div>
+              <div className="evt-clbd-reminder-num">{data.mobile || "—"}</div>
+            </div>
+            <a
+              className="modal-save-btn"
+              href={data.mobile ? `tel:${data.mobile}` : undefined}
+              onClick={e => !data.mobile && e.preventDefault()}
+            >
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">
+              Call Now
+            </span>
+            </a>
+          </div>
+
+        </div>
       </div>
-    </div>
+    
   );
 };
 

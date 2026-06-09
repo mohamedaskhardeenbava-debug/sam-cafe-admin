@@ -119,7 +119,7 @@
 /* ── SALARY TABLE WRAPPER ─────────────────────── */
 .staff-salary-table-wrapper {
     width: 100%;
-    height: calc(100vh - 230px);
+    height: calc(100vh - 240px);
     overflow-y: auto;
     padding: 0 10px;
     background: var(--surface-2);
@@ -127,10 +127,11 @@
     box-sizing: border-box;
 }
 
-.card-grid-wrapper {
+.career-grid-wrapper {
     width: 100%;
-    height: calc(100vh - 230px);
+    height: calc(100vh - 240px);
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 0 10px;
     box-sizing: border-box;
 }

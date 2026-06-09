@@ -112,14 +112,22 @@ const parseOrderStatusDist = (orders = []) => {
   }));
 };
 
-const parseReservationStatus = (reservations = [], celebrations = [], preBookings = []) => {
+const parseReservationStatus = (reservations = [], celebrations = [], preBookings = [], cateringOrders = []) => {
   const count = (arr, key) => arr.filter(r => r.status === key).length;
   return [
-    { name: "Reservations", pending: count(reservations, "pending"), confirmed: count(reservations, "confirmed"), total: reservations.length },
-    { name: "Celebrations", pending: count(celebrations, "pending"), confirmed: count(celebrations, "confirmed"), total: celebrations.length },
-    { name: "Pre-Bookings", pending: count(preBookings, "pending"), confirmed: count(preBookings, "scheduled"), total: preBookings.length },
+    { name: "Reservations", pending: count(reservations, "pending"), confirmed: count(reservations, "confirmed"), completed: count(reservations, "completed"), cancelled: count(reservations, "cancelled"), total: reservations.length, color: "#54a0ff" },
+    { name: "Celebrations", pending: count(celebrations, "pending"), confirmed: count(celebrations, "confirmed"), completed: count(celebrations, "completed"), cancelled: count(celebrations, "cancelled"), total: celebrations.length, color: "#9b59b6" },
+    { name: "Pre-Bookings", pending: count(preBookings, "pending"), confirmed: count(preBookings, "confirmed"), completed: count(preBookings, "completed"), cancelled: count(preBookings, "cancelled"), total: preBookings.length, color: "#ff9f43" },
+    { name: "Catering", pending: count(cateringOrders, "pending"), confirmed: count(cateringOrders, "confirmed"), completed: count(cateringOrders, "completed"), cancelled: count(cateringOrders, "cancelled"), total: cateringOrders.length, color: "#1dd1a1" },
   ];
 };
+
+const parseEventPie = (reservations = [], celebrations = [], preBookings = [], cateringOrders = []) => [
+  { name: "Reservations", value: reservations.length, color: "#54a0ff" },
+  { name: "Celebrations", value: celebrations.length, color: "#9b59b6" },
+  { name: "Pre-Bookings", value: preBookings.length, color: "#ff9f43" },
+  { name: "Catering", value: cateringOrders.length, color: "#1dd1a1" },
+].filter(d => d.value > 0);
 
 /* ─── Sub-components ──────────────────────────────────── */
 const KpiCard = ({ label, value, sub, color = S.cyan }) => (
@@ -171,6 +179,7 @@ const ServiceReports = ({ adminData = {} }) => {
   } = adminData;
 
   const [activePie, setActivePie] = useState(null);
+  const [activeEventPie, setActiveEventPie] = useState(null);
   const [reportFrom, setReportFrom] = useState("");
   const [reportTo, setReportTo] = useState("");
   const today = new Date().toISOString().slice(0, 10);
@@ -190,7 +199,8 @@ const ServiceReports = ({ adminData = {} }) => {
   const attData = useMemo(() => parseAttendanceStats(staff, reportFrom, reportTo), [staff, reportFrom, reportTo]);
   const trendData = useMemo(() => parseDineInTrend(filteredOrders), [filteredOrders]);
   const statusDist = useMemo(() => parseOrderStatusDist(filteredOrders), [filteredOrders]);
-  const eventData = useMemo(() => parseReservationStatus(reservations, celebrations, preBookings), [reservations, celebrations, preBookings]);
+  const eventData = useMemo(() => parseReservationStatus(reservations, celebrations, preBookings, cateringOrders), [reservations, celebrations, preBookings, cateringOrders]);
+  const eventPieData = useMemo(() => parseEventPie(reservations, celebrations, preBookings, cateringOrders), [reservations, celebrations, preBookings, cateringOrders]);
 
   /* kpis */
   const totalOrders = filteredOrders.length;
@@ -353,38 +363,37 @@ const ServiceReports = ({ adminData = {} }) => {
         )}
       </div>
 
-      {/* ROW 3: MISE + ASSIGN + GROOMING + EVENTS */}
+      {/* GRID: MISE | ASSIGN | GROOMING */}
       <div className="s-grid-3">
 
-        {/* TABLE MISE */}
-        <div className="s-card">
-          <SectionTitle accent={S.amber}>Table Mise Status <span style={{ fontSize: 11, fontWeight: 400, color: S.muted, marginLeft: 6 }}>— Today</span></SectionTitle>
+        <div className="s-card rpt-fixed-card">
+          <SectionTitle accent={S.amber}>Table Mise Status <span style={{ fontSize: 11, fontWeight: 400, color: S.muted, marginLeft: 4 }}>— Today</span></SectionTitle>
           {miseData.length === 0 ? <p className="s-empty">No mise data for today</p> : (
-            <div className="s-mise-list">
+            <div className="rpt-mise-grid rpt-inner-scroll">
               {miseData.map((m, i) => (
-                <div key={i} className={`s-mise-row ${m.verified ? "ok" : "no"}`}>
-                  <div className="s-mise-indicator"><div className={`s-mise-dot ${m.verified ? "ok" : "no"}`} /></div>
-                  <div className="s-mise-body">
-                    <p className="s-mise-task">{m.task}</p>
-                    <p className="s-mise-time">{m.time}</p>
+                <div key={i} className={`rpt-mise-item ${m.verified ? "verified" : "pending"}`}>
+                  <div className="rpt-mise-check">{m.verified ? "✓" : "○"}</div>
+                  <div className="rpt-mise-info">
+                    <p className="rpt-mise-task">{m.task}</p>
+                    <p className="rpt-mise-detail">{m.time !== "—" ? m.time : ""}</p>
                   </div>
-                  <span className={`s-mise-tag ${m.verified ? "ok" : "no"}`}>{m.label}</span>
+                  <span className={`rpt-mise-badge ${m.verified ? "done" : "todo"}`}>{m.label}</span>
                 </div>
               ))}
             </div>
           )}
+        </div>
 
-          <div className="s-section-divider" />
-
-          <SectionTitle accent={S.cyan}>Staff Assignment <span style={{ fontSize: 11, fontWeight: 400, color: S.muted, marginLeft: 6 }}>— Today</span></SectionTitle>
+        <div className="s-card rpt-fixed-card">
+          <SectionTitle accent={S.cyan}>Staff Assignment <span style={{ fontSize: 11, fontWeight: 400, color: S.muted, marginLeft: 4 }}>— Today</span></SectionTitle>
           {assignData.length === 0 ? <p className="s-empty">No assignments for today</p> : (
-            <div className="s-assign-list">
+            <div className="rpt-assign-list rpt-inner-scroll">
               {assignData.map((a, i) => (
-                <div key={i} className="s-assign-row">
-                  <div className="s-assign-icon">👤</div>
-                  <div className="s-assign-body">
-                    <p className="s-assign-task">{a.task}</p>
-                    <p className="s-assign-staff">{a.staff} · {a.time}</p>
+                <div key={i} className="rpt-assign-row">
+                  <div className="rpt-assign-icon">👤</div>
+                  <div className="rpt-assign-body">
+                    <p className="rpt-assign-task">{a.task}</p>
+                    <p className="rpt-assign-staff">{a.staff} · {a.time}</p>
                   </div>
                 </div>
               ))}
@@ -392,75 +401,74 @@ const ServiceReports = ({ adminData = {} }) => {
           )}
         </div>
 
-        {/* GROOMING */}
-        <div className="s-card">
+        <div className="s-card rpt-fixed-card">
           <SectionTitle accent={S.violet}>Service Staff Grooming</SectionTitle>
-          {groomData.length === 0 ? (
-            <div className="s-no-groom">
-              <p className="s-empty">No grooming records yet</p>
-              <div className="s-groom-demo">
-                <p style={{ color: S.muted, fontSize: 12 }}>Avg Score</p>
-                <div className="s-groom-circle" style={{ "--score": `${avgGroom}%`, "--color": S.violet }}>
-                  <span>{avgGroom}%</span>
+          {groomData.length === 0 ? <p className="s-empty">No grooming records yet</p> : (
+            <div className="rpt-groom-bars rpt-inner-scroll">
+              {groomData.map((g, i) => (
+                <div key={i} className="rpt-groom-row">
+                  <span className="rpt-groom-name">{g.name}</span>
+                  <div className="rpt-groom-track">
+                    <div className="rpt-groom-fill" style={{ width: `${g.score}%`, background: g.score >= 70 ? S.green : g.score >= 40 ? S.amber : S.rose }} />
+                  </div>
+                  <span className="rpt-groom-score" style={{ color: g.score >= 70 ? S.green : g.score >= 40 ? S.amber : S.rose }}>{g.score}%</span>
                 </div>
-              </div>
+              ))}
             </div>
-          ) : (
-            <>
-              <div className="s-groom-circle-wrap">
-                <div className="s-groom-circle" style={{ "--score": `${avgGroom}%`, "--color": avgGroom >= 70 ? S.green : avgGroom >= 40 ? S.amber : S.rose }}>
-                  <span>{avgGroom}%</span>
-                </div>
-                <p className="s-groom-label">Team Average</p>
-              </div>
-              <div className="s-groom-bars">
-                {groomData.map((g, i) => (
-                  <div key={i} className="s-groom-row">
-                    <span className="s-groom-name">{g.name}</span>
-                    <div className="s-groom-track">
-                      <div className="s-groom-fill" style={{ width: `${g.score}%`, background: g.score >= 70 ? S.green : g.score >= 40 ? S.amber : S.rose }} />
-                    </div>
-                    <span className="s-groom-score">{g.score}%</span>
+          )}
+        </div>
+
+      </div>
+
+      {/* GRID: EVENT PIE | EVENT BOOKINGS DATA */}
+      <div className="s-grid-2">
+
+        <div className="s-card rpt-fixed-card">
+          <SectionTitle accent={S.indigo}>Event Bookings Distribution</SectionTitle>
+          {eventPieData.length === 0 ? <p className="s-empty">No event data</p> : (
+            <div className="rpt-evt-pie-wrap">
+              <ResponsiveContainer width="50%" height={220}>
+                <PieChart>
+                  <Pie data={eventPieData} dataKey="value" nameKey="name" cx="50%" cy="50%"
+                    innerRadius={52} outerRadius={80}
+                    activeIndex={activeEventPie} activeShape={renderActiveShape}
+                    onMouseEnter={(_, i) => setActiveEventPie(i)} onMouseLeave={() => setActiveEventPie(null)}
+                    isAnimationActive animationDuration={800}>
+                    {eventPieData.map((e, i) => <Cell key={i} fill={e.color} />)}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="rpt-evt-pie-legend">
+                {eventPieData.map((d, i) => (
+                  <div key={i} className="rpt-evt-legend-item">
+                    <span className="rpt-evt-legend-dot" style={{ background: d.color }} />
+                    <span className="rpt-evt-legend-name">{d.name}</span>
+                    <strong style={{ color: d.color }}>{d.value}</strong>
                   </div>
                 ))}
               </div>
-            </>
+            </div>
           )}
         </div>
 
-        {/* EVENT BOOKINGS */}
-        <div className="s-card">
+        <div className="s-card rpt-fixed-card">
           <SectionTitle accent={S.rose}>Event Bookings Overview</SectionTitle>
-          <div className="s-event-stats">
+          <div className="rpt-evt-scroll rpt-inner-scroll">
             {eventData.map((e, i) => (
-              <div key={i} className="s-event-card">
-                <p className="s-event-name">{e.name}</p>
-                <div className="s-event-nums">
-                  <div className="s-event-num-item"><span>{e.pending}</span><p>Pending</p></div>
-                  <div className="s-event-num-item"><span>{e.confirmed}</span><p>Confirmed</p></div>
-                  <div className="s-event-num-item"><span>{e.total}</span><p>Total</p></div>
+              <div key={i} className="rpt-evt-row" style={{ borderLeftColor: e.color }}>
+                <p className="rpt-evt-name" style={{ color: e.color }}>{e.name}</p>
+                <div className="rpt-evt-nums">
+                  <div className="rpt-evt-num pending"><span>{e.pending}</span><p>Pending</p></div>
+                  <div className="rpt-evt-num confirmed"><span>{e.confirmed}</span><p>Confirmed</p></div>
+                  <div className="rpt-evt-num completed"><span>{e.completed ?? 0}</span><p>Done</p></div>
+                  <div className="rpt-evt-num cancelled"><span>{e.cancelled ?? 0}</span><p>Cancelled</p></div>
+                  <div className="rpt-evt-num total"><span>{e.total}</span><p>Total</p></div>
                 </div>
               </div>
             ))}
           </div>
-
-          <div className="s-section-divider" />
-
-          <SectionTitle accent={S.green}>Catering Orders</SectionTitle>
-          {cateringOrders.length === 0 ? <p className="s-empty">No catering orders</p> : (
-            <div className="s-catering-list">
-              {cateringOrders.map((c, i) => (
-                <div key={i} className="s-catering-row">
-                  <div>
-                    <p className="s-catering-name">{c.name}</p>
-                    <p className="s-catering-detail">{c.eventDate} · {c.guests} guests · {c.location}</p>
-                  </div>
-                  <span className="s-catering-amount">₹{c.totalAmount?.toLocaleString()}</span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
+
       </div>
     </div>
   );

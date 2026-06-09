@@ -1153,6 +1153,7 @@
     flex-direction: column;
     gap: 8px;
     border: 1px solid #cecece;
+    overflow-y: auto;
 }
 
 .ae-live-summary-row {

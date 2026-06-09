@@ -182,7 +182,7 @@ export default function StaffCareer() {
             )}
 
             {/* CARD GRID */}
-            <div className="card-grid-wrapper">
+            <div className="career-grid-wrapper">
                 <div className="card-grid">
                     {filteredJobs.map((job, i) => {
                         const colors = roleColors[job.role] || { bg: "#f5f4f1", color: "#3a3a3a" };

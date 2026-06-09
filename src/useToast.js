@@ -60,10 +60,25 @@ const ICONS = {
                 clipRule="evenodd" />
         </svg>
     ),
+    booking: (
+        <svg viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd"
+                d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                clipRule="evenodd" />
+        </svg>
+    ),
 };
 
 /* ── Single Toast ────────────────────────────────────── */
-const Toast = ({ id, type, message, onDismiss, onConfirm, onCancel }) => {
+const Toast = ({
+    id,
+    type,
+    message,
+    onDismiss,
+    onConfirm,
+    onCancel,
+    onNavigate
+}) => {
     const [exiting, setExiting] = React.useState(false);
 
     const dismiss = useCallback(() => {
@@ -82,12 +97,17 @@ const Toast = ({ id, type, message, onDismiss, onConfirm, onCancel }) => {
     };
 
     const isConfirm = type === "confirm";
+    const isBooking = type === "booking";
+
+    const todayDate = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
 
     return (
         <div
-            className={`bs-toast bs-toast-${isConfirm ? "warning" : type} ${exiting ? "bs-toast-exit" : "bs-toast-enter"}`}
+            className={`bs-toast bs-toast-${isConfirm ? "warning" : isBooking ? "booking" : type} ${exiting ? "bs-toast-exit" : "bs-toast-enter"}`}
             role="alert"
             aria-live="assertive"
+            style={isBooking ? { cursor: "pointer" } : {}}
+            onClick={isBooking ? () => { dismiss(); if (onNavigate) onNavigate(todayDate); } : undefined}
         >
             {/* Left accent bar */}
             <div className="bs-toast-accent" />
@@ -108,18 +128,21 @@ const Toast = ({ id, type, message, onDismiss, onConfirm, onCancel }) => {
                         </button>
                     </div>
                 )}
+                {isBooking && (
+                    <span className="bs-toast-booking-hint">Click to view today's orders →</span>
+                )}
             </div>
 
-            {/* Close button — hidden for confirm toasts (use the action buttons) */}
-            {!isConfirm && (
-                <button className="bs-toast-close" onClick={dismiss} aria-label="Close">
-                    ×
-                </button>
-            )}
+            {/* Close button — always shown */}
+            <button className="bs-toast-close" onClick={dismiss} aria-label="Close">
+                ×
+            </button>
 
             {/* Auto-dismiss progress bar — only for non-confirm toasts */}
             {!isConfirm && (
-                <div className={`bs-toast-progress bs-toast-progress-${type}`} />
+                <div className={`bs-toast-progress bs-toast-progress-${type}`}
+                    style={isBooking ? { animationDuration: "60s" } : {}}
+                />
             )}
         </div>
     );
@@ -158,6 +181,14 @@ export const ToastProvider = ({ children }) => {
          */
         confirm: (msg, onConfirm, onCancel) =>
             push("confirm", msg, 0, { onConfirm, onCancel }),
+        /**
+         * toast.booking(message, onNavigate)
+         * Shows a booking notification toast with 60s auto-dismiss.
+         * Clicking anywhere on the toast calls onNavigate(todayDate) where
+         * todayDate is "YYYY-MM-DD" — use it to pre-filter the target page.
+         */
+        booking: (msg, onNavigate) =>
+            push("booking", msg, 60000, { onNavigate }),
     };
 
     return (

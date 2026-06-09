@@ -342,7 +342,7 @@
 /* ── Section row ── */
 .service-assign-section-row td {
   padding: 10px 12px 6px !important;
-  font-size: 12px;
+  font-size: 12px !important;
   font-weight: 700;
   color: #555;
   text-transform: uppercase;

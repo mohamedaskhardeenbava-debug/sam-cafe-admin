@@ -47,7 +47,7 @@
 
 .card-grid-wrapper {
     width: 100%;
-    height: calc(100vh - 230px);
+    height: calc(100vh - 250px);
     overflow-y: auto;
     box-sizing: border-box;
 }
@@ -57,6 +57,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 14px;
+    padding-top: 8px;
 }
 
 /* RECIPE CARD */
@@ -83,7 +84,7 @@
     left: 0;
     right: 0;
     height: 2px;
-    background: var(--ink);
+    background: var(--color-blue);
     transform: scaleX(0);
     transform-origin: left;
     transition: transform 0.22s ease;
@@ -92,7 +93,6 @@
 .recipe-card:hover {
     transform: translateY(-3px);
     box-shadow: var(--shadow-md);
-    border-color: var(--border-med);
 }
 
 .recipe-card:hover::before {

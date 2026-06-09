@@ -53,16 +53,14 @@ const ReservationDetails = ({ adminData, setAdminData }) => {
 
   if (!data) return (
     <div className="details-container">
-      <div className="evt-resd-container">
-        <div className="details-header">
-          <button className="back-btn" onClick={() => navigate(-1)} />
-          <div>
-            <h2 className="evt-resd-title">Reservation Detail</h2>
-          </div>
+      <div className="details-header">
+        <button className="back-btn" onClick={() => navigate(-1)} />
+        <div>
+          <h2 className="evt-resd-title">Reservation Detail</h2>
         </div>
-        <div className="evt-resd-section">
-          <p style={{ color: "#a3a3a3", fontSize: 14, margin: 0 }}>Reservation not found.</p>
-        </div>
+      </div>
+      <div className="evt-resd-section">
+        <p style={{ color: "#a3a3a3", fontSize: 14, margin: 0 }}>Reservation not found.</p>
       </div>
     </div>
   );
@@ -110,18 +108,19 @@ const ReservationDetails = ({ adminData, setAdminData }) => {
 
   return (
     <div className="details-container">
-      <div className="evt-resd-container">
 
-        {/* ── HEADER ── */}
-        <div className="details-header">
-          <button className="back-btn" onClick={() => navigate(-1)} />
-          <div>
-            <h2 className="evt-resd-title">Reservation Detail</h2>
-            <p className="evt-resd-id">ID: <code>{data.id}</code></p>
-          </div>
-          <span className={`evt-resd-status evt-resd-status-${localStatus}`}>{localStatus}</span>
+
+      {/* ── HEADER ── */}
+      <div className="details-header">
+        <button className="back-btn" onClick={() => navigate(-1)} />
+        <div>
+          <h2 className="evt-resd-title">Reservation Detail</h2>
+          <p className="evt-resd-id">ID: <code>{data.id}</code></p>
         </div>
+        <span className={`evt-resd-status evt-resd-status-${localStatus}`}>{localStatus}</span>
+      </div>
 
+      <div className="details-body">
         {/* ── HERO CARD ── */}
         <div className="evt-resd-hero">
           <div className="evt-resd-hero-avatar">
@@ -195,11 +194,15 @@ const ReservationDetails = ({ adminData, setAdminData }) => {
             {["pending", "confirmed", "completed", "cancelled"].map(s => (
               <button
                 key={s}
-                className={`evt-resd-status-btn evt-resd-sb-${s}${localStatus === s ? " active" : ""}`}
+                className={"modal-cancel-btn"}
                 onClick={() => handleStatusChange(s)}
                 disabled={saving || localStatus === s}
               >
-                {saving && localStatus !== s ? "…" : s.charAt(0).toUpperCase() + s.slice(1)}
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">
+                  {saving && localStatus !== s ? "…" : s.charAt(0).toUpperCase() + s.slice(1)}
+                </span>
               </button>
             ))}
           </div>
@@ -213,16 +216,21 @@ const ReservationDetails = ({ adminData, setAdminData }) => {
             <div className="evt-resd-reminder-num">{data.mobile || "—"}</div>
           </div>
           <a
-            className="evt-resd-call-btn"
+            className="modal-save-btn"
             href={data.mobile ? `tel:${data.mobile}` : undefined}
             onClick={e => !data.mobile && e.preventDefault()}
           >
-            Call Now
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">
+              Call Now
+            </span>
           </a>
         </div>
-
       </div>
+
     </div>
+
   );
 };
 
