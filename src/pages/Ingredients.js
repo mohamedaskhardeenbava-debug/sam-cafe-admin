@@ -632,7 +632,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                               toast.success("Ingredient deleted");
                             } catch (err) {
                               // Revert on true server failure
-                              console.error("Delete ingredient error:", err);
+                              toast.error("Failed to delete ingredient");
                               setAdminData(prev => ({
                                 ...prev,
                                 ingredients: [...prev.ingredients, ingredient]

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import "./ServiceGrooming.css";
 import api from "../../api";
+import { useToast } from "../../useToast";
 import closeIcon from "../../icon/close-icon.png";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
@@ -80,6 +81,7 @@ function getMonthStart() {
 }
 
 export default function ServiceGrooming({ adminData, setAdminData }) {
+  const { toast } = useToast();
   const today = toLocalISO(new Date());
 
   const dates = useMemo(() => {
@@ -146,7 +148,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
     useInfiniteScroll(visibleStaff.length, 20);
 
   const exportGrooming = () => {
-    if (!visibleStaff.length) { alert("No data to export"); return; }
+    if (!visibleStaff.length) { toast.warning("No data to export"); return; }
     const rows = visibleStaff.map(s => {
       const row = { Name: s.name || "—", Role: s.role || "—" };
       let perfect = 0;
@@ -185,7 +187,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
     try {
       await api.put("/serviceGrooming", updated);
     } catch (err) {
-      console.error("ServiceGrooming toggle failed:", err.message);
+      toast.error("Failed to save grooming check. Please try again.");
       setAdminData(prev => ({ ...prev, serviceGrooming: prevData }));
     } finally {
       setSaving(prev => ({ ...prev, [ck]: false }));
@@ -209,7 +211,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
     try {
       await api.put("/serviceGrooming", updated);
       setAdminData(prev => ({ ...prev, serviceGrooming: updated }));
-    } catch (err) { console.error("Memo save failed:", err.message); }
+    } catch (err) { toast.error("Failed to save memo. Please try again."); }
     setShowMemo(false); setMemo({ staffId: "", text: "" }); setMemoErrors({});
   };
 

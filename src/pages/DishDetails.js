@@ -6,8 +6,10 @@ import editIcon from "../icon/edit-icon.png"
 import "./DishDetails.css";
 import { allowTextInput } from "../App";
 import { resolveCategoryAndSubCategory } from "../App"
+import { useToast } from "../useToast";
 
 const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName, handleBack }) => {
+    const { toast } = useToast();
     const { categoryId, dishId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
@@ -85,7 +87,7 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
         }
 
         if (duplicate) {
-            alert("Another dish with this name already exists in this category");
+            toast.error("Another dish with this name already exists in this category");
             return;
         }
 
@@ -128,6 +130,7 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
             navigate(`/dishes/${categoryId}/${newDishId}`, { replace: true });
 
         } catch (err) {
+            toast.error("Failed to update dish");
             console.error("Failed to update dish", err);
         }
     };
@@ -241,29 +244,29 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
 
                 <div className="details-body">
 
-                    <div 
-                    className="horizontal-form-group"
-                    style={{alignItems: "end"}}
+                    <div
+                        className="horizontal-form-group"
+                        style={{ alignItems: "end" }}
                     >
-                    <div>
-                        {/* IMAGE */}
-                        <div className="dish-details-image">
-                            <img src={localDish.image || "/placeholder.png"} alt={localDish.name} />
-                        </div>
-                        {!fromOrder && isEditing && (
-                            <div style={{ width: "150px" }}>
-                                <div className="file-wrap">
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleImageUpload}
-                                        className="file-input"
-                                    />
-                                    <div className="file-label">Change Image</div>
-                                </div>
+                        <div>
+                            {/* IMAGE */}
+                            <div className="dish-details-image">
+                                <img src={localDish.image || "/placeholder.png"} alt={localDish.name} />
                             </div>
-                        )}
-                    </div>
+                            {!fromOrder && isEditing && (
+                                <div style={{ width: "150px" }}>
+                                    <div className="file-wrap">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                            className="file-input"
+                                        />
+                                        <div className="file-label">Change Image</div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         {/* NAME */}
                         <div className="section">
@@ -316,7 +319,7 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
                         <div className="section">
                             <div className="section-title"><span>Type</span></div>
                             {isEditing ? (
-                                <div className="veg-toggle-group" style={{ marginTop: 8 }}>
+                                <div className="veg-toggle-group" style={{ marginTop: 5 }}>
                                     <button
                                         type="button"
                                         className={`veg-toggle-btn${localDish.isVeg !== false ? " active-veg" : ""}`}
@@ -335,7 +338,6 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
                             ) : (
                                 <span
                                     className={`veg-badge ${localDish.isVeg === false ? "non-veg" : "veg"}`}
-                                    style={{ marginTop: 8, display: "inline-flex" }}
                                 >
                                     {localDish.isVeg === false ? "Non-Veg" : "Veg"}
                                 </span>
@@ -346,7 +348,7 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
                         <div className="section">
                             <div className="section-title"><span>Event Food</span></div>
                             {isEditing ? (
-                                <div className="veg-toggle-group" style={{ marginTop: 8 }}>
+                                <div className="veg-toggle-group" style={{ marginTop: 5 }}>
                                     <button
                                         type="button"
                                         className={`veg-toggle-btn${localDish.isEventFood ? " active-veg" : ""}`}
@@ -365,7 +367,6 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
                             ) : (
                                 <span
                                     className={`veg-badge ${localDish.isEventFood ? "veg" : "non-veg"}`}
-                                    style={{ marginTop: 8, display: "inline-flex" }}
                                 >
                                     {localDish.isEventFood ? "Yes" : "No"}
                                 </span>
@@ -496,10 +497,12 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
                                                     </td>
                                                     <td>
                                                         <div
-                                                            className="ingredient-delete-btn"
+                                                            className="modal-danger-btn"
                                                             onClick={() => deleteIngredient(index)}
                                                         >
-                                                            <img src={deleteIcon} alt="" />
+                                                            <span className="shadow"></span>
+                                                            <span className="edge"></span>
+                                                            <span className="front close-padding">Remove</span>
                                                         </div>
                                                     </td>
                                                 </tr>

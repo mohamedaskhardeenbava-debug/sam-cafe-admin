@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import * as XLSX from "xlsx";
 import "./KitchenAssign.css";
+import { useToast } from "../../useToast";
 import { getTomorrowKey, getTomorrowFormatted } from "../../App";
 import api from "../../api";
 import deleteIcon from "../../icon/delete-icon.png";
@@ -66,6 +67,7 @@ function CustomDropdown({ value, onChange, options, placeholder = "— Select St
 }
 
 export default function KitchenAssign({ adminData, setAdminData }) {
+  const { toast } = useToast();
   const tasks = adminData.tasks?.kitchen || {};   // { mise:[...], cleaning:[...] }
   const tomorrow = getTomorrowKey();
   const tomorrowFmt = getTomorrowFormatted();
@@ -108,7 +110,7 @@ export default function KitchenAssign({ adminData, setAdminData }) {
         });
       });
     });
-    if (!rows.length) { alert("No assignment data to export"); return; }
+    if (!rows.length) { toast.warning("No assignment data to export"); return; }
     const sheet = XLSX.utils.json_to_sheet(rows);
     sheet["!cols"] = Object.keys(rows[0]).map(k => ({
       wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2
@@ -137,8 +139,9 @@ export default function KitchenAssign({ adminData, setAdminData }) {
       setAdminData(prev => ({ ...prev, tasks: updated }));
       setNewTask("");
       setTaskErrors({});
+      toast.success("Task added");
     } catch (err) {
-      console.error("ADD TASK FAILED:", err.response?.data || err.message);
+      toast.error("Failed to add task. Please try again.");
     }
   };
 
@@ -155,7 +158,7 @@ export default function KitchenAssign({ adminData, setAdminData }) {
       await api.put("/tasks/1", updated);
       setAdminData(prev => ({ ...prev, tasks: updated }));
     } catch (err) {
-      console.error("DELETE TASK FAILED:", err.response?.data || err.message);
+      toast.error("Failed to delete task. Please try again.");
     }
   };
 
@@ -191,7 +194,7 @@ export default function KitchenAssign({ adminData, setAdminData }) {
         kitchenMise: updatedMise
       }));
     } catch (err) {
-      console.error("SAVE FAILED:", err.response?.data || err.message);
+      toast.error("Failed to save assignment. Please try again.");
     }
   };
 

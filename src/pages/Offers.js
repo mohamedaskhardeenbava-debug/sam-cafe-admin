@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { formatDisplayDate } from "../App";
 import { CustomDatePicker, todayStr } from "../components/CustomDatePicker";
 import useInfiniteScroll from "../components/useInfiniteScroll";
+import { useToast } from "../useToast";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 
 // ── Floating-label CustomDropdown ────────────────────────────────────────────
@@ -49,6 +50,7 @@ function CustomDropdown({ value, onChange, options, placeholder = "Select…", l
 }
 
 const Offers = ({ adminData, setAdminData }) => {
+  const { toast } = useToast();
   const [showModal, setShowModal] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const navigate = useNavigate();
@@ -128,7 +130,7 @@ const Offers = ({ adminData, setAdminData }) => {
     useInfiniteScroll(filteredOffers.length, 30);
 
   const exportOffers = () => {
-    if (!filteredOffers.length) { alert("No offers to export"); return; }
+    if (!filteredOffers.length) { toast.warning("No offers to export"); return; }
     const rows = filteredOffers.map(o => ({
       Dish: o.dishId || "—",
       "Original Price (₹)": o.originalPrice ?? "—",

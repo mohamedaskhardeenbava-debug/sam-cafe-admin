@@ -373,7 +373,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
           </button>
         </div>
 
-        <div className="modal-body">
+        <div className="event-modal-body">
 
           {/* TAB 0: Details */}
           {tab === 0 && (

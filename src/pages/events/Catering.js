@@ -109,6 +109,10 @@ const buildCatAddress = (f) => [
   f.addrLandmark, f.addrCity, f.addrDistrict, f.addrState, f.addrPincode,
 ].filter(Boolean).join(", ");
 
+/* Detect if a saved location string matches the restaurant address */
+const RESTAURANT_LOCATION_STR = buildCatAddress(RESTAURANT_ADDRESS);
+const isRestaurantLocation = (loc) => loc && loc.trim() === RESTAURANT_LOCATION_STR.trim();
+
 /* ══════════════════════════════════════
    Dish Picker (Tab 2) — isEventFood filter, no qty selector
    Price = dish.price × guests
@@ -283,6 +287,12 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
   const [useRestaurantAddr, setUseRestaurantAddr] = useState(false);
   const [menuData, setMenuData] = useState(null);
   const [itemsPopup, setItemsPopup] = useState(null);
+  const [locTooltip, setLocTooltip] = useState(null);
+  const [locTooltipPos, setLocTooltipPos] = useState({ top: 0, left: 0 });
+  const [itemsTooltip, setItemsTooltip] = useState(null);
+  const [itemsTooltipPos, setItemsTooltipPos] = useState({ top: 0, left: 0 });
+  const locWrapRefs = useRef({});
+  const itemsWrapRefs = useRef({});
   const [callTooltipId, setCallTooltipId] = useState(null);
   const [callTooltipPos, setCallTooltipPos] = useState({ top: 0, left: 0 });
   const callWrapRefs = useRef({});
@@ -683,14 +693,54 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                     <td style={{ textAlign: "center", fontWeight: 700 }}>{item.guests || "—"}</td>
                     <td style={{ textAlign: "center" }} onClick={e => e.stopPropagation()}>
                       {item.items?.length > 0 ? (
-                        <button onClick={() => setItemsPopup(item)}
-                          style={{ background: "#f0f4ff", border: "1.5px solid #c7d2fe", borderRadius: "999px", padding: "3px 12px", fontWeight: 700, fontSize: 13, color: "#3730a3", cursor: "pointer", fontFamily: "inherit" }}>
-                          {item.items.length}
-                        </button>
+                        <div
+                          className="cat-items-wrap"
+                          ref={el => { itemsWrapRefs.current[item.id] = el; }}
+                          onMouseEnter={() => {
+                            const el = itemsWrapRefs.current[item.id];
+                            if (el) {
+                              const r = el.getBoundingClientRect();
+                              setItemsTooltipPos({ top: r.top, left: r.left + r.width / 2 });
+                            }
+                            setItemsTooltip(item.id);
+                          }}
+                          onMouseLeave={() => setItemsTooltip(null)}
+                          style={{ display: "inline-block" }}
+                        >
+                          <span style={{ background: "#f0f4ff", border: "1.5px solid #c7d2fe", borderRadius: "999px", padding: "3px 12px", fontWeight: 700, fontSize: 13, color: "#3730a3", cursor: "default", display: "inline-block" }}>
+                            {item.items.length}
+                          </span>
+                        </div>
                       ) : <span style={{ color: "#bbb", fontSize: 13 }}>0</span>}
                     </td>
                     <td style={{ fontWeight: 700 }}>₹{(item.totalAmount || 0).toLocaleString()}</td>
-                    <td style={{ fontSize: 12, color: "#666" }}>{item.location || "—"}</td>
+                    <td style={{ fontSize: 12 }} onClick={e => e.stopPropagation()}>
+                      {!item.location ? (
+                        <span style={{ color: "#bbb" }}>—</span>
+                      ) : isRestaurantLocation(item.location) ? (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#ecfdf5", color: "#065f46", borderRadius: 999, padding: "3px 10px", fontSize: 11, fontWeight: 700, border: "1px solid #a7f3d0" }}>
+                          Restaurant
+                        </span>
+                      ) : (
+                        <div
+                          className="cat-loc-wrap"
+                          ref={el => { locWrapRefs.current[item.id] = el; }}
+                          onMouseEnter={() => {
+                            const el = locWrapRefs.current[item.id];
+                            if (el) {
+                              const r = el.getBoundingClientRect();
+                              setLocTooltipPos({ top: r.top, left: r.left + r.width / 2 });
+                            }
+                            setLocTooltip(item.id);
+                          }}
+                          onMouseLeave={() => setLocTooltip(null)}
+                        >
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#f0f4ff", color: "#3730a3", borderRadius: 999, padding: "3px 10px", fontSize: 11, fontWeight: 700, border: "1px solid #c7d2fe", cursor: "default" }}>
+                            Other Location
+                          </span>
+                        </div>
+                      )}
+                    </td>
                     <td onClick={e => e.stopPropagation()}>
                       <div className="evt-res-inline-status">
                         {["pending", "confirmed", "completed", "cancelled"].map(s => (
@@ -764,6 +814,66 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
               {hist.map((ts, i) => (
                 <div key={i} className="evt-pre-call-tooltip-row">{fmtDateTime(ts)}</div>
               ))}
+            </div>
+          );
+        })(),
+        document.body
+      )}
+
+      {/* Location tooltip */}
+      {locTooltip && createPortal(
+        (() => {
+          const locItem = (adminData?.cateringOrders || []).find(x => x.id === locTooltip);
+          if (!locItem?.location) return null;
+          return (
+            <div
+              className="cat-addr-tooltip"
+              style={{
+                position: "fixed",
+                top: locTooltipPos.top,
+                left: locTooltipPos.left,
+                transform: "translate(-50%, calc(-100% - 10px))",
+                zIndex: 99999,
+                pointerEvents: "none",
+              }}
+            >
+              <div className="cat-addr-tooltip-title">Event Address</div>
+              <div className="cat-addr-tooltip-body">{locItem.location}</div>
+            </div>
+          );
+        })(),
+        document.body
+      )}
+
+      {/* Items tooltip */}
+      {itemsTooltip && createPortal(
+        (() => {
+          const tipItem = (adminData?.cateringOrders || []).find(x => x.id === itemsTooltip);
+          const tipItems = tipItem?.items || [];
+          if (!tipItems.length) return null;
+          return (
+            <div
+              className="cat-items-tooltip"
+              style={{
+                position: "fixed",
+                top: itemsTooltipPos.top,
+                left: itemsTooltipPos.left,
+                transform: "translate(-50%, calc(-100% - 10px))",
+                zIndex: 99999,
+                pointerEvents: "none",
+              }}
+            >
+              <div className="cat-addr-tooltip-title"> Dishes ({tipItems.length})</div>
+              {tipItems.map((dish, i) => (
+                <div key={i} className="cat-items-tooltip-row">
+                  <span className="cat-items-tooltip-name">{dish.name || "—"}</span>
+                  <span className="cat-items-tooltip-price">₹{dish.totalPrice || 0}</span>
+                </div>
+              ))}
+              <div className="cat-items-tooltip-total">
+                <span>Total</span>
+                <span>₹{tipItem.totalAmount?.toLocaleString() || 0}</span>
+              </div>
             </div>
           );
         })(),

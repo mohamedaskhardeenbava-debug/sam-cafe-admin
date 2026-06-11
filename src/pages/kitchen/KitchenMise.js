@@ -3,6 +3,7 @@ import * as XLSX from "xlsx";
 import "./KitchenMise.css";
 import { getTodayKey, getTodayFormatted } from "../../App";
 import api from "../../api";
+import { useToast } from "../../useToast";
 
 /*
   DATA SHAPE (kitchenMise in db.json):
@@ -23,6 +24,7 @@ const SECTION_META = {
 };
 
 export default function KitchenMise({ adminData, setAdminData }) {
+  const { toast } = useToast();
   const today = getTodayKey();
   const todayFmt = getTodayFormatted();
   const tasks = adminData.tasks?.kitchen || {};
@@ -64,7 +66,7 @@ export default function KitchenMise({ adminData, setAdminData }) {
         });
       });
     });
-    if (!rows.length) { alert("No mise data to export"); return; }
+    if (!rows.length) { toast.warning("No mise data to export"); return; }
     const sheet = XLSX.utils.json_to_sheet(rows);
     sheet["!cols"] = Object.keys(rows[0]).map(k => ({
       wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2
@@ -92,7 +94,7 @@ export default function KitchenMise({ adminData, setAdminData }) {
       await api.put("/kitchenMise", updated);
       setAdminData(prev => ({ ...prev, kitchenMise: updated }));
     } catch (err) {
-      console.error("SAVE FAILED:", err);
+      toast.error("Failed to save. Please try again.");
       setAdminData(prev => ({ ...prev, kitchenMise: updated }));
     }
   };

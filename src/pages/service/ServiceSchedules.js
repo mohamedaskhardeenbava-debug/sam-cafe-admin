@@ -155,7 +155,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
             setShow(false);
             toast.success("Schedule added successfully.");
         } catch (err) {
-            console.error("Failed to add schedule", err);
+            toast.error("Failed to add schedule. Please try again.");
             toast.error("Failed to add schedule. Please try again.");
         }
     };
@@ -177,7 +177,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
                 await api.delete(`/serviceSchedules/${item.id}`);
                 deletedIds.push(item.id);
             } catch (err) {
-                console.warn(`Could not delete schedule ${item.id}:`, err.response?.status);
+                toast.error(`Failed to delete schedule ${item.id}.`);
                 // Still move it to activity even if delete failed
                 deletedIds.push(item.id);
             }
@@ -187,7 +187,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
             try {
                 await api.post("/serviceActivity", item);
             } catch (err) {
-                console.warn("Could not archive schedule:", err);
+                toast.error("Failed to archive schedule.");
             }
         }
 
@@ -209,13 +209,13 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
         try {
             await api.put(`/serviceSchedules/${item.id}`, updated);
         } catch (err) {
-            console.warn("Could not update schedule status:", err);
+            toast.error("Failed to update schedule status.");
         }
         // Also copy to activity log
         try {
             await api.post("/serviceActivity", updated);
         } catch (err) {
-            console.warn("Could not write to activity:", err);
+            toast.error("Failed to write to activity log.");
         }
         setAdminData(prev => ({
             ...prev,
@@ -226,7 +226,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
     };
 
     const exportToExcel = () => {
-        if (!filteredList.length) { alert("No schedule data to export"); return; }
+        if (!filteredList.length) { toast.warning("No schedule data to export"); return; }
         const rows = filteredList.map(item => ({
             Work: item.work || "—",
             Staff: item.staff || "—",

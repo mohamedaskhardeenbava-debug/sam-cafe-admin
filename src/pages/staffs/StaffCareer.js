@@ -3,6 +3,7 @@ import * as XLSX from "xlsx";
 import "./StaffModules.css";
 import api from "../../api";
 import closeIcon from "../../icon/close-icon.png";
+import { useToast } from "../../useToast";
 
 const roles = ["Chef", "Waiter", "Supervisor", "Manager", "Cleaner"];
 
@@ -75,6 +76,7 @@ function CustomDropdown({ value, onChange, options, placeholder = "Select…", l
 }
 
 export default function StaffCareer() {
+    const { toast } = useToast();
     const [jobs, setJobs] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [selected, setSelected] = useState(null);
@@ -99,7 +101,9 @@ export default function StaffCareer() {
             setForm({ role: "", description: "", experience: "" });
             setFormErrors({});
             setShowForm(false);
+            toast.success("Career record saved");
         } catch (err) {
+            toast.error("Failed to save career record");
             console.error("Career save failed:", err.response?.data || err.message);
         }
     };
@@ -112,7 +116,7 @@ export default function StaffCareer() {
     });
 
     const exportJobs = () => {
-        if (!filteredJobs.length) { alert("No job vacancies to export"); return; }
+        if (!filteredJobs.length) { toast.warning("No job vacancies to export"); return; }
         const rows = filteredJobs.map(j => ({
             Role: j.role || "—",
             "Experience Required": expLabel(j.experience),

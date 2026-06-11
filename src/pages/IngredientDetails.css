@@ -23,8 +23,8 @@
 
 .ingredient-details-image {
   position: relative;
-  width: 72px;
-  height: 72px;
+  width: 150px;
+  height: 150px;
   flex-shrink: 0;
 }
 

@@ -822,36 +822,30 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
               <p className="chip-tooltip__name">{tc.label}</p>
               <div className="chip-tooltip__rows">
                 <div className="chip-tooltip__row">
-                  <span className="chip-tooltip__icon">🕐</span>
                   <span>{formatTime(tc.time)}{tip ? " · Now!" : ` · in ${thh}h ${tmm}m`}</span>
                 </div>
                 {tphone && (
                   <div className="chip-tooltip__row">
-                    <span className="chip-tooltip__icon">📞</span>
                     <span>{tphone}</span>
                   </div>
                 )}
                 {tguests && (
                   <div className="chip-tooltip__row">
-                    <span className="chip-tooltip__icon">👥</span>
                     <span>{tguests} guest{tguests > 1 ? "s" : ""}</span>
                   </div>
                 )}
                 {tocc && (
                   <div className="chip-tooltip__row">
-                    <span className="chip-tooltip__icon">🎉</span>
                     <span>{tocc}</span>
                   </div>
                 )}
                 {tvenue && (
                   <div className="chip-tooltip__row">
-                    <span className="chip-tooltip__icon">📍</span>
                     <span>{tvenue}</span>
                   </div>
                 )}
                 {tnote && (
                   <div className="chip-tooltip__row chip-tooltip__row--note">
-                    <span className="chip-tooltip__icon">📝</span>
                     <span>{tnote}</span>
                   </div>
                 )}

@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import * as XLSX from "xlsx";
 import "./KitchenActivityLog.css";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
+import { useToast } from "../../useToast";
 
 const PRESETS = [
     { label: "All", getRange: () => ["2000-01-01", "2099-12-31"] },
@@ -11,6 +12,7 @@ const PRESETS = [
 ];
 
 export default function KitchenActivityLog({ adminData }) {
+    const { toast } = useToast();
     const todayStr = format(new Date(), "yyyy-MM-dd");
     /* Default: show All so existing data is always visible */
     const [fromDate, setFromDate] = useState("2000-01-01");
@@ -35,7 +37,7 @@ export default function KitchenActivityLog({ adminData }) {
     };
 
     const exportToExcel = () => {
-        if (!filtered.length) { alert("No activity data to export"); return; }
+        if (!filtered.length) { toast.warning("No activity data to export"); return; }
         const rows = filtered.map(item => ({
             Work: item.work || "—",
             Staff: item.staff || "—",
@@ -54,9 +56,9 @@ export default function KitchenActivityLog({ adminData }) {
         <div className="activity-page">
             <div className="activity-header">
                 <h2 className="activity-title">Kitchen Activity Log</h2>
-                <button 
-                className="modal-save-btn" 
-                onClick={exportToExcel}
+                <button
+                    className="modal-save-btn"
+                    onClick={exportToExcel}
                 >
                     <span className="shadow"></span>
                     <span className="edge"></span>

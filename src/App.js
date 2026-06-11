@@ -15,6 +15,7 @@ import Categories from "./pages/Categories";
 import IngredientDetails from "./pages/IngredientDetails";
 import DishDetails from "./pages/DishDetails";
 import Stocks from "./pages/Stocks";
+import ComboOffers from "./pages/ComboOffers";
 import Login from "./pages/Login";
 import Favourites from "./pages/Favourites";
 import FavouriteDetails from "./pages/FavouriteDetails";
@@ -585,6 +586,8 @@ function App() {
                 />
               }
             />
+
+            <Route path="/combo-offers" element={<ComboOffers />} />
 
             <Route
               path="/favourites"

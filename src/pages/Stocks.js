@@ -10,6 +10,7 @@ import { formatDisplayDate } from "../App";
 import { CustomDatePicker } from "../components/CustomDatePicker";
 import socket from "../socket";
 import useInfiniteScroll from "../components/useInfiniteScroll";
+import { useToast } from "../useToast";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 
 const toTwoDecimals = (value) =>
@@ -82,6 +83,7 @@ function CustomDropdown({ value, onChange, options, placeholder = "Select…", l
 }
 
 const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
+  const { toast } = useToast();
   const navigate = useNavigate();
   const today = new Date().toISOString().split("T")[0];
 
@@ -244,7 +246,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
     const date = new Date().toISOString().split("T")[0];
 
     if (newPrice <= 0) {
-      alert("Price must be greater than 0");
+      toast.warning("Price must be greater than 0");
       return;
     }
 
@@ -282,13 +284,14 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       closeModal();
 
     } catch (err) {
+      toast.error("Failed to update stock");
       console.error("Failed to update stock", err);
     }
   };
 
   const handleExportStocks = () => {
     if (!adminData.ingredients.length) {
-      alert("No stock data available");
+      toast.warning("No stock data available");
       return;
     }
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import * as XLSX from "xlsx";
 import "./Events.css";
 import "../ModalCSS.css";
@@ -156,7 +156,6 @@ const EVENT_CATEGORIES = [
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-const pad = (n) => String(n).padStart(2, "0");
 const todayStr = () => new Date().toISOString().split("T")[0];
 
 const getWeekRange = () => {
@@ -176,8 +175,15 @@ const getMonthRange = () => {
 // ─── Main Component ─────────────────────────────────────────────────────────
 const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
   const { toast } = useToast();
-  const events = adminData?.events || [];
-  const bookings = adminData?.eventBookings || [];
+  const events = useMemo(
+    () => adminData?.events ?? [],
+    [adminData?.events]
+  );
+
+  const bookings = useMemo(
+    () => adminData?.eventBookings ?? [],
+    [adminData?.eventBookings]
+  );
 
   const allDishes = useMemo(() => {
     const cats = adminData?.categories || [];
@@ -225,7 +231,6 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
   const [viewBooking, setViewBooking] = useState(null);
   const [addGuestCount, setAddGuestCount] = useState(1);
   const [addGuestSaving, setAddGuestSaving] = useState(false);
-  const [useCurrentLocation, setUseCurrentLocation] = useState(false);
   const [useRestaurantAddrSpec, setUseRestaurantAddrSpec] = useState(false);
 
   // Booking table sorting — local only, no need to persist
@@ -379,7 +384,6 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
     setFormErrors({});
     setTagInput("");
     setHighlightInput("");
-    setUseCurrentLocation(false);
     setEditFormStep(1);
   };
 
@@ -394,7 +398,6 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
     setUseRestaurantAddrSpec(false);
   };
 
-  const openAdd = () => { resetForm(); setShowForm(true); };
   const openSpecAdd = () => { resetSpecForm(); setShowSpecForm(true); };
 
   const openSpecEdit = (evt) => {
@@ -684,20 +687,6 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
         }
         dishQty[dishId] = 1;
         return { ...p, dishes: [...dishes, dishId], dishQty };
-      });
-    }
-  };
-
-  const changeDishQty = (dishId, delta, isSpec = false) => {
-    if (isSpec) {
-      setSpecFormData(p => {
-        const qty = Math.max(1, ((p.dishQty || {})[dishId] || 1) + delta);
-        return { ...p, dishQty: { ...(p.dishQty || {}), [dishId]: qty } };
-      });
-    } else {
-      setFormData(p => {
-        const qty = Math.max(1, ((p.dishQty || {})[dishId] || 1) + delta);
-        return { ...p, dishQty: { ...(p.dishQty || {}), [dishId]: qty } };
       });
     }
   };
@@ -1218,7 +1207,11 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                         </td>
                         <td>
                           <div className="ae-booking-actions">
-                            <button className="ae-tbl-btn ae-tbl-view" onClick={() => setViewBooking(b)}>View</button>
+                            <button className="modal-cancel-btn" onClick={() => setViewBooking(b)}>
+                              <span className="shadow"></span>
+                              <span className="edge"></span>
+                              <span className="front close-padding">View</span>
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -1257,7 +1250,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               <button className="modal-cancel-btn" onClick={() => { resetForm(); setFormErrors({}); }} aria-label="Close">
                 <span className="shadow"></span>
                 <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
+                <span className="front close-padding"><img src={closeIcon} alt="" /></span>
               </button>
             </div>
 
@@ -1521,7 +1514,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               <button className="modal-cancel-btn" onClick={resetSpecForm} aria-label="Close" >
                 <span className="shadow"></span>
                 <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
+                <span className="front close-padding"><img src={closeIcon} alt="" /></span>
               </button>
             </div>
 
@@ -1917,7 +1910,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               <button className="modal-cancel-btn" onClick={() => setViewBooking(null)} aria-label="Close">
                 <span className="shadow"></span>
                 <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
+                <span className="front close-padding"><img src={closeIcon} alt="" /></span>
               </button>
             </div>
             <div className="event-modal-body ae-booking-detail-body">
@@ -2019,7 +2012,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               <button className="modal-cancel-btn" onClick={() => setConfirmDeleteId(null)} aria-label="Close">
                 <span className="shadow"></span>
                 <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
+                <span className="front close-padding"><img src={closeIcon} alt="" /></span>
               </button>
             </div>
             <div className="event-modal-body">

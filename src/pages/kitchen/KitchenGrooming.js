@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import "./KitchenGrooming.css";
 import api from "../../api";
+import { useToast } from "../../useToast";
 import closeIcon from "../../icon/close-icon.png";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
@@ -84,6 +85,7 @@ function CustomDropdown({ value, onChange, options, placeholder = "Select…", l
 }
 
 export default function KitchenGrooming({ adminData, setAdminData }) {
+  const { toast } = useToast();
   const today = toLocalISO(new Date());
 
   // Rolling 92-day pool (3 months)
@@ -155,7 +157,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
 
   // ── Export ────────────────────────────────────────────────────
   const exportGrooming = () => {
-    if (!visibleStaff.length) { alert("No data to export"); return; }
+    if (!visibleStaff.length) { toast.warning("No data to export"); return; }
     const rows = visibleStaff.map(s => {
       const row = { Name: s.name || "—", Role: s.role || "—" };
       let perfect = 0;
@@ -195,7 +197,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
     try {
       await api.put("/grooming", updated);
     } catch (err) {
-      console.error("KitchenGrooming toggle failed:", err.message);
+      toast.error("Failed to save grooming check. Please try again.");
       setAdminData(prev => ({ ...prev, grooming: prevData }));
     } finally {
       setSaving(prev => ({ ...prev, [ck]: false }));
@@ -220,7 +222,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
     try {
       await api.put("/grooming", updated);
       setAdminData(prev => ({ ...prev, grooming: updated }));
-    } catch (err) { console.error("Memo save failed:", err.message); }
+    } catch (err) { toast.error("Failed to save memo. Please try again."); }
     setShowMemo(false); setMemo({ staffId: "", text: "" }); setMemoErrors({});
   };
 

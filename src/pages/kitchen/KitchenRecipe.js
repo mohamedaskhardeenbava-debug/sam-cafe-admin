@@ -4,8 +4,10 @@ import "./KitchenRecipe.css";
 import deleteIcon from "../../icon/delete-icon.png";
 import closeIcon from "../../icon/close-icon.png";
 import api from "../../api";
+import { useToast } from "../../useToast";
 
 export default function KitchenRecipe({ adminData, setAdminData }) {
+  const { toast } = useToast();
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", description: "" });
@@ -20,7 +22,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
   }, [adminData.recipes, recipeSearch]);
 
   const exportRecipes = () => {
-    if (!filteredRecipes.length) { alert("No recipes to export"); return; }
+    if (!filteredRecipes.length) { toast.warning("No recipes to export"); return; }
     const rows = filteredRecipes.map(r => ({
       Name: r.name || "—",
       Steps: countSteps(r.description),
@@ -45,6 +47,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
     const newRecipe = { id: Date.now(), ...form };
     await api.post("/recipes", newRecipe);
     setAdminData(prev => ({ ...prev, recipes: [...prev.recipes, newRecipe] }));
+    toast.success("Recipe added successfully.");
     resetForm();
     setShowForm(false);
   };

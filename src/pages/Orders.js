@@ -12,6 +12,7 @@ import { formatIndianTime } from "../App";
 import socket from "../socket";
 import { CustomDatePicker } from "../components/CustomDatePicker";
 import useInfiniteScroll from "../components/useInfiniteScroll";
+import { useToast } from "../useToast";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 
 const SEVEN_MIN = 7 * 60 * 1000;
@@ -19,1596 +20,1600 @@ const ONE_MIN = 60 * 1000;
 const DATE_STORAGE_KEY = "orders_date_filter";
 
 const formatDuration = (ms) => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
 
-    return `${minutes}m ${seconds}s`;
+  return `${minutes}m ${seconds}s`;
 };
 
 const persistOrder = async (order, refresh) => {
-    try {
-        await api.put(`/orders/${order.id}`, order);
-        refresh && refresh();
-    } catch (err) {
-        console.error("Failed to persist order", err);
-    }
+  try {
+    await api.put(`/orders/${order.id}`, order);
+    refresh && refresh();
+  } catch (err) {
+    console.error("Failed to persist order", err);
+  }
 };
 
 const persistOrderEverywhere = async (updatedOrder) => {
-    // 1️⃣ Update global orders (always valid)
-    await api.put(`/orders/${updatedOrder.id}`, updatedOrder);
+  // 1️⃣ Update global orders (always valid)
+  await api.put(`/orders/${updatedOrder.id}`, updatedOrder);
 
-    // 2️⃣ If no userId → STOP (TAKE AWAY / guest orders)
-    if (!updatedOrder.userId) {
-        console.warn("ℹ️ Order has no userId, skipping user sync");
-        return;
-    }
+  // 2️⃣ If no userId → STOP (TAKE AWAY / guest orders)
+  if (!updatedOrder.userId) {
+    console.warn("ℹ️ Order has no userId, skipping user sync");
+    return;
+  }
 
-    // 3️⃣ Fetch user safely
-    let user;
-    try {
-        const userRes = await api.get(`/users/${updatedOrder.userId}`);
-        user = userRes.data;
-    } catch {
-        console.warn("⚠️ User not found, skipping user sync");
-        return;
-    }
+  // 3️⃣ Fetch user safely
+  let user;
+  try {
+    const userRes = await api.get(`/users/${updatedOrder.userId}`);
+    user = userRes.data;
+  } catch {
+    console.warn("⚠️ User not found, skipping user sync");
+    return;
+  }
 
-    if (!Array.isArray(user.orders)) return;
+  if (!Array.isArray(user.orders)) return;
 
-    // 4️⃣ Update embedded order
-    const updatedUser = {
-        ...user,
-        orders: user.orders.map(o =>
-            o.id === updatedOrder.id ? updatedOrder : o
-        )
-    };
+  // 4️⃣ Update embedded order
+  const updatedUser = {
+    ...user,
+    orders: user.orders.map(o =>
+      o.id === updatedOrder.id ? updatedOrder : o
+    )
+  };
 
-    await api.put(`/users/${user.id}`, updatedUser);
+  await api.put(`/users/${user.id}`, updatedUser);
 };
 
 const getCreatedTime = (order) => {
-    if (order.createdAt) {
-        const t = new Date(order.createdAt).getTime();
-        return isNaN(t) ? Date.now() : t;
-    }
+  if (order.createdAt) {
+    const t = new Date(order.createdAt).getTime();
+    return isNaN(t) ? Date.now() : t;
+  }
 
-    if (order.date) {
-        const t = new Date(order.date).getTime();
-        return isNaN(t) ? Date.now() : t;
-    }
+  if (order.date) {
+    const t = new Date(order.date).getTime();
+    return isNaN(t) ? Date.now() : t;
+  }
 
-    return Date.now();
+  return Date.now();
 };
 
 const normalizeStatus = (status = "") =>
-    status.toLowerCase().trim();
+  status.toLowerCase().trim();
 
 const STATUS_ORDER = {
-    placed: 1,
-    preparing: 2,
-    "service pickup": 3,
-    completed: 4
+  placed: 1,
+  preparing: 2,
+  "service pickup": 3,
+  completed: 4
 };
 
 const resolveQty = (item) =>
-    Number(item.qty ?? item.quantity ?? 0);
+  Number(item.qty ?? item.quantity ?? 0);
 
 const resolveUnitPrice = (item) =>
-    item.price != null
-        ? Number(item.price)
-        : resolveQty(item) > 0
-            ? Number(item.totalPrice || 0) / resolveQty(item)
-            : 0;
+  item.price != null
+    ? Number(item.price)
+    : resolveQty(item) > 0
+      ? Number(item.totalPrice || 0) / resolveQty(item)
+      : 0;
 
 const StableQRCode = React.memo(({ value }) => {
-    return (
-        <QRCodeCanvas
-            value={value}
-            size={120}
-            level="M"
-            includeMargin
-        />
-    );
+  return (
+    <QRCodeCanvas
+      value={value}
+      size={120}
+      level="M"
+      includeMargin
+    />
+  );
 });
 
 const BillLayout = React.memo(({
-    order,
-    editable,
-    onQtyChange,
-    buildUpiUrl,
-    onClose,
-    splitPeople,
-    setSplitPeople,
-    splitBills,
-    setSplitBills,
-    applySplitAmount,
-    applySplitBill
+  order,
+  editable,
+  onQtyChange,
+  buildUpiUrl,
+  onClose,
+  splitPeople,
+  setSplitPeople,
+  splitBills,
+  setSplitBills,
+  applySplitAmount,
+  applySplitBill
 }) => {
-    const totals = useMemo(() => {
-        const subTotal = order.items.reduce(
-            (sum, i) => sum + Number(i.totalPrice || 0),
-            0
-        );
-        const cgst = +(subTotal * 0.025).toFixed(2);
-        const sgst = +(subTotal * 0.025).toFixed(2);
-        return {
-            subTotal,
-            cgst,
-            sgst,
-            total: +(subTotal + cgst + sgst).toFixed(2)
-        };
-    }, [order.items]);
-
-    const finalAmount =
-        order.splitType === "amount"
-            ? order.splitDetails?.perHead
-            : order.splitType === "bill"
-                ? order.splitDetails?.[0]?.total
-                : totals.total;
-
-    const qrValue = useMemo(
-        () => buildUpiUrl(finalAmount, order.id),
-        [finalAmount, order.id]
+  const totals = useMemo(() => {
+    const subTotal = order.items.reduce(
+      (sum, i) => sum + Number(i.totalPrice || 0),
+      0
     );
+    const cgst = +(subTotal * 0.025).toFixed(2);
+    const sgst = +(subTotal * 0.025).toFixed(2);
+    return {
+      subTotal,
+      cgst,
+      sgst,
+      total: +(subTotal + cgst + sgst).toFixed(2)
+    };
+  }, [order.items]);
 
-    return (
-        <div className="bill-receipt">
-            <div className="bill-header">
-                <button
-                    className="modal-cancel-btn"
-                    style={{ position: "absolute", right: 0 }}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onClose();
-                    }}
-                >
-                    <span class="shadow"></span>
-                    <span class="edge"></span>
-                    <span class="front close-padding"><img src={closeIcon} /></span>
-                </button>
-                <h3>Sam Cafe</h3>
-                <p>Contact: +91-9080179608</p>
-                <hr />
-                <p>Name : {order.userName}</p>
-                <p>Order : {order.id}</p>
-                <p>Date  : {formatDisplayDate(order.date)}</p>
-                <p>
-                    Time  : {formatIndianTime(order.date, order.time)}
-                </p>
-                <hr />
-            </div>
+  const finalAmount =
+    order.splitType === "amount"
+      ? order.splitDetails?.perHead
+      : order.splitType === "bill"
+        ? order.splitDetails?.[0]?.total
+        : totals.total;
 
-            <div className="bill-table">
-                <div className="bill-row head">
-                    <span>ITEM</span>
-                    <span>QTY</span>
-                    <span>TOTAL</span>
-                </div>
+  const qrValue = useMemo(
+    () => buildUpiUrl(finalAmount, order.id),
+    [finalAmount, order.id]
+  );
 
-                {order.items.map((item, idx) => (
-                    <div key={idx} className="bill-row">
-                        <span>{item.dishName}</span>
+  return (
+    <div className="bill-receipt">
+      <div className="bill-header">
+        <button
+          className="modal-cancel-btn"
+          style={{ position: "absolute", right: 0 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+        >
+          <span class="shadow"></span>
+          <span class="edge"></span>
+          <span class="front close-padding"><img src={closeIcon} /></span>
+        </button>
+        <h3>Sam Cafe</h3>
+        <p>Contact: +91-9080179608</p>
+        <hr />
+        <p>Name : {order.userName}</p>
+        <p>Order : {order.id}</p>
+        <p>Date  : {formatDisplayDate(order.date)}</p>
+        <p>
+          Time  : {formatIndianTime(order.date, order.time)}
+        </p>
+        <hr />
+      </div>
 
-                        {editable ? (
-                            <>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    value={item.quantity}
-                                    onChange={(e) =>
-                                        onQtyChange(idx, {
-                                            quantity: e.target.value,
-                                            price: resolveUnitPrice(item)
-                                        })
-                                    }
-                                />
+      <div className="bill-table">
+        <div className="bill-row head">
+          <span>ITEM</span>
+          <span>QTY</span>
+          <span>TOTAL</span>
+        </div>
 
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={resolveUnitPrice(item)}
-                                    onChange={(e) =>
-                                        onQtyChange(idx, {
-                                            quantity: item.quantity,
-                                            price: Number(e.target.value)
-                                        })
-                                    }
-                                />
-                            </>
-                        ) : (
-                            <span>{item.quantity}</span>
-                        )}
+        {order.items.map((item, idx) => (
+          <div key={idx} className="bill-row">
+            <span>{item.dishName}</span>
 
-                        <span>₹{item.totalPrice}</span>
-                    </div>
-                ))}
-            </div>
+            {editable ? (
+              <>
+                <input
+                  type="number"
+                  min="1"
+                  value={item.quantity}
+                  onChange={(e) =>
+                    onQtyChange(idx, {
+                      quantity: e.target.value,
+                      price: resolveUnitPrice(item)
+                    })
+                  }
+                />
 
-            <hr />
-
-            <div className="bill-summary">
-                {/* 🔥 SPLIT DISPLAY */}
-                {order.splitType === "amount" && (
-                    <div className="bill-split-info">
-                        Split: {order.splitDetails?.customers} people <br />
-                        Per Head: ₹{order.splitDetails?.perHead}
-                    </div>
-                )}
-
-                {order.splitType === "bill" && (
-                    <div className="bill-split-info">
-                        {order.splitDetails?.map((bill, i) => (
-                            <div key={i}>
-                                Bill {i + 1}: ₹{bill.total}
-                            </div>
-                        ))}
-                    </div>
-                )}
-                <div><span>Subtotal</span><span>₹{totals.subTotal}</span></div>
-                <div><span>CGST @2.5%</span><span>₹{totals.cgst}</span></div>
-                <div><span>SGST @2.5%</span><span>₹{totals.sgst}</span></div>
-                <div className="total">
-                    <span>TOTAL</span>
-                    <span>₹{totals.total}</span>
-                </div>
-            </div>
-
-            {editable && (
-                <div className="bill-split-actions">
-
-                    {/* SPLIT BY PEOPLE */}
-                    <div className="split-box">
-                        <input
-                            type="number"
-                            placeholder="No. of people"
-                            value={splitPeople}
-                            onChange={(e) => setSplitPeople(e.target.value)}
-                        />
-                        <button
-                            className="modal-save-btn"
-                            onClick={applySplitAmount}
-                        >
-                            <span class="shadow"></span>
-                            <span class="edge"></span>
-                            <span class="front close-padding">Split Amount</span>
-                        </button>
-                    </div>
-
-                    {/* SPLIT BY BILL */}
-                    <div className="split-box">
-                        <input
-                            type="number"
-                            placeholder="No. of bills"
-                            value={splitBills}
-                            onChange={(e) => setSplitBills(e.target.value)}
-                        />
-                        <button
-                            className="modal-save-btn"
-                            onClick={applySplitBill}
-                        >
-                            <span class="shadow"></span>
-                            <span class="edge"></span>
-                            <span class="front close-padding">Split Bill</span>
-                        </button>
-                    </div>
-
-                </div>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={resolveUnitPrice(item)}
+                  onChange={(e) =>
+                    onQtyChange(idx, {
+                      quantity: item.quantity,
+                      price: Number(e.target.value)
+                    })
+                  }
+                />
+              </>
+            ) : (
+              <span>{item.quantity}</span>
             )}
 
-            <div className="bill-qr-section">
-                <div className="bill-qr-title">Scan To Pay</div>
-                <StableQRCode value={qrValue} />
-            </div>
+            <span>₹{item.totalPrice}</span>
+          </div>
+        ))}
+      </div>
+
+      <hr />
+
+      <div className="bill-summary">
+        {/* 🔥 SPLIT DISPLAY */}
+        {order.splitType === "amount" && (
+          <div className="bill-split-info">
+            Split: {order.splitDetails?.customers} people <br />
+            Per Head: ₹{order.splitDetails?.perHead}
+          </div>
+        )}
+
+        {order.splitType === "bill" && (
+          <div className="bill-split-info">
+            {order.splitDetails?.map((bill, i) => (
+              <div key={i}>
+                Bill {i + 1}: ₹{bill.total}
+              </div>
+            ))}
+          </div>
+        )}
+        <div><span>Subtotal</span><span>₹{totals.subTotal}</span></div>
+        <div><span>CGST @2.5%</span><span>₹{totals.cgst}</span></div>
+        <div><span>SGST @2.5%</span><span>₹{totals.sgst}</span></div>
+        <div className="total">
+          <span>TOTAL</span>
+          <span>₹{totals.total}</span>
         </div>
-    );
+      </div>
+
+      {editable && (
+        <div className="bill-split-actions">
+
+          {/* SPLIT BY PEOPLE */}
+          <div className="split-box">
+            <input
+              type="number"
+              placeholder="No. of people"
+              value={splitPeople}
+              onChange={(e) => setSplitPeople(e.target.value)}
+            />
+            <button
+              className="modal-save-btn"
+              onClick={applySplitAmount}
+            >
+              <span class="shadow"></span>
+              <span class="edge"></span>
+              <span class="front close-padding">Split Amount</span>
+            </button>
+          </div>
+
+          {/* SPLIT BY BILL */}
+          <div className="split-box">
+            <input
+              type="number"
+              placeholder="No. of bills"
+              value={splitBills}
+              onChange={(e) => setSplitBills(e.target.value)}
+            />
+            <button
+              className="modal-save-btn"
+              onClick={applySplitBill}
+            >
+              <span class="shadow"></span>
+              <span class="edge"></span>
+              <span class="front close-padding">Split Bill</span>
+            </button>
+          </div>
+
+        </div>
+      )}
+
+      <div className="bill-qr-section">
+        <div className="bill-qr-title">Scan To Pay</div>
+        <StableQRCode value={qrValue} />
+      </div>
+    </div>
+  );
 });
 
 const ItemTimer = React.memo(({ item, order }) => {
-    const [, setTick] = useState(0);
+  const [, setTick] = useState(0);
 
-    const isDone =
-        item.status === "completed" ||
-        item.status === "service pickup";
+  const isDone =
+    item.status === "completed" ||
+    item.status === "service pickup";
 
-    useEffect(() => {
-        if (isDone) return;
-        const interval = setInterval(() => setTick(t => t + 1), 5000);
-        return () => clearInterval(interval);
-    }, [isDone]);
+  useEffect(() => {
+    if (isDone) return;
+    const interval = setInterval(() => setTick(t => t + 1), 5000);
+    return () => clearInterval(interval);
+  }, [isDone]);
 
-    if (isDone) return "—";
+  if (isDone) return "—";
 
-    if (item.pickupStatus) return null; // handled by pickupStatus block above
+  if (item.pickupStatus) return null; // handled by pickupStatus block above
 
-    const start = item.createdAt
-        ? new Date(item.createdAt).getTime()
-        : getCreatedTime(order);
+  const start = item.createdAt
+    ? new Date(item.createdAt).getTime()
+    : getCreatedTime(order);
 
-    if (isNaN(start)) return "—";
+  if (isNaN(start)) return "—";
 
-    const elapsed = Date.now() - start;
+  const elapsed = Date.now() - start;
 
-    if (elapsed <= SEVEN_MIN) {
-        return (
-            <span style={{ color: "#2e7d32", fontWeight: 600 }}>
-                {formatDuration(SEVEN_MIN - elapsed)}
-            </span>
-        );
-    }
-
+  if (elapsed <= SEVEN_MIN) {
     return (
-        <span style={{ color: "#d32f2f", fontWeight: 600 }}>
-            +{formatDuration(elapsed - SEVEN_MIN)}
-        </span>
+      <span style={{ color: "#2e7d32", fontWeight: 600 }}>
+        {formatDuration(SEVEN_MIN - elapsed)}
+      </span>
     );
+  }
+
+  return (
+    <span style={{ color: "#d32f2f", fontWeight: 600 }}>
+      +{formatDuration(elapsed - SEVEN_MIN)}
+    </span>
+  );
 });
 
 const OrderRow = React.memo(({
-    order,
-    isActive,
-    onToggle,
-    onPickup,
-    onOptionsClick,
-    navigate,
-    orderStatus,
-    setAdminData
+  order,
+  isActive,
+  onToggle,
+  onPickup,
+  onOptionsClick,
+  navigate,
+  orderStatus,
+  setAdminData,
+  toast
 }) => {
-    const allItemsCompleted = order.items.every(i => i.status === "completed");
+  const allItemsCompleted = order.items.every(i => i.status === "completed");
 
-    return (
-        <React.Fragment>
-            <tr
-                ref={undefined}
-                className={`order-main-row ${order.priority ? "priority-row" : ""}`}
-                onClick={(e) => {
-                    if (e.target.closest(".options-btn")) return;
-                    onToggle(order.id);
-                }}
+  return (
+    <React.Fragment>
+      <tr
+        ref={undefined}
+        className={`order-main-row ${order.priority ? "priority-row" : ""}`}
+        onClick={(e) => {
+          if (e.target.closest(".options-btn")) return;
+          onToggle(order.id);
+        }}
+      >
+        <td className="clickable" onClick={() => navigate(`/orders/${order.id}`)}>
+          {order.id}
+        </td>
+        <td>{formatDisplayDate(order.date)}</td>
+        <td>{formatIndianTime(order.date, order.time)}</td>
+        <td>{order.userName}</td>
+        <td>{order.mode ? order.mode.toUpperCase() : "TAKE AWAY"}</td>
+        <td>{order.tableNo != null ? order.tableNo : "---"}</td>
+        <td>{order.items.length}</td>
+        <td>₹{order.resolvedTotal}</td>
+        <td onClick={(e) => e.stopPropagation()}>
+          {orderStatus !== "completed" ? (
+            <input
+              type="checkbox"
+              checked={order.priority || false}
+              onChange={async (e) => {
+                const updatedOrder = {
+                  ...order,
+                  priority: e.target.checked
+                };
+
+                // ✅ 1. INSTANT UI UPDATE
+                setAdminData(prev => ({
+                  ...prev,
+                  orders: prev.orders.map(o =>
+                    o.id === order.id ? updatedOrder : o
+                  )
+                }));
+
+                // ✅ 2. BACKEND UPDATE
+                try {
+                  await persistOrderEverywhere(updatedOrder);
+                } catch (err) {
+                  toast.error("Failed to update priority");
+                  console.error("Failed to update priority", err);
+                }
+              }}
+            />
+          ) : (
+            "---"
+          )}
+        </td>
+        <td>
+          <div className={`status status-${normalizeStatus(orderStatus).replace(/\s+/g, "-")}`}>
+            {orderStatus}
+          </div>
+        </td>
+        <td>
+          <div className="bill-actions">
+            <button
+              className="options-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                const rect = e.currentTarget.getBoundingClientRect();
+                onOptionsClick(order.id, {
+                  top: rect.bottom + 6,
+                  left: rect.right - 90
+                });
+              }}
             >
-                <td className="clickable" onClick={() => navigate(`/orders/${order.id}`)}>
-                    {order.id}
-                </td>
-                <td>{formatDisplayDate(order.date)}</td>
-                <td>{formatIndianTime(order.date, order.time)}</td>
-                <td>{order.userName}</td>
-                <td>{order.mode ? order.mode.toUpperCase() : "TAKE AWAY"}</td>
-                <td>{order.tableNo != null ? order.tableNo : "---"}</td>
-                <td>{order.items.length}</td>
-                <td>₹{order.resolvedTotal}</td>
-                <td onClick={(e) => e.stopPropagation()}>
-                    {orderStatus !== "completed" ? (
-                        <input
-                            type="checkbox"
-                            checked={order.priority || false}
-                            onChange={async (e) => {
-                                const updatedOrder = {
-                                    ...order,
-                                    priority: e.target.checked
-                                };
+              ⋮
+            </button>
+          </div>
+        </td>
+      </tr>
 
-                                // ✅ 1. INSTANT UI UPDATE
-                                setAdminData(prev => ({
-                                    ...prev,
-                                    orders: prev.orders.map(o =>
-                                        o.id === order.id ? updatedOrder : o
-                                    )
-                                }));
-
-                                // ✅ 2. BACKEND UPDATE
-                                try {
-                                    await persistOrderEverywhere(updatedOrder);
-                                } catch (err) {
-                                    console.error("Failed to update priority", err);
-                                }
-                            }}
-                        />
-                    ) : (
-                        "---"
-                    )}
-                </td>
-                <td>
-                    <div className={`status status-${normalizeStatus(orderStatus).replace(/\s+/g, "-")}`}>
-                        {orderStatus}
-                    </div>
-                </td>
-                <td>
-                    <div className="bill-actions">
-                        <button
-                            className="options-btn"
+      <tr className={`order-sub-row ${isActive ? "open" : ""}`}>
+        <td colSpan={11}>
+          <div className="order-sub-content">
+            <table className="order-items-table">
+              <thead>
+                <tr>
+                  <th>Dish</th>
+                  <th>Notes</th>
+                  <th>Qty</th>
+                  <th>Timer</th>
+                  <th>Status</th>
+                  {order.status === "preparing" && <th>Action</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {order.items.map((item, idx) => (
+                  <tr key={idx}>
+                    <td
+                      className={item.categoryId === "combo" ? "combo-item" : "clickable"}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (item.categoryId === "combo") return;
+                        navigate(
+                          `/dishes/${item.categoryId}/${item.dishId || "__custom__"}`,
+                          { state: { fromOrder: true, orderItem: item } }
+                        );
+                      }}
+                    >
+                      {item.dishName}
+                    </td>
+                    <td>{item.notes ? item.notes : "-----------"}</td>
+                    <td>{item.qty ?? item.quantity}</td>
+                    <td>
+                      {item.pickupStatus === "on_time" && (
+                        <span style={{ color: "#2e7d32", fontWeight: 600 }}>On Time</span>
+                      )}
+                      {item.pickupStatus === "late" && (
+                        <span style={{ color: "#d32f2f", fontWeight: 600 }}>Late Order</span>
+                      )}
+                      {!item.pickupStatus && <ItemTimer item={item} order={order} />}
+                    </td>
+                    <td>
+                      <div className={`status status-${normalizeStatus(item.status).replace(/\s+/g, "-")}`}>
+                        {item.status}
+                      </div>
+                    </td>
+                    {order.status === "preparing" && (
+                      <td>
+                        {item.status === "preparing" && (
+                          <button
+                            className="pickup-btn"
                             onClick={(e) => {
-                                e.stopPropagation();
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                onOptionsClick(order.id, {
-                                    top: rect.bottom + 6,
-                                    left: rect.right - 90
-                                });
+                              e.stopPropagation();
+                              onPickup({ orderId: order.id, itemIndex: idx, item });
                             }}
-                        >
-                            ⋮
-                        </button>
-                    </div>
-                </td>
-            </tr>
-
-            <tr className={`order-sub-row ${isActive ? "open" : ""}`}>
-                <td colSpan={11}>
-                    <div className="order-sub-content">
-                        <table className="order-items-table">
-                            <thead>
-                                <tr>
-                                    <th>Dish</th>
-                                    <th>Notes</th>
-                                    <th>Qty</th>
-                                    <th>Timer</th>
-                                    <th>Status</th>
-                                    {order.status === "preparing" && <th>Action</th>}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {order.items.map((item, idx) => (
-                                    <tr key={idx}>
-                                        <td
-                                            className={item.categoryId === "combo" ? "combo-item" : "clickable"}
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                if (item.categoryId === "combo") return;
-                                                navigate(
-                                                    `/dishes/${item.categoryId}/${item.dishId || "__custom__"}`,
-                                                    { state: { fromOrder: true, orderItem: item } }
-                                                );
-                                            }}
-                                        >
-                                            {item.dishName}
-                                        </td>
-                                        <td>{item.notes ? item.notes : "-----------"}</td>
-                                        <td>{item.qty ?? item.quantity}</td>
-                                        <td>
-                                            {item.pickupStatus === "on_time" && (
-                                                <span style={{ color: "#2e7d32", fontWeight: 600 }}>On Time</span>
-                                            )}
-                                            {item.pickupStatus === "late" && (
-                                                <span style={{ color: "#d32f2f", fontWeight: 600 }}>Late Order</span>
-                                            )}
-                                            {!item.pickupStatus && <ItemTimer item={item} order={order} />}
-                                        </td>
-                                        <td>
-                                            <div className={`status status-${normalizeStatus(item.status).replace(/\s+/g, "-")}`}>
-                                                {item.status}
-                                            </div>
-                                        </td>
-                                        {order.status === "preparing" && (
-                                            <td>
-                                                {item.status === "preparing" && (
-                                                    <button
-                                                        className="pickup-btn"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onPickup({ orderId: order.id, itemIndex: idx, item });
-                                                        }}
-                                                    >
-                                                        Order Pickup
-                                                    </button>
-                                                )}
-                                            </td>
-                                        )}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </td>
-            </tr>
-        </React.Fragment>
-    );
+                          >
+                            Order Pickup
+                          </button>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </td>
+      </tr>
+    </React.Fragment>
+  );
 });
 
 
 
 const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
-    const navigate = useNavigate();
-    const orders = adminData.orders || [];
-    const [activeOrderIds, setActiveOrderIds] = useState([]);
-    const [pickupConfirm, setPickupConfirm] = useState(null);
-    const [openStatusDropdown, setOpenStatusDropdown] = useState(false);
-    const [openModeDropdown, setOpenModeDropdown] = useState(false);
-    const [statusFilter, setStatusFilter] = useState("all");
-    const [modeFilter, setModeFilter] = useState("all");
-    const [orderSearch, setOrderSearch] = useState("");
-    const [originalBill, setOriginalBill] = useState(null);
-    const [splitPeople, setSplitPeople] = useState("");
-    const [splitBills, setSplitBills] = useState("");
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const orders = adminData.orders || [];
+  const [activeOrderIds, setActiveOrderIds] = useState([]);
+  const [pickupConfirm, setPickupConfirm] = useState(null);
+  const [openStatusDropdown, setOpenStatusDropdown] = useState(false);
+  const [openModeDropdown, setOpenModeDropdown] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [modeFilter, setModeFilter] = useState("all");
+  const [orderSearch, setOrderSearch] = useState("");
+  const [originalBill, setOriginalBill] = useState(null);
+  const [splitPeople, setSplitPeople] = useState("");
+  const [splitBills, setSplitBills] = useState("");
 
-    // Use local date string to avoid UTC offset shifting the date (e.g. UTC+5:30)
-    const toLocalISO = (d) => {
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, "0");
-        const day = String(d.getDate()).padStart(2, "0");
-        return `${y}-${m}-${day}`;
-    };
-    const todayISO = toLocalISO(new Date());
+  // Use local date string to avoid UTC offset shifting the date (e.g. UTC+5:30)
+  const toLocalISO = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+  const todayISO = toLocalISO(new Date());
 
-    const getWeekRange = () => {
-        const today = new Date();
-        const day = today.getDay(); // 0=Sun
-        const mon = new Date(today); mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
-        return { from: toLocalISO(mon), to: todayISO };
-    };
+  const getWeekRange = () => {
+    const today = new Date();
+    const day = today.getDay(); // 0=Sun
+    const mon = new Date(today); mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+    return { from: toLocalISO(mon), to: todayISO };
+  };
 
-    const getMonthRange = () => {
-        const today = new Date();
-        const first = new Date(today.getFullYear(), today.getMonth(), 1);
-        return { from: toLocalISO(first), to: todayISO };
-    };
+  const getMonthRange = () => {
+    const today = new Date();
+    const first = new Date(today.getFullYear(), today.getMonth(), 1);
+    return { from: toLocalISO(first), to: todayISO };
+  };
 
-    const [datePreset, setDatePreset] = useState(() => {
-        const saved = JSON.parse(localStorage.getItem(DATE_STORAGE_KEY) || "null");
-        return saved?.preset || "today";
-    });
+  const [datePreset, setDatePreset] = useState(() => {
+    const saved = JSON.parse(localStorage.getItem(DATE_STORAGE_KEY) || "null");
+    return saved?.preset || "today";
+  });
 
-    const applyPreset = useCallback((preset) => {
-        setDatePreset(preset);
-        if (preset === "today") { setFromDate(todayISO); setToDate(todayISO); }
-        else if (preset === "week") { const r = getWeekRange(); setFromDate(r.from); setToDate(r.to); }
-        else if (preset === "month") { const r = getMonthRange(); setFromDate(r.from); setToDate(r.to); }
-    }, [todayISO]);
+  const applyPreset = useCallback((preset) => {
+    setDatePreset(preset);
+    if (preset === "today") { setFromDate(todayISO); setToDate(todayISO); }
+    else if (preset === "week") { const r = getWeekRange(); setFromDate(r.from); setToDate(r.to); }
+    else if (preset === "month") { const r = getMonthRange(); setFromDate(r.from); setToDate(r.to); }
+  }, [todayISO]);
 
-    const toggleOrder = useCallback((orderId) => {
-        setActiveOrderIds(prev =>
-            prev.includes(orderId)
-                ? prev.filter(id => id !== orderId)
-                : [...prev, orderId]
-        );
-    }, []);
-
-    // Always recompute range from saved preset so "month"/"week" are never stale
-    const [fromDate, setFromDate] = useState(() => {
-        const saved = JSON.parse(localStorage.getItem(DATE_STORAGE_KEY) || "null");
-        const preset = saved?.preset || "today";
-        if (preset === "month") {
-            const d = new Date(); const first = new Date(d.getFullYear(), d.getMonth(), 1);
-            const y = first.getFullYear(), m = String(first.getMonth() + 1).padStart(2, "0"), day = String(first.getDate()).padStart(2, "0");
-            return `${y}-${m}-${day}`;
-        }
-        if (preset === "week") {
-            const today = new Date();
-            const day = today.getDay();
-            const mon = new Date(today);
-            mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
-            return `${mon.getFullYear()}-${String(mon.getMonth() + 1).padStart(2, "0")}-${String(mon.getDate()).padStart(2, "0")}`;
-        }
-        return saved?.fromDate || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}-${String(new Date().getDate()).padStart(2, "0")}`;
-    });
-
-    const [toDate, setToDate] = useState(() => {
-        const saved = JSON.parse(localStorage.getItem(DATE_STORAGE_KEY) || "null");
-        const preset = saved?.preset || "today";
-        // For month and week, "to" is always today
-        const n = new Date();
-        const todayLocal = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
-        if (preset === "month" || preset === "week") return todayLocal;
-        return saved?.toDate || todayLocal;
-    });
-    const location = useLocation();
-    const isOrdersPage = location.pathname === "/orders";
-    const orderRefs = useRef({});
-    const [openMenuOrderId, setOpenMenuOrderId] = useState(null);
-    const [editBillOrder, setEditBillOrder] = useState(null);
-    const [previewBillOrder, setPreviewBillOrder] = useState(null);
-    const [editableBill, setEditableBill] = useState(null);
-    const [menuPos, setMenuPos] = useState(null);
-    const tableWrapperRef = useRef(null);
-
-
-
-    useEffect(() => {
-        const id = location.state?.scrollToOrderId;
-        if (!id) return;
-
-        const el = orderRefs.current[id];
-        if (el) {
-            el.scrollIntoView({ behavior: "smooth", block: "center" });
-            el.classList.add("blink");
-
-            setTimeout(() => {
-                el.classList.remove("blink");
-            }, 900);
-        }
-    }, [location.state]);
-
-    const buildUpiUrl = useCallback((amount, orderId) => {
-        const upiId = "9019081708@upi";
-        const name = "Sam Cafe";
-
-        return (
-            `upi://pay?pa=${upiId}` +
-            `&pn=${encodeURIComponent(name)}` +
-            `&am=${amount}` +
-            `&cu=INR` +
-            `&tn=Order%20${orderId}` +
-            `&tr=ORDER_${orderId}`
-        );
-    }, []);
-
-    /* ---------------- SAFE TOTAL RESOLUTION ---------------- */
-    const resolveItemTotal = useCallback(
-        (item) =>
-            Number(
-                item.totalPrice ??
-                (item.price && item.qty ? item.price * item.qty : 0)
-            ),
-        []
+  const toggleOrder = useCallback((orderId) => {
+    setActiveOrderIds(prev =>
+      prev.includes(orderId)
+        ? prev.filter(id => id !== orderId)
+        : [...prev, orderId]
     );
+  }, []);
 
-    /* ---------------- NORMALIZE ORDERS (RUNS ONCE PER CHANGE) ---------------- */
-    const normalizedOrders = useMemo(() => {
-        return orders.map(o => ({
-            ...o,
-            resolvedTotal:
-                o.totalAmount ??
-                o.items.reduce(
-                    (sum, item) => sum + resolveItemTotal(item),
-                    0
-                ),
-        }));
-    }, [orders, resolveItemTotal]);
+  // Always recompute range from saved preset so "month"/"week" are never stale
+  const [fromDate, setFromDate] = useState(() => {
+    const saved = JSON.parse(localStorage.getItem(DATE_STORAGE_KEY) || "null");
+    const preset = saved?.preset || "today";
+    if (preset === "month") {
+      const d = new Date(); const first = new Date(d.getFullYear(), d.getMonth(), 1);
+      const y = first.getFullYear(), m = String(first.getMonth() + 1).padStart(2, "0"), day = String(first.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+    if (preset === "week") {
+      const today = new Date();
+      const day = today.getDay();
+      const mon = new Date(today);
+      mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+      return `${mon.getFullYear()}-${String(mon.getMonth() + 1).padStart(2, "0")}-${String(mon.getDate()).padStart(2, "0")}`;
+    }
+    return saved?.fromDate || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}-${String(new Date().getDate()).padStart(2, "0")}`;
+  });
 
-    const filteredOrders = useMemo(() => {
-        const from = new Date(fromDate);
-        from.setHours(0, 0, 0, 0);
+  const [toDate, setToDate] = useState(() => {
+    const saved = JSON.parse(localStorage.getItem(DATE_STORAGE_KEY) || "null");
+    const preset = saved?.preset || "today";
+    // For month and week, "to" is always today
+    const n = new Date();
+    const todayLocal = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+    if (preset === "month" || preset === "week") return todayLocal;
+    return saved?.toDate || todayLocal;
+  });
+  const location = useLocation();
+  const isOrdersPage = location.pathname === "/orders";
+  const orderRefs = useRef({});
+  const [openMenuOrderId, setOpenMenuOrderId] = useState(null);
+  const [editBillOrder, setEditBillOrder] = useState(null);
+  const [previewBillOrder, setPreviewBillOrder] = useState(null);
+  const [editableBill, setEditableBill] = useState(null);
+  const [menuPos, setMenuPos] = useState(null);
+  const tableWrapperRef = useRef(null);
 
-        const to = new Date(toDate);
-        to.setHours(23, 59, 59, 999);
 
-        return normalizedOrders.filter(order => {
-            if (!order.date) return false;
 
-            const orderDate = new Date(order.date);
-            const withinDate = orderDate >= from && orderDate <= to;
+  useEffect(() => {
+    const id = location.state?.scrollToOrderId;
+    if (!id) return;
 
-            const matchesStatus =
-                statusFilter === "all" ||
-                normalizeStatus(order.status) === statusFilter;
+    const el = orderRefs.current[id];
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("blink");
 
-            const orderMode = (order.mode || "take away").toLowerCase();
+      setTimeout(() => {
+        el.classList.remove("blink");
+      }, 900);
+    }
+  }, [location.state]);
 
-            const matchesMode =
-                modeFilter === "all" ||
-                orderMode === modeFilter;
+  const buildUpiUrl = useCallback((amount, orderId) => {
+    const upiId = "9019081708@upi";
+    const name = "Sam Cafe";
 
-            const q = orderSearch.trim().toLowerCase();
-            const matchesSearch = !q || (
-                (order.id || "").toLowerCase().includes(q) ||
-                (order.userName || "").toLowerCase().includes(q) ||
-                order.items.some(i => (i.dishName || "").toLowerCase().includes(q)) ||
-                String(order.tableNo ?? "").includes(q)
-            );
+    return (
+      `upi://pay?pa=${upiId}` +
+      `&pn=${encodeURIComponent(name)}` +
+      `&am=${amount}` +
+      `&cu=INR` +
+      `&tn=Order%20${orderId}` +
+      `&tr=ORDER_${orderId}`
+    );
+  }, []);
 
-            return withinDate && matchesStatus && matchesMode && matchesSearch;
-        });
-    }, [normalizedOrders, fromDate, toDate, statusFilter, modeFilter, orderSearch]);
+  /* ---------------- SAFE TOTAL RESOLUTION ---------------- */
+  const resolveItemTotal = useCallback(
+    (item) =>
+      Number(
+        item.totalPrice ??
+        (item.price && item.qty ? item.price * item.qty : 0)
+      ),
+    []
+  );
 
-    const sortedOrders = useMemo(() => {
-        const data = [...filteredOrders];
+  /* ---------------- NORMALIZE ORDERS (RUNS ONCE PER CHANGE) ---------------- */
+  const normalizedOrders = useMemo(() => {
+    return orders.map(o => ({
+      ...o,
+      resolvedTotal:
+        o.totalAmount ??
+        o.items.reduce(
+          (sum, item) => sum + resolveItemTotal(item),
+          0
+        ),
+    }));
+  }, [orders, resolveItemTotal]);
 
-        const sortKey = sortConfig.key ?? "id";
-        const sortDir = sortConfig.direction ?? "desc";
+  const filteredOrders = useMemo(() => {
+    const from = new Date(fromDate);
+    from.setHours(0, 0, 0, 0);
 
-        data.sort((a, b) => {
+    const to = new Date(toDate);
+    to.setHours(23, 59, 59, 999);
 
-            // 🔥 PRIORITY FIRST (GLOBAL OVERRIDE)
-            if (a.priority && !b.priority) return -1;
-            if (!a.priority && b.priority) return 1;
+    return normalizedOrders.filter(order => {
+      if (!order.date) return false;
 
-            // 🔽 NORMAL SORTING
-            switch (sortKey) {
-                case "id":
-                    return sortDir === "asc"
-                        ? a.id.localeCompare(b.id)
-                        : b.id.localeCompare(a.id);
+      const orderDate = new Date(order.date);
+      const withinDate = orderDate >= from && orderDate <= to;
 
-                case "date":
-                    return sortDir === "asc"
-                        ? new Date(a.date) - new Date(b.date)
-                        : new Date(b.date) - new Date(a.date);
+      const matchesStatus =
+        statusFilter === "all" ||
+        normalizeStatus(order.status) === statusFilter;
 
-                case "total":
-                    return sortDir === "asc"
-                        ? a.resolvedTotal - b.resolvedTotal
-                        : b.resolvedTotal - a.resolvedTotal;
+      const orderMode = (order.mode || "take away").toLowerCase();
 
-                case "status":
-                    return sortDir === "asc"
-                        ? STATUS_ORDER[normalizeStatus(a.status)] -
-                        STATUS_ORDER[normalizeStatus(b.status)]
-                        : STATUS_ORDER[normalizeStatus(b.status)] -
-                        STATUS_ORDER[normalizeStatus(a.status)];
+      const matchesMode =
+        modeFilter === "all" ||
+        orderMode === modeFilter;
 
-                default:
-                    return 0;
-            }
-        });
+      const q = orderSearch.trim().toLowerCase();
+      const matchesSearch = !q || (
+        (order.id || "").toLowerCase().includes(q) ||
+        (order.userName || "").toLowerCase().includes(q) ||
+        order.items.some(i => (i.dishName || "").toLowerCase().includes(q)) ||
+        String(order.tableNo ?? "").includes(q)
+      );
 
-        return data;
-    }, [filteredOrders, sortConfig]);
+      return withinDate && matchesStatus && matchesMode && matchesSearch;
+    });
+  }, [normalizedOrders, fromDate, toDate, statusFilter, modeFilter, orderSearch]);
 
-    const { displayLimit, sentinelRef, hasMore } =
-        useInfiniteScroll(sortedOrders.length, 50, tableWrapperRef.current);
+  const sortedOrders = useMemo(() => {
+    const data = [...filteredOrders];
 
-    const deriveOrderStatusFromItems = useCallback((items) => {
-        if (items.every(i => i.status === "completed")) return "completed";
-        if (items.some(i => i.status === "preparing" || i.status === "service pickup"))
-            return "preparing";
-        return "placed";
-    }, []);
+    const sortKey = sortConfig.key ?? "id";
+    const sortDir = sortConfig.direction ?? "desc";
 
-    useEffect(() => {
-        if (!orders.length) return;
+    data.sort((a, b) => {
+
+      // 🔥 PRIORITY FIRST (GLOBAL OVERRIDE)
+      if (a.priority && !b.priority) return -1;
+      if (!a.priority && b.priority) return 1;
+
+      // 🔽 NORMAL SORTING
+      switch (sortKey) {
+        case "id":
+          return sortDir === "asc"
+            ? a.id.localeCompare(b.id)
+            : b.id.localeCompare(a.id);
+
+        case "date":
+          return sortDir === "asc"
+            ? new Date(a.date) - new Date(b.date)
+            : new Date(b.date) - new Date(a.date);
+
+        case "total":
+          return sortDir === "asc"
+            ? a.resolvedTotal - b.resolvedTotal
+            : b.resolvedTotal - a.resolvedTotal;
+
+        case "status":
+          return sortDir === "asc"
+            ? STATUS_ORDER[normalizeStatus(a.status)] -
+            STATUS_ORDER[normalizeStatus(b.status)]
+            : STATUS_ORDER[normalizeStatus(b.status)] -
+            STATUS_ORDER[normalizeStatus(a.status)];
+
+        default:
+          return 0;
+      }
+    });
+
+    return data;
+  }, [filteredOrders, sortConfig]);
+
+  const { displayLimit, sentinelRef, hasMore } =
+    useInfiniteScroll(sortedOrders.length, 50, tableWrapperRef.current);
+
+  const deriveOrderStatusFromItems = useCallback((items) => {
+    if (items.every(i => i.status === "completed")) return "completed";
+    if (items.some(i => i.status === "preparing" || i.status === "service pickup"))
+      return "preparing";
+    return "placed";
+  }, []);
+
+  useEffect(() => {
+    if (!orders.length) return;
+
+    let changed = false;
+
+    const normalized = orders.map(o => {
+      const items = o.items.map(item => {
+        const updated = {
+          ...item,
+          status: item.status || "placed",
+          createdAt: item.createdAt || o.createdAt,
+          pickupAt: item.pickupAt || null
+        };
+
+        if (
+          item.status === updated.status &&
+          item.createdAt === updated.createdAt &&
+          item.pickupAt === updated.pickupAt
+        ) {
+          return item;
+        }
+
+        changed = true;
+        return updated;
+      });
+
+      if (items === o.items && o.status) {
+        return o;
+      }
+
+      changed = true;
+
+      return {
+        ...o,
+        status: o.status || "placed",
+        items
+      };
+    });
+
+    if (!changed) return;
+
+    setAdminData(prev => ({
+      ...prev,
+      orders: normalized
+    }));
+  }, []);
+
+  useEffect(() => {
+
+    if (!isOrdersPage) return;
+
+    const interval = setInterval(() => {
+
+      setAdminData(prev => {
 
         let changed = false;
 
-        const normalized = orders.map(o => {
-            const items = o.items.map(item => {
-                const updated = {
-                    ...item,
-                    status: item.status || "placed",
-                    createdAt: item.createdAt || o.createdAt,
-                    pickupAt: item.pickupAt || null
-                };
+        const updatedOrders = prev.orders.map(order => {
 
-                if (
-                    item.status === updated.status &&
-                    item.createdAt === updated.createdAt &&
-                    item.pickupAt === updated.pickupAt
-                ) {
-                    return item;
-                }
+          let orderChanged = false;
+          const start = new Date(order.createdAt).getTime();
 
-                changed = true;
-                return updated;
-            });
+          const items = order.items.map(item => {
 
-            if (items === o.items && o.status) {
-                return o;
+            if (item.status === "placed" && Date.now() - start >= ONE_MIN) {
+              orderChanged = true;
+              return { ...item, status: "preparing" };
             }
 
-            changed = true;
+            if (item.status === "service pickup" && item.pickupAt) {
+              const pickupStart = new Date(item.pickupAt).getTime();
 
-            return {
-                ...o,
-                status: o.status || "placed",
-                items
-            };
-        });
+              if (!isNaN(pickupStart) && Date.now() - pickupStart >= ONE_MIN) {
+                orderChanged = true;
+                return { ...item, status: "completed" };
+              }
+            }
 
-        if (!changed) return;
+            return item;
+          });
 
-        setAdminData(prev => ({
-            ...prev,
-            orders: normalized
-        }));
-    }, []);
+          const newStatus = deriveOrderStatusFromItems(items);
 
-    useEffect(() => {
+          if (!orderChanged && newStatus === order.status) return order;
 
-        if (!isOrdersPage) return;
+          changed = true; // 🔥 ADD THIS
 
-        const interval = setInterval(() => {
-
-            setAdminData(prev => {
-
-                let changed = false;
-
-                const updatedOrders = prev.orders.map(order => {
-
-                    let orderChanged = false;
-                    const start = new Date(order.createdAt).getTime();
-
-                    const items = order.items.map(item => {
-
-                        if (item.status === "placed" && Date.now() - start >= ONE_MIN) {
-                            orderChanged = true;
-                            return { ...item, status: "preparing" };
-                        }
-
-                        if (item.status === "service pickup" && item.pickupAt) {
-                            const pickupStart = new Date(item.pickupAt).getTime();
-
-                            if (!isNaN(pickupStart) && Date.now() - pickupStart >= ONE_MIN) {
-                                orderChanged = true;
-                                return { ...item, status: "completed" };
-                            }
-                        }
-
-                        return item;
-                    });
-
-                    const newStatus = deriveOrderStatusFromItems(items);
-
-                    if (!orderChanged && newStatus === order.status) return order;
-
-                    changed = true; // 🔥 ADD THIS
-
-                    const updatedOrder = {
-                        ...order,
-                        items,
-                        status: newStatus
-                    };
-
-                    if (orderChanged || newStatus !== order.status) {
-                        persistOrder(updatedOrder);
-                    }
-
-                    socket.emit("data-change", {
-                        resource: "orders",
-                        action: "updated",
-                        payload: updatedOrder
-                    });
-
-                    return updatedOrder;
-                });
-
-                return changed
-                    ? { ...prev, orders: updatedOrders }
-                    : prev;
-
-            });
-
-        }, 5000);
-
-        return () => clearInterval(interval);
-
-    }, [isOrdersPage]);
-
-    // Note: displayLimit, sentinelRef, and IntersectionObserver are now managed
-    // by the useInfiniteScroll hook declared above.
-
-
-    useEffect(() => {
-        localStorage.setItem(
-            DATE_STORAGE_KEY,
-            JSON.stringify({ fromDate, toDate, preset: datePreset })
-        );
-    }, [fromDate, toDate, datePreset]);
-
-    useEffect(() => {
-        if (!location.state) return;
-
-        const { mode, status, fromDate: fd, toDate: td } = location.state;
-
-        if (mode) setModeFilter(mode);
-        if (status) setStatusFilter(status);
-        if (fd) setFromDate(fd);
-        if (td) setToDate(td);
-
-    }, [location.state]);
-
-    useEffect(() => {
-        const closeDropdowns = () => {
-            setOpenStatusDropdown(false);
-            setOpenModeDropdown(false);
-        };
-
-        window.addEventListener("click", closeDropdowns);
-
-        return () => window.removeEventListener("click", closeDropdowns);
-    }, []);
-
-    const exportOrders = (orders, from, to) => {
-        if (!orders.length) {
-            alert("No orders in selected date range");
-            return;
-        }
-
-        const rows = [];
-
-        sortedOrders.forEach(order => {
-            order.items.forEach((item, index) => {
-                const ingredients = (item.ingredients || [])
-                    .map(i => `${i.name} - ${i.quantity}g`)
-                    .join(", ");
-
-                rows.push({
-                    OrderID: index === 0 ? order.id : "",
-                    Date: index === 0 ? order.date : "",
-                    Time: index === 0 ? order.time : "",
-                    Customer: index === 0 ? (order.userName || "Guest") : "",
-                    Category: item.categoryName || item.categoryId || "",
-                    Dish: item.dishName,
-                    Quantity: item.quantity ?? item.qty ?? 0,
-                    Customized: item.isCustomized ? "Yes" : "No",
-                    Ingredients: ingredients
-                });
-            });
-        });
-
-        const sheet = XLSX.utils.json_to_sheet(rows);
-
-        /* ✅ Auto column width (alignment fix) */
-        const colWidths = Object.keys(rows[0]).map(key => ({
-            wch: Math.max(
-                key.length,
-                ...rows.map(r => String(r[key] ?? "").length)
-            ) + 2
-        }));
-        sheet["!cols"] = colWidths;
-
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, sheet, "Orders");
-
-        XLSX.writeFile(
-            workbook,
-            `orders_${from}_to_${to}.xlsx`
-        );
-    };
-
-    const printBill = async (order) => {
-        try {
-            const billData = {
-                orderId: order.id,
-                date: order.date,
-                time: order.time,
-                customer: order.userName || "Guest",
-                items: order.items.map(item => ({
-                    name: item.dishName,
-                    qty: item.quantity,
-                    price: item.totalPrice
-                })),
-                subtotal: order.resolvedTotal,
-                cgst: +(order.resolvedTotal * 0.025).toFixed(2),
-                sgst: +(order.resolvedTotal * 0.025).toFixed(2),
-                total: +(order.resolvedTotal * 1.05).toFixed(2),
-                upiUrl: buildUpiUrl((order.resolvedTotal * 1.05).toFixed(2))
-            };
-
-            await api.post("http://localhost:9001/print/bill", billData);
-        } catch (err) {
-            alert("Failed to print bill");
-            console.error(err);
-        }
-    };
-
-    const closeAllBillOverlays = useCallback(() => {
-        setEditBillOrder(null);
-        setPreviewBillOrder(null);
-        if (originalBill) setEditableBill(originalBill);
-        setOriginalBill(null);
-    }, [originalBill]);
-
-    const closeOptionsMenu = useCallback(() => {
-        setOpenMenuOrderId(null);
-        setMenuPos(null);
-    }, []);
-
-    const recalcOrderTotals = (order) => {
-        const items = order.items.map(item => {
-            const qty = Number(item.quantity || 0);
-            const price = Number(
-                item.price ??
-                item.unitPrice ??
-                resolveUnitPrice(item)
-            );
-
-            const totalPrice = +(qty * price).toFixed(2);
-
-            return {
-                ...item,
-                quantity: qty,
-                price,
-                unitPrice: price,   // normalize
-                totalPrice
-            };
-        });
-
-        const subTotal = +items.reduce(
-            (sum, i) => sum + i.totalPrice,
-            0
-        ).toFixed(2);
-
-        const cgst = +(subTotal * 0.025).toFixed(2);
-        const sgst = +(subTotal * 0.025).toFixed(2);
-        const total = +(subTotal + cgst + sgst).toFixed(2);
-
-        return {
+          const updatedOrder = {
             ...order,
             items,
-            totalAmount: subTotal,
-            totalWithGST: {
-                subTotal,
-                cgst,
-                sgst,
-                total
-            }
-        };
-    };
+            status: newStatus
+          };
 
-    const applySplitAmount = () => {
-        if (!splitPeople || isNaN(splitPeople)) return;
+          if (orderChanged || newStatus !== order.status) {
+            persistOrder(updatedOrder, null, toast);
+          }
 
-        const total = editableBill.items.reduce(
-            (sum, i) => sum + Number(i.totalPrice || 0),
-            0
-        );
+          socket.emit("data-change", {
+            resource: "orders",
+            action: "updated",
+            payload: updatedOrder
+          });
 
-        const perHead = (total / Number(splitPeople)).toFixed(2);
+          return updatedOrder;
+        });
 
-        setEditableBill(prev => ({
-            ...prev,
-            splitType: "amount",
-            splitDetails: {
-                customers: Number(splitPeople),
-                perHead
-            }
-        }));
-    };
+        return changed
+          ? { ...prev, orders: updatedOrders }
+          : prev;
 
-    const applySplitBill = () => {
-        if (!splitBills || isNaN(splitBills)) return;
+      });
 
-        const total = editableBill.items.reduce(
-            (sum, i) => sum + Number(i.totalPrice || 0),
-            0
-        );
+    }, 5000);
 
-        const perBill = (total / Number(splitBills)).toFixed(2);
+    return () => clearInterval(interval);
 
-        const splitDetails = Array.from({ length: Number(splitBills) }, () => ({
-            total: perBill
-        }));
+  }, [isOrdersPage]);
 
-        setEditableBill(prev => ({
-            ...prev,
-            splitType: "bill",
-            splitDetails
-        }));
-    };
+  // Note: displayLimit, sentinelRef, and IntersectionObserver are now managed
+  // by the useInfiniteScroll hook declared above.
 
-    const handleSplitAmount = (order) => {
-        const customers = prompt("Enter number of people:");
-        if (!customers || isNaN(customers)) return;
 
-        const total = order.items.reduce(
-            (sum, i) => sum + Number(i.totalPrice || 0),
-            0
-        );
-
-        const perHead = (total / Number(customers)).toFixed(2);
-
-        const updatedOrder = {
-            ...order,
-            splitType: "amount",
-            splitDetails: {
-                customers: Number(customers),
-                perHead
-            }
-        };
-
-        // ✅ INSTANT UI UPDATE
-        setEditableBill(updatedOrder);
-    };
-
-    const handleSplitBill = (order) => {
-        const bills = prompt("Enter number of bills:");
-        if (!bills || isNaN(bills)) return;
-
-        const total = order.items.reduce(
-            (sum, i) => sum + Number(i.totalPrice || 0),
-            0
-        );
-
-        const perBill = (total / Number(bills)).toFixed(2);
-
-        const splitDetails = Array.from({ length: Number(bills) }, () => ({
-            total: perBill
-        }));
-
-        const updatedOrder = {
-            ...order,
-            splitType: "bill",
-            splitDetails
-        };
-
-        // ✅ INSTANT UI UPDATE
-        setEditableBill(updatedOrder);
-    };
-
-
-    return (
-        <div className="orders-page">
-
-            <div className="orders-header">
-                <div className="orders-header-div">
-                    <h2 className="orders-title">Orders</h2>
-
-                    <div className="orders-search-wrapper">
-                        <input
-                            className="search-input"
-                            placeholder=" Search by order ID, customer, dish…"
-                            value={orderSearch}
-                            onChange={e => setOrderSearch(e.target.value)}
-                        />
-                        {orderSearch && (
-                            <button className="orders-search-clear" onClick={() => setOrderSearch("")}>✕</button>
-                        )}
-                    </div>
-
-                    <div className="orders-filter">
-                        <button
-                            type="button"
-                            className={`filter-pill${datePreset === "today" ? " active" : ""}`}
-                            onClick={() => applyPreset("today")}
-                        >
-                            Today
-                        </button>
-                        <button
-                            type="button"
-                            className={`filter-pill${datePreset === "week" ? " active" : ""}`}
-                            onClick={() => applyPreset("week")}
-                        >
-                            This Week
-                        </button>
-                        <button
-                            type="button"
-                            className={`filter-pill${datePreset === "month" ? " active" : ""}`}
-                            onClick={() => applyPreset("month")}
-                        >
-                            This Month
-                        </button>
-                        <CustomDatePicker
-                            label="From"
-                            value={fromDate}
-                            max={toDate}
-                            onChange={(s) => { setFromDate(s); setDatePreset("custom"); if (s > toDate) setToDate(s); }}
-                        />
-                        <CustomDatePicker
-                            label="To"
-                            value={toDate}
-                            min={fromDate}
-                            max={todayISO}
-                            onChange={(s) => { setToDate(s); setDatePreset("custom"); }}
-                        />
-                    </div>
-
-                    <button
-                        className="modal-save-btn"
-                        onClick={() => exportOrders(filteredOrders, fromDate, toDate)}
-                    >
-                        <span className="shadow"></span>
-                        <span className="edge"></span>
-                        <span className="front">Export</span>
-                    </button>
-                </div>
-
-                <div className="orders-header-div">
-                    <div className="orders-dropdown-wrapper">
-                        <button
-                            className="orders-status-dropdown"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setOpenModeDropdown(prev => !prev);
-                            }}
-                        >
-                            {modeFilter === "all" ? "All Modes" : modeFilter}
-                        </button>
-
-                        {openModeDropdown && (
-                            <div className="dropdown-menu">
-                                {["all", "dine in", "take away"].map(mode => (
-                                    <div
-                                        key={mode}
-                                        onClick={() => {
-                                            setModeFilter(mode);
-                                            setOpenModeDropdown(false);
-                                        }}
-                                    >
-                                        {mode === "all" ? "All Modes" : mode}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="orders-dropdown-wrapper">
-                        <button
-                            className="orders-status-dropdown"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setOpenStatusDropdown(prev => !prev);
-                            }}
-                        >
-                            {statusFilter === "all" ? "All Status" : statusFilter}
-                        </button>
-
-                        {openStatusDropdown && (
-                            <div className="dropdown-menu">
-                                {["all", "placed", "preparing", "service pickup", "completed"].map(status => (
-                                    <div
-                                        key={status}
-                                        onClick={() => {
-                                            setStatusFilter(status);
-                                            setOpenStatusDropdown(false);
-                                        }}
-                                    >
-                                        {status === "all" ? "All Status" : status}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-            </div>
-
-            <div className="orders-table-wrapper" ref={tableWrapperRef}>
-                <table className="orders-table">
-                    <colgroup>
-                        <col />
-                        <col />
-                        <col />
-                        <col />
-                        <col />
-                        <col />
-                        <col />
-                        <col />
-                        <col />
-                        <col style={{ width: "120px" }} />
-                        <col style={{ width: "60px" }} />
-                    </colgroup>
-                    <thead>
-                        <tr>
-                            <th
-                                onClick={() => handleSort("id")}
-                                className={sortConfig.key === "id" ? "sorted" : ""}
-                            >
-                                <span className="th-content sort-th">
-                                    <span>Order ID</span>
-                                    <span className="sort-arrow">
-                                        {sortConfig.direction === "asc" ? "▲" : "▼"}
-                                    </span>
-                                </span>
-                            </th>
-                            <th
-                                onClick={() => handleSort("date")}
-                                className={sortConfig.key === "date" ? "sorted" : ""}
-                            >
-                                <span className="th-content sort-th">
-                                    <span>Date</span>
-                                    <span className="sort-arrow">
-                                        {sortConfig.direction === "asc" ? "▲" : "▼"}
-                                    </span>
-                                </span>
-                            </th>
-                            <th>time of order</th>
-                            <th>Customer Name</th>
-                            <th>Mode</th>
-                            <th>Table No</th>
-                            <th>No of Items</th>
-                            <th>Total</th>
-                            <th>Priority</th>
-                            <th
-                                onClick={() => handleSort("status")}
-                                className={sortConfig.key === "status" ? "sorted" : ""}
-                            >
-                                <span className="th-content sort-th">
-                                    <span>Status</span>
-                                    <span className="sort-arrow">
-                                        {sortConfig.key === "status"
-                                            ? sortConfig.direction === "asc"
-                                                ? "▲"
-                                                : "▼"
-                                            : ""}
-                                    </span>
-                                </span>
-                            </th>
-                            <th>Bill</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        {sortedOrders.length === 0 ? (
-                            <EmptyRow colSpan={11} message="No orders for selected date range" />
-                        ) : (
-                            sortedOrders.slice(0, displayLimit).map(order => {
-                                const orderStatus = deriveOrderStatusFromItems(order.items);
-                                return (
-                                    <OrderRow
-                                        key={order.id}
-                                        colSpan={11}
-                                        order={order}
-                                        orderStatus={orderStatus}
-                                        isActive={activeOrderIds.includes(order.id)}
-                                        onToggle={toggleOrder}
-                                        onPickup={setPickupConfirm}
-                                        onOptionsClick={(id, pos) => {
-                                            setMenuPos(pos);
-                                            setOpenMenuOrderId(prev => prev === id ? null : id);
-                                        }}
-                                        navigate={navigate}
-                                        setAdminData={setAdminData}
-                                    />
-                                );
-                            }))}
-                        <InfiniteScrollLoader
-                            sentinelRef={sentinelRef}
-                            hasMore={hasMore}
-                            colSpan={11}
-                        />
-                    </tbody>
-                </table>
-            </div>
-            {pickupConfirm && (
-                <div
-                    className="pickup-overlay"
-                    onClick={() => setPickupConfirm(null)}
-                >
-                    <div
-                        className="pickup-modal"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <h3>Confirm Order Pickup</h3>
-                        <p>Are you sure you want to mark this item as picked up?</p>
-
-                        {pickupConfirm?.item?.notes && (
-                            <div className="pickup-notes">
-                                <strong>Notes:</strong>
-                                <div className="pickup-notes-text">
-                                    {pickupConfirm.item.notes}
-                                </div>
-                            </div>
-                        )}
-
-                        {!pickupConfirm?.item?.notes && (
-                            <div className="pickup-notes muted">
-                                <strong>Notes:</strong> -----
-                            </div>
-                        )}
-
-                        <div className="pickup-actions">
-                            <button
-                                className="btn-cancel"
-                                onClick={() => setPickupConfirm(null)}
-                            >
-                                Cancel
-                            </button>
-
-                            <button
-                                className="btn-confirm"
-                                onClick={() => {
-                                    const { orderId, itemIndex } = pickupConfirm;
-
-                                    setAdminData(prev => ({
-                                        ...prev,
-                                        orders: prev.orders.map(o => {
-                                            if (o.id !== orderId) return o;
-
-                                            const now = Date.now();
-                                            const created = getCreatedTime(o);
-
-                                            const items = o.items.map((i, index) => {
-                                                if (index !== itemIndex) return i;
-
-                                                const now = Date.now();
-                                                const start = i.createdAt
-                                                    ? new Date(i.createdAt).getTime()
-                                                    : getCreatedTime(o);
-
-                                                const pickupStatus =
-                                                    now - start <= SEVEN_MIN ? "on_time" : "late";
-
-                                                return {
-                                                    ...i,
-                                                    status: "service pickup",
-                                                    pickupAt: new Date().toISOString(),
-                                                    pickupStatus   // ✅ ITEM LEVEL
-                                                };
-                                            });
-
-                                            const newStatus = deriveOrderStatusFromItems(items);
-
-                                            const updated = {
-                                                ...o,
-                                                items,
-                                                status: newStatus
-                                            };
-                                            persistOrder(updated); socket.emit("data-change", {
-                                                resource: "orders",
-                                                action: "updated",
-                                                payload: updated
-                                            });
-
-
-                                            return updated;
-                                        })
-                                    }));
-
-                                    setPickupConfirm(null);
-                                }}
-                            >
-                                Confirm
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {openMenuOrderId && menuPos &&
-                createPortal(
-                    <div
-                        className="options-menu portal"
-                        style={{
-                            top: menuPos.top,
-                            left: menuPos.left
-                        }}
-                    >
-                        <div
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                closeOptionsMenu();
-                                closeAllBillOverlays();
-
-                                const selectedOrder = orders.find(o => o.id === openMenuOrderId);
-
-                                const cloned = JSON.parse(JSON.stringify(selectedOrder));
-
-                                setEditableBill(cloned);
-                                setOriginalBill(cloned);   // ✅ backup
-                                setEditBillOrder(true);
-                            }}
-                        >
-                            Edit
-                        </div>
-
-                        <div
-                            onClick={(e) => {
-                                closeOptionsMenu();
-                                closeAllBillOverlays();
-                                e.stopPropagation();
-                                setPreviewBillOrder(
-                                    orders.find(o => o.id === openMenuOrderId)
-                                );
-                            }}
-                        >
-                            Preview
-                        </div>
-
-                        <div
-                            onClick={(e) => {
-                                closeOptionsMenu();
-                                e.stopPropagation();
-                                printBill(orders.find(o => o.id === openMenuOrderId));
-                            }}
-                        >
-                            Print
-                        </div>
-                    </div>,
-                    document.body
-                )
-            }
-
-            {editBillOrder && (
-                <div className="overlay">
-                    <div className="modal" onClick={(e) => e.stopPropagation()}>
-                        <BillLayout
-                            onClose={closeAllBillOverlays}
-                            order={editableBill}
-                            editable
-                            buildUpiUrl={buildUpiUrl}
-
-                            splitPeople={splitPeople}
-                            setSplitPeople={setSplitPeople}
-                            splitBills={splitBills}
-                            setSplitBills={setSplitBills}
-                            applySplitAmount={applySplitAmount}
-                            applySplitBill={applySplitBill}
-
-                            onQtyChange={(idx, { quantity, price }) => {
-                                setEditableBill(prev => {
-                                    const q = quantity === "" ? "" : Number(quantity);
-                                    const p = Math.max(0, price);
-
-                                    const newItems = prev.items.map((item, i) =>
-                                        i === idx
-                                            ? {
-                                                ...item,
-                                                quantity: q,
-                                                price: p,
-                                                totalPrice: quantity === "" ? item.totalPrice : +(q * p).toFixed(2)
-                                            }
-                                            : item
-                                    );
-
-                                    return {
-                                        ...prev,
-                                        items: newItems
-                                    };
-                                });
-                            }}
-                        />
-
-                        <div className="modal-footer">
-                            <button className="modal-cancel-btn" onClick={() => setEditBillOrder(null)}>
-                                <span class="shadow"></span>
-                                <span class="edge"></span>
-                                <span class="front">Cancel</span>
-                            </button>
-                            <button
-                                className="modal-prev-btn"
-                                onClick={() => {
-                                    const previewData = recalcOrderTotals(editableBill);
-
-                                    setEditBillOrder(null);      // ✅ close Edit modal FIRST
-                                    setPreviewBillOrder(previewData); // ✅ then open Preview modal
-                                }}
-                            >
-                                <span class="shadow"></span>
-                                <span class="edge"></span>
-                                <span class="front">Preview</span>
-                            </button>
-                            <button
-                                className="modal-save-btn"
-                                onClick={async () => {
-                                    try {
-                                        const updatedOrder = recalcOrderTotals(
-                                            JSON.parse(JSON.stringify(editableBill))
-                                        );
-
-                                        await persistOrderEverywhere(updatedOrder);
-
-                                        // ✅ update UI immediately
-                                        setAdminData(prev => ({
-                                            ...prev,
-                                            orders: prev.orders.map(o =>
-                                                o.id === updatedOrder.id ? updatedOrder : o
-                                            )
-                                        }));
-
-                                        setEditBillOrder(null);
-                                    } catch (err) {
-                                        console.error("❌ Save failed", err);
-                                        alert("Failed to save bill. Check console.");
-                                    }
-                                }}
-                            >
-                                <span class="shadow"></span>
-                                <span class="edge"></span>
-                                <span class="front">Save</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {previewBillOrder && (
-                <div className="overlay">
-                    <div className="modal">
-                        <BillLayout
-                            onClose={closeAllBillOverlays}
-                            order={previewBillOrder}
-                            buildUpiUrl={buildUpiUrl}
-                        />
-
-                        <div className="modal-footer">
-                            <button
-                                className="modal-confirm-btn"
-                                onClick={() => {
-                                    printBill(previewBillOrder);
-                                    setPreviewBillOrder(null);
-                                }}
-                            >
-                                <span class="shadow"></span>
-                                <span class="edge"></span>
-                                <span class="front">Print</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-        </div>
+  useEffect(() => {
+    localStorage.setItem(
+      DATE_STORAGE_KEY,
+      JSON.stringify({ fromDate, toDate, preset: datePreset })
     );
+  }, [fromDate, toDate, datePreset]);
+
+  useEffect(() => {
+    if (!location.state) return;
+
+    const { mode, status, fromDate: fd, toDate: td } = location.state;
+
+    if (mode) setModeFilter(mode);
+    if (status) setStatusFilter(status);
+    if (fd) setFromDate(fd);
+    if (td) setToDate(td);
+
+  }, [location.state]);
+
+  useEffect(() => {
+    const closeDropdowns = () => {
+      setOpenStatusDropdown(false);
+      setOpenModeDropdown(false);
+    };
+
+    window.addEventListener("click", closeDropdowns);
+
+    return () => window.removeEventListener("click", closeDropdowns);
+  }, []);
+
+  const exportOrders = (orders, from, to) => {
+    if (!orders.length) {
+      toast.warning("No orders in selected date range");
+      return;
+    }
+
+    const rows = [];
+
+    sortedOrders.forEach(order => {
+      order.items.forEach((item, index) => {
+        const ingredients = (item.ingredients || [])
+          .map(i => `${i.name} - ${i.quantity}g`)
+          .join(", ");
+
+        rows.push({
+          OrderID: index === 0 ? order.id : "",
+          Date: index === 0 ? order.date : "",
+          Time: index === 0 ? order.time : "",
+          Customer: index === 0 ? (order.userName || "Guest") : "",
+          Category: item.categoryName || item.categoryId || "",
+          Dish: item.dishName,
+          Quantity: item.quantity ?? item.qty ?? 0,
+          Customized: item.isCustomized ? "Yes" : "No",
+          Ingredients: ingredients
+        });
+      });
+    });
+
+    const sheet = XLSX.utils.json_to_sheet(rows);
+
+    /* ✅ Auto column width (alignment fix) */
+    const colWidths = Object.keys(rows[0]).map(key => ({
+      wch: Math.max(
+        key.length,
+        ...rows.map(r => String(r[key] ?? "").length)
+      ) + 2
+    }));
+    sheet["!cols"] = colWidths;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, "Orders");
+
+    XLSX.writeFile(
+      workbook,
+      `orders_${from}_to_${to}.xlsx`
+    );
+  };
+
+  const printBill = async (order) => {
+    try {
+      const billData = {
+        orderId: order.id,
+        date: order.date,
+        time: order.time,
+        customer: order.userName || "Guest",
+        items: order.items.map(item => ({
+          name: item.dishName,
+          qty: item.quantity,
+          price: item.totalPrice
+        })),
+        subtotal: order.resolvedTotal,
+        cgst: +(order.resolvedTotal * 0.025).toFixed(2),
+        sgst: +(order.resolvedTotal * 0.025).toFixed(2),
+        total: +(order.resolvedTotal * 1.05).toFixed(2),
+        upiUrl: buildUpiUrl((order.resolvedTotal * 1.05).toFixed(2))
+      };
+
+      await api.post("http://localhost:9001/print/bill", billData);
+    } catch (err) {
+      toast.error("Failed to print bill");
+      console.error(err);
+    }
+  };
+
+  const closeAllBillOverlays = useCallback(() => {
+    setEditBillOrder(null);
+    setPreviewBillOrder(null);
+    if (originalBill) setEditableBill(originalBill);
+    setOriginalBill(null);
+  }, [originalBill]);
+
+  const closeOptionsMenu = useCallback(() => {
+    setOpenMenuOrderId(null);
+    setMenuPos(null);
+  }, []);
+
+  const recalcOrderTotals = (order) => {
+    const items = order.items.map(item => {
+      const qty = Number(item.quantity || 0);
+      const price = Number(
+        item.price ??
+        item.unitPrice ??
+        resolveUnitPrice(item)
+      );
+
+      const totalPrice = +(qty * price).toFixed(2);
+
+      return {
+        ...item,
+        quantity: qty,
+        price,
+        unitPrice: price,   // normalize
+        totalPrice
+      };
+    });
+
+    const subTotal = +items.reduce(
+      (sum, i) => sum + i.totalPrice,
+      0
+    ).toFixed(2);
+
+    const cgst = +(subTotal * 0.025).toFixed(2);
+    const sgst = +(subTotal * 0.025).toFixed(2);
+    const total = +(subTotal + cgst + sgst).toFixed(2);
+
+    return {
+      ...order,
+      items,
+      totalAmount: subTotal,
+      totalWithGST: {
+        subTotal,
+        cgst,
+        sgst,
+        total
+      }
+    };
+  };
+
+  const applySplitAmount = () => {
+    if (!splitPeople || isNaN(splitPeople)) return;
+
+    const total = editableBill.items.reduce(
+      (sum, i) => sum + Number(i.totalPrice || 0),
+      0
+    );
+
+    const perHead = (total / Number(splitPeople)).toFixed(2);
+
+    setEditableBill(prev => ({
+      ...prev,
+      splitType: "amount",
+      splitDetails: {
+        customers: Number(splitPeople),
+        perHead
+      }
+    }));
+  };
+
+  const applySplitBill = () => {
+    if (!splitBills || isNaN(splitBills)) return;
+
+    const total = editableBill.items.reduce(
+      (sum, i) => sum + Number(i.totalPrice || 0),
+      0
+    );
+
+    const perBill = (total / Number(splitBills)).toFixed(2);
+
+    const splitDetails = Array.from({ length: Number(splitBills) }, () => ({
+      total: perBill
+    }));
+
+    setEditableBill(prev => ({
+      ...prev,
+      splitType: "bill",
+      splitDetails
+    }));
+  };
+
+  const handleSplitAmount = (order) => {
+    const customers = prompt("Enter number of people:");
+    if (!customers || isNaN(customers)) return;
+
+    const total = order.items.reduce(
+      (sum, i) => sum + Number(i.totalPrice || 0),
+      0
+    );
+
+    const perHead = (total / Number(customers)).toFixed(2);
+
+    const updatedOrder = {
+      ...order,
+      splitType: "amount",
+      splitDetails: {
+        customers: Number(customers),
+        perHead
+      }
+    };
+
+    // ✅ INSTANT UI UPDATE
+    setEditableBill(updatedOrder);
+  };
+
+  const handleSplitBill = (order) => {
+    const bills = prompt("Enter number of bills:");
+    if (!bills || isNaN(bills)) return;
+
+    const total = order.items.reduce(
+      (sum, i) => sum + Number(i.totalPrice || 0),
+      0
+    );
+
+    const perBill = (total / Number(bills)).toFixed(2);
+
+    const splitDetails = Array.from({ length: Number(bills) }, () => ({
+      total: perBill
+    }));
+
+    const updatedOrder = {
+      ...order,
+      splitType: "bill",
+      splitDetails
+    };
+
+    // ✅ INSTANT UI UPDATE
+    setEditableBill(updatedOrder);
+  };
+
+
+  return (
+    <div className="orders-page">
+
+      <div className="orders-header">
+        <div className="orders-header-div">
+          <h2 className="orders-title">Orders</h2>
+
+          <div className="orders-search-wrapper">
+            <input
+              className="search-input"
+              placeholder=" Search by order ID, customer, dish…"
+              value={orderSearch}
+              onChange={e => setOrderSearch(e.target.value)}
+            />
+            {orderSearch && (
+              <button className="orders-search-clear" onClick={() => setOrderSearch("")}>✕</button>
+            )}
+          </div>
+
+          <div className="orders-filter">
+            <button
+              type="button"
+              className={`filter-pill${datePreset === "today" ? " active" : ""}`}
+              onClick={() => applyPreset("today")}
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              className={`filter-pill${datePreset === "week" ? " active" : ""}`}
+              onClick={() => applyPreset("week")}
+            >
+              This Week
+            </button>
+            <button
+              type="button"
+              className={`filter-pill${datePreset === "month" ? " active" : ""}`}
+              onClick={() => applyPreset("month")}
+            >
+              This Month
+            </button>
+            <CustomDatePicker
+              label="From"
+              value={fromDate}
+              max={toDate}
+              onChange={(s) => { setFromDate(s); setDatePreset("custom"); if (s > toDate) setToDate(s); }}
+            />
+            <CustomDatePicker
+              label="To"
+              value={toDate}
+              min={fromDate}
+              max={todayISO}
+              onChange={(s) => { setToDate(s); setDatePreset("custom"); }}
+            />
+          </div>
+
+          <button
+            className="modal-save-btn"
+            onClick={() => exportOrders(filteredOrders, fromDate, toDate)}
+          >
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">Export</span>
+          </button>
+        </div>
+
+        <div className="orders-header-div">
+          <div className="orders-dropdown-wrapper">
+            <button
+              className="orders-status-dropdown"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenModeDropdown(prev => !prev);
+              }}
+            >
+              {modeFilter === "all" ? "All Modes" : modeFilter}
+            </button>
+
+            {openModeDropdown && (
+              <div className="dropdown-menu">
+                {["all", "dine in", "take away"].map(mode => (
+                  <div
+                    key={mode}
+                    onClick={() => {
+                      setModeFilter(mode);
+                      setOpenModeDropdown(false);
+                    }}
+                  >
+                    {mode === "all" ? "All Modes" : mode}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="orders-dropdown-wrapper">
+            <button
+              className="orders-status-dropdown"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenStatusDropdown(prev => !prev);
+              }}
+            >
+              {statusFilter === "all" ? "All Status" : statusFilter}
+            </button>
+
+            {openStatusDropdown && (
+              <div className="dropdown-menu">
+                {["all", "placed", "preparing", "service pickup", "completed"].map(status => (
+                  <div
+                    key={status}
+                    onClick={() => {
+                      setStatusFilter(status);
+                      setOpenStatusDropdown(false);
+                    }}
+                  >
+                    {status === "all" ? "All Status" : status}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+      </div>
+
+      <div className="orders-table-wrapper" ref={tableWrapperRef}>
+        <table className="orders-table">
+          <colgroup>
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col />
+            <col style={{ width: "120px" }} />
+            <col style={{ width: "60px" }} />
+          </colgroup>
+          <thead>
+            <tr>
+              <th
+                onClick={() => handleSort("id")}
+                className={sortConfig.key === "id" ? "sorted" : ""}
+              >
+                <span className="th-content sort-th">
+                  <span>Order ID</span>
+                  <span className="sort-arrow">
+                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                  </span>
+                </span>
+              </th>
+              <th
+                onClick={() => handleSort("date")}
+                className={sortConfig.key === "date" ? "sorted" : ""}
+              >
+                <span className="th-content sort-th">
+                  <span>Date</span>
+                  <span className="sort-arrow">
+                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                  </span>
+                </span>
+              </th>
+              <th>time of order</th>
+              <th>Customer Name</th>
+              <th>Mode</th>
+              <th>Table No</th>
+              <th>No of Items</th>
+              <th>Total</th>
+              <th>Priority</th>
+              <th
+                onClick={() => handleSort("status")}
+                className={sortConfig.key === "status" ? "sorted" : ""}
+              >
+                <span className="th-content sort-th">
+                  <span>Status</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "status"
+                      ? sortConfig.direction === "asc"
+                        ? "▲"
+                        : "▼"
+                      : ""}
+                  </span>
+                </span>
+              </th>
+              <th>Bill</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {sortedOrders.length === 0 ? (
+              <EmptyRow colSpan={11} message="No orders for selected date range" />
+            ) : (
+              sortedOrders.slice(0, displayLimit).map(order => {
+                const orderStatus = deriveOrderStatusFromItems(order.items);
+                return (
+                  <OrderRow
+                    key={order.id}
+                    colSpan={11}
+                    order={order}
+                    orderStatus={orderStatus}
+                    isActive={activeOrderIds.includes(order.id)}
+                    onToggle={toggleOrder}
+                    onPickup={setPickupConfirm}
+                    onOptionsClick={(id, pos) => {
+                      setMenuPos(pos);
+                      setOpenMenuOrderId(prev => prev === id ? null : id);
+                    }}
+                    navigate={navigate}
+                    setAdminData={setAdminData}
+                    toast={toast}
+                  />
+                );
+              }))}
+            <InfiniteScrollLoader
+              sentinelRef={sentinelRef}
+              hasMore={hasMore}
+              colSpan={11}
+            />
+          </tbody>
+        </table>
+      </div>
+      {pickupConfirm && (
+        <div
+          className="pickup-overlay"
+          onClick={() => setPickupConfirm(null)}
+        >
+          <div
+            className="pickup-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>Confirm Order Pickup</h3>
+            <p>Are you sure you want to mark this item as picked up?</p>
+
+            {pickupConfirm?.item?.notes && (
+              <div className="pickup-notes">
+                <strong>Notes:</strong>
+                <div className="pickup-notes-text">
+                  {pickupConfirm.item.notes}
+                </div>
+              </div>
+            )}
+
+            {!pickupConfirm?.item?.notes && (
+              <div className="pickup-notes muted">
+                <strong>Notes:</strong> -----
+              </div>
+            )}
+
+            <div className="pickup-actions">
+              <button
+                className="btn-cancel"
+                onClick={() => setPickupConfirm(null)}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="btn-confirm"
+                onClick={() => {
+                  const { orderId, itemIndex } = pickupConfirm;
+
+                  setAdminData(prev => ({
+                    ...prev,
+                    orders: prev.orders.map(o => {
+                      if (o.id !== orderId) return o;
+
+                      const now = Date.now();
+                      const created = getCreatedTime(o);
+
+                      const items = o.items.map((i, index) => {
+                        if (index !== itemIndex) return i;
+
+                        const now = Date.now();
+                        const start = i.createdAt
+                          ? new Date(i.createdAt).getTime()
+                          : getCreatedTime(o);
+
+                        const pickupStatus =
+                          now - start <= SEVEN_MIN ? "on_time" : "late";
+
+                        return {
+                          ...i,
+                          status: "service pickup",
+                          pickupAt: new Date().toISOString(),
+                          pickupStatus   // ✅ ITEM LEVEL
+                        };
+                      });
+
+                      const newStatus = deriveOrderStatusFromItems(items);
+
+                      const updated = {
+                        ...o,
+                        items,
+                        status: newStatus
+                      };
+                      persistOrder(updated, null, toast); socket.emit("data-change", {
+                        resource: "orders",
+                        action: "updated",
+                        payload: updated
+                      });
+
+
+                      return updated;
+                    })
+                  }));
+
+                  setPickupConfirm(null);
+                }}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {openMenuOrderId && menuPos &&
+        createPortal(
+          <div
+            className="options-menu portal"
+            style={{
+              top: menuPos.top,
+              left: menuPos.left
+            }}
+          >
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                closeOptionsMenu();
+                closeAllBillOverlays();
+
+                const selectedOrder = orders.find(o => o.id === openMenuOrderId);
+
+                const cloned = JSON.parse(JSON.stringify(selectedOrder));
+
+                setEditableBill(cloned);
+                setOriginalBill(cloned);   // ✅ backup
+                setEditBillOrder(true);
+              }}
+            >
+              Edit
+            </div>
+
+            <div
+              onClick={(e) => {
+                closeOptionsMenu();
+                closeAllBillOverlays();
+                e.stopPropagation();
+                setPreviewBillOrder(
+                  orders.find(o => o.id === openMenuOrderId)
+                );
+              }}
+            >
+              Preview
+            </div>
+
+            <div
+              onClick={(e) => {
+                closeOptionsMenu();
+                e.stopPropagation();
+                printBill(orders.find(o => o.id === openMenuOrderId));
+              }}
+            >
+              Print
+            </div>
+          </div>,
+          document.body
+        )
+      }
+
+      {editBillOrder && (
+        <div className="overlay">
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <BillLayout
+              onClose={closeAllBillOverlays}
+              order={editableBill}
+              editable
+              buildUpiUrl={buildUpiUrl}
+
+              splitPeople={splitPeople}
+              setSplitPeople={setSplitPeople}
+              splitBills={splitBills}
+              setSplitBills={setSplitBills}
+              applySplitAmount={applySplitAmount}
+              applySplitBill={applySplitBill}
+
+              onQtyChange={(idx, { quantity, price }) => {
+                setEditableBill(prev => {
+                  const q = quantity === "" ? "" : Number(quantity);
+                  const p = Math.max(0, price);
+
+                  const newItems = prev.items.map((item, i) =>
+                    i === idx
+                      ? {
+                        ...item,
+                        quantity: q,
+                        price: p,
+                        totalPrice: quantity === "" ? item.totalPrice : +(q * p).toFixed(2)
+                      }
+                      : item
+                  );
+
+                  return {
+                    ...prev,
+                    items: newItems
+                  };
+                });
+              }}
+            />
+
+            <div className="modal-footer">
+              <button className="modal-cancel-btn" onClick={() => setEditBillOrder(null)}>
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front">Cancel</span>
+              </button>
+              <button
+                className="modal-prev-btn"
+                onClick={() => {
+                  const previewData = recalcOrderTotals(editableBill);
+
+                  setEditBillOrder(null);      // ✅ close Edit modal FIRST
+                  setPreviewBillOrder(previewData); // ✅ then open Preview modal
+                }}
+              >
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front">Preview</span>
+              </button>
+              <button
+                className="modal-save-btn"
+                onClick={async () => {
+                  try {
+                    const updatedOrder = recalcOrderTotals(
+                      JSON.parse(JSON.stringify(editableBill))
+                    );
+
+                    await persistOrderEverywhere(updatedOrder);
+
+                    // ✅ update UI immediately
+                    setAdminData(prev => ({
+                      ...prev,
+                      orders: prev.orders.map(o =>
+                        o.id === updatedOrder.id ? updatedOrder : o
+                      )
+                    }));
+
+                    setEditBillOrder(null);
+                  } catch (err) {
+                    toast.error("Failed to save bill");
+                    console.error("Save failed", err);
+                  }
+                }}
+              >
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front">Save</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {previewBillOrder && (
+        <div className="overlay">
+          <div className="modal">
+            <BillLayout
+              onClose={closeAllBillOverlays}
+              order={previewBillOrder}
+              buildUpiUrl={buildUpiUrl}
+            />
+
+            <div className="modal-footer">
+              <button
+                className="modal-confirm-btn"
+                onClick={() => {
+                  printBill(previewBillOrder);
+                  setPreviewBillOrder(null);
+                }}
+              >
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front">Print</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
 };
 
 export default Orders;

@@ -346,6 +346,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       resetDishForm();
 
     } catch (err) {
+      toast.error("Failed to save dish");
       console.error("Failed to save dish", err);
     }
 
@@ -396,8 +397,8 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
         // State update handled by socket data-change handler in App.js
         toast.success("Dish deleted");
       } catch (err) {
-        console.error("Failed to delete dish:", err);
         toast.error("Failed to delete dish");
+        console.error("Failed to delete dish:", err);
       }
     });
 

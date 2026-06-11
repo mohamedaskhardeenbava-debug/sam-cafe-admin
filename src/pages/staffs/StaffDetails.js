@@ -5,8 +5,10 @@ import editIcon from "../../icon/edit-icon.png";
 import deleteIcon from "../../icon/delete-icon.png";
 import "./StaffDetails.css";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
+import { useToast } from "../../useToast";
 
 const StaffDetails = ({ adminData, setAdminData }) => {
+    const { toast } = useToast();
     const { staffId } = useParams();
     const navigate = useNavigate();
 
@@ -59,8 +61,10 @@ const StaffDetails = ({ adminData, setAdminData }) => {
             setLocalStaff(updated);
             setIsEditing(false);
             setEditingExp([]);
+            toast.success("Staff details updated");
 
         } catch (err) {
+            toast.error("Failed to update staff details");
             console.error("Update failed:", err);
         }
     };
@@ -82,6 +86,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                     staff: prev.staff.map(s => s.id === staffId ? updated : s)
                 }));
             } catch (err) {
+                toast.error("Failed to upload image");
                 console.error("Image upload failed:", err);
             }
         };

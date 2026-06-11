@@ -8,6 +8,7 @@ import { CustomTimePicker } from "../../components/CustomTimePicker";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+import { useToast } from "../../useToast";
 
 /*
   DATA SHAPE: attendance lives on staff[].attendance
@@ -34,6 +35,7 @@ const normalizeDate = (d) => {
 const WEEKDAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function StaffAttendance({ adminData, setAdminData }) {
+    const { toast } = useToast();
     const todayStr = normalizeDate(new Date());
     const firstOfMonth = normalizeDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
 
@@ -114,7 +116,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                 const map = {};
                 res.data.forEach(h => { if (h.date) map[normalizeDate(h.date)] = h.reason; });
                 setHolidays(map);
-            } catch (err) { console.error("Holiday load failed", err); }
+            } catch (err) { toast.error("Holiday load failed", err); }
             finally { setLoadingHolidays(false); }
         })();
     }, []);
@@ -135,7 +137,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                 try {
                     const res = await api.put(`/staff/${staff.id}`, { ...staff, attendance: updatedAtt });
                     setAdminData(prev => ({ ...prev, staff: prev.staff.map(s => s.id === staff.id ? res.data : s) }));
-                } catch (err) { console.warn(`Auto-absent failed for ${staff.name}:`, err.message); }
+                } catch (err) { toast.warn(`Auto-absent failed for ${staff.name}:`, err.message); }
             }
         })();
     }, [loadingHolidays]);
@@ -204,6 +206,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                 return next;
             });
         } catch (err) {
+            toast.error("Failed to save attendance");
             console.error("Save attendance failed:", err.message);
         } finally {
             setSavingCells(prev => ({ ...prev, [cellKey]: false }));
@@ -220,7 +223,11 @@ export default function StaffAttendance({ adminData, setAdminData }) {
             const res = await api.post("/holidays", { date: normalizeDate(holidayForm.date), reason: holidayForm.reason });
             setHolidays(prev => ({ ...prev, [normalizeDate(holidayForm.date)]: holidayForm.reason }));
             setShowHolidayModal(false); setHolidayForm({ date: "", reason: "" });
-        } catch (err) { console.error("Add holiday failed:", err.message); }
+            toast.success("Holiday added");
+        } catch (err) { 
+            toast.error("Failed to add holiday"); 
+            console.error("Add holiday failed:", err.message); 
+        }
     };
 
     // ── Export ────────────────────────────────────────────────────
@@ -471,7 +478,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                                                                         }))} />
                                                                     <button className="att-save-mini" onClick={() => {
                                                                         const data = localAttendance[staff.id]?.[date];
-                                                                        if (!data?.reason) { alert("Enter reason"); return; }
+                                                                        if (!data?.reason) { toast.warning("Enter a reason before saving"); return; }
                                                                         saveAttendance(staff.id, date, data);
                                                                         setEditMode(prev => ({ ...prev, [staff.id]: { ...prev[staff.id], [date]: false } }));
                                                                     }}>Save</button>

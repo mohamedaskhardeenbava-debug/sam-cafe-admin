@@ -3,6 +3,7 @@ import * as XLSX from "xlsx";
 import "./StaffModules.css";
 import api from "../../api";
 import closeIcon from "../../icon/close-icon.png";
+import { useToast } from "../../useToast";
 
 const typeColors = {
     Online: { bg: "#dbeafe", color: "#1e40af" },
@@ -66,6 +67,7 @@ function CustomDropdown({ value, onChange, options, placeholder = "Select…", l
 }
 
 export default function StaffTraining({ adminData, setAdminData }) {
+    const { toast } = useToast();
     const [trainings, setTrainings] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [selected, setSelected] = useState(null);
@@ -106,7 +108,9 @@ export default function StaffTraining({ adminData, setAdminData }) {
             }));
             setForm({ staffId: "", role: "", duration: "", type: "", certificate: "" });
             setShowForm(false);
+            toast.success("Training record saved");
         } catch (err) {
+            toast.error("Failed to save training record");
             console.error("Training save failed:", err);
         }
     };
@@ -129,7 +133,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
     });
 
     const exportTrainings = () => {
-        if (!filteredTrainings.length) { alert("No training records to export"); return; }
+        if (!filteredTrainings.length) { toast.warning("No training records to export"); return; }
         const rows = filteredTrainings.map(t => ({
             "Staff Name": t.staffName || "—",
             Role: t.role || "—",

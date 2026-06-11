@@ -5,6 +5,7 @@ import editIcon from "../icon/edit-icon.png";
 import "./OfferDetails.css";
 import { CustomDatePicker } from "../components/CustomDatePicker";
 import { CustomTimePicker } from "../components/CustomTimePicker";
+import { useToast } from "../useToast";
 
 // ── CustomDropdown (floating label version) ───────────────────────────────────
 function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
@@ -44,6 +45,7 @@ function CustomDropdown({ value, onChange, options, placeholder = "Select…", l
 }
 
 const OfferDetails = ({ adminData, setAdminData }) => {
+  const { toast } = useToast();
   const { offerId } = useParams();
   const navigate = useNavigate();
 
@@ -94,8 +96,10 @@ const OfferDetails = ({ adminData, setAdminData }) => {
 
       setLocalOffer(payload);
       setIsEditing(false);
+      toast.success("Offer updated");
 
     } catch (err) {
+      toast.error("Failed to update offer");
       console.error("Failed to update offer", err);
     }
   };
@@ -207,16 +211,16 @@ const OfferDetails = ({ adminData, setAdminData }) => {
               </div>
 
               {isEditing ? (
-                <div className="horizontal-form-group" style={{flex: "1 1"}}>
-                    <CustomDatePicker
-                      value={localOffer.startDate}
-                      onChange={(v) => setLocalOffer({ ...localOffer, startDate: v })}
-                      placeholder="Select date"
-                    />
-                    <CustomTimePicker
-                      value={localOffer.startTime || ""}
-                      onChange={(v) => setLocalOffer({ ...localOffer, startTime: v })}
-                    />
+                <div className="horizontal-form-group" style={{ flex: "1 1" }}>
+                  <CustomDatePicker
+                    value={localOffer.startDate}
+                    onChange={(v) => setLocalOffer({ ...localOffer, startDate: v })}
+                    placeholder="Select date"
+                  />
+                  <CustomTimePicker
+                    value={localOffer.startTime || ""}
+                    onChange={(v) => setLocalOffer({ ...localOffer, startTime: v })}
+                  />
                 </div>
               ) : (
                 <p>{localOffer.startDate}{localOffer.startTime ? ` · ${localOffer.startTime}` : ""}</p>
@@ -231,15 +235,15 @@ const OfferDetails = ({ adminData, setAdminData }) => {
 
               {isEditing ? (
                 <div className="horizontal-form-group" style={{ flex: "1 1" }}>
-                    <CustomDatePicker
-                      value={localOffer.endDate}
-                      onChange={(v) => setLocalOffer({ ...localOffer, endDate: v })}
-                      placeholder="Select date"
-                    />
-                    <CustomTimePicker
-                      value={localOffer.endTime || ""}
-                      onChange={(v) => setLocalOffer({ ...localOffer, endTime: v })}
-                    />
+                  <CustomDatePicker
+                    value={localOffer.endDate}
+                    onChange={(v) => setLocalOffer({ ...localOffer, endDate: v })}
+                    placeholder="Select date"
+                  />
+                  <CustomTimePicker
+                    value={localOffer.endTime || ""}
+                    onChange={(v) => setLocalOffer({ ...localOffer, endTime: v })}
+                  />
                 </div>
               ) : (
                 <p>{localOffer.endDate}{localOffer.endTime ? ` · ${localOffer.endTime}` : ""}</p>

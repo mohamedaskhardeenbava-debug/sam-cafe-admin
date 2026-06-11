@@ -6,6 +6,7 @@ import "./KitchenSchedules.css";
 import api from "../../api";
 import closeIcon from "../../icon/close-icon.png";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
+import { useToast } from "../../useToast";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -56,6 +57,7 @@ function CustomDropdown({ value, onChange, options, placeholder = "Select…", l
 }
 
 export default function KitchenSchedules({ adminData, setAdminData }) {
+    const { toast } = useToast();
     const location = useLocation();
     const [statusFilter, setStatusFilter] = useState(location.state?.status || "");
     const [searchText, setSearchText] = useState("");
@@ -97,7 +99,8 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
             setForm(EMPTY_FORM);
             setFormErrors({});
             setShow(false);
-        } catch (err) { console.error("Failed to add schedule", err); }
+            toast.success("Schedule added successfully.");
+        } catch (err) { toast.error("Failed to add schedule. Please try again."); }
     };
 
     const cancel = () => { setForm(EMPTY_FORM); setFormErrors({}); setShow(false); };
@@ -121,12 +124,12 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
         try {
             await api.put(`/kitchenSchedules/${item.id}`, updated);
         } catch (err) {
-            console.warn("Could not update schedule status:", err);
+            toast.error("Failed to update schedule status.");
         }
         try {
             await api.post("/kitchenActivity", updated);
         } catch (err) {
-            console.warn("Could not write to activity:", err);
+            toast.error("Failed to write to activity log.");
         }
         setAdminData(prev => ({
             ...prev,
@@ -136,7 +139,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
     };
 
     const exportToExcel = () => {
-        if (!filteredList.length) { alert("No schedule data to export"); return; }
+        if (!filteredList.length) { toast.warning("No schedule data to export"); return; }
         const rows = filteredList.map(item => ({
             Work: item.work || "—",
             Staff: item.staff || "—",

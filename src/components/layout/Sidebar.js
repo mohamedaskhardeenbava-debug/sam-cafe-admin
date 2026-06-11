@@ -23,6 +23,7 @@ const menu = [
   { label: "Dishes", path: "/dishes", icon: dishIcon },
   { label: "Ingredients", path: "/ingredients", icon: ingredientIcon },
   { label: "Stocks", path: "/stocks", icon: stockIcon },
+  { label: "Combo", path: "/combo-offers", icon: stockIcon },
   { label: "Favourites", path: "/favourites", icon: favouriteIcon },
   { label: "Orders", path: "/orders", icon: orderIcon },
   {
