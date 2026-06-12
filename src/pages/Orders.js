@@ -167,7 +167,7 @@ const BillLayout = React.memo(({
         >
           <span class="shadow"></span>
           <span class="edge"></span>
-          <span class="front close-padding"><img src={closeIcon} /></span>
+          <span class="front close-padding"><img src={closeIcon} alt="" /></span>
         </button>
         <h3>Sam Cafe</h3>
         <p>Contact: +91-9080179608</p>
@@ -987,6 +987,19 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
     setMenuPos(null);
   }, []);
 
+  useEffect(() => {
+    if (!openMenuOrderId) return;
+
+    const handleOutsideClick = (e) => {
+      if (e.target.closest(".options-menu.portal")) return;
+      if (e.target.closest(".options-btn")) return;
+      closeOptionsMenu();
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [openMenuOrderId, closeOptionsMenu]);
+
   const recalcOrderTotals = (order) => {
     const items = order.items.map(item => {
       const qty = Number(item.quantity || 0);
@@ -1388,9 +1401,6 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                     ...prev,
                     orders: prev.orders.map(o => {
                       if (o.id !== orderId) return o;
-
-                      const now = Date.now();
-                      const created = getCreatedTime(o);
 
                       const items = o.items.map((i, index) => {
                         if (index !== itemIndex) return i;
