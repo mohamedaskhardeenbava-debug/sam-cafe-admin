@@ -1,7 +1,7 @@
 /* admin panel */
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import { exportToExcel } from "../../utils/excelUtils";
 import { createPortal } from "react-dom";
-import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import closeIcon from "../../icon/close-icon.png";
 import api from "../../api";
@@ -504,13 +504,13 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
 
   const openCreate = () => {
     setShowCreate(true); setForm({ ...EMPTY_FORM }); setSelectedItems([]);
-    setTab(0); setFormErrors({}); setUseRestaurantAddr(false); // ← add this
+    setTab(0); setFormErrors({}); setUseRestaurantAddr(false);
   };
   const isDefaultFilter = filterFromDate === todayStr() && filterToDate === todayStr() && filterDatePreset === "today" && !filterStatus && !search.trim();
   const activeFilters = !isDefaultFilter;
 
   const exportToExcel = () => {
-    if (!sortedData.length) { alert("No catering orders to export"); return; }
+    if (!sortedData.length) { toast.warning("No catering orders to export"); return; }
     const rows = sortedData.map(item => ({
       Name: item.name || "—", Mobile: item.mobile || "—", Email: item.email || "—",
       "Event Date": item.eventDate || item.date || "—", Time: item.time || "—",
@@ -519,14 +519,10 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
       "Total Amount": item.totalAmount ? `₹${Number(item.totalAmount).toLocaleString("en-IN")}` : "—",
       Status: item.status || "—", Source: item.source || "—",
     }));
-    const sheet = XLSX.utils.json_to_sheet(rows);
-    sheet["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2 }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, sheet, "Catering Orders");
     const suffix = filterFromDate && filterToDate
       ? `${filterFromDate}_to_${filterToDate}`
       : filterFromDate || filterToDate || "all";
-    XLSX.writeFile(wb, `catering_orders_${suffix}.xlsx`);
+    exportToExcel({ rows, sheetName: "Catering Orders", fileName: `catering_orders_${suffix}.xlsx` });
   };
 
   return (
@@ -672,15 +668,17 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                 const status = item.status || "pending";
                 const date = item.date || item.eventDate || "—";
                 return (
-                  <tr key={item.id} className="act-row clickable" onClick={() => navigate(`/catering/${item.id}`, { state: { fromDetail: true } })}>
+                  <tr className="act-row">
                     <td>
-                      <div className="act-name-cell">
-                        <div className="act-avatar">{(item.name || "?").charAt(0).toUpperCase()}</div>
-                        <div>
-                          <div className="act-name">{item.name || "—"}</div>
-                          <div className="act-id-small">#{(item.id || "").slice(-6)}</div>
-                        </div>
-                      </div>
+                      <span>
+                        <span key={item.id}
+                          onClick={() => navigate(`/catering/${item.id}`, { state: { fromDetail: true } })}
+                          className="act-name clickable"
+                        >
+                          {item.name || "—"}
+                        </span>
+                        <div className="act-id-small">#{(item.id || "").slice(-6)}</div>
+                      </span>
                     </td>
                     <td>
                       <div className="act-contact">

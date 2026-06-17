@@ -33,7 +33,7 @@
   }
 
   /* ─────────────────────────────────────────
-   ⏰ CENTER CHIPS CONTAINER
+   CENTER CHIPS CONTAINER
 ───────────────────────────────────────── */
   .topbar-center {
     max-width: 800px;
@@ -187,16 +187,15 @@
    Dropdown Base
 ───────────────────────────────────────── */
   .dropdown {
-    position: absolute;
-    top: calc(100% + 10px);
-    right: 0;
+    position: fixed;
+    top: 68px;
     width: 300px;
     background: #fff;
     border-radius: 12px;
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
     padding: 14px;
     animation: dropdownFade 0.2s ease;
-    z-index: 100;
+    z-index: 9999;
   }
 
   @keyframes dropdownFade {
@@ -212,6 +211,16 @@
   }
 
   /* Notification Dropdown */
+  .notification-dropdown {
+    right: 70px;
+  }
+
+  /* Profile Dropdown */
+  .profile-dropdown {
+    right: 16px;
+  }
+
+  /* Notification Dropdown title */
   .dropdown-title {
     font-size: 15px;
     font-weight: 600;
@@ -301,7 +310,7 @@
   }
 
   /* ─────────────────────────────────────────
-   🔔 BELL CALL BUTTON
+   BELL CALL BUTTON
 ───────────────────────────────────────── */
   .bell-call-btn {
     display: inline-flex;
@@ -362,7 +371,7 @@
   }
 
   /* ─────────────────────────────────────────
-   ⏱️ TODAY COUNTDOWN CHIPS (center, with inline countdown)
+   TODAY COUNTDOWN CHIPS (center, with inline countdown)
 ───────────────────────────────────────── */
   .today-chip {
     display: inline-flex;
@@ -393,11 +402,20 @@
   }
 
   .today-chip--urgent {
-    background: #fff0f0;
-    border-color: #e53935 !important;
+    background: #e53935 !important;
+    border-color: #c62828 !important;
+    color: #fff !important;
     /* transition must be off so keyframe changes aren't smoothed away */
     transition: none !important;
     position: relative;
+  }
+
+  .today-chip--urgent .odo-digit {
+    border-color: #ff4444;
+  }
+
+  .today-chip--urgent .odo-strip__face {
+    color: #fff;
   }
 
   /* Blink via a pseudo-element ring — completely separate from the chip's
@@ -413,7 +431,28 @@
   }
 
   .today-chip--urgent:hover {
-    background: #ffd6d6;
+    background: #c62828 !important;
+  }
+
+  /* Override header and number colors inside urgent chip */
+  .today-chip--urgent .today-chip__header {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .today-chip--urgent .today-chip__num {
+    color: #fff;
+  }
+
+  .today-chip--urgent .today-chip__unit {
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .today-chip--urgent .today-chip__sep {
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .today-chip--urgent .today-chip__now {
+    color: #fff;
   }
 
 
@@ -583,7 +622,7 @@
   }
 
   /* ─────────────────────────────────────────
-   🔍 CHIP TOOLTIP
+   CHIP TOOLTIP
 ───────────────────────────────────────── */
   .today-chip-wrapper {
     position: relative;
@@ -714,7 +753,7 @@
   }
 
   /* ─────────────────────────────────────────
-   📞 PHONE DROPDOWN
+   PHONE DROPDOWN
 ───────────────────────────────────────── */
   .phone-dropdown {
     /* fixed so it escapes overflow:hidden/auto on any ancestor (topbar, topbar-right) */
@@ -919,14 +958,13 @@
 /* ── Urgent chip blink ring — must be top-level, not nested inside .topbar ── */
 @keyframes urgentRingBlink {
 
-  0%
-   {
+  0% {
     opacity: 1;
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.6);
   }
 
-    100% {
+  100% {
     opacity: 0.15;
     transform: scale(1.009);
     box-shadow: 0 0 0 6px rgba(229, 57, 53, 0);
@@ -934,7 +972,7 @@
 }
 
 /* ─────────────────────────────────────────
-   🔍 CHIP TOOLTIP PORTAL (rendered in document.body)
+   CHIP TOOLTIP PORTAL (rendered in document.body)
 ───────────────────────────────────────── */
 .chip-tooltip--portal {
   position: fixed;

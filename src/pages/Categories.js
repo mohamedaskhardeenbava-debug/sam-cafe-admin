@@ -345,9 +345,8 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
           subCategories: existing.subCategories
         };
 
-        // ✅ ONLY UPDATE (no delete + no id change)
+        // ONLY UPDATE (no delete + no id change)
         await api.put(`/categories/${existing.id}`, updatedCategory);
-        // State update handled by socket data-change handler in App.js
       }
 
       resetEditCategoryForm();
@@ -469,28 +468,30 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
                 return (
                   <React.Fragment key={category.id}>
-                    <tr
-                      key={category.id}
-                      onClick={() => {
-                        if ((category.subCategories || []).length > 0) {
-                          setOpenCategory(openCategory === category.id ? null : category.id)
-                        } else {
-                          navigate(`/dishes/${category.id}`);
-                        }
-                      }}
-                    >
+                    <tr>
 
                       <td>
                         <div
-                          className="category-image clickable"
-                          onClick={() => navigate(`/dishes/${category.id}`)}
+                          className="category-image"
                         >
                           <img src={category.image} alt="" />
                         </div>
                       </td>
 
-                      <td className="category-name clickable">
-                        {category.name}
+                      <td>
+                        <span
+                          key={category.id}
+                          onClick={() => {
+                            if ((category.subCategories || []).length > 0) {
+                              setOpenCategory(openCategory === category.id ? null : category.id)
+                            } else {
+                              navigate(`/dishes/${category.id}`);
+                            }
+                          }}
+                          className="clickable"
+                        >
+                          {category.name}
+                        </span>
                       </td>
 
                       <td>{(category.dishes || []).length}</td>
@@ -550,18 +551,22 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
                                   {category.subCategories.map((sub, i) => (
 
-                                    <tr
-                                      key={sub.id}
-                                      className="clickable"
-                                      onClick={() => navigate(`/dishes/${sub.id}`)}
-                                    >
+                                    <tr>
                                       <td>
                                         <div className="subcategory-image">
                                           <img src={sub.image} alt="" />
                                         </div>
                                       </td>
 
-                                      <td>{sub.name}</td>
+                                      <td>
+                                        <span
+                                          key={sub.id}
+                                          className="clickable"
+                                          onClick={() => navigate(`/dishes/${sub.id}`)}
+                                        >
+                                          {sub.name}
+                                        </span>
+                                      </td>
 
                                       <td>{(sub.dishes || []).length}</td>
 

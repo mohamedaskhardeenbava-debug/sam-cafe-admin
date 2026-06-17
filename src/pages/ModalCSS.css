@@ -28,7 +28,7 @@
     transform: scale(0.95);
 }
 
-/* ✕ icon */
+/* icon */
 .close-btn::before,
 .close-btn::after {
     content: "";
@@ -120,7 +120,7 @@
     min-height: 70px;
 }
 
-/* ================= FOOTER ================= */
+/* ------------------------------- FOOTER ------------------------------- */
 .modal-footer {
     position: sticky;
     bottom: 0;

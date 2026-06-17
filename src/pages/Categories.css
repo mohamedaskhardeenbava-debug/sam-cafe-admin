@@ -41,7 +41,6 @@
   width: 100%;
   border-collapse: separate;
   border-spacing: 0 5px;
-  /* row spacing */
   background: transparent;
   table-layout: fixed;
 }
@@ -201,7 +200,6 @@
 /* header */
 .subcategory-table thead {
   position: relative;
-  /* NOT sticky */
   z-index: 1;
 }
 
@@ -456,7 +454,7 @@ button img {
   transform: scale(0.95);
 }
 
-/* ✕ icon */
+/* icon */
 .category-close-btn::before,
 .category-close-btn::after {
   content: "";

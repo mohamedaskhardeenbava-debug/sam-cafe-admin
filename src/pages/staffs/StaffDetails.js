@@ -16,7 +16,6 @@ const StaffDetails = ({ adminData, setAdminData }) => {
 
     const [localStaff, setLocalStaff] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
-    // Experience rows have their own local buffer so add/delete works mid-edit
     const [editingExp, setEditingExp] = useState([]);
     const [sameAddress, setSameAddress] = useState(false);
 
@@ -28,7 +27,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
 
     if (!localStaff) return <div>Loading...</div>;
 
-    /* ================= ENTER / EXIT EDIT ================= */
+    /* ------------------------------- ENTER / EXIT EDIT ------------------------------- */
     const startEditing = () => {
         setEditingExp([...localStaff.previousExperience]);
         setIsEditing(true);
@@ -41,7 +40,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
         setSameAddress(false);
     };
 
-    /* ================= SAVE ================= */
+    /* ------------------------------- SAVE ------------------------------- */
     const persistStaff = async () => {
         const updated = {
             ...localStaff,
@@ -69,7 +68,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
         }
     };
 
-    /* ================= IMAGE (always live-save, independent of edit mode) ================= */
+    /* ------------------------------- IMAGE (always live-save, independent of edit mode) ------------------------------- */
     const handleImageUpload = (e, field) => {
         const file = e.target.files[0];
         if (!file) return;

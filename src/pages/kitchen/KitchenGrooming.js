@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import * as XLSX from "xlsx";
+import { exportToExcel } from "../../utils/excelUtils";
 import "./KitchenGrooming.css";
 import api from "../../api";
 import { useToast } from "../../useToast";
@@ -174,13 +174,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
         ? `${Math.round((perfect / visibleDates.length) * 100)}%` : "0%";
       return row;
     });
-    const sheet = XLSX.utils.json_to_sheet(rows);
-    sheet["!cols"] = Object.keys(rows[0]).map(k => ({
-      wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2
-    }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, sheet, "Kitchen Grooming");
-    XLSX.writeFile(wb, `kitchen_grooming_${groomFrom}_to_${groomTo}.xlsx`);
+    exportToExcel({ rows, sheetName: "Kitchen Grooming", fileName: `kitchen_grooming_${groomFrom}_to_${groomTo}.xlsx` });
   };
 
   // ── Toggle a grooming field ───────────────────────────────────

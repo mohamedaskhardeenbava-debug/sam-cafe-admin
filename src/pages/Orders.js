@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { exportToExcel } from "../utils/excelUtils";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../api";
 import "./Orders.css";
 import closeIcon from "../icon/close-icon.png";
-import * as XLSX from "xlsx";
 import { EmptyRow } from "../App";
 import { QRCodeCanvas } from "qrcode.react";
 import { createPortal } from "react-dom";
@@ -37,28 +37,28 @@ const persistOrder = async (order, refresh) => {
 };
 
 const persistOrderEverywhere = async (updatedOrder) => {
-  // 1️⃣ Update global orders (always valid)
+  // Update global orders (always valid)
   await api.put(`/orders/${updatedOrder.id}`, updatedOrder);
 
-  // 2️⃣ If no userId → STOP (TAKE AWAY / guest orders)
+  // If no userId → STOP (TAKE AWAY / guest orders)
   if (!updatedOrder.userId) {
-    console.warn("ℹ️ Order has no userId, skipping user sync");
+    console.warn("Order has no userId, skipping user sync");
     return;
   }
 
-  // 3️⃣ Fetch user safely
+  // Fetch user safely
   let user;
   try {
     const userRes = await api.get(`/users/${updatedOrder.userId}`);
     user = userRes.data;
   } catch {
-    console.warn("⚠️ User not found, skipping user sync");
+    console.warn("User not found, skipping user sync");
     return;
   }
 
   if (!Array.isArray(user.orders)) return;
 
-  // 4️⃣ Update embedded order
+  // Update embedded order
   const updatedUser = {
     ...user,
     orders: user.orders.map(o =>
@@ -231,7 +231,6 @@ const BillLayout = React.memo(({
       <hr />
 
       <div className="bill-summary">
-        {/* 🔥 SPLIT DISPLAY */}
         {order.splitType === "amount" && (
           <div className="bill-split-info">
             Split: {order.splitDetails?.customers} people <br />
@@ -370,8 +369,8 @@ const OrderRow = React.memo(({
           onToggle(order.id);
         }}
       >
-        <td className="clickable" onClick={() => navigate(`/orders/${order.id}`)}>
-          {order.id}
+        <td>
+          <span className="clickable" onClick={() => navigate(`/orders/${order.id}`)}>{order.id}</span>
         </td>
         <td>{formatDisplayDate(order.date)}</td>
         <td>{formatIndianTime(order.date, order.time)}</td>
@@ -391,7 +390,7 @@ const OrderRow = React.memo(({
                   priority: e.target.checked
                 };
 
-                // ✅ 1. INSTANT UI UPDATE
+                // 1. INSTANT UI UPDATE
                 setAdminData(prev => ({
                   ...prev,
                   orders: prev.orders.map(o =>
@@ -399,7 +398,7 @@ const OrderRow = React.memo(({
                   )
                 }));
 
-                // ✅ 2. BACKEND UPDATE
+                // 2. BACKEND UPDATE
                 try {
                   await persistOrderEverywhere(updatedOrder);
                 } catch (err) {
@@ -453,19 +452,21 @@ const OrderRow = React.memo(({
               <tbody>
                 {order.items.map((item, idx) => (
                   <tr key={idx}>
-                    <td
-                      className={item.categoryId === "combo" ? "combo-item" : "clickable"}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (item.categoryId === "combo") return;
-                        navigate(
-                          `/dishes/${item.categoryId}/${item.dishId || "__custom__"}`,
-                          { state: { fromOrder: true, orderItem: item } }
-                        );
-                      }}
-                    >
-                      {item.dishName}
+                    <td>
+                      <span
+                        className={item.categoryId === "combo" ? "combo-item" : "clickable"}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (item.categoryId === "combo") return;
+                          navigate(
+                            `/dishes/${item.categoryId}/${item.dishId || "__custom__"}`,
+                            { state: { fromOrder: true, orderItem: item } }
+                          );
+                        }}
+                      >
+                        {item.dishName}
+                      </span>
                     </td>
                     <td>{item.notes ? item.notes : "-----------"}</td>
                     <td>{item.qty ?? item.quantity}</td>
@@ -703,11 +704,11 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
     data.sort((a, b) => {
 
-      // 🔥 PRIORITY FIRST (GLOBAL OVERRIDE)
+      // PRIORITY FIRST (GLOBAL OVERRIDE)
       if (a.priority && !b.priority) return -1;
       if (!a.priority && b.priority) return 1;
 
-      // 🔽 NORMAL SORTING
+      // NORMAL SORTING
       switch (sortKey) {
         case "id":
           return sortDir === "asc"
@@ -834,7 +835,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
           if (!orderChanged && newStatus === order.status) return order;
 
-          changed = true; // 🔥 ADD THIS
+          changed = true;
 
           const updatedOrder = {
             ...order,
@@ -866,10 +867,6 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
     return () => clearInterval(interval);
 
   }, [isOrdersPage]);
-
-  // Note: displayLimit, sentinelRef, and IntersectionObserver are now managed
-  // by the useInfiniteScroll hook declared above.
-
 
   useEffect(() => {
     localStorage.setItem(
@@ -929,24 +926,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       });
     });
 
-    const sheet = XLSX.utils.json_to_sheet(rows);
-
-    /* ✅ Auto column width (alignment fix) */
-    const colWidths = Object.keys(rows[0]).map(key => ({
-      wch: Math.max(
-        key.length,
-        ...rows.map(r => String(r[key] ?? "").length)
-      ) + 2
-    }));
-    sheet["!cols"] = colWidths;
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, sheet, "Orders");
-
-    XLSX.writeFile(
-      workbook,
-      `orders_${from}_to_${to}.xlsx`
-    );
+    exportToExcel({ rows, sheetName: "Orders", fileName: `orders_${from}_to_${to}.xlsx` });
   };
 
   const printBill = async (order) => {
@@ -1015,7 +995,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         ...item,
         quantity: qty,
         price,
-        unitPrice: price,   // normalize
+        unitPrice: price,
         totalPrice
       };
     });
@@ -1102,8 +1082,6 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         perHead
       }
     };
-
-    // ✅ INSTANT UI UPDATE
     setEditableBill(updatedOrder);
   };
 
@@ -1127,8 +1105,6 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       splitType: "bill",
       splitDetails
     };
-
-    // ✅ INSTANT UI UPDATE
     setEditableBill(updatedOrder);
   };
 
@@ -1417,7 +1393,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                           ...i,
                           status: "service pickup",
                           pickupAt: new Date().toISOString(),
-                          pickupStatus   // ✅ ITEM LEVEL
+                          pickupStatus
                         };
                       });
 
@@ -1469,7 +1445,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 const cloned = JSON.parse(JSON.stringify(selectedOrder));
 
                 setEditableBill(cloned);
-                setOriginalBill(cloned);   // ✅ backup
+                setOriginalBill(cloned);
                 setEditBillOrder(true);
               }}
             >
@@ -1554,8 +1530,8 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 onClick={() => {
                   const previewData = recalcOrderTotals(editableBill);
 
-                  setEditBillOrder(null);      // ✅ close Edit modal FIRST
-                  setPreviewBillOrder(previewData); // ✅ then open Preview modal
+                  setEditBillOrder(null);
+                  setPreviewBillOrder(previewData);
                 }}
               >
                 <span class="shadow"></span>
@@ -1572,7 +1548,6 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
                     await persistOrderEverywhere(updatedOrder);
 
-                    // ✅ update UI immediately
                     setAdminData(prev => ({
                       ...prev,
                       orders: prev.orders.map(o =>

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import * as XLSX from "xlsx";
+import { exportMultiSheet } from "../../utils/excelUtils";
 import "./KitchenReports.css";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 import {
@@ -192,11 +192,14 @@ const KitchenReports = ({ adminData = {} }) => {
     // Orders sheet
     const orderRows = catData.map(c => ({ Category: c.name, "Item Qty": c.qty }));
 
-    const wb = XLSX.utils.book_new();
-    if (attRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(attRows), "Attendance");
-    if (groomRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(groomRows), "Grooming");
-    if (orderRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(orderRows), "Orders by Category");
-    XLSX.writeFile(wb, `kitchen_report_${reportFrom || "all"}_${reportTo || today}.xlsx`);
+    exportMultiSheet({
+      sheets: [
+        { name: "Attendance", rows: attRows },
+        { name: "Grooming", rows: groomRows },
+        { name: "Orders by Category", rows: orderRows },
+      ],
+      fileName: `kitchen_report_${reportFrom || "all"}_${reportTo || today}.xlsx`,
+    });
   };
 
   /* pies */
@@ -375,7 +378,7 @@ const KitchenReports = ({ adminData = {} }) => {
       <div className="k-grid-2">
         {/* STOCK */}
         <div className="k-card k-card-split">
-          <div style={{display:"flex", flexDirection:"column", gap:"70px"}}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "70px" }}>
             <SectionTitle accent={K.red}>Stock Health Overview</SectionTitle>
             {stockPie.length === 0 ? <p className="k-empty">No stock data</p> : (
               <ResponsiveContainer width="100%" height={180}>

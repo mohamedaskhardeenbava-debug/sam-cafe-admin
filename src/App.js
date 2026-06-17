@@ -171,9 +171,9 @@ function App() {
           miseRes,
           kitchenAssignRes,
           recipeRes,
-          offerRes,              // ✅ offers FIRST
-          activityRes,           // kitchenActivity
-          schedulesRes,          // kitchenSchedules
+          offerRes,             
+          activityRes,          
+          schedulesRes,        
           serviceAssignRes,
           serviceGroomRes,
           serviceMiseRes,
@@ -199,9 +199,9 @@ function App() {
           api.get("/mise"),
           api.get("/kitchenAssign"),
           api.get("/recipes"),
-          api.get("/offers"),              // ✅ HERE
-          api.get("/kitchenActivity"),     // ✅
-          api.get("/kitchenSchedules"),    // ✅
+          api.get("/offers"),           
+          api.get("/kitchenActivity"),   
+          api.get("/kitchenSchedules"),  
           api.get("/serviceAssign"),
           api.get("/serviceGrooming"),
           api.get("/serviceMise"),
@@ -387,7 +387,7 @@ function App() {
 
     socket.on("data-change", handleDataChange);
 
-    // 🔔 Booking notifications
+    // Booking notifications
     const handleNewBooking = ({ message, route }) => {
       toast.booking(message, () => navigate(route));
     };
@@ -908,21 +908,21 @@ export const formatIndianTime = (dateStr, timeStr) => {
   });
 };
 
-// ================= DATE UTILITIES (GLOBAL) =================
+// ------------------------------- DATE UTILITIES (GLOBAL) -------------------------------
 
-// ✅ Safe local date key (NO timezone bug)
+// Safe local date key (NO timezone bug)
 export const getTodayKey = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
-// ✅ Clean formatted date (UI)
+// Clean formatted date (UI)
 export const getTodayFormatted = () => {
   const d = new Date();
   return `${String(d.getDate()).padStart(2, "0")} ${d.toLocaleString("default", { month: "long" })} ${d.getFullYear()}`;
 };
 
-// ✅ Full readable date (optional)
+// Full readable date (optional)
 export const getTodayFull = () => {
   return new Date().toLocaleDateString("en-IN", {
     weekday: "long",

@@ -1,7 +1,7 @@
 /* admin panel */
 import React, { useEffect, useState, useMemo, useRef } from "react";
+import { exportToExcel } from "../../utils/excelUtils";
 import { createPortal } from "react-dom";
-import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import closeIcon from "../../icon/close-icon.png";
@@ -394,7 +394,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
   const activeFilters = !isDefaultFilter;
 
   const exportToExcel = () => {
-    if (!sortedData.length) { alert("No celebrations to export"); return; }
+    if (!sortedData.length) { toast.warning("No celebrations to export"); return; }
     const rows = sortedData.map(item => ({
       Name: item.name || "—",
       Mobile: item.mobile || "—",
@@ -408,16 +408,10 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       Status: item.status || "—",
       Source: item.source || "—",
     }));
-    const sheet = XLSX.utils.json_to_sheet(rows);
-    sheet["!cols"] = Object.keys(rows[0]).map(k => ({
-      wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2,
-    }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, sheet, "Celebrations");
     const suffix = filterFromDate && filterToDate
       ? `${filterFromDate}_to_${filterToDate}`
       : filterFromDate || filterToDate || "all";
-    XLSX.writeFile(wb, `celebrations_${suffix}.xlsx`);
+    exportToExcel({ rows, sheetName: "Celebrations", fileName: `celebrations_${suffix}.xlsx` });
   };
 
   return (
@@ -608,16 +602,18 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                 if (item.pens) extras.push("Pens");
 
                 return (
-                  <tr key={item.id} className="evt-clb-row clickable"
-                    onClick={() => navigate(`/celebrations/${item.id}`, { state: { fromDetail: true } })}>
+                  <tr key={item.id} className="evt-clb-row">
                     <td>
-                      <div className="evt-clb-name-cell">
-                        <div className="evt-clb-avatar">{(item.name || "?").charAt(0).toUpperCase()}</div>
-                        <div>
-                          <div className="evt-clb-name">{item.name || "—"}</div>
+                        <span>
+                          <span
+                            className="evt-clb-name"
+                            key={item.id} className="evt-clb-row clickable"
+                            onClick={() => navigate(`/celebrations/${item.id}`, { state: { fromDetail: true } })}
+                          >
+                            {item.name || "—"}
+                          </span>
                           <div className="evt-clb-id-small">#{(item.id || "").slice(-6)}</div>
-                        </div>
-                      </div>
+                        </span>
                     </td>
                     <td>
                       <div className="evt-clb-contact">
@@ -1071,7 +1067,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     {/* Validation warnings */}
                     {(!form.name.trim() || !form.mobile || !form.date || !form.time) && (
                       <div style={{ padding: "10px 14px", background: "#fef3c7", borderRadius: 10, border: "1px solid #fcd34d", fontSize: 13, color: "#92400e" }}>
-                        ⚠️ Please fill all required fields before creating.{" "}
+                        Please fill all required fields before creating.{" "}
                         {!form.name.trim() && "Name, "}
                         {(!form.mobile || form.mobile.replace(/\D/g, "").length !== 10) && "Mobile, "}
                         {!form.date && "Date, "}

@@ -111,7 +111,6 @@
 
 .evt-res-row:hover {
   background: #fafafa;
-  transform: translateX(2px);
 }
 
 .clickable {
@@ -140,12 +139,10 @@
 
 .evt-res-name {
   font-weight: 600;
-  color: #111;
 }
 
 .evt-res-id-small {
   font-size: 10px;
-  color: #aaa;
 }
 
 .evt-res-contact {
@@ -772,7 +769,7 @@
   border-color: #111;
 }
 
-.evt-form-section-label{
+.evt-form-section-label {
   margin-top: 6px;
   font-weight: 600;
   font-size: 14px;

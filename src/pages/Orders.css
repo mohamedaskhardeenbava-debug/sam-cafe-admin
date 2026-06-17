@@ -591,7 +591,6 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* ✅ no scrollbar here */
   position: relative;
 }
 
@@ -640,19 +639,13 @@
 .bill-modal-actions {
   position: sticky;
   bottom: 0;
-
   background: #ffffff;
-  /* solid background */
   padding: 14px 0 0;
-
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-
   border-top: 1px solid #e5e7eb;
-
   z-index: 5;
-  /* stays above receipt content */
 }
 
 .bill-modal-actions .primary {
@@ -714,12 +707,8 @@
 .bill-receipt {
   flex: 1;
   overflow-y: auto;
-
-  /* 🔥 hide scrollbar but keep scroll */
   scrollbar-width: none;
-  /* Firefox */
   -ms-overflow-style: none;
-  /* IE / Edge */
 }
 
 .bill-receipt::-webkit-scrollbar {
@@ -738,7 +727,6 @@
   flex-direction: column;
   align-items: center;
   z-index: 5;
-  /* stays above receipt content */
 }
 
 .bill-header h3 {

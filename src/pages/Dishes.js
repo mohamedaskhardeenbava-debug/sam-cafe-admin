@@ -164,7 +164,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
       let result = [];
 
-      // ✅ category dishes
+      // category dishes
       if (selectedCategoryIds.includes(cat.id)) {
         result.push(
           ...(cat.dishes || []).map(d => ({
@@ -174,7 +174,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
         );
       }
 
-      // ✅ subcategory dishes
+      // subcategory dishes
       (cat.subCategories || []).forEach(sub => {
 
         if (selectedCategoryIds.includes(sub.id)) {
@@ -571,11 +571,11 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                     </div>
                   </td>
 
-                  <td
-                    className="dish-name clickable"
-                    onClick={() => navigate(`/dishes/${dish.categoryId}/${dish.id}`)}
-                  >
-                    {dish.name}
+                  <td>
+                    <span
+                      className="dish-name clickable"
+                      onClick={() => navigate(`/dishes/${dish.categoryId}/${dish.id}`)}
+                    >{dish.name}</span>
                   </td>
 
                   <td>

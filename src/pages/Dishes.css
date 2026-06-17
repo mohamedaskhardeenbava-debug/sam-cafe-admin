@@ -51,7 +51,6 @@
   width: 100%;
   border-collapse: separate;
   border-spacing: 0 5px;
-  /* row spacing */
   background: transparent;
   table-layout: fixed;
 }
@@ -536,7 +535,6 @@
   text-align: left;
   cursor: pointer;
   transition: border-color 0.2s ease;
-  /* keep the chevron */
   background-image: url("data:image/svg+xml;utf8,<svg fill='%23666' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
   background-repeat: no-repeat;
   background-position: right 10px center;

@@ -401,8 +401,6 @@
   margin-bottom: 18px;
 }
 
-/* 4th card: schedules — spans full width of its cell, 
-   inner ScheduleSection lays out its own pie charts in a row */
 .sc-schedules-card {
   overflow: visible;
 }

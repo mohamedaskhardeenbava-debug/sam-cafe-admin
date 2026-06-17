@@ -29,7 +29,7 @@ const OrderDetails = ({ orders, menu }) => {
     // Block combo
     if (item.categoryId === "combo") return null;
 
-    // ✅ Make Your Own
+    // Make Your Own
     if (item.dishId === "__custom__") {
       return `/dishes/${item.categoryId}/__custom__`;
     }
@@ -134,24 +134,26 @@ const OrderDetails = ({ orders, menu }) => {
                   return (
                     <tr key={index}>
                       <td style={{ textTransform: 'capitalize' }}>{item.categoryName || item.categoryId}</td>
-                      <td
-                        className={item.categoryId === "combo" ? "" : "clickable"}
-                        onClick={() => {
-                          // ✅ Do nothing for combo items
-                          if (item.categoryId === "combo") return;
+                      <td>
+                        <span
+                          className={item.categoryId === "combo" ? "" : "clickable"}
+                          onClick={() => {
+                            // Do nothing for combo items
+                            if (item.categoryId === "combo") return;
 
-                          const route = resolveDishRoute(item);
-                          if (route) {
-                            navigate(route, {
-                              state: {
-                                fromOrder: true,
-                                orderItem: item
-                              }
-                            });
-                          }
-                        }}
-                      >
-                        {item.dishName}
+                            const route = resolveDishRoute(item);
+                            if (route) {
+                              navigate(route, {
+                                state: {
+                                  fromOrder: true,
+                                  orderItem: item
+                                }
+                              });
+                            }
+                          }}
+                        >
+                          {item.dishName}
+                        </span>
                       </td>
                       <td>{item.notes?.trim() ? item.notes : "-"}</td>
                       <td>{item.quantity ?? item.qty}</td>
@@ -166,7 +168,6 @@ const OrderDetails = ({ orders, menu }) => {
 
           {/* TOTAL */}
           <div className="section">
-            {/* 🔥 SPLIT INFO */}
             {order.splitType && (
               <div className="section">
                 <div className="section-title">
