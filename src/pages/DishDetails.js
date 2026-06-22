@@ -393,8 +393,10 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
                             <div className="section-title"><span>Nutrition</span></div>
                             <table className="data-table">
                                 <thead>
-                                    <th>Nutrition</th>
-                                    <th>Value</th>
+                                    <tr>
+                                        <th>Nutrition</th>
+                                        <th>Value</th>
+                                    </tr>
                                 </thead>
                                 <tbody>
                                     {Object.entries(localDish.benefits).map(([k, v]) => (

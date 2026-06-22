@@ -12,65 +12,11 @@ import socket from "../socket";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import CustomDropdown from "../components/CustomDropdown";
 
 const toTwoDecimals = (value) =>
   Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 
-
-// ── CustomDropdown (floating label version) ──────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
-
-  const wrapperClass = [
-    "mat-select",
-    value ? "has-value" : "",
-    open ? "is-open" : "",
-  ].filter(Boolean).join(" ");
-
-  return (
-    <div className={wrapperClass} ref={ref}>
-      {label && (
-        <label className="mat-label">
-          {label}{required && <span className="rf-req">*</span>}
-        </label>
-      )}
-      <div className="dishes-dropdown-wrapper">
-        <button type="button" className="dishes-status-dropdown"
-          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-          {displayLabel || ""}
-        </button>
-        {open && (
-          <div className="dropdown-menu">
-            <div onClick={() => { onChange(""); setOpen(false); }}>
-              {placeholder}
-            </div>
-            {options.map((o, i) => {
-              const val = o.value !== undefined ? o.value : o;
-              const lbl = o.label !== undefined ? o.label : o;
-              return (
-                <div key={i} onClick={() => { onChange(val); setOpen(false); }}
-                  style={{ padding: "8px 12px", fontSize: 14, cursor: "pointer" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"}
-                  onMouseLeave={e => e.currentTarget.style.background = ""}>
-                  {lbl}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <span className="mat-bar" />
-    </div>
-  );
-}
 
 const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
   const { toast } = useToast();
@@ -304,9 +250,12 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       return { text: "—", type: "none" };
     }
 
-    // Get dish names
+    // Get dish names (dishes can live directly on a category or nested under its subcategories)
     const dishNames = adminData.categories
-      .flatMap(cat => cat.dishes || [])
+      .flatMap(cat => [
+        ...(cat.dishes || []),
+        ...(cat.subCategories || []).flatMap(sub => sub.dishes || [])
+      ])
       .filter(d => disabled.includes(d.id))
       .map(d => d.name);
 
@@ -373,7 +322,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Ingredient</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "name"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -385,7 +336,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Price / 100g</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "price"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -397,7 +350,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Stock (kg)</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "stock"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -409,7 +364,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Stocks (%)</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "stockPercent"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -421,7 +378,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Last Purchased</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "lastUpdated"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -433,7 +392,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Expiry Date</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "expiryDate"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -535,18 +496,13 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 className="modal-cancel-btn"
                 onClick={closeModal}
               >
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front close-padding"><img src={closeIcon} /></span>
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front close-padding"><img src={closeIcon} /></span>
               </button>
             </div>
 
             <div className="modal-body">
-              <div className="form-group">
-                <label></label>
-
-              </div>
-
               <div className="form-group">
                 <div className="mat">
                   <input

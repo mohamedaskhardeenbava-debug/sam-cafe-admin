@@ -7,45 +7,7 @@ import api from "../../api";
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
-
-// ── Floating-label CustomDropdown ────────────────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
-  const wrapperClass = ["mat-select", value ? "has-value" : "", open ? "is-open" : ""].filter(Boolean).join(" ");
-  return (
-    <div className={wrapperClass} ref={ref}>
-      {label && <label className="mat-label">{label}{required && <span className="rf-req">*</span>}</label>}
-      <div className="dishes-dropdown-wrapper">
-        <button type="button" className="dishes-status-dropdown"
-          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-          {displayLabel || ""}
-        </button>
-        {open && (
-          <div className="dropdown-menu">
-            {options.map((o, i) => {
-              const val = o.value !== undefined ? o.value : o;
-              const lbl = o.label !== undefined ? o.label : o;
-              return (
-                <div key={i} onClick={(e) => { e.stopPropagation(); onChange(val); setOpen(false); }}>
-                  {lbl}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <span className="mat-bar" />
-    </div>
-  );
-}
+import CustomDropdown from "../../components/CustomDropdown";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -156,7 +118,6 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
       toast.success("Schedule added successfully.");
     } catch (err) {
       toast.error("Failed to add schedule. Please try again.");
-      toast.error("Failed to add schedule. Please try again.");
     }
   };
 
@@ -222,7 +183,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
     toast.success(`"${item.work}" marked as completed.`);
   };
 
-  const exportToExcel = () => {
+  const handleExport = () => {
     if (!filteredList.length) { toast.warning("No schedule data to export"); return; }
     const rows = filteredList.map(item => ({
       Work: item.work || "—",
@@ -240,7 +201,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
       <div className="schedule-header">
         <h2>Service Schedules</h2>
         <div style={{ display: "flex", gap: "8px" }}>
-          <button className="modal-save-btn" onClick={exportToExcel}>
+          <button className="modal-save-btn" onClick={handleExport}>
             <span className="shadow"></span>
             <span className="edge"></span>
             <span className="front">Export</span>
@@ -323,9 +284,9 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
             <div className="modal-header">
               <h3>Add Schedule</h3>
               <button type="button" className="modal-cancel-btn" onClick={cancel}>
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front close-padding"><img src={closeIcon} /></span>
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front close-padding"><img src={closeIcon} /></span>
               </button>
             </div>
             <div className="modal-body">

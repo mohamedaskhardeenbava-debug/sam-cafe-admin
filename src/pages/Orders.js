@@ -38,7 +38,12 @@ const persistOrder = async (order, refresh) => {
 
 const persistOrderEverywhere = async (updatedOrder) => {
   // Update global orders (always valid)
-  await api.put(`/orders/${updatedOrder.id}`, updatedOrder);
+  try {
+    await api.put(`/orders/${updatedOrder.id}`, updatedOrder);
+  } catch (err) {
+    console.error("persistOrderEverywhere: failed to save order", err);
+    throw err;
+  }
 
   // If no userId → STOP (TAKE AWAY / guest orders)
   if (!updatedOrder.userId) {
@@ -66,7 +71,14 @@ const persistOrderEverywhere = async (updatedOrder) => {
     )
   };
 
-  await api.put(`/users/${user.id}`, updatedUser);
+  try {
+    await api.put(`/users/${user.id}`, updatedUser);
+  } catch (err) {
+    // The order itself already saved successfully above — this is just
+    // the denormalized copy embedded in the user record falling out of
+    // sync, which is non-fatal, so we log but don't re-throw.
+    console.warn("persistOrderEverywhere: order saved, but user-record sync failed", err);
+  }
 };
 
 const getCreatedTime = (order) => {
@@ -92,6 +104,11 @@ const STATUS_ORDER = {
   "service pickup": 3,
   completed: 4
 };
+
+// Any status not in STATUS_ORDER (e.g. "cancelled") falls back to this rank
+// instead of undefined, which previously made the sort comparator return
+// NaN and break sort stability/order.
+const statusRank = (status) => STATUS_ORDER[normalizeStatus(status)] ?? 99;
 
 const resolveQty = (item) =>
   Number(item.qty ?? item.quantity ?? 0);
@@ -165,9 +182,9 @@ const BillLayout = React.memo(({
             onClose();
           }}
         >
-          <span class="shadow"></span>
-          <span class="edge"></span>
-          <span class="front close-padding"><img src={closeIcon} alt="" /></span>
+          <span className="shadow"></span>
+          <span className="edge"></span>
+          <span className="front close-padding"><img src={closeIcon} alt="" /></span>
         </button>
         <h3>Sam Cafe</h3>
         <p>Contact: +91-9080179608</p>
@@ -271,9 +288,9 @@ const BillLayout = React.memo(({
               className="modal-save-btn"
               onClick={applySplitAmount}
             >
-              <span class="shadow"></span>
-              <span class="edge"></span>
-              <span class="front close-padding">Split Amount</span>
+              <span className="shadow"></span>
+              <span className="edge"></span>
+              <span className="front close-padding">Split Amount</span>
             </button>
           </div>
 
@@ -289,9 +306,9 @@ const BillLayout = React.memo(({
               className="modal-save-btn"
               onClick={applySplitBill}
             >
-              <span class="shadow"></span>
-              <span class="edge"></span>
-              <span class="front close-padding">Split Bill</span>
+              <span className="shadow"></span>
+              <span className="edge"></span>
+              <span className="front close-padding">Split Bill</span>
             </button>
           </div>
 
@@ -357,8 +374,6 @@ const OrderRow = React.memo(({
   setAdminData,
   toast
 }) => {
-  const allItemsCompleted = order.items.every(i => i.status === "completed");
-
   return (
     <React.Fragment>
       <tr
@@ -385,6 +400,7 @@ const OrderRow = React.memo(({
               type="checkbox"
               checked={order.priority || false}
               onChange={async (e) => {
+                const previousOrder = order;
                 const updatedOrder = {
                   ...order,
                   priority: e.target.checked
@@ -404,6 +420,16 @@ const OrderRow = React.memo(({
                 } catch (err) {
                   toast.error("Failed to update priority");
                   console.error("Failed to update priority", err);
+                  // Roll back the optimistic flip — without this the
+                  // checkbox stayed showing the new value even though the
+                  // server never actually saved it, silently disagreeing
+                  // with the backend until the next reload/socket sync.
+                  setAdminData(prev => ({
+                    ...prev,
+                    orders: prev.orders.map(o =>
+                      o.id === order.id ? previousOrder : o
+                    )
+                  }));
                 }
               }}
             />
@@ -488,13 +514,15 @@ const OrderRow = React.memo(({
                       <td>
                         {item.status === "preparing" && (
                           <button
-                            className="pickup-btn"
+                            className="modal-save-btn"
                             onClick={(e) => {
                               e.stopPropagation();
                               onPickup({ orderId: order.id, itemIndex: idx, item });
                             }}
                           >
-                            Order Pickup
+                            <span className="shadow"></span>
+                            <span className="edge"></span>
+                            <span className="front" style={{padding: "8px 10px"}}>Order Pickup</span>
                           </button>
                         )}
                       </td>
@@ -512,7 +540,22 @@ const OrderRow = React.memo(({
 
 
 
-const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
+const Orders = ({ adminData, setAdminData }) => {
+  // Orders owns its own sort state instead of sharing App.js's global
+  // sortConfig. The shared sortConfig was also written to by Categories,
+  // Dishes, Stocks, Favourites, and Users — so navigating here after
+  // sorting Users by "mobile" left sortConfig.key = "mobile", which falls
+  // through to this page's `default: return 0` case and silently skips
+  // sorting entirely. A page-local sort key avoids that cross-page leak.
+  const [sortConfig, setSortConfig] = useState({ key: "id", direction: "desc" });
+  const handleSort = useCallback((key) => {
+    setSortConfig(prev => {
+      if (prev.key === key) {
+        return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
+      }
+      return { key, direction: "asc" };
+    });
+  }, []);
   const { toast } = useToast();
   const navigate = useNavigate();
   const orders = adminData.orders || [];
@@ -710,10 +753,13 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
       // NORMAL SORTING
       switch (sortKey) {
-        case "id":
+        case "id": {
+          const idA = a.id || "";
+          const idB = b.id || "";
           return sortDir === "asc"
-            ? a.id.localeCompare(b.id)
-            : b.id.localeCompare(a.id);
+            ? idA.localeCompare(idB)
+            : idB.localeCompare(idA);
+        }
 
         case "date":
           return sortDir === "asc"
@@ -727,10 +773,8 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
         case "status":
           return sortDir === "asc"
-            ? STATUS_ORDER[normalizeStatus(a.status)] -
-            STATUS_ORDER[normalizeStatus(b.status)]
-            : STATUS_ORDER[normalizeStatus(b.status)] -
-            STATUS_ORDER[normalizeStatus(a.status)];
+            ? statusRank(a.status) - statusRank(b.status)
+            : statusRank(b.status) - statusRank(a.status);
 
         default:
           return 0;
@@ -843,15 +887,17 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
             status: newStatus
           };
 
+          // persistOrder() does PUT /orders/:id, and the server itself
+          // broadcasts the resulting "data-change" event to other tabs
+          // (this tab is excluded via the X-Socket-Id header in api.js).
+          // We do NOT also call socket.emit("data-change", ...) here —
+          // the server has no listener for an incoming client-side
+          // "data-change" event, so that call was a no-op, and removing
+          // it also removes one of the two redundant code paths that
+          // were racing against this same optimistic update.
           if (orderChanged || newStatus !== order.status) {
-            persistOrder(updatedOrder, null, toast);
+            persistOrder(updatedOrder);
           }
-
-          socket.emit("data-change", {
-            resource: "orders",
-            action: "updated",
-            payload: updatedOrder
-          });
 
           return updatedOrder;
         });
@@ -948,7 +994,8 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         upiUrl: buildUpiUrl((order.resolvedTotal * 1.05).toFixed(2))
       };
 
-      await api.post("http://localhost:9001/print/bill", billData);
+      const printServerUrl = process.env.REACT_APP_PRINT_SERVER_URL || "http://localhost:9001";
+      await api.post(`${printServerUrl}/print/bill`, billData);
     } catch (err) {
       toast.error("Failed to print bill");
       console.error(err);
@@ -1062,52 +1109,6 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       splitDetails
     }));
   };
-
-  const handleSplitAmount = (order) => {
-    const customers = prompt("Enter number of people:");
-    if (!customers || isNaN(customers)) return;
-
-    const total = order.items.reduce(
-      (sum, i) => sum + Number(i.totalPrice || 0),
-      0
-    );
-
-    const perHead = (total / Number(customers)).toFixed(2);
-
-    const updatedOrder = {
-      ...order,
-      splitType: "amount",
-      splitDetails: {
-        customers: Number(customers),
-        perHead
-      }
-    };
-    setEditableBill(updatedOrder);
-  };
-
-  const handleSplitBill = (order) => {
-    const bills = prompt("Enter number of bills:");
-    if (!bills || isNaN(bills)) return;
-
-    const total = order.items.reduce(
-      (sum, i) => sum + Number(i.totalPrice || 0),
-      0
-    );
-
-    const perBill = (total / Number(bills)).toFixed(2);
-
-    const splitDetails = Array.from({ length: Number(bills) }, () => ({
-      total: perBill
-    }));
-
-    const updatedOrder = {
-      ...order,
-      splitType: "bill",
-      splitDetails
-    };
-    setEditableBill(updatedOrder);
-  };
-
 
   return (
     <div className="orders-page">
@@ -1259,7 +1260,9 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Order ID</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "id"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -1270,7 +1273,9 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Date</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "date"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -1362,14 +1367,16 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
             <div className="pickup-actions">
               <button
-                className="btn-cancel"
+                className="modal-cancel-btn"
                 onClick={() => setPickupConfirm(null)}
               >
-                Cancel
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">Cancel</span>
               </button>
 
               <button
-                className="btn-confirm"
+                className="modal-save-btn"
                 onClick={() => {
                   const { orderId, itemIndex } = pickupConfirm;
 
@@ -1404,12 +1411,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                         items,
                         status: newStatus
                       };
-                      persistOrder(updated, null, toast); socket.emit("data-change", {
-                        resource: "orders",
-                        action: "updated",
-                        payload: updated
-                      });
-
+                      persistOrder(updated);
 
                       return updated;
                     })
@@ -1418,7 +1420,9 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                   setPickupConfirm(null);
                 }}
               >
-                Confirm
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">Confirm</span>
               </button>
             </div>
           </div>
@@ -1521,9 +1525,9 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
             <div className="modal-footer">
               <button className="modal-cancel-btn" onClick={() => setEditBillOrder(null)}>
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front">Cancel</span>
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">Cancel</span>
               </button>
               <button
                 className="modal-prev-btn"
@@ -1534,9 +1538,9 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                   setPreviewBillOrder(previewData);
                 }}
               >
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front">Preview</span>
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">Preview</span>
               </button>
               <button
                 className="modal-save-btn"
@@ -1562,9 +1566,9 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                   }
                 }}
               >
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front">Save</span>
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">Save</span>
               </button>
             </div>
           </div>
@@ -1588,9 +1592,9 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                   setPreviewBillOrder(null);
                 }}
               >
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front">Print</span>
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">Print</span>
               </button>
             </div>
           </div>

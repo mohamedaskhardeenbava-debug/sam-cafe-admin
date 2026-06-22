@@ -604,16 +604,16 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                 return (
                   <tr key={item.id} className="evt-clb-row">
                     <td>
-                        <span>
-                          <span
-                            className="evt-clb-name"
-                            key={item.id} className="evt-clb-row clickable"
-                            onClick={() => navigate(`/celebrations/${item.id}`, { state: { fromDetail: true } })}
-                          >
-                            {item.name || "—"}
-                          </span>
-                          <div className="evt-clb-id-small">#{(item.id || "").slice(-6)}</div>
+                      <span>
+                        <span
+                          className="evt-clb-name"
+                          key={item.id} className="evt-clb-row clickable"
+                          onClick={() => navigate(`/celebrations/${item.id}`, { state: { fromDetail: true } })}
+                        >
+                          {item.name || "—"}
                         </span>
+                        <div className="evt-clb-id-small">#{(item.id || "").slice(-6)}</div>
+                      </span>
                     </td>
                     <td>
                       <div className="evt-clb-contact">

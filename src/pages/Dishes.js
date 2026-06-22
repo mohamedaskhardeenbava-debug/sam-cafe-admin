@@ -11,61 +11,7 @@ import { resolveCategoryAndSubCategory } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 import { useToast } from "../useToast";
-
-// ── CustomDropdown (floating label version) ──────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
-
-  const wrapperClass = [
-    "mat-select",
-    value ? "has-value" : "",
-    open ? "is-open" : "",
-  ].filter(Boolean).join(" ");
-
-  return (
-    <div className={wrapperClass} ref={ref}>
-      {label && (
-        <label className="mat-label">
-          {label}{required && <span className="rf-req">*</span>}
-        </label>
-      )}
-      <div className="dishes-dropdown-wrapper">
-        <button type="button" className="dishes-status-dropdown"
-          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-          {displayLabel || ""}
-        </button>
-        {open && (
-          <div className="dropdown-menu">
-            <div onClick={() => { onChange(""); setOpen(false); }}>
-              {placeholder}
-            </div>
-            {options.map((o, i) => {
-              const val = o.value !== undefined ? o.value : o;
-              const lbl = o.label !== undefined ? o.label : o;
-              return (
-                <div key={i} onClick={() => { onChange(val); setOpen(false); }}
-                  style={{ padding: "8px 12px", fontSize: 14, cursor: "pointer" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"}
-                  onMouseLeave={e => e.currentTarget.style.background = ""}>
-                  {lbl}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <span className="mat-bar" />
-    </div>
-  );
-}
+import CustomDropdown from "../components/CustomDropdown";
 
 const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }) => {
   const { toast } = useToast();
@@ -197,9 +143,11 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     return [...dishes].sort((a, b) => {
 
       if (sortConfig.key === "name") {
+        const aName = a.name ?? "";
+        const bName = b.name ?? "";
         return sortConfig.direction === "asc"
-          ? a.name.localeCompare(b.name)
-          : b.name.localeCompare(a.name);
+          ? aName.localeCompare(bName)
+          : bName.localeCompare(aName);
       }
 
       if (sortConfig.key === "basePrice") {
@@ -340,8 +288,22 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
       }
 
-      await api.put(`/categories/${category.id}`, updatedCategory);
-      // State update handled by socket data-change handler in App.js
+      const res = await api.put(`/categories/${category.id}`, updatedCategory);
+
+      // Update local state immediately from the server's actual saved
+      // document, instead of waiting for the socket echo. This is what
+      // makes the new/edited dish appear instantly — previously this page
+      // relied entirely on receiving its own broadcast back over the
+      // socket, so any delay or drop there left the table showing nothing
+      // new until a manual reload, even though the save itself succeeded.
+      const saved = res.data || updatedCategory;
+      setAdminData(prev => ({
+        ...prev,
+        categories: (prev.categories || []).map(c =>
+          String(c.id) === String(saved.id) ? saved : c
+        ),
+      }));
+
       toast.success(editingDish ? "Dish updated" : "Dish added");
       resetDishForm();
 
@@ -359,9 +321,16 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       return;
     }
 
-    toast.confirm(`Delete "${dishName}"?`, async () => {
-      const selectedId = selectedCategoryIds[0];
+    const selectedId = selectedCategoryIds[0];
 
+    toast.confirm(`Delete "${dishName}"?`, async () => {
+      // Re-read the current category/subcategory at the moment the user
+      // actually confirms, not from a variable captured when the toast was
+      // first created. toast.confirm doesn't run its callback until the
+      // user clicks "Yes, delete" — which can be well after adminData has
+      // moved on (e.g. a socket update from another tab). Building the PUT
+      // payload from a stale snapshot would silently overwrite that more
+      // recent state, even though the delete request itself succeeds.
       let category = adminData.categories.find(c => c.id === selectedId);
       let subCategory = null;
 
@@ -393,8 +362,19 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       }
 
       try {
-        await api.put(`/categories/${category.id}`, updatedCategory);
-        // State update handled by socket data-change handler in App.js
+        const res = await api.put(`/categories/${category.id}`, updatedCategory);
+
+        // Update local state immediately from the server's response
+        // instead of relying solely on the socket echo — see the same
+        // comment in handleSaveDish above.
+        const saved = res.data || updatedCategory;
+        setAdminData(prev => ({
+          ...prev,
+          categories: (prev.categories || []).map(c =>
+            String(c.id) === String(saved.id) ? saved : c
+          ),
+        }));
+
         toast.success("Dish deleted");
       } catch (err) {
         toast.error("Failed to delete dish");
@@ -481,13 +461,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                   key={sub.id}
                   className={`filter-pill ${selectedCategoryIds.includes(sub.id) ? "active" : ""
                     }`}
-                  onClick={() => {
-                    setSelectedCategoryIds(prev =>
-                      prev.includes(sub.id)
-                        ? prev.filter(id => id !== sub.id)
-                        : [...prev, sub.id]
-                    );
-                  }}
+                  onClick={() => setSelectedCategoryIds([sub.id])}
                 >
                   {sub.name}
                 </button>
@@ -502,13 +476,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 key={cat.id}
                 className={`filter-pill ${selectedCategoryIds.includes(cat.id) ? "active" : ""
                   }`}
-                onClick={() => {
-                  setSelectedCategoryIds(prev =>
-                    prev.includes(cat.id)
-                      ? prev.filter(id => id !== cat.id)
-                      : [...prev, cat.id]
-                  );
-                }}
+                onClick={() => setSelectedCategoryIds([cat.id])}
               >
                 {cat.name}
               </button>
@@ -661,9 +629,9 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 aria-label="Close"
                 onClick={resetDishForm}
               >
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front close-padding"><img src={closeIcon} /></span>
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front close-padding"><img src={closeIcon} /></span>
               </button>
             </div>
             <div className="modal-body">

@@ -53,11 +53,25 @@ const Favourites = ({ adminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Dish Name</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "name"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
-              <th>Price</th>
+              <th
+                onClick={() => handleSort("price")}
+                className={sortConfig.key === "price" ? "sorted" : ""}
+              >
+                <span className="th-content sort-th">
+                  <span>Price</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "price"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
+                  </span>
+                </span>
+              </th>
             </tr>
           </thead>
 

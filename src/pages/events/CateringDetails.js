@@ -1,49 +1,62 @@
-/**
- * CateringDetails.js
- * Class names unified to evt-details-* (matches CelebrationDetails)
- * Inline emoji icons removed throughout
- */
+/* admin panel */
 import { useParams, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import api from "../../api";
 import "./CateringDetails.css";
+import { useToast } from "../../useToast";
 import { fmtDateTime } from "../../utils/dateUtils";
-import useStatusUpdate from "../../hooks/useStatusUpdate";
-import HeroCard from "../../components/HeroCard";
-import InfoGrid from "../../components/InfoGrid";
-import CallHistory from "../../components/CallHistory";
-import StatusUpdateButtons from "../../components/StatusUpdateButtons";
-import ReminderCallCard from "../../components/ReminderCallCard";
 
+/* ── Component ── */
 const CateringDetails = ({ adminData, setAdminData }) => {
+  const { toast } = useToast();
   const { id } = useParams();
   const navigate = useNavigate();
 
   const data = (adminData?.cateringOrders || []).find((i) => i.id === id);
+  const [saving, setSaving] = useState(false);
+  const [localStatus, setLocalStatus] = useState(data?.status || "pending");
 
-  const { localStatus, saving, handleStatusChange } = useStatusUpdate({
-    id,
-    data,
-    apiPath: "/cateringOrders",
-    adminDataKey: "cateringOrders",
-    setAdminData,
-    initialStatus: data?.status || "pending",
-  });
-
-  if (!data)
-    return (
-      <div className="details-container">
+  if (!data) return (
+    <div className="details-container">
+      <div className="evt-details-container">
         <div className="details-header">
           <button className="back-btn" onClick={() => navigate(-1)} />
-          <h2 className="evt-details-title">Catering Detail</h2>
+          <div>
+            <h2 className="evt-details-title">Catering Detail</h2>
+          </div>
         </div>
-        <p style={{ color: "#a3a3a3", fontSize: 14, padding: 16 }}>
-          Catering order not found.
-        </p>
+        <div className="evt-details-section">
+          <p style={{ color: "#a3a3a3", fontSize: 14, margin: 0 }}>Catering order not found.</p>
+        </div>
       </div>
-    );
+    </div>
+  );
 
   const subtotal =
     data.items?.reduce((s, i) => s + Number(i.totalPrice || 0), 0) ?? 0;
   const totalAmount = data.totalAmount ?? subtotal;
+
+  const handleStatusChange = async (newStatus) => {
+    setSaving(true);
+    try {
+      await api.patch(`/cateringOrders/${id}`, { status: newStatus });
+      setLocalStatus(newStatus);
+      toast.success(`Status updated to ${newStatus}.`);
+      if (typeof setAdminData === "function") {
+        setAdminData(p => ({
+          ...p,
+          cateringOrders: (p.cateringOrders || []).map(c =>
+            c.id === id ? { ...c, status: newStatus } : c
+          ),
+        }));
+      }
+    } catch (err) {
+      console.error("Update failed", err);
+      toast.error("Failed to update status. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const infoRows = [
     { label: "Customer Name", val: data.name || "—" },
@@ -57,43 +70,54 @@ const CateringDetails = ({ adminData, setAdminData }) => {
 
   return (
     <div className="details-container">
-      {/* HEADER */}
+
+      {/* ── HEADER ── */}
       <div className="details-header">
         <button className="back-btn" onClick={() => navigate(-1)} />
         <div>
           <h2 className="evt-details-title">Catering Detail</h2>
-          <p className="evt-details-id">
-            ID: <code>{data.id}</code>
-          </p>
+          <p className="evt-details-id">ID: <code>{data.id}</code></p>
         </div>
-        <span className={`evt-details-status-badge evt-details-status-${localStatus}`}>
-          {localStatus}
-        </span>
+        <span className={`evt-details-status-badge evt-details-status-${localStatus}`}>{localStatus}</span>
       </div>
 
       <div className="details-body">
-        {/* HERO */}
-        <HeroCard
-          className="evt-details-hero"
-          name={data.name}
-          mobile={data.mobile}
-          email={data.email}
-          chips={[
-            data.eventDate || data.date || "—",
-            `${data.guests || "—"} guests`,
-            data.location || data.address || null,
-            `${data.items?.length || 0} items`,
-          ].filter(Boolean)}
-        />
 
-        {/* INFO GRID */}
-        <InfoGrid
-          rows={infoRows}
-          title="Customer Information"
-          sectionClassName="evt-details-section"
-        />
+        {/* ── HERO CARD ── */}
+        <div className="evt-details-hero">
+          <div className="evt-details-hero-avatar">
+            {(data.name || "?").charAt(0).toUpperCase()}
+          </div>
+          <div className="evt-details-hero-info">
+            <div className="evt-details-hero-name">{data.name || "—"}</div>
+            <div className="evt-details-hero-sub">
+              {data.mobile}{data.email ? ` · ${data.email}` : ""}
+            </div>
+            <div className="evt-details-hero-meta">
+              <span>{data.eventDate || data.date || "—"}</span>
+              <span>{data.guests || "—"} guests</span>
+              {(data.location || data.address) && <span>{data.location || data.address}</span>}
+              <span>{data.items?.length || 0} items</span>
+            </div>
+          </div>
+        </div>
 
-        {/* NOTES */}
+        {/* ── INFO GRID ── */}
+        <div className="evt-details-section">
+          <div className="evt-details-section-title">Customer Information</div>
+          <div className="evt-details-info-grid">
+            {infoRows.map((row, i) => (
+              <div key={i} className="evt-details-info-cell">
+                <div>
+                  <div className="evt-details-info-label">{row.label}</div>
+                  <div className="evt-details-info-val">{row.val}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── NOTES ── */}
         {data.notes && (
           <div className="evt-details-section">
             <div className="evt-details-section-title">Notes</div>
@@ -101,7 +125,7 @@ const CateringDetails = ({ adminData, setAdminData }) => {
           </div>
         )}
 
-        {/* ORDERED ITEMS */}
+        {/* ── ORDERED ITEMS ── */}
         <div className="evt-details-section">
           <div className="evt-details-section-title">
             Ordered Items ({data.items?.length || 0})
@@ -136,20 +160,18 @@ const CateringDetails = ({ adminData, setAdminData }) => {
               </tbody>
             </table>
           ) : (
-            <p style={{ color: "#a3a3a3", fontSize: 14, margin: 0 }}>
-              No items added.
-            </p>
+            <p style={{ color: "#a3a3a3", fontSize: 14, margin: 0 }}>No items added.</p>
           )}
         </div>
 
-        {/* BILL SUMMARY */}
+        {/* ── BILL SUMMARY ── */}
         <div className="evt-details-section">
           <div className="evt-details-section-title">Bill Summary</div>
           <div className="evt-details-pricing-card">
             {subtotal !== totalAmount && (
               <div className="evt-details-pricing-row">
-                <span className="evt-details-pricing-label">Subtotal</span>
-                <span className="evt-details-pricing-val">₹{subtotal.toLocaleString()}</span>
+                <div className="evt-details-pricing-label">Subtotal</div>
+                <div className="evt-details-pricing-val">₹{subtotal.toLocaleString()}</div>
               </div>
             )}
             <div className="evt-details-pricing-row evt-details-pricing-total">
@@ -159,24 +181,59 @@ const CateringDetails = ({ adminData, setAdminData }) => {
           </div>
         </div>
 
-        {/* CALL HISTORY */}
-        <CallHistory
-          history={data.callHistory}
-          sectionClassName="evt-details-section"
-        />
+        {/* ── CALL HISTORY ── */}
+        {data.callHistory?.length > 0 && (
+          <div className="evt-details-section">
+            <div className="evt-details-section-title">Call History ({data.callHistory.length})</div>
+            <div className="evt-details-call-history">
+              {data.callHistory.map((ts, i) => (
+                <div key={i} className="evt-details-call-history-item">
+                  <span>Call #{i + 1}</span>
+                  <span style={{ marginLeft: "auto", color: "#a3a3a3" }}>{fmtDateTime(ts)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-        {/* STATUS UPDATE */}
+        {/* ── STATUS UPDATE ── */}
         <div className="evt-details-section">
           <div className="evt-details-section-title">Update Status</div>
-          <StatusUpdateButtons
-            currentStatus={localStatus}
-            onUpdate={handleStatusChange}
-            saving={saving}
-          />
+          <div className="evt-details-status-row">
+            {["pending", "confirmed", "completed", "cancelled"].map(s => (
+              <button
+                key={s}
+                className="modal-cancel-btn"
+                onClick={() => handleStatusChange(s)}
+                disabled={saving || localStatus === s}
+              >
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">
+                  {saving && localStatus !== s ? "…" : s.charAt(0).toUpperCase() + s.slice(1)}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* REMINDER CALL */}
-        <ReminderCallCard mobile={data.mobile} className="evt-details-reminder" />
+        {/* ── CALL CARD ── */}
+        <div className="evt-details-reminder">
+          <div>
+            <div className="evt-details-reminder-label">Reminder Call</div>
+            <div className="evt-details-reminder-num">{data.mobile || "—"}</div>
+          </div>
+          <a
+            className="modal-save-btn"
+            href={data.mobile ? `tel:${data.mobile}` : undefined}
+            onClick={e => !data.mobile && e.preventDefault()}
+          >
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">Call Now</span>
+          </a>
+        </div>
+
       </div>
     </div>
   );
