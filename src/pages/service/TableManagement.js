@@ -25,31 +25,19 @@ const TableManagement = ({ adminData, setAdminData }) => {
       return;
     }
     const updated = [...tables, num].sort((a, b) => a - b);
-    try {
-      await api.put("/tables/1", { id: 1, list: updated });
-      setAdminData(prev => ({ ...prev, tables: [{ id: 1, list: updated }] }));
-      setNewTable("");
-      toast.success("Table added successfully.");
-    } catch (err) {
-      console.error("Failed to add table:", err);
-      toast.error("Failed to add table");
-    }
+    await api.put("/tables/1", { id: 1, list: updated });
+    setAdminData(prev => ({ ...prev, tables: [{ id: 1, list: updated }] }));
+    setNewTable("");
+    toast.success("Table added successfully.");
   };
 
   const removeTable = async (tableNo) => {
     const updated = tables.filter(t => t !== tableNo);
-    try {
-      await api.put("/tables/1", { id: 1, list: updated });
-      setAdminData(prev => ({ ...prev, tables: [{ id: 1, list: updated }] }));
-      toast.success("Table removed.");
-    } catch (err) {
-      console.error("Failed to remove table:", err);
-      toast.error("Failed to remove table");
-    }
+    await api.put("/tables/1", { id: 1, list: updated });
+    setAdminData(prev => ({ ...prev, tables: [{ id: 1, list: updated }] }));
   };
 
-  const getQRValue = (tableNo) =>
-    `${process.env.REACT_APP_USER_PANEL_URL || "https://samcafe.vercel.app"}/?table=${tableNo}`;
+  const getQRValue = (tableNo) => `https://samcafe.vercel.app/?table=${tableNo}`;
 
   const exportTables = () => {
     if (!tables.length) { toast.warning("No tables to export"); return; }
@@ -268,9 +256,9 @@ const TableManagement = ({ adminData, setAdminData }) => {
                 className="modal-cancel-btn"
                 onClick={() => setShowQRModal(false)}
               >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front close-padding"><img src={closeIcon} /></span>
               </button>
             </div>
 

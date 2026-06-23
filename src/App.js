@@ -140,6 +140,7 @@ function App() {
     users: [],
     favourites: [],
     staff: [],
+    callHistory: [],
     reservations: [],
     celebrations: [],
     preBookings: [],
@@ -170,15 +171,9 @@ function App() {
           miseRes,
           kitchenAssignRes,
           recipeRes,
-<<<<<<< HEAD
           offerRes,             
           activityRes,          
           schedulesRes,        
-=======
-          offerRes,
-          activityRes,
-          schedulesRes,
->>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
           serviceAssignRes,
           serviceGroomRes,
           serviceMiseRes,
@@ -192,6 +187,7 @@ function App() {
           eventsRes,
           bookingsRes,
           tasksRes,
+          callHistoryRes
         ] = await Promise.all([
           api.get("/categories"),
           api.get("/ingredients"),
@@ -203,15 +199,9 @@ function App() {
           api.get("/mise"),
           api.get("/kitchenAssign"),
           api.get("/recipes"),
-<<<<<<< HEAD
           api.get("/offers"),           
           api.get("/kitchenActivity"),   
           api.get("/kitchenSchedules"),  
-=======
-          api.get("/offers"),
-          api.get("/kitchenActivity"),
-          api.get("/kitchenSchedules"),
->>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
           api.get("/serviceAssign"),
           api.get("/serviceGrooming"),
           api.get("/serviceMise"),
@@ -225,6 +215,7 @@ function App() {
           api.get("/events"),
           api.get("/eventBookings"),
           api.get("/tasks"),
+          api.get("/callHistory")
         ]);
 
         setAdminData({
@@ -257,6 +248,7 @@ function App() {
             kitchen: { mise: [], cleaning: [] },
             service: { mise: [], cleaning: [] }
           },
+          callHistory: callHistoryRes.data || []
         });
 
       } catch (err) {
@@ -270,7 +262,6 @@ function App() {
   /* ---------------- SOCKET: real-time data-change listener ---------------- */
   useEffect(() => {
     if (!isAuthenticated) return;
-    const seenEvents = new Set();
 
     const handleDataChange = ({ resource, action, payload }) => {
       setAdminData(prev => {
@@ -322,65 +313,26 @@ function App() {
             }
             return prev;
 
-          // ── Orders ──────────────────────────────────────────────────────
-          // payload is already the full order document, so patch/append in
-          // place instead of re-fetching the whole collection. Re-fetching
-          // here raced against this tab's own optimistic updates and the
-          // Orders page's 5s polling interval, which produced the
-          // duplicate/flicker behaviour on that page.
-          case "orders": {
-            if (action === "created") {
-              const alreadyExists = (prev.orders || []).some(o => o.id === payload.id);
-              if (alreadyExists) return prev;
-              return { ...prev, orders: [...(prev.orders || []), payload] };
-            }
-            if (action === "updated") {
-              const exists = (prev.orders || []).some(o => o.id === payload.id);
-              if (!exists) return { ...prev, orders: [...(prev.orders || []), payload] };
-              return {
-                ...prev,
-                orders: (prev.orders || []).map(o =>
-                  o.id === payload.id ? payload : o
-                ),
-              };
-            }
-            if (action === "deleted") {
-              const deletedId = payload?.id ?? payload;
-              return {
-                ...prev,
-                orders: (prev.orders || []).filter(o => String(o.id) !== String(deletedId)),
-              };
+          // ── Orders (light-weight: just re-fetch since they live inside users) ──
+          case "orders":
+            if (action === "updated" || action === "created") {
+              api.get("/orders").then(r => {
+                setAdminData(p => ({ ...p, orders: r.data || [] }));
+              }).catch(() => { });
             }
             return prev;
-          }
 
           // ── Other simple flat resources ─────────────────────────────────
           default: {
             const RESOURCE_KEY_MAP = {
-              users: "users",
-              categories: "categories",
               ingredients: "ingredients",
-              combo: "combo",
-              favourites: "favourites",
               staff: "staff",
-              careers: "careers",
-              holidays: "holidays",
-              recipes: "recipes",
               offers: "offers",
+              categories: "categories",
               reservations: "reservations",
               celebrations: "celebrations",
               preBookings: "preBookings",
               cateringOrders: "cateringOrders",
-              events: "events",
-              eventBookings: "eventBookings",
-              tables: "tables",
-              serviceActivity: "serviceActivity",
-              serviceSchedules: "serviceSchedules",
-              kitchenActivity: "kitchenActivity",
-              kitchenSchedules: "kitchenSchedules",
-              tasks: "tasks",
-              tablePreferences: "tablePreferences",
-              combo_offers: "combo_offers",
             };
             const key = RESOURCE_KEY_MAP[resource];
             if (!key) return prev;
@@ -466,24 +418,17 @@ function App() {
   };
 
   const updateStaff = async (id, updated) => {
-    try {
-      await api.put(`/staff/${id}`, updated);
-      // State update handled by socket data-change handler
-    } catch (err) {
-      console.error("Update staff failed:", err.response?.data || err.message);
-    }
+    await api.put(`/staff/${id}`, updated);
+    // State update handled by socket data-change handler
   };
 
   const deleteStaff = async (id) => {
-    try {
-      await api.delete(`/staff/${id}`);
-      setAdminData(prev => ({
-        ...prev,
-        staff: prev.staff.filter(s => s.id !== id)
-      }));
-    } catch (err) {
-      console.error("Delete staff failed:", err.response?.data || err.message);
-    }
+    await api.delete(`/staff/${id}`);
+
+    setAdminData(prev => ({
+      ...prev,
+      staff: prev.staff.filter(s => s.id !== id)
+    }));
   };
 
   const updateIngredient = async (id, updated) => {
@@ -666,6 +611,8 @@ function App() {
                 <Orders
                   adminData={adminData}
                   setAdminData={setAdminData}
+                  sortConfig={sortConfig}
+                  handleSort={handleSort}
                 />
               }
             />
@@ -890,8 +837,8 @@ export const sortArray = (data, sortConfig) => {
 
     if (typeof aVal === "string") {
 
-      const aStr = (aVal ?? "").toLowerCase().trim();
-      const bStr = (bVal ?? "").toLowerCase().trim();
+      const aStr = aVal.toLowerCase().trim();
+      const bStr = bVal.toLowerCase().trim();
 
       return sortConfig.direction === "asc"
         ? aStr.localeCompare(bStr)

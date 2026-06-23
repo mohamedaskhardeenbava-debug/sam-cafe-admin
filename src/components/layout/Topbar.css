@@ -410,20 +410,12 @@
     position: relative;
   }
 
-  .today-chip--urgent .odo-digit {
-    border-color: #ff4444;
-  }
-
-  .today-chip--urgent .odo-strip__face {
-    color: #fff;
-  }
-
   /* Blink via a pseudo-element ring — completely separate from the chip's
      background/border so no transition interference */
   .today-chip--urgent::after {
     content: '';
     position: absolute;
-    inset: -1.9px;
+    inset: -2px;
     border-radius: 15px;
     border: 2px solid #e53935;
     animation: urgentRingBlink 0.8s ease-in-out infinite;
@@ -966,7 +958,7 @@
 
   100% {
     opacity: 0.15;
-    transform: scale(1.01);
+    transform: scale(1.009);
     box-shadow: 0 0 0 6px rgba(229, 57, 53, 0);
   }
 }

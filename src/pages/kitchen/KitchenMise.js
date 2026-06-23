@@ -73,7 +73,6 @@ export default function KitchenMise({ adminData, setAdminData }) {
   // ── Toggle verified ───────────────────────────────────────────
   const toggle = async (task) => {
     const isChecked = miseDay[task]?.verified;
-    const prevData = adminData.kitchenMise;
     const updated = {
       ...adminData.kitchenMise,
       [today]: {
@@ -85,12 +84,12 @@ export default function KitchenMise({ adminData, setAdminData }) {
         }
       }
     };
-    setAdminData(prev => ({ ...prev, kitchenMise: updated }));
     try {
       await api.put("/kitchenMise", updated);
+      setAdminData(prev => ({ ...prev, kitchenMise: updated }));
     } catch (err) {
       toast.error("Failed to save. Please try again.");
-      setAdminData(prev => ({ ...prev, kitchenMise: prevData }));
+      setAdminData(prev => ({ ...prev, kitchenMise: updated }));
     }
   };
 

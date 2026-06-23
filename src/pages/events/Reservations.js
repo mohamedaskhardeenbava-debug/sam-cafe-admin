@@ -506,7 +506,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
     const v = newPrefInput.trim();
     if (!v || prefList.includes(v)) return;
     const newRecord = {
-      id: `pref_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      id: `pref_${Date.now()}`,
       label: v,
       desc: newPrefDesc.trim(),
       order: prefList.length,
@@ -822,23 +822,13 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                 const history = item.callHistory || [];
 
                 return (
-<<<<<<< HEAD
                   <tr className="evt-res-row">
-=======
-                  <tr
-                    className="evt-res-row"
-                    key={item.id}
-                  >
->>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
                     {/* Guest name */}
                     <td>
                       <span
                       >
                         <span className="evt-res-name clickable"
-<<<<<<< HEAD
                           key={item.id}
-=======
->>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
                           onClick={() => navigate(`/reservations/${item.id}`, { state: { fromDetail: true } })}
                         >
                           {item.name || "—"}

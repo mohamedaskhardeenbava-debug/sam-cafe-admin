@@ -4,7 +4,25 @@ import { useState } from "react";
 import api from "../../api";
 import "./CelebrationDetails.css";
 import { useToast } from "../../useToast";
-import { fmtTime, fmtDateTime } from "../../utils/dateUtils";
+
+/* ── Helpers ── */
+const pad = (n) => String(n).padStart(2, "0");
+
+const fmtTime = (t) => {
+  if (!t) return "—";
+  const [h, m] = t.split(":").map(Number);
+  const ap = h >= 12 ? "PM" : "AM";
+  return `${h % 12 || 12}:${pad(m)} ${ap}`;
+};
+
+const fmtDateTime = (iso) => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleString("en-IN", {
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: true,
+  });
+};
 
 /* ── Constants ── */
 const CELEBRATION_TYPES = {
@@ -70,7 +88,8 @@ const CelebrationDetails = ({ adminData, setAdminData }) => {
   const handleStatusChange = async (newStatus) => {
     setSaving(true);
     try {
-      await api.patch(`/celebrations/${id}`, { status: newStatus });
+      try { await api.patch(`/celebrations/${id}`, { status: newStatus }); }
+      catch { await api.put(`/celebrations/${id}`, { ...data, status: newStatus }); }
       setLocalStatus(newStatus);
       toast.success(`Status updated to ${newStatus}.`);
       if (typeof setAdminData === "function") {

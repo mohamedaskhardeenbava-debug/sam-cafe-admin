@@ -503,7 +503,7 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
           const guests = d.pax || d.guests || d.guestCount || d.numberOfGuests || null;
           const status = d.status || null;
           const note = d.notes || d.note || d.specialRequests || d.specialRequest || null;
-          const venue = d.venue || d.venueName || (d.tableNumber ? `Table ${d.tableNumber}` : null);
+          const venue = d.venue || d.venueName || d.tableNumber ? `Table ${d.tableNumber}` : null;
           const occasion = d.occasion || d.eventType || d.celebrationType || null;
           return (
             <div
@@ -613,7 +613,7 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
                             >
                               <span className="shadow"></span>
                               <span className="edge"></span>
-                              <span className="front">Mark Called</span>
+                              <span className="front">Mard Called</span>
                             </button>
                             <button
                               type="button"

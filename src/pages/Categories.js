@@ -17,11 +17,6 @@ import { useToast } from "../useToast";
 const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  // Keep a ref that always points to the current adminData so toast.confirm
-  // callbacks (which close over the adminData at render time) can read
-  // fresh state when the user actually clicks "Yes, delete".
-  const adminDataRef = React.useRef(adminData);
-  React.useEffect(() => { adminDataRef.current = adminData; }, [adminData]);
   const [showForm, setShowForm] = useState(false);
   const [imagePreview, setImagePreview] = useState("")
   const [showEditModal, setShowEditModal] = useState(false);
@@ -69,7 +64,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
   const generateCategoryId = (name) => {
     const base = name.toLowerCase().trim()
       .replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, "_");
-    return "cat_" + (base || "item") + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+    return "cat_" + (base || "item") + "_" + Date.now();
   };
 
   const handleAddCategory = async () => {
@@ -102,36 +97,15 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
     };
 
     try {
-      const res = await api.post("/categories", newCategoryPayload);
-      const saved = { ...(res.data || newCategoryPayload), id: categoryId };
-
-      // Update local state immediately from the server's response. This is
-      // safe even though the socket will also broadcast this same creation
-      // back to us — App.js's socket handler dedupes "created" events by
-      // id before appending, so the later echo is a harmless no-op. Without
-      // this, the new category wouldn't appear until the socket echo
-      // arrived (or a reload), which is exactly what looked like "add
-      // doesn't update instantly".
-      setAdminData(prev => {
-        const alreadyExists = (prev.categories || []).some(
-          c => String(c.id) === String(saved.id)
-        );
-        if (alreadyExists) return prev;
-        return { ...prev, categories: [...(prev.categories || []), saved] };
-      });
-
+      await api.post("/categories", newCategoryPayload);
+      // State update is handled by the socket data-change handler in App.js.
+      // Do NOT call setAdminData here — it would race the socket and add duplicates.
       toast.success("Category added");
       resetAddCategoryForm();
     } catch (error) {
       console.error("Failed to add category:", error);
       toast.error("Failed to add category");
     }
-  };
-
-  const generateSubCategoryId = (name) => {
-    const base = name.toLowerCase().trim()
-      .replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, "_");
-    return "sub_" + (base || "item") + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
   };
 
   const addSubCategory = () => {
@@ -145,28 +119,18 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
         ? prev.subCategories.map((s, idx) =>
           idx === editingSubIndex
             ? {
-              // Keep the existing id on edit — regenerating it from the
-              // (possibly just-renamed) name would silently disconnect
-              // this subcategory from any dishes already filed under it.
-              id: s.id,
+              id: newSubCategoryData.name.toLowerCase().replace(/\s+/g, "_"),
               name: newSubCategoryData.name,
               image: newSubCategoryData.image,
               sizes: newSubCategoryData.sizes,
-              dishes: s.dishes || []
+              dishes: []
             }
             : s
         )
         : [
           ...prev.subCategories,
           {
-            // Unique, timestamped id — a name-derived id collides whenever
-            // two subcategories share a name (in the same or different
-            // parent categories). Every lookup elsewhere (Dishes.js,
-            // DishDetails.js, OfferDetails.js) resolves a subcategory by id
-            // alone across ALL categories, so a collision made dish
-            // add/delete apply to "whichever matching subcategory is found
-            // first" — looking like duplication or synchronized deletion.
-            id: generateSubCategoryId(newSubCategoryData.name),
+            id: newSubCategoryData.name.toLowerCase().replace(/\s+/g, "_"),
             name: newSubCategoryData.name,
             image: newSubCategoryData.image,
             sizes: newSubCategoryData.sizes,
@@ -185,32 +149,17 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
   };
 
   const deleteSubCategory = (categoryId, subId) => {
-    // Read from ref (always current) — the toast label is shown immediately,
-    // but the confirm callback fires only after the user clicks "Yes, delete",
-    // by which time adminData in the closure could be stale.
-    const category = adminDataRef.current.categories.find(c => c.id === categoryId);
+    const category = adminData.categories.find(c => c.id === categoryId);
     if (!category) return;
     const sub = category.subCategories?.find(s => s.id === subId);
 
     toast.confirm(`Delete "${sub?.name || "this sub-category"}"?`, async () => {
-      // Always read from ref at the moment the user confirms
-      const freshCategory = adminDataRef.current.categories.find(c => c.id === categoryId);
-      if (!freshCategory) return;
-
-      const updatedSubs = (freshCategory.subCategories || []).filter(s => s.id !== subId);
-      const updatedCategory = { ...freshCategory, subCategories: updatedSubs };
+      const updatedSubs = (category.subCategories || []).filter(s => s.id !== subId);
+      const updatedCategory = { ...category, subCategories: updatedSubs };
 
       try {
-        const res = await api.put(`/categories/${categoryId}`, updatedCategory);
-        const saved = { ...(res.data || updatedCategory), id: categoryId };
-
-        setAdminData(prev => ({
-          ...prev,
-          categories: (prev.categories || []).map(c =>
-            String(c.id) === String(saved.id) ? saved : c
-          ),
-        }));
-
+        await api.put(`/categories/${categoryId}`, updatedCategory);
+        // State update handled by socket data-change handler in App.js
         toast.success("Sub-category deleted");
       } catch (error) {
         console.error("Failed to delete sub-category:", error);
@@ -294,39 +243,30 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
   };
 
   const handleDeleteCategory = (categoryId) => {
-    const category = adminDataRef.current.categories.find(c => c.id === categoryId);
+    const category = adminData.categories.find((cat) => cat.id === categoryId);
     if (!category) return;
 
-    const hasDishes = (category.dishes || []).length > 0;
-    const msg = hasDishes
+    const hasDishs = (category.dishes || []).length > 0;
+    const msg = hasDishs
       ? `"${category.name}" has dishes. Delete anyway?`
       : `Delete "${category.name}"?`;
 
     toast.confirm(msg, async () => {
-      // Capture the current index so we can re-insert at the right spot on revert
-      const currentCategories = adminDataRef.current.categories;
-      const originalIndex = currentCategories.findIndex(c => c.id === categoryId);
-      const freshCategory = currentCategories[originalIndex];
-      if (!freshCategory) return;
-
-      // Optimistic removal
+      // Optimistic update — remove immediately so the UI responds at once
       setAdminData(prev => ({
         ...prev,
         categories: prev.categories.filter(c => c.id !== categoryId)
       }));
-
       try {
         await api.delete(`/categories/${categoryId}`);
         toast.success("Category deleted");
       } catch (error) {
-        // Revert at the original position (not appended to end)
+        // Revert the optimistic removal only on a true server failure
         console.error("Failed to delete category:", error);
-        setAdminData(prev => {
-          const next = [...prev.categories];
-          const insertAt = Math.min(originalIndex, next.length);
-          next.splice(insertAt, 0, freshCategory);
-          return { ...prev, categories: next };
-        });
+        setAdminData(prev => ({
+          ...prev,
+          categories: [...prev.categories, category]
+        }));
         toast.error("Failed to delete category");
       }
     });
@@ -374,14 +314,8 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
           subCategories: updatedSubCategories
         };
 
-        const res = await api.put(`/categories/${category.id}`, updatedCategory);
-        const saved = { ...(res.data || updatedCategory), id: category.id };
-        setAdminData(prev => ({
-          ...prev,
-          categories: (prev.categories || []).map(c =>
-            String(c.id) === String(saved.id) ? saved : c
-          ),
-        }));
+        await api.put(`/categories/${category.id}`, updatedCategory);
+        // State update handled by socket data-change handler in App.js
 
         // -------- CATEGORY EDIT --------
       } else {
@@ -412,18 +346,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
         };
 
         // ONLY UPDATE (no delete + no id change)
-<<<<<<< HEAD
         await api.put(`/categories/${existing.id}`, updatedCategory);
-=======
-        const res = await api.put(`/categories/${existing.id}`, updatedCategory);
-        const saved = { ...(res.data || updatedCategory), id: existing.id };
-        setAdminData(prev => ({
-          ...prev,
-          categories: (prev.categories || []).map(c =>
-            String(c.id) === String(saved.id) ? saved : c
-          ),
-        }));
->>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
       }
 
       resetEditCategoryForm();
@@ -628,11 +551,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
                                   {category.subCategories.map((sub, i) => (
 
-<<<<<<< HEAD
                                     <tr>
-=======
-                                    <tr key={sub.id || i}>
->>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
                                       <td>
                                         <div className="subcategory-image">
                                           <img src={sub.image} alt="" />
@@ -1488,7 +1407,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                   className="modal-save-btn"
                   type="button"
                   onClick={handleSaveEdit}
-                >z
+                >
                   <span className="shadow"></span>
                   <span className="edge"></span>
                   <span className="front">Save</span>

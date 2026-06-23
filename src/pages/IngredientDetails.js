@@ -46,21 +46,25 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
   /* ---------------- SAVE TO JSON ---------------- */
   const saveIngredient = async (updated) => {
 
-    const oldId = ingredient.id;   // ingredient ids never change on edit
+    const oldId = ingredient.id;   // always use actual ingredient
+    const newId = oldId;
 
     const payload = {
       ...updated,
-      id: oldId
+      id: newId
     };
 
     try {
 
-      await api.put(`/ingredients/${oldId}`, payload);
+      await api.put(`/ingredients/${oldId}`, {
+        ...updated,
+        id: oldId
+      });
 
       setAdminData(prev => ({
         ...prev,
         ingredients: prev.ingredients.map(i =>
-          i.id === oldId ? payload : i
+          i.id === oldId ? { ...updated, id: oldId } : i
         )
       }));
 
@@ -68,6 +72,11 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
       setIsEditing(false);
       setShowBrandInput(false);
       setBrandInput("");
+
+      // update route if id changed
+      if (oldId !== newId) {
+        navigate(`/ingredients/${newId}`, { replace: true });
+      }
 
     } catch (err) {
       console.error("Ingredient update failed:", err);
@@ -374,8 +383,8 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
                           onChange={(e) => {
 
                             const updated = e.target.checked
-                              ? [...(localIngredient.usedInCategories || []), sub.id]
-                              : (localIngredient.usedInCategories || []).filter(
+                              ? [...localIngredient.usedInCategories, sub.id]
+                              : localIngredient.usedInCategories.filter(
                                 id => id !== sub.id
                               );
 
@@ -405,8 +414,8 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
                         onChange={(e) => {
 
                           const updated = e.target.checked
-                            ? [...(localIngredient.usedInCategories || []), cat.id]
-                            : (localIngredient.usedInCategories || []).filter(
+                            ? [...localIngredient.usedInCategories, cat.id]
+                            : localIngredient.usedInCategories.filter(
                               id => id !== cat.id
                             );
 
@@ -428,7 +437,7 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
               </div>
             ) : (
               <div className="tag-list">
-                {(localIngredient.usedInCategories || []).map((c) => {
+                {localIngredient.usedInCategories.map((c) => {
                   let label = null;
 
                   for (const cat of adminData.categories) {
@@ -513,10 +522,8 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
 
             <table className="data-table">
               <thead>
-                <tr>
-                  <th>Nutrition</th>
-                  <th>Value</th>
-                </tr>
+                <th>Nutrition</th>
+                <th>Value</th>
               </thead>
               <tbody>
                 {Object.entries(localIngredient.nutritionPer100g).map(([key, value]) => (

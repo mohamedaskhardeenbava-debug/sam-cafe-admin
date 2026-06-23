@@ -245,15 +245,9 @@ export default function StaffSalary({ adminData, setAdminData }) {
             <div className="modal-header">
               <h3>{selected.name}</h3>
               <button onClick={closeModal} className="modal-cancel-btn">
-<<<<<<< HEAD
                 <span class="shadow"></span>
                 <span class="edge"></span>
                 <span class="front close-padding"><img src={closeIcon} /></span>
-=======
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
->>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
               </button>
             </div>
 

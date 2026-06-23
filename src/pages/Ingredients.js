@@ -34,7 +34,7 @@ const EMPTY_FORM = {
 
 const generateIngredientId = (name) => {
   const base = name.trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
-  return "ing_" + (base || "item") + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+  return "ing_" + (base || "item") + "_" + Date.now();
 };
 
 const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCamelCase, handleSort, sortConfig }) => {
@@ -106,7 +106,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
     const payload = {
       ...formData,
       brands: formData.brands || [],
-      id: isEditMode ? formData.id : generateIngredientId(formData.name),
+      id: generateIngredientId(formData.name),
       pricePer100g: Number(formData.pricePer100g),
       stockRemaining: Number(formData.stockRemaining),
       nutritionPer100g: {
@@ -120,35 +120,17 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
     };
 
 
-    try {
-      if (isEditMode) {
-        const res = await api.put(`/ingredients/${payload.id}`, payload);
-        const saved = { ...(res.data || payload), id: payload.id };
-        setAdminData(prev => ({
-          ...prev,
-          ingredients: (prev.ingredients || []).map(ing =>
-            String(ing.id) === String(saved.id) ? saved : ing
-          ),
-        }));
-        toast.success("Ingredient updated");
-      } else {
-        const res = await api.post(`/ingredients`, payload);
-        const saved = { ...(res.data || payload), id: payload.id };
-        setAdminData(prev => {
-          const alreadyExists = (prev.ingredients || []).some(
-            ing => String(ing.id) === String(saved.id)
-          );
-          if (alreadyExists) return prev;
-          return { ...prev, ingredients: [...(prev.ingredients || []), saved] };
-        });
-        toast.success("Ingredient added");
-      }
-
-      resetIngredientForm();
-    } catch (err) {
-      console.error("Failed to save ingredient:", err);
-      toast.error(isEditMode ? "Failed to update ingredient" : "Failed to add ingredient");
+    if (isEditMode) {
+      await api.put(`/ingredients/${payload.id}`, payload);
+      // State update handled by socket data-change handler in App.js
+      toast.success("Ingredient updated");
+    } else {
+      await api.post(`/ingredients`, payload);
+      // State update handled by socket data-change handler in App.js
+      toast.success("Ingredient added");
     }
+
+    resetIngredientForm();
   };
 
   const handleIngredientImageUpload = (e) => {
@@ -639,15 +621,10 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                     <button
                       className="modal-cancel-btn"
                       onClick={() => {
-                        // Capture the index now (at click time) so revert can
-                        // restore the row at its original position, not appended
-                        const originalIndex = adminData.ingredients.findIndex(
-                          i => i.id === ingredient.id
-                        );
                         toast.confirm(
                           `Delete "${ingredient.name}"?`,
                           async () => {
-                            // Optimistic removal
+                            // Optimistic update — remove immediately
                             setAdminData(prev => ({
                               ...prev,
                               ingredients: prev.ingredients.filter(
@@ -658,13 +635,12 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                               await api.delete(`/ingredients/${ingredient.id}`);
                               toast.success("Ingredient deleted");
                             } catch (err) {
-                              // Revert at original position (single toast)
-                              console.error("Delete ingredient failed:", err);
-                              setAdminData(prev => {
-                                const next = [...prev.ingredients];
-                                next.splice(Math.min(originalIndex, next.length), 0, ingredient);
-                                return { ...prev, ingredients: next };
-                              });
+                              // Revert on true server failure
+                              toast.error("Failed to delete ingredient");
+                              setAdminData(prev => ({
+                                ...prev,
+                                ingredients: [...prev.ingredients, ingredient]
+                              }));
                               toast.error("Failed to delete ingredient");
                             }
                           }

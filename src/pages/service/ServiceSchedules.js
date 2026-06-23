@@ -7,7 +7,6 @@ import api from "../../api";
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
-<<<<<<< HEAD
 
 // ── Floating-label CustomDropdown ────────────────────────────────────────────
 function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
@@ -47,9 +46,6 @@ function CustomDropdown({ value, onChange, options, placeholder = "Select…", l
     </div>
   );
 }
-=======
-import CustomDropdown from "../../components/CustomDropdown";
->>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -160,10 +156,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
       toast.success("Schedule added successfully.");
     } catch (err) {
       toast.error("Failed to add schedule. Please try again.");
-<<<<<<< HEAD
       toast.error("Failed to add schedule. Please try again.");
-=======
->>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
     }
   };
 
@@ -229,11 +222,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
     toast.success(`"${item.work}" marked as completed.`);
   };
 
-<<<<<<< HEAD
   const exportToExcel = () => {
-=======
-  const handleExport = () => {
->>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
     if (!filteredList.length) { toast.warning("No schedule data to export"); return; }
     const rows = filteredList.map(item => ({
       Work: item.work || "—",
@@ -251,11 +240,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
       <div className="schedule-header">
         <h2>Service Schedules</h2>
         <div style={{ display: "flex", gap: "8px" }}>
-<<<<<<< HEAD
           <button className="modal-save-btn" onClick={exportToExcel}>
-=======
-          <button className="modal-save-btn" onClick={handleExport}>
->>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
             <span className="shadow"></span>
             <span className="edge"></span>
             <span className="front">Export</span>
@@ -338,15 +323,9 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
             <div className="modal-header">
               <h3>Add Schedule</h3>
               <button type="button" className="modal-cancel-btn" onClick={cancel}>
-<<<<<<< HEAD
                 <span class="shadow"></span>
                 <span class="edge"></span>
                 <span class="front close-padding"><img src={closeIcon} /></span>
-=======
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
->>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
               </button>
             </div>
             <div className="modal-body">

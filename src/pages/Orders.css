@@ -492,7 +492,7 @@
 .pickup-notes {
   margin-top: 12px;
   padding: 10px;
-  background: var(--color-paleblue);
+  background: #f8f9fa;
   border-radius: 6px;
   font-size: 14px;
 }

@@ -1,12 +1,14 @@
 import { io } from "socket.io-client";
 
-const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:4000";
+// Switch between local dev and production (Render)
+const SERVER_URL =
+    process.env.REACT_APP_SERVER_URL || "http://localhost:4000";
 
 const socket = io(SERVER_URL, {
-    transports: ["websocket"],   // ← websocket only, no polling fallback causing double-fire
+    // Keeps the connection alive through Render's idle timeouts
+    transports: ["websocket", "polling"],
     reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
-    upgrade: false,              // ← prevent transport upgrade re-connection
 });
 
 export default socket;

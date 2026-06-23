@@ -477,7 +477,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
     if (!validateTab0()) { setTab(0); return; }
     setSaving(true);
     try {
-      const id = `cater_${Date.now()}`;
+      const id = `cat_${Date.now()}`;
       const payload = {
         id, ...form,
         date: form.eventDate,

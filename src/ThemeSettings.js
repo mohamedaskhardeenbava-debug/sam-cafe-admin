@@ -557,7 +557,7 @@ const ThemeSettings = () => {
     const handleSave = async () => {
         setSaving(true);
         const payload = {
-            id: "1",
+            id: 1,
             light: lightTokens,
             dark: darkTokens,
             activePreset,

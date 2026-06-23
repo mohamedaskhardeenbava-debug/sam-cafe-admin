@@ -40,36 +40,20 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
     if (!form.description.trim()) errs.description = true;
     if (Object.keys(errs).length) { setFormErrors(errs); return; }
 
-    const newRecipe = { id: String(Date.now()), ...form };
-    try {
-      const res = await api.post("/recipes", newRecipe);
-      const saved = res.data || newRecipe;
-      setAdminData(prev => {
-        const alreadyExists = (prev.recipes || []).some(r => r.id === saved.id);
-        if (alreadyExists) return prev;
-        return { ...prev, recipes: [...(prev.recipes || []), saved] };
-      });
-      toast.success("Recipe added successfully.");
-      resetForm();
-      setShowForm(false);
-    } catch (err) {
-      console.error("Failed to add recipe:", err);
-      toast.error("Failed to add recipe");
-    }
+    const newRecipe = { id: Date.now(), ...form };
+    await api.post("/recipes", newRecipe);
+    setAdminData(prev => ({ ...prev, recipes: [...prev.recipes, newRecipe] }));
+    toast.success("Recipe added successfully.");
+    resetForm();
+    setShowForm(false);
   };
 
   const deleteRecipe = async (id) => {
-    try {
-      await api.delete(`/recipes/${id}`);
-      setAdminData(prev => ({
-        ...prev,
-        recipes: prev.recipes.filter(r => r.id !== id)
-      }));
-      toast.success("Recipe deleted");
-    } catch (err) {
-      console.error("Failed to delete recipe:", err);
-      toast.error("Failed to delete recipe");
-    }
+    await api.delete(`/recipes/${id}`);
+    setAdminData(prev => ({
+      ...prev,
+      recipes: prev.recipes.filter(r => r.id !== id)
+    }));
   };
 
   // Count non-empty lines as steps
@@ -171,9 +155,9 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
                 className="modal-cancel-btn"
                 onClick={() => { resetForm(); setShowForm(false); }}
               >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front close-padding"><img src={closeIcon} /></span>
               </button>
             </div>
 
@@ -246,9 +230,9 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
                 className="modal-cancel-btn"
                 onClick={() => setSelected(null)}
               >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front close-padding"><img src={closeIcon} /></span>
               </button>
             </div>
 

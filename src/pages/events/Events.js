@@ -7,11 +7,53 @@ import api from "../../api";
 import { useToast } from "../../useToast";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
-import CustomDropdown from "../../components/CustomDropdown";
+
+// ── CustomDropdown ────────────────────────────────────────────────────────────
+function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
+  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
+  const wrapperClass = ["mat-select", value ? "has-value" : "", open ? "is-open" : ""].filter(Boolean).join(" ");
+  return (
+    <div className={wrapperClass} ref={ref}>
+      {label && <label className="mat-label">{label}{required && <span className="rf-req">*</span>}</label>}
+      <div className="dishes-dropdown-wrapper" style={{ height: "36px", border: "none" }}>
+        <button type="button" className="dishes-status-dropdown" style={{ width: "200px", border: "1px solid #ddd", padding: "10px", height: "36px" }}
+          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
+          {displayLabel || ""}
+        </button>
+        {open && (
+          <div className="dropdown-menu">
+            <div onClick={() => { onChange(""); setOpen(false); }}>{placeholder}</div>
+            {options.map((o, i) => {
+              const val = o.value !== undefined ? o.value : o;
+              const lbl = o.label !== undefined ? o.label : o;
+              return (
+                <div key={i} onClick={() => { onChange(val); setOpen(false); }}
+                  style={{ padding: "8px 12px", fontSize: 14, cursor: "pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"}
+                  onMouseLeave={e => e.currentTarget.style.background = ""}>
+                  {lbl}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      <span className="mat-bar" />
+    </div>
+  );
+}
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const generateId = (name) =>
-  `evt_${name.trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "")}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  `evt_${name.trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "")}_${Date.now()}`;
 
 const formatDate = (iso) => {
   if (!iso) return "—";
@@ -504,7 +546,6 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
 
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
-<<<<<<< HEAD
   const handleDelete = async (id) => {
     try {
       // Update global state correctly
@@ -521,8 +562,6 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
     }
   };
 
-=======
->>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
   const confirmDelete = async () => {
     const id = confirmDeleteId;
     setConfirmDeleteId(null);
@@ -977,7 +1016,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                       <button className={`ae-card-btn ae-publish-btn ${evt.isPublished ? "unpublish" : "publish"}`} onClick={() => handleTogglePublish(evt)}>
                         {evt.isPublished ? "Unpublish" : "Publish"}
                       </button>
-                      <button className="ae-card-btn ae-delete-btn" onClick={() => setConfirmDeleteId(evt.id)}>Delete</button>
+                      <button className="ae-card-btn ae-delete-btn" onClick={() => handleDelete(evt.id)}>Delete</button>
                     </div>
                   </div>
                 );

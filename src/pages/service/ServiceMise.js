@@ -69,7 +69,6 @@ export default function ServiceMise({ adminData, setAdminData }) {
   // ── Toggle verified ───────────────────────────────────────────
   const toggle = async (task) => {
     const isChecked = miseDay[task]?.verified;
-    const prevData = adminData.serviceMise;
     const updated = {
       ...adminData.serviceMise,
       [today]: {
@@ -81,12 +80,12 @@ export default function ServiceMise({ adminData, setAdminData }) {
         }
       }
     };
-    setAdminData(prev => ({ ...prev, serviceMise: updated }));
     try {
       await api.put("/serviceMise", updated);
+      setAdminData(prev => ({ ...prev, serviceMise: updated }));
     } catch (err) {
       toast.error("Failed to save. Please try again.");
-      setAdminData(prev => ({ ...prev, serviceMise: prevData }));
+      setAdminData(prev => ({ ...prev, serviceMise: updated }));
     }
   };
 

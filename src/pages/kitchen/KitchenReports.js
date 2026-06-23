@@ -135,7 +135,7 @@ const renderActiveShape = (props) => {
 
 /* ─── Main ────────────────────────────────────────────── */
 const KitchenReports = ({ adminData = {} }) => {
-  const { grooming = {}, kitchenMise: mise = {}, kitchenAssign = {}, recipes = [], orders = [], staff = [], ingredients = [] } = adminData;
+  const { grooming = {}, mise = {}, kitchenAssign = {}, recipes = [], orders = [], staff = [], ingredients = [] } = adminData;
 
   const roundTo = (v, d = 2) => Math.round((Number(v) + Number.EPSILON) * 10 ** d) / 10 ** d;
   const [activePie, setActivePie] = useState(null);

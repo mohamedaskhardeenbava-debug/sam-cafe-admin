@@ -4,7 +4,6 @@ import "./StaffModules.css";
 import api from "../../api";
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
-import CustomDropdown from "../../components/CustomDropdown";
 
 const roles = ["Chef", "Waiter", "Supervisor", "Manager", "Cleaner"];
 
@@ -23,7 +22,6 @@ const expLabel = (yrs) => {
   return `${n}+ yrs experience`;
 };
 
-<<<<<<< HEAD
 // ── CustomDropdown ───────────────────────────────────────────────────────────
 function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
   const [open, setOpen] = React.useState(false);
@@ -77,8 +75,6 @@ function CustomDropdown({ value, onChange, options, placeholder = "Select…", l
   );
 }
 
-=======
->>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
 export default function StaffCareer() {
   const { toast } = useToast();
   const [jobs, setJobs] = useState([]);
@@ -100,11 +96,7 @@ export default function StaffCareer() {
     if (!form.description.trim()) err.description = true;
     if (Object.keys(err).length) { setFormErrors(err); return; }
     try {
-<<<<<<< HEAD
       const res = await api.post("/careers", { id: Date.now(), ...form });
-=======
-      const res = await api.post("/careers", { id: String(Date.now()), ...form });
->>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
       setJobs(prev => [...prev, res.data]);
       setForm({ role: "", description: "", experience: "" });
       setFormErrors({});
@@ -195,11 +187,7 @@ export default function StaffCareer() {
           {filteredJobs.map((job, i) => {
             const colors = roleColors[job.role] || { bg: "#f5f4f1", color: "#3a3a3a" };
             return (
-<<<<<<< HEAD
               <div className="card sc-card" key={i} onClick={() => setSelected(job)}>
-=======
-              <div className="card sc-card" key={job.id} onClick={() => setSelected(job)}>
->>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
                 <div className="st-card-accent" style={{ background: colors.color }} />
 
                 <div className="sc-card-body">
@@ -314,15 +302,9 @@ export default function StaffCareer() {
                 <span className="sc-modal-sub">Job Vacancy</span>
               </div>
               <button type="button" className="modal-cancel-btn" onClick={() => setSelected(null)}>
-<<<<<<< HEAD
                 <span class="shadow"></span>
                 <span class="edge"></span>
                 <span class="front close-padding"><img src={closeIcon} /></span>
-=======
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
->>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
               </button>
             </div>
 

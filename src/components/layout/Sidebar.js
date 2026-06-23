@@ -15,7 +15,7 @@ import favouriteIcon from "../../icon/favourite-icon.png";
 import staffIcon from "../../icon/staff-icon.png";
 import logo from "../../icon/logo.png";
 import logoShrink from "../../icon/logo-shrink.png";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 
 const menu = [
   { label: "Dashboard", path: "/", icon: dashboardIcon },
@@ -82,6 +82,7 @@ const menu = [
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const [openMenu, setOpenMenu] = useState(null);
   const [hoverMenu, setHoverMenu] = useState(null);
+  const sidebarRef = React.useRef(null);
   const location = useLocation();
 
   // Auto-open submenu if a child route is active
