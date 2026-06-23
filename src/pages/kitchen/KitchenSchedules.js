@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { exportToExcel } from "../../utils/excelUtils";
 import { useLocation } from "react-router-dom";
 import { format } from "date-fns";
-import * as XLSX from "xlsx";
 import "./KitchenSchedules.css";
 import api from "../../api";
 import closeIcon from "../../icon/close-icon.png";
@@ -148,13 +148,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
             Status: item.status || "—",
             "Response (Days)": item.lastRate !== "" && item.lastRate != null ? `${item.lastRate} days` : "—",
         }));
-        const sheet = XLSX.utils.json_to_sheet(rows);
-        sheet["!cols"] = Object.keys(rows[0]).map(key => ({
-            wch: Math.max(key.length, ...rows.map(r => String(r[key] ?? "").length)) + 2
-        }));
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, sheet, "Kitchen Schedules");
-        XLSX.writeFile(wb, `kitchen_schedules_${fromDate}_to_${toDate}.xlsx`);
+        exportToExcel({ rows, sheetName: "Kitchen Schedules", fileName: `kitchen_schedules_${fromDate}_to_${toDate}.xlsx` });
     };
 
     return (

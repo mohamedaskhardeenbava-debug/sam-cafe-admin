@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import * as XLSX from "xlsx";
+import { exportToExcel } from "../utils/excelUtils";
 import "./Offers.css";
 import api from "../api";
 import closeIcon from "../icon/close-icon.png";
@@ -70,7 +70,7 @@ const Offers = ({ adminData, setAdminData }) => {
     active: "yes"
   });
 
-  // 🔥 flatten all dishes
+  // flatten all dishes
   const allDishes = adminData.categories.flatMap(cat => [
     ...(cat.dishes || []).map(d => ({ ...d, categoryId: cat.id })),
     ...(cat.subCategories || []).flatMap(sub =>
@@ -141,16 +141,10 @@ const Offers = ({ adminData, setAdminData }) => {
       "End Date": formatDisplayDate(o.endDate) || "—",
       Status: o.active === "yes" ? "Active" : "Inactive",
     }));
-    const sheet = XLSX.utils.json_to_sheet(rows);
-    sheet["!cols"] = Object.keys(rows[0]).map(k => ({
-      wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2,
-    }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, sheet, "Offers");
     const suffix = offerFromDate && offerToDate
       ? `${offerFromDate}_to_${offerToDate}`
       : new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(wb, `offers_${suffix}.xlsx`);
+    exportToExcel({ rows, sheetName: "Offers", fileName: `offers_${suffix}.xlsx` });
   };
 
   return (
@@ -240,7 +234,14 @@ const Offers = ({ adminData, setAdminData }) => {
               </td></tr>
             ) : filteredOffers.slice(0, displayLimit).map(o => (
               <tr key={o.id}>
-                <td className="clickable" onClick={() => navigate(`/offers/${o.id}`)}>{o.dishId}</td>
+                <td>
+                  <span
+                    className="clickable"
+                    onClick={() => navigate(`/offers/${o.id}`)}
+                  >
+                    {o.dishId}
+                  </span>
+                </td>
                 <td>{o.originalPrice}</td>
                 <td>{o.percentage}%</td>
                 <td>{o.offerPrice}</td>

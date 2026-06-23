@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import * as XLSX from "xlsx";
+import { exportToExcel } from "../../utils/excelUtils";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 import "./Staffs.css";
 import "../ModalCSS.css";
@@ -162,13 +162,7 @@ export default function Staffs({
       IFSC: s.bank?.ifsc || "—",
       Reference: s.reference || "—",
     }));
-    const sheet = XLSX.utils.json_to_sheet(rows);
-    sheet["!cols"] = Object.keys(rows[0]).map(k => ({
-      wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2,
-    }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, sheet, "Staff");
-    XLSX.writeFile(wb, `staff_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    exportToExcel({ rows, sheetName: "Staff", fileName: `staff_${new Date().toISOString().slice(0, 10)}.xlsx` });
   };
 
   const resetForm = () => {
@@ -323,16 +317,22 @@ export default function Staffs({
               const PALETTE = ["#4361ee", "#06d6a0", "#ffd166", "#ef476f", "#7209b7", "#4cc9f0", "#f72585", "#3a0ca3", "#fb8500", "#023e8a"];
               const avatarBg = PALETTE[i % PALETTE.length];
               return (
-                <tr key={staff.id} className="clickable" onClick={() => navigate(`/staff/${staff.id}`)}>
+                <tr>
                   <td>
                     <div className="st-name-cell">
                       <div className="st-avatar" style={{ background: avatarBg }}>
                         {(staff.name || "?").charAt(0).toUpperCase()}
                       </div>
-                      <div>
-                        <div className="st-name">{staff.name}</div>
+                      <span>
+                        <span
+                          className="st-name clickable"
+                          key={staff.id}
+                          onClick={() => navigate(`/staff/${staff.id}`)}
+                        >
+                          {staff.name}
+                        </span>
                         <div className="st-join">Joined {staff.joiningDate || "—"}</div>
-                      </div>
+                      </span>
                     </div>
                   </td>
                   <td>
@@ -475,7 +475,7 @@ export default function Staffs({
                     </div>
                   </div>
 
-                  {/* ================= WORK TYPE ================= */}
+                  {/* ------------------------------- WORK TYPE ------------------------------- */}
                   <div className="form-group">
                     <label>Work Type</label>
                     <div className="radio-group">
@@ -588,7 +588,7 @@ export default function Staffs({
                   <div className="form-group">
                     <label htmlFor="">Documents</label>
                     <div className="horizontal-form-group border" style={{ flexBasis: "33%" }}>
-                      {/* ================= FILES ================= */}
+                      {/* ------------------------------- FILES ------------------------------- */}
 
                       <div className="file-wrap">
                         <label className={formErrors.idProof ? "mat-label-error" : ""}>ID Proof<span className="rf-req">*</span></label>
@@ -637,7 +637,7 @@ export default function Staffs({
                     </div>
                   </div>
 
-                  {/* ================= PREVIOUS EXPERIENCE ================= */}
+                  {/* ------------------------------- PREVIOUS EXPERIENCE ------------------------------- */}
                   <div className="form-group">
                     <label>Previous Experience</label>
 
@@ -735,7 +735,7 @@ export default function Staffs({
                     <label htmlFor="">Contact Details</label>
 
                     <div className="horizontal-form-group border">
-                      {/* ================= CONTACT ================= */}
+                      {/* ------------------------------- CONTACT ------------------------------- */}
 
                       <div className="form-group">
                         <div className="mat">
@@ -773,7 +773,7 @@ export default function Staffs({
                     <label htmlFor="">Address Details</label>
 
                     <div className="form-group border">
-                      {/* ================= ADDRESS ================= */}
+                      {/* ------------------------------- ADDRESS ------------------------------- */}
                       <div className="form-group">
                         <div className="mat">
                           <textarea
@@ -830,7 +830,7 @@ export default function Staffs({
                     </div>
                   </div>
 
-                  {/* ================= BANK ================= */}
+                  {/* ------------------------------- BANK ------------------------------- */}
                   <div className="form-group">
                     <label htmlFor="">Bank Details</label>
                     <div className="horizontal-form-group border">
@@ -880,7 +880,7 @@ export default function Staffs({
                     </div>
                   </div>
 
-                  {/* ================= REFERENCE ================= */}
+                  {/* ------------------------------- REFERENCE ------------------------------- */}
 
                   <div className="form-group">
                     <div className="mat">

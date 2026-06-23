@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from "react";
+import { exportToExcel } from "../../utils/excelUtils";
 import { createPortal } from "react-dom";
-import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import closeIcon from "../../icon/close-icon.png";
@@ -763,16 +763,10 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
       Status: item.status || "—",
       Source: item.source || "—",
     }));
-    const sheet = XLSX.utils.json_to_sheet(rows);
-    sheet["!cols"] = Object.keys(rows[0]).map(k => ({
-      wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2,
-    }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, sheet, "PreBookings");
     const suffix = filterFromDate && filterToDate
       ? `${filterFromDate}_to_${filterToDate}`
       : filterFromDate || filterToDate || "all";
-    XLSX.writeFile(wb, `prebookings_${suffix}.xlsx`);
+    exportToExcel({ rows, sheetName: "PreBookings", fileName: `prebookings_${suffix}.xlsx` });
   };
 
 
@@ -944,18 +938,19 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
                 const history = item.callHistory || [];
 
                 return (
-                  <tr key={item.id} className="evt-pre-row clickable"
-                    onClick={() => navigate(`/prebookings/${item.id}`, { state: { fromDetail: true } })}>
+                  <tr className="evt-pre-row">
 
                     {/* Guest name */}
                     <td>
-                      <div className="evt-pre-name-cell">
-                        <div className="evt-pre-avatar">{(item.name || "?").charAt(0).toUpperCase()}</div>
-                        <div>
-                          <div className="evt-pre-name">{item.name || "—"}</div>
-                          <div className="evt-pre-id-small">#{(item.id || "").slice(-6)}</div>
-                        </div>
-                      </div>
+                      <span>
+                        <span className="evt-pre-name clickable"
+                          key={item.id}
+                          onClick={() => navigate(`/prebookings/${item.id}`, { state: { fromDetail: true } })}
+                        >
+                          {item.name || "—"}
+                        </span>
+                        <div className="evt-pre-id-small">#{(item.id || "").slice(-6)}</div>
+                      </span>
                     </td>
 
                     {/* Contact */}

@@ -343,7 +343,6 @@
 .st-name {
     font-size: 14px;
     font-weight: 600;
-    color: var(--ink);
     line-height: 1.2;
 }
 
@@ -764,7 +763,6 @@
     transition: transform 0.18s ease, box-shadow 0.18s ease;
     position: relative;
     margin-bottom: 32px;
-    /* breathing room for the ribbon */
 }
 
 .card.st-card:hover,
@@ -805,7 +803,6 @@
     flex-direction: column;
     flex: 1;
     gap: 10px;
-    /* extra right padding so content clears the banner */
     padding-right: 118px;
 }
 

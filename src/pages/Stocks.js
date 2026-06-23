@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { exportToExcel } from "../utils/excelUtils";
 import "./Stocks.css";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 import editIcon from "../icon/edit-icon.png";
 import closeIcon from "../icon/close-icon.png";
-import * as XLSX from "xlsx";
 import { EmptyRow } from "../App";
 import { formatDisplayDate } from "../App";
 import { CustomDatePicker } from "../components/CustomDatePicker";
@@ -16,16 +16,6 @@ import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 const toTwoDecimals = (value) =>
   Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 
-const applyAutoColumnWidth = (sheet, rows) => {
-  if (!rows.length) return;
-
-  sheet["!cols"] = Object.keys(rows[0]).map(key => ({
-    wch: Math.max(
-      key.length,
-      ...rows.map(r => String(r[key] ?? "").length)
-    ) + 2
-  }));
-};
 
 // ── CustomDropdown (floating label version) ──────────────────────────────────
 function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
@@ -109,7 +99,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
     return adminData.categories.flatMap(category => {
 
-      // 1️⃣ Dishes directly inside category
+      // Dishes directly inside category
       const directDishes = (category.dishes || [])
         .filter(dish =>
           (dish.ingredients || []).some(
@@ -126,7 +116,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         }));
 
 
-      // 2️⃣ Dishes inside subCategories
+      // Dishes inside subCategories
       const subCategoryDishes = (category.subCategories || []).flatMap(sub =>
         (sub.dishes || [])
           .filter(dish =>
@@ -274,7 +264,6 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         )
       }));
 
-      // ✅ MOVE HERE
       socket.emit("data-change", {
         resource: "ingredients",
         action: "updated",
@@ -301,13 +290,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       "Last Purchased": ing.lastUpdated || "-"
     }));
 
-    const sheet = XLSX.utils.json_to_sheet(rows);
-    applyAutoColumnWidth(sheet, rows);
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, sheet, "Stocks");
-
-    XLSX.writeFile(workbook, "stocks_export.xlsx");
+    exportToExcel({ rows, sheetName: "Stocks", fileName: "stocks_export.xlsx" });
   };
 
   const getDisabledLabel = (ingredient) => {
@@ -465,11 +448,13 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
             ) : (
               filteredIngredients.slice(0, displayLimit).map((ing) => (
                 <tr key={ing.id}>
-                  <td
-                    className="clickable"
-                    onClick={() => navigate(`/ingredients/${ing.id}`)}
-                  >
-                    {ing.name}
+                  <td>
+                    <span
+                      className="clickable"
+                      onClick={() => navigate(`/ingredients/${ing.id}`)}
+                    >
+                      {ing.name}
+                    </span>
                   </td>
                   <td>
                     {ing.brands?.length

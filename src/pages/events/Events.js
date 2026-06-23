@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from "react";
-import * as XLSX from "xlsx";
+import { exportToExcel } from "../../utils/excelUtils";
 import "./Events.css";
 import "../ModalCSS.css";
 import closeIcon from "../../icon/close-icon.png";
@@ -297,7 +297,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
 
 
   const exportEvents = () => {
-    if (!filteredEvents.length) { alert("No events to export"); return; }
+    if (!filteredEvents.length) { toast.warning("No events to export"); return; }
     const rows = filteredEvents.map(evt => {
       const stats = statsForEvent(evt.id);
       return {
@@ -316,17 +316,11 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
         Specialized: evt.isSpecialized ? "Yes" : "No",
       };
     });
-    const sheet = XLSX.utils.json_to_sheet(rows);
-    sheet["!cols"] = Object.keys(rows[0]).map(k => ({
-      wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2,
-    }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, sheet, "Events");
-    XLSX.writeFile(wb, `events_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    exportToExcel({ rows, sheetName: "Events", fileName: `events_${new Date().toISOString().slice(0, 10)}.xlsx` });
   };
 
   const exportBookings = () => {
-    if (!filteredBookings.length) { alert("No bookings to export"); return; }
+    if (!filteredBookings.length) { toast.warning("No bookings to export"); return; }
     const rows = filteredBookings.map((b) => {
       const evt = events.find((e) => e.id === b.eventId);
       return {
@@ -340,16 +334,10 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
         Status: b.status || "—",
       };
     });
-    const sheet = XLSX.utils.json_to_sheet(rows);
-    sheet["!cols"] = Object.keys(rows[0]).map(k => ({
-      wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2,
-    }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, sheet, "Event Bookings");
     const suffix = filterFromDate && filterToDate
       ? `${filterFromDate}_to_${filterToDate}`
       : new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(wb, `event_bookings_${suffix}.xlsx`);
+    exportToExcel({ rows, sheetName: "Event Bookings", fileName: `event_bookings_${suffix}.xlsx` });
   };
 
   const BookSortIcon = ({ col }) => (
@@ -560,7 +548,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
 
   const handleDelete = async (id) => {
     try {
-      // ✅ Update global state correctly
+      // Update global state correctly
       setAdminData(prev => ({
         ...prev,
         events: (prev.events || []).filter(e => e.id !== id),
@@ -1952,7 +1940,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                             <span className="shadow"></span><span className="edge"></span>
                             <span className="front">
                               {addGuestSaving ? "Saving…" : `Add ${addGuestCount} Guest${addGuestCount !== 1 ? "s" : ""}`}
-                          </span>
+                            </span>
                           </button>
                         </div>
                         {evt?.price > 0 && (

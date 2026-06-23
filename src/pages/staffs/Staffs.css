@@ -1,4 +1,4 @@
-/* ================= PAGE ================= */
+/* ------------------------------- PAGE ------------------------------- */
 .staff-page {
     width: 100%;
     max-width: 100%;
@@ -7,7 +7,7 @@
     flex-direction: column;
 }
 
-/* ================= HEADER ================= */
+/* ------------------------------- HEADER ------------------------------- */
 .staff-header {
     display: flex;
     justify-content: space-between;
@@ -23,7 +23,7 @@
     margin: 0;
 }
 
-/* ================= TABLE ================= */
+/* ------------------------------- TABLE ------------------------------- */
 .staff-table-wrapper {
     width: 100%;
     height: calc(100vh - 280px);
@@ -111,7 +111,10 @@
 }
 
 .staff-table th:nth-child(6),
-.staff-table td:nth-child(6),
+.staff-table td:nth-child(6) {
+    width: 100px;
+}
+
 .staff-table th:nth-child(7),
 .staff-table td:nth-child(7),
 .staff-table th:nth-child(8),
@@ -306,7 +309,7 @@
     color: #111;
 }
 
-/* ================= PREVIEW ================= */
+/* ------------------------------- PREVIEW ------------------------------- */
 .preview {
     line-height: 1.8;
     font-size: 14px;
@@ -320,7 +323,7 @@
     height: 28px;
 }
 
-/* ================= RESPONSIVE ================= */
+/* ------------------------------- RESPONSIVE ------------------------------- */
 @media (max-width: 768px) {
 
     .staff-table th,
@@ -361,7 +364,6 @@
 .st-name {
     font-size: 14px;
     font-weight: 700;
-    color: #111;
     line-height: 1.2;
 }
 

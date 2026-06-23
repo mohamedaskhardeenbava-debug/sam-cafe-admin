@@ -271,7 +271,7 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
   }, [startBellAudio, stopBellAudio]);
 
   /* ─────────────────────────────────────
-     🔕 Admin dismisses bell
+     Admin dismisses bell
   ───────────────────────────────────── */
   const handleDismissBell = (tableNo) => {
     socket.emit("bell-off", { tableNo });
@@ -350,7 +350,7 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
   }, [adminData.reservations, adminData.preBookings, adminData.cateringOrders, adminData.celebrations, adminData.events]);
 
   /* ─────────────────────────────────────
-     ⏱️ Countdown ticker (every second)
+     Countdown ticker (every second)
   ───────────────────────────────────── */
   useEffect(() => {
     const tick = () => {

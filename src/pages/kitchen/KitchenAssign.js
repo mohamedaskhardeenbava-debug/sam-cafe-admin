@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import * as XLSX from "xlsx";
+import { exportToExcel } from "../../utils/excelUtils";
 import "./KitchenAssign.css";
 import { useToast } from "../../useToast";
 import { getTomorrowKey, getTomorrowFormatted } from "../../App";
@@ -111,13 +111,7 @@ export default function KitchenAssign({ adminData, setAdminData }) {
       });
     });
     if (!rows.length) { toast.warning("No assignment data to export"); return; }
-    const sheet = XLSX.utils.json_to_sheet(rows);
-    sheet["!cols"] = Object.keys(rows[0]).map(k => ({
-      wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2
-    }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, sheet, "Kitchen Assign");
-    XLSX.writeFile(wb, `kitchen_assign_${tomorrow}.xlsx`);
+    exportToExcel({ rows, sheetName: "Kitchen Assign", fileName: `kitchen_assign_${tomorrow}.xlsx` });
   };
 
   // ── Add task ─────────────────────────────────────────────────

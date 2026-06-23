@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import * as XLSX from "xlsx";
+import { exportToExcel } from "../../utils/excelUtils";
 import "./KitchenRecipe.css";
 import deleteIcon from "../../icon/delete-icon.png";
 import closeIcon from "../../icon/close-icon.png";
@@ -28,11 +28,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
       Steps: countSteps(r.description),
       Description: (r.description || "").replace(/\n/g, " | "),
     }));
-    const sheet = XLSX.utils.json_to_sheet(rows);
-    sheet["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2 }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, sheet, "Recipes");
-    XLSX.writeFile(wb, `recipes_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    exportToExcel({ rows, sheetName: "Recipes", fileName: `recipes_${new Date().toISOString().slice(0, 10)}.xlsx` });
   };
 
   const resetForm = () => { setForm({ name: "", description: "" }); setFormErrors({}); };

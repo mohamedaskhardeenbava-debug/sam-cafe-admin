@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import * as XLSX from "xlsx";
+import { exportToExcel } from "../../utils/excelUtils";
 import "./KitchenMise.css";
 import { getTodayKey, getTodayFormatted } from "../../App";
 import api from "../../api";
@@ -67,13 +67,7 @@ export default function KitchenMise({ adminData, setAdminData }) {
       });
     });
     if (!rows.length) { toast.warning("No mise data to export"); return; }
-    const sheet = XLSX.utils.json_to_sheet(rows);
-    sheet["!cols"] = Object.keys(rows[0]).map(k => ({
-      wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2
-    }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, sheet, "Kitchen Mise");
-    XLSX.writeFile(wb, `kitchen_mise_${today}.xlsx`);
+    exportToExcel({ rows, sheetName: "Kitchen Mise", fileName: `kitchen_mise_${today}.xlsx` });
   };
 
   // ── Toggle verified ───────────────────────────────────────────

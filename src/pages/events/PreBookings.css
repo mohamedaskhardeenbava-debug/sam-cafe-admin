@@ -134,7 +134,6 @@
 
 .evt-pre-row:hover {
   background: #fafafa;
-  transform: translateX(2px);
 }
 
 .clickable {
@@ -164,7 +163,6 @@
 
 .evt-pre-name {
   font-weight: 600;
-  color: #111;
 }
 
 .evt-pre-id-small {

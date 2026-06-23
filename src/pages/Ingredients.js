@@ -593,15 +593,19 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
             ) : (
               filteredIngredients.slice(0, displayLimit).map((ingredient) => (
                 <tr key={ingredient.id}>
-                  <td className="clickable"
-                    onClick={() => navigate(`/ingredients/${ingredient.id}`)}>
+                  <td>
                     <div className="ingredient-image">
                       <img src={ingredient.image} alt={ingredient.name} />
                     </div>
                   </td>
 
-                  <td className="clickable"
-                    onClick={() => navigate(`/ingredients/${ingredient.id}`)}>{ingredient.name}
+                  <td>
+                    <span
+                      className="clickable"
+                      onClick={() => navigate(`/ingredients/${ingredient.id}`)}
+                    >
+                      {ingredient.name}
+                    </span>
                   </td>
                   <td>
                     {ingredient.brands?.length

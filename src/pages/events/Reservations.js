@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from "react";
+import { exportToExcel } from "../../utils/excelUtils";
 import { createPortal } from "react-dom";
-import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import closeIcon from "../../icon/close-icon.png";
@@ -595,7 +595,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
   const activeFilters = !isDefaultFilter;
 
   const exportToExcel = () => {
-    if (!sortedData.length) { alert("No reservations to export"); return; }
+    if (!sortedData.length) { toast.warning("No reservations to export"); return; }
     const rows = sortedData.map(r => ({
       Name: r.name || "—",
       Mobile: r.mobile || "—",
@@ -612,16 +612,10 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       Status: r.status || "—",
       Notes: r.notes || "",
     }));
-    const sheet = XLSX.utils.json_to_sheet(rows);
-    sheet["!cols"] = Object.keys(rows[0]).map(k => ({
-      wch: Math.max(k.length, ...rows.map(r => String(r[k] ?? "").length)) + 2,
-    }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, sheet, "Reservations");
     const suffix = filterDate || (filterFromDate && filterToDate
       ? `${filterFromDate}_to_${filterToDate}`
       : filterFromDate || filterToDate || "all");
-    XLSX.writeFile(wb, `reservations_${suffix}.xlsx`);
+    exportToExcel({ rows, sheetName: "Reservations", fileName: `reservations_${suffix}.xlsx` });
   };
 
 
@@ -828,21 +822,19 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                 const history = item.callHistory || [];
 
                 return (
-                  <tr key={item.id} className="evt-res-row clickable"
-                    onClick={() => navigate(`/reservations/${item.id}`, { state: { fromDetail: true } })}>
-
+                  <tr className="evt-res-row">
                     {/* Guest name */}
                     <td>
-                      <div className="evt-res-name-cell">
-                        {item.tablePrefImage
-                          ? <img src={item.tablePrefImage} alt="pref" className="evt-res-avatar-img" />
-                          : <div className="evt-res-avatar">{(item.name || "?").charAt(0).toUpperCase()}</div>
-                        }
-                        <div>
-                          <div className="evt-res-name">{item.name || "—"}</div>
-                          <div className="evt-res-id-small">#{(item.id || "").slice(-6)}</div>
-                        </div>
-                      </div>
+                      <span
+                      >
+                        <span className="evt-res-name clickable"
+                          key={item.id}
+                          onClick={() => navigate(`/reservations/${item.id}`, { state: { fromDetail: true } })}
+                        >
+                          {item.name || "—"}
+                        </span>
+                        <div className="evt-res-id-small">#{(item.id || "").slice(-6)}</div>
+                      </span>
                     </td>
 
                     {/* Contact */}

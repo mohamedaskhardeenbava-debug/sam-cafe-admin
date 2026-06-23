@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import * as XLSX from "xlsx";
+import { exportMultiSheet } from "../../utils/excelUtils";
 import "./ServiceReports.css";
 import api from "../../api";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
@@ -216,14 +216,17 @@ const ServiceReports = ({ adminData = {} }) => {
   const totalAbsent = attData.reduce((s, x) => s + x.absent, 0);
 
   const exportReport = () => {
-    const wb = XLSX.utils.book_new();
     const attRows = attData.map(s => ({ Name: s.name, Present: s.present, Leave: s.leave, Absent: s.absent, "Attendance %": `${s.pct}%` }));
     const groomRows = groomData.map(g => ({ Name: g.name, "Grooming Score %": `${g.score}%` }));
     const orderRows = trendData.map(t => ({ Month: t.month, "Dine In": t.dineIn, "Take Away": t.takeAway, Revenue: t.revenue }));
-    if (attRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(attRows), "Attendance");
-    if (groomRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(groomRows), "Grooming");
-    if (orderRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(orderRows), "Order Trend");
-    XLSX.writeFile(wb, `service_report_${reportFrom || "all"}_${reportTo || today}.xlsx`);
+    exportMultiSheet({
+      sheets: [
+        { name: "Attendance", rows: attRows },
+        { name: "Grooming", rows: groomRows },
+        { name: "Order Trend", rows: orderRows },
+      ],
+      fileName: `service_report_${reportFrom || "all"}_${reportTo || today}.xlsx`,
+    });
   };
 
   return (
