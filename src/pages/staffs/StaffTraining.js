@@ -4,6 +4,7 @@ import "./StaffModules.css";
 import api from "../../api";
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
+import CustomDropdown from "../../components/CustomDropdown";
 
 const typeColors = {
   Online: { bg: "#dbeafe", color: "#1e40af" },
@@ -11,60 +12,6 @@ const typeColors = {
   Internship: { bg: "#fef3c7", color: "#92400e" },
   Workshop: { bg: "#ede9fe", color: "#4c1d95" },
 };
-
-// ── CustomDropdown ───────────────────────────────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
-
-  const wrapperClass = [
-    "mat-select",
-    value ? "has-value" : "",
-    open ? "is-open" : "",
-  ].filter(Boolean).join(" ");
-
-  return (
-    <div className={wrapperClass} ref={ref}>
-      {label && (
-        <label className="mat-label">
-          {label}{required && <span className="rf-req">*</span>}
-        </label>
-      )}
-      <div className="dishes-dropdown-wrapper">
-        <button type="button" className="dishes-status-dropdown"
-          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-          {displayLabel || ""}
-        </button>
-        {open && (
-          <div className="dropdown-menu">
-            <div onClick={() => { onChange(""); setOpen(false); }}
-            >
-              {placeholder}
-            </div>
-            {options.map((o, i) => {
-              const val = o.value !== undefined ? o.value : o;
-              const lbl = o.label !== undefined ? o.label : o;
-              return (
-                <div key={i} onClick={() => { onChange(val); setOpen(false); }}
-                >
-                  {lbl}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <span className="mat-bar" />
-    </div>
-  );
-}
 
 export default function StaffTraining({ adminData, setAdminData }) {
   const { toast } = useToast();
@@ -80,11 +27,16 @@ export default function StaffTraining({ adminData, setAdminData }) {
 
   useEffect(() => {
     const load = async () => {
-      const res = await api.get("/staff");
-      const all = res.data.flatMap(s =>
-        (s.training || []).map(t => ({ ...t, staffName: s.name }))
-      );
-      setTrainings(all);
+      try {
+        const res = await api.get("/staff");
+        const all = res.data.flatMap(s =>
+          (s.training || []).map(t => ({ ...t, staffName: s.name }))
+        );
+        setTrainings(all);
+      } catch (err) {
+        console.error("Failed to load staff training data:", err);
+        toast.error("Failed to load training data. Please reload the page.");
+      }
     };
     load();
   }, []);
@@ -358,9 +310,9 @@ export default function StaffTraining({ adminData, setAdminData }) {
                 <span className="sc-modal-sub">Training Record</span>
               </div>
               <button type="button" className="modal-cancel-btn" onClick={() => setSelected(null)}>
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front close-padding"><img src={closeIcon} /></span>
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front close-padding"><img src={closeIcon} /></span>
               </button>
             </div>
 

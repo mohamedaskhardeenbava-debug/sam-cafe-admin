@@ -100,7 +100,7 @@ const EMPTY_FORM = {
 
 const generateStaffId = (name) => {
   const base = name.toLowerCase().replace(/\s+/g, "_");
-  return "staff_" + (base || "member") + "_" + Date.now();
+  return "staff_" + (base || "member") + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
 };
 
 export default function Staffs({
@@ -214,7 +214,7 @@ export default function Staffs({
   const handleSave = () => {
     const payload = {
       ...formData,
-      id: generateStaffId(formData.name)
+      id: isEditMode ? formData.id : generateStaffId(formData.name)
     };
 
     isEditMode ? onUpdate(payload.id, payload) : onAdd(payload);
@@ -317,7 +317,7 @@ export default function Staffs({
               const PALETTE = ["#4361ee", "#06d6a0", "#ffd166", "#ef476f", "#7209b7", "#4cc9f0", "#f72585", "#3a0ca3", "#fb8500", "#023e8a"];
               const avatarBg = PALETTE[i % PALETTE.length];
               return (
-                <tr>
+                <tr key={staff.id}>
                   <td>
                     <div className="st-name-cell">
                       <div className="st-avatar" style={{ background: avatarBg }}>
@@ -326,7 +326,6 @@ export default function Staffs({
                       <span>
                         <span
                           className="st-name clickable"
-                          key={staff.id}
                           onClick={() => navigate(`/staff/${staff.id}`)}
                         >
                           {staff.name}
@@ -367,28 +366,32 @@ export default function Staffs({
                   <td onClick={e => e.stopPropagation()}>
                     <button className="modal-cancel-btn"
                       onClick={() => {
-                        toast.confirm(
-                          `Delete "${staff.name}"?`,
-                          async () => {
-                            // Optimistic update — remove immediately
-                            setAdminData(prev => ({
-                              ...prev,
-                              staff: prev.staff.filter(s => s.id !== staff.id)
-                            }));
-                            try {
-                              await api.delete(`/staff/${staff.id}`);
-                              toast.success("Staff deleted");
-                            } catch (err) {
-                              // Revert on true server failure
-                              console.error("Delete staff error:", err);
+                        (() => {
+                          const originalIndex = adminData.staff.findIndex(s => s.id === staff.id);
+                          toast.confirm(
+                            `Delete "${staff.name}"?`,
+                            async () => {
+                              // Optimistic removal
                               setAdminData(prev => ({
                                 ...prev,
-                                staff: [...prev.staff, staff]
+                                staff: prev.staff.filter(s => s.id !== staff.id)
                               }));
-                              toast.error("Failed to delete staff");
+                              try {
+                                await api.delete(`/staff/${staff.id}`);
+                                toast.success("Staff deleted");
+                              } catch (err) {
+                                // Revert at original position
+                                console.error("Delete staff error:", err);
+                                setAdminData(prev => {
+                                  const next = [...prev.staff];
+                                  next.splice(Math.min(originalIndex, next.length), 0, staff);
+                                  return { ...prev, staff: next };
+                                });
+                                toast.error("Failed to delete staff");
+                              }
                             }
-                          }
-                        );
+                          );
+                        })();
                       }}
                       title="Delete">
                       <span className="shadow"></span>

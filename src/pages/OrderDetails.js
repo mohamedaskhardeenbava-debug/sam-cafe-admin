@@ -130,6 +130,10 @@ const OrderDetails = ({ orders, menu }) => {
               <tbody>
                 {order.items.map((item, index) => {
                   const itemTotal = resolveItemTotal(item);
+                  const qty = Number(item.quantity ?? item.qty ?? 1) || 1;
+                  const unitPrice = item.price != null
+                    ? Number(item.price)
+                    : +(itemTotal / qty).toFixed(2);
 
                   return (
                     <tr key={index}>
@@ -156,8 +160,8 @@ const OrderDetails = ({ orders, menu }) => {
                         </span>
                       </td>
                       <td>{item.notes?.trim() ? item.notes : "-"}</td>
-                      <td>{item.quantity ?? item.qty}</td>
-                      <td>₹{itemTotal}</td>
+                      <td>{qty}</td>
+                      <td>₹{unitPrice}</td>
                       <td>₹{itemTotal}</td>
                     </tr>
                   );

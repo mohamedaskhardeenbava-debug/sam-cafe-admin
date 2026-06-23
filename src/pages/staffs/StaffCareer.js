@@ -4,6 +4,7 @@ import "./StaffModules.css";
 import api from "../../api";
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
+import CustomDropdown from "../../components/CustomDropdown";
 
 const roles = ["Chef", "Waiter", "Supervisor", "Manager", "Cleaner"];
 
@@ -21,59 +22,6 @@ const expLabel = (yrs) => {
   if (n < 2) return `${n} yr experience`;
   return `${n}+ yrs experience`;
 };
-
-// ── CustomDropdown ───────────────────────────────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
-
-  const wrapperClass = [
-    "mat-select",
-    value ? "has-value" : "",
-    open ? "is-open" : "",
-  ].filter(Boolean).join(" ");
-
-  return (
-    <div className={wrapperClass} ref={ref}>
-      {label && (
-        <label className="mat-label">
-          {label}{required && <span className="rf-req">*</span>}
-        </label>
-      )}
-      <div className="dishes-dropdown-wrapper">
-        <button type="button" className="dishes-status-dropdown"
-          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-          {displayLabel || ""}
-        </button>
-        {open && (
-          <div className="dropdown-menu">
-            <div onClick={() => { onChange(""); setOpen(false); }}
-            >
-              {placeholder}
-            </div>
-            {options.map((o, i) => {
-              const val = o.value !== undefined ? o.value : o;
-              const lbl = o.label !== undefined ? o.label : o;
-              return (
-                <div key={i} onClick={() => { onChange(val); setOpen(false); }}>
-                  {lbl}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <span className="mat-bar" />
-    </div>
-  );
-}
 
 export default function StaffCareer() {
   const { toast } = useToast();
@@ -96,7 +44,7 @@ export default function StaffCareer() {
     if (!form.description.trim()) err.description = true;
     if (Object.keys(err).length) { setFormErrors(err); return; }
     try {
-      const res = await api.post("/careers", { id: Date.now(), ...form });
+      const res = await api.post("/careers", { id: String(Date.now()), ...form });
       setJobs(prev => [...prev, res.data]);
       setForm({ role: "", description: "", experience: "" });
       setFormErrors({});
@@ -187,7 +135,7 @@ export default function StaffCareer() {
           {filteredJobs.map((job, i) => {
             const colors = roleColors[job.role] || { bg: "#f5f4f1", color: "#3a3a3a" };
             return (
-              <div className="card sc-card" key={i} onClick={() => setSelected(job)}>
+              <div className="card sc-card" key={job.id} onClick={() => setSelected(job)}>
                 <div className="st-card-accent" style={{ background: colors.color }} />
 
                 <div className="sc-card-body">
@@ -302,9 +250,9 @@ export default function StaffCareer() {
                 <span className="sc-modal-sub">Job Vacancy</span>
               </div>
               <button type="button" className="modal-cancel-btn" onClick={() => setSelected(null)}>
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front close-padding"><img src={closeIcon} /></span>
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front close-padding"><img src={closeIcon} /></span>
               </button>
             </div>
 

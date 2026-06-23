@@ -218,15 +218,16 @@ const ComboOffers = () => {
   };
 
   /* ── delete ── */
-  const handleDelete = async (id, label) => {
-    if (!window.confirm(`Delete "${label}"?`)) return;
-    try {
-      await api.delete(`/combo_offers/${id}`);
-      setOffers(prev => prev.filter(o => o.id !== id));
-      toast.success("Offer deleted");
-    } catch {
-      toast.error("Delete failed", "error");
-    }
+  const handleDelete = (id, label) => {
+    toast.confirm(`Delete "${label}"?`, async () => {
+      try {
+        await api.delete(`/combo_offers/${id}`);
+        setOffers(prev => prev.filter(o => o.id !== id));
+        toast.success("Offer deleted");
+      } catch {
+        toast.error("Delete failed", "error");
+      }
+    });
   };
 
   /* ── drag ── */

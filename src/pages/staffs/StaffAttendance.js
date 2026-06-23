@@ -137,7 +137,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
         try {
           const res = await api.put(`/staff/${staff.id}`, { ...staff, attendance: updatedAtt });
           setAdminData(prev => ({ ...prev, staff: prev.staff.map(s => s.id === staff.id ? res.data : s) }));
-        } catch (err) { toast.warn(`Auto-absent failed for ${staff.name}:`, err.message); }
+        } catch (err) { toast.warning(`Auto-absent failed for ${staff.name}: ${err.message}`); }
       }
     })();
   }, [loadingHolidays]);
