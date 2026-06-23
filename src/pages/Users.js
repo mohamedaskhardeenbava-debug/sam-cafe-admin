@@ -130,7 +130,13 @@ const Users = ({ handleSort, sortConfig, users }) => {
                 <span className="th-content sort-th">
                   <span>User Name</span>
                   <span className="sort-arrow">
+<<<<<<< HEAD
                     {sortConfig.direction === "asc" ? "▲" : "▼"}
+=======
+                    {sortConfig.key === "name"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
+>>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
                   </span>
                 </span>
               </th>
@@ -141,7 +147,13 @@ const Users = ({ handleSort, sortConfig, users }) => {
                 <span className="th-content sort-th">
                   <span>Mobile Number</span>
                   <span className="sort-arrow">
+<<<<<<< HEAD
                     {sortConfig.direction === "asc" ? "▲" : "▼"}
+=======
+                    {sortConfig.key === "mobile"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
+>>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
                   </span>
                 </span>
               </th>

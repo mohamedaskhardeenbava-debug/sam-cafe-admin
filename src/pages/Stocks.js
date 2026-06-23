@@ -12,10 +12,12 @@ import socket from "../socket";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import CustomDropdown from "../components/CustomDropdown";
 
 const toTwoDecimals = (value) =>
   Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 
+<<<<<<< HEAD
 
 // ── CustomDropdown (floating label version) ──────────────────────────────────
 function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
@@ -71,6 +73,8 @@ function CustomDropdown({ value, onChange, options, placeholder = "Select…", l
     </div>
   );
 }
+=======
+>>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
 
 const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
   const { toast } = useToast();
@@ -304,9 +308,12 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       return { text: "—", type: "none" };
     }
 
-    // Get dish names
+    // Get dish names (dishes can live directly on a category or nested under its subcategories)
     const dishNames = adminData.categories
-      .flatMap(cat => cat.dishes || [])
+      .flatMap(cat => [
+        ...(cat.dishes || []),
+        ...(cat.subCategories || []).flatMap(sub => sub.dishes || [])
+      ])
       .filter(d => disabled.includes(d.id))
       .map(d => d.name);
 
@@ -373,7 +380,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Ingredient</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "name"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -385,7 +394,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Price / 100g</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "price"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -397,7 +408,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Stock (kg)</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "stock"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -409,7 +422,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Stocks (%)</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "stockPercent"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -421,7 +436,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Last Purchased</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "lastUpdated"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -433,7 +450,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Expiry Date</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "expiryDate"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -535,18 +554,13 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 className="modal-cancel-btn"
                 onClick={closeModal}
               >
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front close-padding"><img src={closeIcon} /></span>
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front close-padding"><img src={closeIcon} /></span>
               </button>
             </div>
 
             <div className="modal-body">
-              <div className="form-group">
-                <label></label>
-
-              </div>
-
               <div className="form-group">
                 <div className="mat">
                   <input

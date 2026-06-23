@@ -9,45 +9,7 @@ import { CustomDatePicker, todayStr } from "../components/CustomDatePicker";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
-
-// ── Floating-label CustomDropdown ────────────────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
-  const wrapperClass = ["mat-select", value ? "has-value" : "", open ? "is-open" : ""].filter(Boolean).join(" ");
-  return (
-    <div className={wrapperClass} ref={ref}>
-      {label && <label className="mat-label">{label}{required && <span className="rf-req">*</span>}</label>}
-      <div className="dishes-dropdown-wrapper">
-        <button type="button" className="dishes-status-dropdown"
-          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-          {displayLabel || ""}
-        </button>
-        {open && (
-          <div className="dropdown-menu">
-            {options.map((o, i) => {
-              const val = o.value !== undefined ? o.value : o;
-              const lbl = o.label !== undefined ? o.label : o;
-              return (
-                <div key={i} onClick={(e) => { e.stopPropagation(); onChange(val); setOpen(false); }}>
-                  {lbl}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <span className="mat-bar" />
-    </div>
-  );
-}
+import CustomDropdown from "../components/CustomDropdown";
 
 const Offers = ({ adminData, setAdminData }) => {
   const { toast } = useToast();
@@ -103,16 +65,24 @@ const Offers = ({ adminData, setAdminData }) => {
       offerPrice
     };
 
-    const res = await api.post("/offers", payload);
+    try {
+      const res = await api.post("/offers", payload);
+      const saved = res.data || payload;
 
-    setAdminData(prev => ({
-      ...prev,
-      offers: [...(prev.offers || []), res.data]
-    }));
+      setAdminData(prev => {
+        const alreadyExists = (prev.offers || []).some(o => o.id === saved.id);
+        if (alreadyExists) return prev;
+        return { ...prev, offers: [...(prev.offers || []), saved] };
+      });
 
-    setNewOffer(EMPTY_OFFER);
-    setFormErrors({});
-    setShowModal(false);
+      toast.success("Offer added successfully.");
+      setNewOffer(EMPTY_OFFER);
+      setFormErrors({});
+      setShowModal(false);
+    } catch (err) {
+      console.error("Failed to add offer:", err);
+      toast.error("Failed to add offer");
+    }
   };
 
   const filteredOffers = useMemo(() => {
@@ -282,9 +252,9 @@ const Offers = ({ adminData, setAdminData }) => {
                 className="modal-cancel-btn"
                 onClick={() => { setShowModal(false); setFormErrors({}); }}
               >
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front close-padding"><img src={closeIcon} /></span>
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front close-padding"><img src={closeIcon} /></span>
               </button>
             </div>
 

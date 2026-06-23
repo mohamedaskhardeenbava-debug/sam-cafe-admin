@@ -49,17 +49,6 @@ const NoChartData = ({ message = "No data available" }) => (
   <div style={{ height: "100%", minHeight: 80, display: "flex", alignItems: "center", justifyContent: "center", color: "#aaa", fontWeight: 500, fontSize: 13 }}>{message}</div>
 );
 
-const getThisMonthDates = () => {
-  const today = new Date();
-  const start = new Date(today.getFullYear(), today.getMonth(), 1);
-  const dates = [];
-  for (let d = new Date(start); d <= today; d.setDate(d.getDate() + 1)) {
-    const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");
-    dates.push(`${y}-${m}-${day}`);
-  }
-  return dates;
-};
-
 const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -144,7 +133,7 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
       for (const c of adminData.categories) { if (c.id === id) { label = c.name; break; } const s = (c.subCategories || []).find(s => s.id === id); if (s) { label = s.name; break; } }
       return { name: label, value: Number(((v / grand) * 100).toFixed(1)), amount: v };
     });
-  }, [baseFilteredOrders]);
+  }, [baseFilteredOrders, adminData.categories]);
 
   const categoryItemSummary = useMemo(() => {
     const map = {}; let gRev = 0;
@@ -157,9 +146,6 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
   const dailyRevenue = useMemo(() => { const map = {}; baseFilteredOrders.forEach(o => { o.items.forEach(i => { map[o.date] = (map[o.date] || 0) + resolveRevenue(i); }); }); return Object.entries(map).sort(([a], [b]) => new Date(a) - new Date(b)).map(([date, revenue]) => ({ date, revenue })); }, [baseFilteredOrders]);
   const monthlyRevenue = useMemo(() => { const map = {}; baseFilteredOrders.forEach(o => { const month = format(new Date(o.date), "yyyy-MM"); o.items.forEach(i => { map[month] = (map[month] || 0) + resolveRevenue(i); }); }); return Object.entries(map).sort(([a], [b]) => new Date(a) - new Date(b)).map(([month, revenue]) => ({ month, revenue })); }, [baseFilteredOrders]);
   const revenueTrendData = useMemo(() => dailyRevenue.map(d => { const mk = d.date.slice(0, 7); const md = monthlyRevenue.find(m => m.month === mk); return { date: d.date, dailyRevenue: d.revenue, monthlyRevenue: md ? md.revenue : 0 }; }), [dailyRevenue, monthlyRevenue]);
-
-  const monthDates = getThisMonthDates();
-  const workingDays = monthDates.length;
 
   const staffStats = useMemo(() => staff.map(s => {
     const att = s.attendance || [];
@@ -181,7 +167,7 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
     const totalTracked = present + leave + absent;
     const attPct = totalTracked > 0 ? Math.round((present / totalTracked) * 100) : 0;
     return { id: s.id, name: s.name, role: s.role || "Staff", salary, advance, deduction, present, leave, absent, attPct, groomPct };
-  }), [staff, adminData.grooming, adminData.serviceGrooming, workingDays]);
+  }), [staff, adminData.grooming, adminData.serviceGrooming]);
 
   const sortedStaffStats = useMemo(() => {
     return [...staffStats].sort((a, b) => {

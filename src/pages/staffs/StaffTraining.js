@@ -4,6 +4,7 @@ import "./StaffModules.css";
 import api from "../../api";
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
+import CustomDropdown from "../../components/CustomDropdown";
 
 const typeColors = {
   Online: { bg: "#dbeafe", color: "#1e40af" },
@@ -12,6 +13,7 @@ const typeColors = {
   Workshop: { bg: "#ede9fe", color: "#4c1d95" },
 };
 
+<<<<<<< HEAD
 // ── CustomDropdown ───────────────────────────────────────────────────────────
 function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
   const [open, setOpen] = React.useState(false);
@@ -66,6 +68,8 @@ function CustomDropdown({ value, onChange, options, placeholder = "Select…", l
   );
 }
 
+=======
+>>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
 export default function StaffTraining({ adminData, setAdminData }) {
   const { toast } = useToast();
   const [trainings, setTrainings] = useState([]);
@@ -80,11 +84,24 @@ export default function StaffTraining({ adminData, setAdminData }) {
 
   useEffect(() => {
     const load = async () => {
+<<<<<<< HEAD
       const res = await api.get("/staff");
       const all = res.data.flatMap(s =>
         (s.training || []).map(t => ({ ...t, staffName: s.name }))
       );
       setTrainings(all);
+=======
+      try {
+        const res = await api.get("/staff");
+        const all = res.data.flatMap(s =>
+          (s.training || []).map(t => ({ ...t, staffName: s.name }))
+        );
+        setTrainings(all);
+      } catch (err) {
+        console.error("Failed to load staff training data:", err);
+        toast.error("Failed to load training data. Please reload the page.");
+      }
+>>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
     };
     load();
   }, []);
@@ -358,9 +375,15 @@ export default function StaffTraining({ adminData, setAdminData }) {
                 <span className="sc-modal-sub">Training Record</span>
               </div>
               <button type="button" className="modal-cancel-btn" onClick={() => setSelected(null)}>
+<<<<<<< HEAD
                 <span class="shadow"></span>
                 <span class="edge"></span>
                 <span class="front close-padding"><img src={closeIcon} /></span>
+=======
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front close-padding"><img src={closeIcon} /></span>
+>>>>>>> 630e8829c13e1815b761ce29c9b3d4707d7412d7
               </button>
             </div>
 

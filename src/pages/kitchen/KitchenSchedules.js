@@ -7,6 +7,7 @@ import api from "../../api";
 import closeIcon from "../../icon/close-icon.png";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 import { useToast } from "../../useToast";
+import CustomDropdown from "../../components/CustomDropdown";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -17,44 +18,6 @@ const PRESETS = [
 ];
 
 const EMPTY_FORM = { work: "", staff: "", date: "", department: "", status: "", lastRate: "" };
-
-// ── CustomDropdown (floating label version) ──────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
-    const [open, setOpen] = React.useState(false);
-    const ref = React.useRef(null);
-    React.useEffect(() => {
-        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
-    }, []);
-    const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-    const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
-    const wrapperClass = ["mat-select", value ? "has-value" : "", open ? "is-open" : ""].filter(Boolean).join(" ");
-    return (
-        <div className={wrapperClass} ref={ref}>
-            {label && <label className="mat-label">{label}{required && <span className="rf-req">*</span>}</label>}
-            <div className="dishes-dropdown-wrapper">
-                <button type="button" className="dishes-status-dropdown"
-                    onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-                    {displayLabel || ""}
-                </button>
-                {open && (
-                    <div className="dropdown-menu">
-                        <div onClick={() => { onChange(""); setOpen(false); }}>{placeholder}</div>
-                        {options.map((o, i) => {
-                            const val = o.value !== undefined ? o.value : o;
-                            const lbl = o.label !== undefined ? o.label : o;
-                            return (
-                                <div key={i} onClick={() => { onChange(val); setOpen(false); }}>{lbl}</div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
-            <span className="mat-bar" />
-        </div>
-    );
-}
 
 export default function KitchenSchedules({ adminData, setAdminData }) {
     const { toast } = useToast();
@@ -107,13 +70,35 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
 
     const moveExpiredSchedules = async () => {
         const expired = list.filter(item => item.date < today);
-        const upcoming = list.filter(item => item.date >= today);
         if (!expired.length) return;
+
         const activity = adminData?.kitchenActivity || [];
-        for (const item of list) await api.delete(`/kitchenSchedules/${item.id}`);
-        for (const item of upcoming) await api.post("/kitchenSchedules", item);
-        for (const item of expired) await api.post("/kitchenActivity", item);
-        setAdminData(prev => ({ ...prev, kitchenSchedules: upcoming, kitchenActivity: [...activity, ...expired] }));
+        const deletedIds = [];
+
+        for (const item of expired) {
+            try {
+                await api.delete(`/kitchenSchedules/${item.id}`);
+                deletedIds.push(item.id);
+            } catch (err) {
+                toast.error(`Failed to delete schedule ${item.id}.`);
+                deletedIds.push(item.id);
+            }
+        }
+
+        for (const item of expired) {
+            try {
+                await api.post("/kitchenActivity", item);
+            } catch (err) {
+                toast.error("Failed to archive schedule.");
+            }
+        }
+
+        // Remove expired from local state regardless of API delete outcome
+        setAdminData(prev => ({
+            ...prev,
+            kitchenSchedules: (prev.kitchenSchedules || []).filter(i => !deletedIds.includes(i.id)),
+            kitchenActivity: [...activity, ...expired]
+        }));
     };
 
     useEffect(() => { moveExpiredSchedules(); }, []);
@@ -138,7 +123,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
         }));
     };
 
-    const exportToExcel = () => {
+    const handleExport = () => {
         if (!filteredList.length) { toast.warning("No schedule data to export"); return; }
         const rows = filteredList.map(item => ({
             Work: item.work || "—",
@@ -158,7 +143,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                 <div style={{ display: "flex", gap: "8px" }}>
                     <button
                         className="modal-save-btn"
-                        onClick={exportToExcel}>
+                        onClick={handleExport}>
                         <span className="shadow"></span>
                         <span className="edge"></span>
                         <span className="front">Export</span>
@@ -236,9 +221,9 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                         <div className="modal-header">
                             <h3>Add Schedule</h3>
                             <button type="button" className="modal-cancel-btn" onClick={cancel}>
-                                <span class="shadow"></span>
-                                <span class="edge"></span>
-                                <span class="front close-padding"><img src={closeIcon} /></span>
+                                <span className="shadow"></span>
+                                <span className="edge"></span>
+                                <span className="front close-padding"><img src={closeIcon} /></span>
                             </button>
                         </div>
                         <div className="modal-body">
