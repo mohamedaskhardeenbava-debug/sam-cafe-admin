@@ -1,12 +1,21 @@
+/**
+ * Dashboard.js  —  Sam Cafe Admin Panel
+ * Dashboard overview with KPIs and charts
+ */
+
 import React, { useMemo, useState } from "react";
-import { exportMultiSheet } from "../utils/excelUtils";
 import { useNavigate } from "react-router-dom";
-import "./Dashboard.css";
-import ScheduleSection from './DashboardScheduleSection';
+
 import dayjs from "dayjs";
+
+import { exportMultiSheet } from "../utils/excelUtils";
+
+import ScheduleSection from './DashboardScheduleSection';
 import { useToast } from "../useToast";
+
+import "./Dashboard.css";
 import {
-  PieChart, Pie, Cell, Sector,
+PieChart, Pie, Cell, Sector,
   BarChart, Bar,
   XAxis, YAxis, Tooltip,
   ResponsiveContainer, LineChart, Line,
@@ -14,6 +23,8 @@ import {
 } from "recharts";
 import { format } from "date-fns";
 import { CustomDatePicker } from "../components/CustomDatePicker";
+import Button3D from "../components/Button3D";
+import PageLoader from "../components/PageLoader";
 
 const COLORS = ["#ff9f43", "#54a0ff", "#FFD700", "#1dd1a1", "#00FFFF", "#e93c3c", "#FFFF00", "#FF8AFF"];
 const STAFF_PALETTE = ["#4361ee", "#06d6a0", "#ffd166", "#ef476f", "#7209b7", "#4cc9f0", "#f72585", "#3a0ca3"];
@@ -50,8 +61,11 @@ const NoChartData = ({ message = "No data available" }) => (
 );
 
 const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
+  // ── Hooks
+
   const navigate = useNavigate();
   const { toast } = useToast();
+
   const ingredients = adminData.ingredients || [];
   const staff = adminData.staff || [];
   const [activeIndex, setActiveIndex] = useState(null);
@@ -61,6 +75,9 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
   const [toDate, setToDate] = useState(today);
   const [modeFilters, setModeFilters] = useState(new Set());
   const [statusFilters, setStatusFilters] = useState(new Set());
+
+  // ── Handlers
+
   const toggleFilter = (setter, val) => setter(prev => { const n = new Set(prev); n.has(val) ? n.delete(val) : n.add(val); return n; });
   const [datePreset, setDatePreset] = useState("today");
 
@@ -92,6 +109,8 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
     }
     setDatePreset(preset);
   }, [today]);
+
+  // ── Helpers
 
   const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
   const roundTo = (v, d = 2) => Math.round((Number(v) + Number.EPSILON) * 10 ** d) / 10 ** d;
@@ -195,6 +214,7 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
     totalAdvance: staffStats.reduce((s, x) => s + x.advance, 0),
     avgAttendance: staffStats.length > 0 ? Math.round(staffStats.reduce((s, x) => s + x.attPct, 0) / staffStats.length) : 0,
   }), [staffStats]);
+  if (!adminData?.orders?.length) return <PageLoader label="Loading dashboard…" />;
 
   const attendanceBarData = staffStats.map(s => ({ name: s.name.split(" ")[0], Present: s.present, Leave: s.leave, Absent: s.absent, pct: s.attPct }));
   const salaryPieData = staffStats.map((s, i) => ({ name: s.name.split(" ")[0], value: s.salary, color: STAFF_PALETTE[i % STAFF_PALETTE.length], role: s.role }));
@@ -295,39 +315,39 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
     <div className="dashboard-page">
       {/* HEADER */}
       <div className="dashboard-header">
-        <h2 className="dashboard-title">Dashboard</h2>
-        <div className="dashboard-kpi-row-inheader">
-          <div className="kpi-card kpi-small"><p>Total Orders</p><h3>{totalOrders}</h3></div>
-          <div className={`kpi-card kpi-small link ${modeFilters.has("dine in") ? "active" : ""}`} onClick={() => toggleFilter(setModeFilters, "dine in")} onDoubleClick={() => navigate("/orders", { state: { mode: "dine in", fromDate, toDate } })}><p>Dine In</p><h3>{orderModeStats.dineIn}</h3></div>
-          <div className={`kpi-card kpi-small link ${modeFilters.has("take away") ? "active" : ""}`} onClick={() => toggleFilter(setModeFilters, "take away")} onDoubleClick={() => navigate("/orders", { state: { mode: "take away", fromDate, toDate } })}><p>Take Away</p><h3>{orderModeStats.takeaway}</h3></div>
+        <div className="dashboard-header-left">
+          <div className="justify">
+            <h2 className="dashboard-title">Dashboard</h2>
+            <Button3D onClick={handleExport}>Export</Button3D>
+          </div>
+          <div className="dashboard-filter-date">
+            <div className="dash-preset-btns">
+              {[["today", "Today"], ["weekly", "This Week"], ["monthly", "This Month"]].map(([k, lbl]) => (
+                <button key={k} className={`filter-pill${datePreset === k ? " active" : ""}`} onClick={() => applyPreset(k)}>{lbl}</button>
+              ))}
+            </div>
+            <div className="dashboard-custom-datepickers">
+              <CustomDatePicker label="From" value={fromDate} max={toDate} onChange={(s) => { setFromDate(s); if (s > toDate) setToDate(s); setDatePreset("custom"); }} />
+              <CustomDatePicker label="To" value={toDate} min={fromDate} max={today} onChange={(s) => { setToDate(s); setDatePreset("custom"); }} />
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* DATE FILTER */}
-      <div className="dashboard-filter">
-        <div className="dashboard-filter-date">
-          <div className="dash-preset-btns">
-            {[["today", "Today"], ["weekly", "This Week"], ["monthly", "This Month"]].map(([k, lbl]) => (
-              <button key={k} className={`filter-pill${datePreset === k ? " active" : ""}`} onClick={() => applyPreset(k)}>{lbl}</button>
-            ))}
+        {/* DATE FILTER */}
+        <div className="dashboard-header-right">
+          <div className="dashboard-kpi-row-inheader">
+            <div className="kpi-card kpi-small"><p>Total Orders</p><h3>{totalOrders}</h3></div>
+            <div className={`kpi-card kpi-small link ${modeFilters.has("dine in") ? "active" : ""}`} onClick={() => toggleFilter(setModeFilters, "dine in")} onDoubleClick={() => navigate("/orders", { state: { mode: "dine in", fromDate, toDate } })}><p>Dine In</p><h3>{orderModeStats.dineIn}</h3></div>
+            <div className={`kpi-card kpi-small link ${modeFilters.has("take away") ? "active" : ""}`} onClick={() => toggleFilter(setModeFilters, "take away")} onDoubleClick={() => navigate("/orders", { state: { mode: "take away", fromDate, toDate } })}><p>Take Away</p><h3>{orderModeStats.takeaway}</h3></div>
           </div>
-          <div className="dashboard-custom-datepickers">
-            <CustomDatePicker label="From" value={fromDate} max={toDate} onChange={(s) => { setFromDate(s); if (s > toDate) setToDate(s); setDatePreset("custom"); }} />
-            <CustomDatePicker label="To" value={toDate} min={fromDate} max={today} onChange={(s) => { setToDate(s); setDatePreset("custom"); }} />
-          </div>
-        </div>
-        <button className="modal-save-btn" onClick={handleExport}>
-          <span className="shadow"></span>
-          <span className="edge"></span>
-          <span className="front">Export</span>
-        </button>
-        <div className="dashboard-filter-kpis">
-          <div className="dashboard-kpi-row">
-            <div className="kpi-card kpi-small"><p>Total Items</p><h3>{itemStats.total}</h3></div>
-            <div className={"kpi-card kpi-small status-placed link"} onClick={() => { toggleFilter(setStatusFilters, "placed"); navigate("/orders", { state: { status: "placed", fromDate, toDate } }); }}><p>Placed</p><h3>{itemStats.placed}</h3></div>
-            <div className={"kpi-card kpi-small status-preparing link"} onClick={() => { toggleFilter(setStatusFilters, "preparing"); navigate("/orders", { state: { status: "preparing", fromDate, toDate } }); }}><p>Preparing</p><h3>{itemStats.preparing}</h3></div>
-            <div className={"kpi-card kpi-small status-service-pickup link"} onClick={() => { toggleFilter(setStatusFilters, "service pickup"); navigate("/orders", { state: { status: "service pickup", fromDate, toDate } }); }}><p>Service Pickup</p><h3>{itemStats.servicePickup}</h3></div>
-            <div className={"kpi-card kpi-small status-completed link"} onClick={() => { toggleFilter(setStatusFilters, "completed"); navigate("/orders", { state: { status: "completed", fromDate, toDate } }); }}><p>Completed</p><h3>{itemStats.completed}</h3></div>
+          <div className="dashboard-filter-kpis">
+            <div className="dashboard-kpi-row">
+              <div className="kpi-card kpi-small"><p>Total Items</p><h3>{itemStats.total}</h3></div>
+              <div className={"kpi-card kpi-small status-placed link"} onClick={() => { toggleFilter(setStatusFilters, "placed"); navigate("/orders", { state: { status: "placed", fromDate, toDate } }); }}><p>Placed</p><h3>{itemStats.placed}</h3></div>
+              <div className={"kpi-card kpi-small status-preparing link"} onClick={() => { toggleFilter(setStatusFilters, "preparing"); navigate("/orders", { state: { status: "preparing", fromDate, toDate } }); }}><p>Preparing</p><h3>{itemStats.preparing}</h3></div>
+              <div className={"kpi-card kpi-small status-service-pickup link"} onClick={() => { toggleFilter(setStatusFilters, "service pickup"); navigate("/orders", { state: { status: "service pickup", fromDate, toDate } }); }}><p>Service Pickup</p><h3>{itemStats.servicePickup}</h3></div>
+              <div className={"kpi-card kpi-small status-completed link"} onClick={() => { toggleFilter(setStatusFilters, "completed"); navigate("/orders", { state: { status: "completed", fromDate, toDate } }); }}><p>Completed</p><h3>{itemStats.completed}</h3></div>
+            </div>
           </div>
         </div>
       </div>

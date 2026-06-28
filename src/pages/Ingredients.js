@@ -1,17 +1,27 @@
+/**
+ * Ingredients.js  —  Sam Cafe Admin Panel
+ * Ingredients management page
+ */
+
 import React, { useState, useMemo } from "react";
-import "./Ingredients.css";
-import "./ModalCSS.css";
 import { useNavigate } from "react-router-dom";
+
+import api from "../api";
+import { createRecord, updateRecord, deleteRecord } from "../utils/crudUtils";
+
 import deleteIcon from "../icon/delete-icon.png";
 import closeIcon from "../icon/close-icon.png";
 import { allowTextInput } from "../App";
 import { sortArray } from "../App";
 import { EmptyRow } from "../App";
-import api from "../api";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 import { useToast } from "../useToast";
+import Button3D from "../components/Button3D";
 
+import "./Ingredients.css";
+import "./ModalCSS.css";
+import PageLoader from "../components/PageLoader";
 
 const EMPTY_FORM = {
   id: "",
@@ -31,14 +41,16 @@ const EMPTY_FORM = {
   history: ""
 };
 
-
 const generateIngredientId = (name) => {
   const base = name.trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
   return "ing_" + (base || "item") + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
 };
 
 const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCamelCase, handleSort, sortConfig }) => {
+  // ── Hooks
+
   const { toast } = useToast();
+
   const [showForm, setShowForm] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [imagePreview, setImagePreview] = useState("");
@@ -75,6 +87,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
 
   const { displayLimit, sentinelRef, containerRef, hasMore } =
     useInfiniteScroll(filteredIngredients.length, 30);
+  if (!adminData?.ingredients?.length) return <PageLoader label="Loading ingredients…" />;
 
   const handleSave = async () => {
     const e = {};
@@ -119,35 +132,28 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
       history: (formData.history)
     };
 
-
-    try {
-      if (isEditMode) {
-        const res = await api.put(`/ingredients/${payload.id}`, payload);
-        const saved = { ...(res.data || payload), id: payload.id };
-        setAdminData(prev => ({
-          ...prev,
-          ingredients: (prev.ingredients || []).map(ing =>
-            String(ing.id) === String(saved.id) ? saved : ing
-          ),
-        }));
-        toast.success("Ingredient updated");
-      } else {
-        const res = await api.post(`/ingredients`, payload);
-        const saved = { ...(res.data || payload), id: payload.id };
-        setAdminData(prev => {
-          const alreadyExists = (prev.ingredients || []).some(
-            ing => String(ing.id) === String(saved.id)
-          );
-          if (alreadyExists) return prev;
-          return { ...prev, ingredients: [...(prev.ingredients || []), saved] };
-        });
-        toast.success("Ingredient added");
-      }
-
-      resetIngredientForm();
-    } catch (err) {
-      console.error("Failed to save ingredient:", err);
-      toast.error(isEditMode ? "Failed to update ingredient" : "Failed to add ingredient");
+    if (isEditMode) {
+      await updateRecord({
+        api, toast,
+        endpoint: `/ingredients/${payload.id}`,
+        payload,
+        stateKey: "ingredients",
+        setAdminData,
+        successMsg: "Ingredient updated",
+        errorMsg: "Failed to update ingredient",
+        onSuccess: resetIngredientForm,
+      });
+    } else {
+      await createRecord({
+        api, toast,
+        endpoint: "/ingredients",
+        payload,
+        stateKey: "ingredients",
+        setAdminData,
+        successMsg: "Ingredient added",
+        errorMsg: "Failed to add ingredient",
+        onSuccess: resetIngredientForm,
+      });
     }
   };
 
@@ -174,29 +180,27 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
   };
 
   return (
-    <div className="ingredients-page">
+    <div className="inner-page">
       {/* HEADER */}
-      <div className="ingredient-header">
-        <h2 className="ingredient-title">Ingredients</h2>
-        <button className="modal-save-btn" onClick={openAddForm}>
-          <span className="shadow"></span>
-          <span className="edge"></span>
-          <span className="front">+ Add Ingredient</span>
-        </button>
+      <div className="header">
+        <h2 className="title">Ingredients</h2>
+        <Button3D onClick={openAddForm}>+ Add Ingredient</Button3D>
       </div>
 
       {/* FILTER BAR */}
-      <div className="ingredient-filter-bar">
-        <input
-          className="search-input"
-          placeholder=" Search name or brand…"
-          value={ingredientSearch}
-          onChange={e => setIngredientSearch(e.target.value)}
-        />
-        {ingredientSearch && (
-          <button className="ae-clear-filter" onClick={() => setIngredientSearch("")}>Clear</button>
-        )}
-        <span className="ae-result-count">{filteredIngredients.length} ingredient(s)</span>
+      <div className="filter-bar">
+        <div className="justify">
+          <input
+            className="search-input"
+            placeholder=" Search name or brand…"
+            value={ingredientSearch}
+            onChange={e => setIngredientSearch(e.target.value)}
+          />
+          {ingredientSearch && (
+            <button className="ae-clear-filter" onClick={() => setIngredientSearch("")}>Clear</button>
+          )}
+          <span className="result-count">{filteredIngredients.length} ingredient(s)</span>
+        </div>
       </div>
 
       {showForm && (
@@ -210,16 +214,8 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
 
             <div className="modal-header">
               <h3>{isEditMode ? "Edit Ingredient" : "Add New Ingredient"}</h3>
-              <button
-                type="button"
-                className="modal-cancel-btn"
-                aria-label="Close"
-                onClick={resetIngredientForm}
-              >
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly aria-label="Close"
+                onClick={resetIngredientForm}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="modal-body">
@@ -279,7 +275,6 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                   />
                 )}
               </div>
-
 
               <div className="form-group">
                 <label>Used For</label>
@@ -440,15 +435,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                 <label>Brands</label>
 
                 {!showBrandInput && (
-                  <button
-                    type="button"
-                    className="modal-save-btn"
-                    onClick={() => setShowBrandInput(true)}
-                  >
-                    <span className="shadow"></span>
-                    <span className="edge"></span>
-                    <span className="front">Add Brand</span>
-                  </button>
+                  <Button3D onClick={() => setShowBrandInput(true)}>Add Brand</Button3D>
                 )}
 
                 {showBrandInput && (
@@ -472,51 +459,35 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                     </div>
 
                     <div className="action">
-                      <button
-                        className="modal-cancel-btn"
-                        type="button"
-                        onClick={() => {
-                          setBrandInput("");
-                          setShowBrandInput(false);
-                        }}
-                      >
-                        <span className="shadow"></span>
-                        <span className="edge"></span>
-                        <span className="front">Cancel</span>
-                      </button>
+                      <Button3D variant="cancel" onClick={() => {
+                        setBrandInput("");
+                        setShowBrandInput(false);
+                      }}>Cancel</Button3D>
 
-                      <button
-                        type="button"
-                        className="modal-save-btn"
-                        onClick={() => {
-                          if (!brandInput.trim()) return;
+                      <Button3D onClick={() => {
+                        if (!brandInput.trim()) return;
 
-                          const id = `brand_${brandInput
-                            .toLowerCase()
-                            .replace(/\s+/g, "_")}`;
+                        const id = `brand_${brandInput
+                          .toLowerCase()
+                          .replace(/\s+/g, "_")}`;
 
-                          if (
-                            formData.brands.some(
-                              b => b.name.toLowerCase() === brandInput.toLowerCase()
-                            )
-                          ) {
-                            toast.warning("Brand already added");
-                            return;
-                          }
+                        if (
+                          formData.brands.some(
+                            b => b.name.toLowerCase() === brandInput.toLowerCase()
+                          )
+                        ) {
+                          toast.warning("Brand already added");
+                          return;
+                        }
 
-                          setFormData(prev => ({
-                            ...prev,
-                            brands: [...prev.brands, { id, name: brandInput }]
-                          }));
+                        setFormData(prev => ({
+                          ...prev,
+                          brands: [...prev.brands, { id, name: brandInput }]
+                        }));
 
-                          setBrandInput("");
-                          setShowBrandInput(false);
-                        }}
-                      >
-                        <span className="shadow"></span>
-                        <span className="edge"></span>
-                        <span className="front">Add</span>
-                      </button>
+                        setBrandInput("");
+                        setShowBrandInput(false);
+                      }}>Add</Button3D>
                     </div>
                   </div>
                 )}
@@ -557,34 +528,18 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
             </div>
 
             <div className="modal-footer">
-              <button
-                className="modal-cancel-btn"
-                type="button"
-                onClick={resetIngredientForm}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
-              <button
-                className="modal-save-btn"
-                type="submit"
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">{isEditMode ? "Save Changes" : "Add Ingredient"}</span>
-              </button>
+              <Button3D variant="cancel" onClick={resetIngredientForm}>Cancel</Button3D>
+              <Button3D type="submit">{isEditMode ? "Save Changes" : "Add Ingredient"}</Button3D>
             </div>
           </form>
         </div>
       )}
 
-
-      <div className="ingredient-table-wrapper" ref={containerRef}>
-        <table className="ingredient-table">
+      <div className="table-wrapper" style={{maxHeight:"calc(100vh - 260px)"}} ref={containerRef}>
+        <table className="table">
           <thead>
             <tr>
-              <th>Image</th>
+              <th className="icon-width">Image</th>
               <th
                 onClick={() => handleSort("name")}
                 className={sortConfig.key === "name" ? "sorted" : ""}
@@ -597,22 +552,22 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                 </span>
               </th>
               <th>Brand</th>
-              <th>Calories</th>
-              <th>Protein</th>
-              <th>Fibre</th>
-              <th>Fat</th>
-              <th>Delete</th>
+              <th className="icon-width">Calories</th>
+              <th className="icon-width">Protein</th>
+              <th className="icon-width">Fibre</th>
+              <th className="icon-width">Fat</th>
+              <th className="icon-width">Delete</th>
             </tr>
           </thead>
 
           <tbody>
             {filteredIngredients.length === 0 ? (
-              <EmptyRow colSpan={7} message="No ingredients found" />
+              <EmptyRow colSpan={8} message="No ingredients found" />
             ) : (
               filteredIngredients.slice(0, displayLimit).map((ingredient) => (
                 <tr key={ingredient.id}>
-                  <td>
-                    <div className="ingredient-image">
+                  <td className="icon-width">
+                    <div className="table-image">
                       <img src={ingredient.image} alt={ingredient.name} />
                     </div>
                   </td>
@@ -630,51 +585,44 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                       ? ingredient.brands.map(b => b.name).join(" / ")
                       : "-"}
                   </td>
-                  <td>{ingredient.nutritionPer100g.kcal}</td>
-                  <td>{ingredient.nutritionPer100g.protein}g</td>
-                  <td>{ingredient.nutritionPer100g.fibre}g</td>
-                  <td>{ingredient.nutritionPer100g.fat}g</td>
+                  <td className="icon-width">{ingredient.nutritionPer100g.kcal}</td>
+                  <td className="icon-width">{ingredient.nutritionPer100g.protein}g</td>
+                  <td className="icon-width">{ingredient.nutritionPer100g.fibre}g</td>
+                  <td className="icon-width">{ingredient.nutritionPer100g.fat}g</td>
 
-                  <td>
-                    <button
-                      className="modal-cancel-btn"
-                      onClick={() => {
-                        // Capture the index now (at click time) so revert can
-                        // restore the row at its original position, not appended
-                        const originalIndex = adminData.ingredients.findIndex(
-                          i => i.id === ingredient.id
-                        );
-                        toast.confirm(
-                          `Delete "${ingredient.name}"?`,
-                          async () => {
-                            // Optimistic removal
-                            setAdminData(prev => ({
-                              ...prev,
-                              ingredients: prev.ingredients.filter(
-                                i => i.id !== ingredient.id
-                              )
-                            }));
-                            try {
-                              await api.delete(`/ingredients/${ingredient.id}`);
-                              toast.success("Ingredient deleted");
-                            } catch (err) {
-                              // Revert at original position (single toast)
-                              console.error("Delete ingredient failed:", err);
-                              setAdminData(prev => {
-                                const next = [...prev.ingredients];
-                                next.splice(Math.min(originalIndex, next.length), 0, ingredient);
-                                return { ...prev, ingredients: next };
-                              });
-                              toast.error("Failed to delete ingredient");
-                            }
+                  <td className="icon-width">
+                    <Button3D variant="cancel" iconOnly onClick={() => {
+                      // Capture the index now (at click time) so revert can
+                      // restore the row at its original position, not appended
+                      const originalIndex = adminData.ingredients.findIndex(
+                        i => i.id === ingredient.id
+                      );
+                      toast.confirm(
+                        `Delete "${ingredient.name}"?`,
+                        async () => {
+                          // Optimistic removal
+                          setAdminData(prev => ({
+                            ...prev,
+                            ingredients: prev.ingredients.filter(
+                              i => i.id !== ingredient.id
+                            )
+                          }));
+                          try {
+                            await api.delete(`/ingredients/${ingredient.id}`);
+                            toast.success("Ingredient deleted");
+                          } catch (err) {
+                            // Revert at original position (single toast)
+                            console.error("Delete ingredient failed:", err);
+                            setAdminData(prev => {
+                              const next = [...prev.ingredients];
+                              next.splice(Math.min(originalIndex, next.length), 0, ingredient);
+                              return { ...prev, ingredients: next };
+                            });
+                            toast.error("Failed to delete ingredient");
                           }
-                        );
-                      }}
-                    >
-                      <span className="shadow"></span>
-                      <span className="edge"></span>
-                      <span className="front close-padding"><img src={deleteIcon} /></span>
-                    </button>
+                        }
+                      );
+                    }}><img src={deleteIcon} /></Button3D>
                   </td>
                 </tr>
               )))}

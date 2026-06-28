@@ -1,8 +1,13 @@
+/**
+ * Dishes.js  —  Sam Cafe Admin Panel
+ * Dishes management page
+ */
+
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import "./Dishes.css";
-import "./ModalCSS.css";
+
 import api from "../api";
+
 import deleteIcon from "../icon/delete-icon.png";
 import closeIcon from "../icon/close-icon.png";
 import { allowTextInput } from "../App";
@@ -12,8 +17,15 @@ import useInfiniteScroll from "../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 import { useToast } from "../useToast";
 import CustomDropdown from "../components/CustomDropdown";
+import Button3D from "../components/Button3D";
+
+import "./Dishes.css";
+import "./ModalCSS.css";
+import PageLoader from "../components/PageLoader";
 
 const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }) => {
+  // ── Hooks
+
   const { toast } = useToast();
   const [dishImagePreview, setDishImagePreview] = useState("");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
@@ -39,7 +51,6 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     },
     ingredients: []
   });
-
 
   const availableIngredients = (adminData.ingredients || [])
     .filter(
@@ -87,7 +98,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!adminData.categories?.length) return;
+    if (!adminData.categories?.length) return <PageLoader label="Loading dishes…" />;
 
     if (categoryId) {
       setSelectedCategoryIds([categoryId]);
@@ -443,11 +454,10 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     }));
   };
 
-
   return (
-    <div className="dishes-page">
-      <div className="dish-header">
-        <h2 className="dish-title">Dishes</h2>
+    <div className="inner-page">
+      <div className="header" style={{ alignItems: "flex-start" }}>
+        <h2 className="title">Dishes</h2>
 
         <div className="dish-category-buttons">
 
@@ -487,25 +497,18 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
         </div>
 
-        <button
-          className="modal-save-btn"
-          onClick={() => setShowForm(true)}
-        >
-          <span className="shadow"></span>
-          <span className="edge"></span>
-          <span className="front">+ Add Dish</span>
-        </button>
+        <Button3D onClick={() => setShowForm(true)}>+ Add Dish</Button3D>
 
       </div>
 
       <div className="dish-block">
         {/* <div className="dish-title">{selectedCategory?.name}</div> */}
 
-        <div className="dish-table-wrapper" ref={containerRef}>
-          <table className="dish-table">
+        <div className="table-wrapper dish-page-table" ref={containerRef}>
+          <table className="table">
             <thead>
               <tr>
-                <th>Image</th>
+                <th className="icon-width">Image</th>
                 <th
                   onClick={() => handleSort("name")}
                   className={sortConfig.key === "name" ? "sorted" : ""}
@@ -520,7 +523,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 <th>Type</th>
                 <th>Event Food</th>
                 <th>Base Price</th>
-                <th>Delete</th>
+                <th className="icon-width">Delete</th>
               </tr>
             </thead>
 
@@ -528,11 +531,11 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               {sortedDishes.slice(0, displayLimit).map((dish) => (
                 <tr key={dish.id}>
                   <td
-                    className="clickable"
+                    className="clickable icon-width"
                     onClick={() => navigate(`/dishes/${dish.categoryId}/${dish.id}`)}
                   >
                     <div
-                      className="dish-image"
+                      className="table-image"
                       onClick={() => navigate(`/dishes/${dish.categoryId}/${dish.id}`)}
                     >
                       <img src={dish.image || ""} alt="" />
@@ -561,25 +564,16 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                   <td>{dish.basePrice}
                   </td>
 
-                  <td>
-                    <button
-                      className="modal-cancel-btn"
-                      disabled={showForm}
-                      onClick={() => handleDelete(dish.id, dish.name)}
-                    >
-                      <span className="shadow"></span>
-                      <span className="edge"></span>
-                      <span className="front close-padding">
-                        <img src={deleteIcon} alt="" />
-                      </span>
-                    </button>
+                  <td className="icon-width">
+                    <Button3D variant="cancel" iconOnly disabled={showForm}
+                      onClick={() => handleDelete(dish.id, dish.name)}><img src={deleteIcon} alt="" /></Button3D>
 
                   </td>
                 </tr>
               ))}
 
               {sortedDishes.length === 0 && (
-                <EmptyRow colSpan={5} message="No dishes available" />
+                <EmptyRow colSpan={6} message="No dishes available" />
               )}
               <InfiniteScrollLoader
                 sentinelRef={sentinelRef}
@@ -623,16 +617,8 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                   </>
                 )}
               </h3>
-              <button
-                type="button"
-                className="modal-cancel-btn"
-                aria-label="Close"
-                onClick={resetDishForm}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly aria-label="Close"
+                onClick={resetDishForm}><img src={closeIcon} /></Button3D>
             </div>
             <div className="modal-body">
               <div className="form-group">
@@ -807,14 +793,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                     </div>
                   </div>
 
-                  <button
-                    className="modal-save-btn"
-                    type="button"
-                    onClick={handleAddIngredient}>
-                    <span className="shadow"></span>
-                    <span className="edge"></span>
-                    <span className="front">Add Ingredient</span>
-                  </button>
+                  <Button3D onClick={handleAddIngredient}>Add Ingredient</Button3D>
                   {newDish.ingredients.length > 0 && (
                     <table className="preview-table">
                       <thead>
@@ -833,17 +812,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                             <td>{ing.quantity}</td>
                             <td>{ing.calories}</td>
                             <td>
-                              <button
-                                type="button"
-                                className="modal-danger-btn"
-                                onClick={() => handleRemoveIngredient(index)}
-                              >
-                                <span className="shadow"></span>
-                                <span className="edge"></span>
-                                <span className="front close-padding">
-                                  Remove
-                                </span>
-                              </button>
+                              <Button3D variant="danger" iconOnly onClick={() => handleRemoveIngredient(index)}>Remove</Button3D>
                             </td>
                           </tr>
                         ))}
@@ -856,22 +825,8 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
             </div>
             <div className="modal-footer">
-              <button
-                className="modal-cancel-btn"
-                type="button"
-                onClick={resetDishForm}>
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
-              <button
-                className="modal-save-btn"
-                type="submit"
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Add Dish</span>
-              </button>
+              <Button3D variant="cancel" onClick={resetDishForm}>Cancel</Button3D>
+              <Button3D type="submit">Add Dish</Button3D>
             </div>
           </form>
         </div>

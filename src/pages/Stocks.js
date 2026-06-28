@@ -1,31 +1,42 @@
+/**
+ * Stocks.js  —  Sam Cafe Admin Panel
+ * Ingredient stock tracking page
+ */
+
 import React, { useState, useMemo, useEffect } from "react";
-import { exportToExcel } from "../utils/excelUtils";
-import "./Stocks.css";
 import { useNavigate } from "react-router-dom";
+
+import { exportToExcel } from "../utils/excelUtils";
 import api from "../api";
+import { CustomDatePicker } from "../components/CustomDatePicker";
+import socket from "../socket";
+
 import editIcon from "../icon/edit-icon.png";
 import closeIcon from "../icon/close-icon.png";
 import { EmptyRow } from "../App";
 import { formatDisplayDate } from "../App";
-import { CustomDatePicker } from "../components/CustomDatePicker";
-import socket from "../socket";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 import CustomDropdown from "../components/CustomDropdown";
+import Button3D from "../components/Button3D";
+
+import "./Stocks.css";
+import PageLoader from "../components/PageLoader";
 
 const toTwoDecimals = (value) =>
   Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 
-
 const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
+  // ── Hooks
+
   const { toast } = useToast();
   const navigate = useNavigate();
   const today = new Date().toISOString().split("T")[0];
 
+
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
-
 
   const [openFrom, setOpenFrom] = useState(false);
   const [openTo, setOpenTo] = useState(false);
@@ -38,7 +49,6 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
   const [disableGlobally, setDisableGlobally] = useState(false);
   const [selectedDishToDisable, setSelectedDishToDisable] = useState("");
-
 
   const dishesContainingIngredient = useMemo(() => {
     if (!selectedIngredient) return [];
@@ -60,7 +70,6 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
           parentCategoryId: category.id,
           categoryId: category.id
         }));
-
 
       // Dishes inside subCategories
       const subCategoryDishes = (category.subCategories || []).flatMap(sub =>
@@ -154,6 +163,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       )
       : sortedIngredients;
   }, [sortedIngredients, stockSearch]);
+  if (!adminData?.categories?.length) return <PageLoader label="Loading stocks…" />;
 
   /* ---------------- EDIT MODAL ---------------- */
   const openEditModal = (ingredient) => {
@@ -281,38 +291,33 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
   };
 
   return (
-    <div className="stocks-page">
+    <div className="inner-page">
       {/* HEADER */}
-      <div className="stocks-header">
-        <h2 className="stocks-title">Stocks</h2>
+      <div className="header">
+        <h2 className="title">Stocks</h2>
 
-        <button
-          className="modal-save-btn"
-          onClick={handleExportStocks}
-        >
-          <span className="shadow"></span>
-          <span className="edge"></span>
-          <span className="front">Export</span>
-        </button>
+        <Button3D onClick={handleExportStocks}>Export</Button3D>
       </div>
 
       {/* FILTER BAR */}
-      <div className="stocks-filter-bar">
-        <input
-          className="search-input"
-          placeholder=" Search ingredient or brand…"
-          value={stockSearch}
-          onChange={e => setStockSearch(e.target.value)}
-        />
-        {stockSearch && (
-          <button className="ae-clear-filter" onClick={() => setStockSearch("")}>Clear</button>
-        )}
-        <span className="ae-result-count">{filteredIngredients.length} ingredient(s)</span>
+      <div className="filter-bar">
+        <div className="justify">
+          <input
+            className="search-input"
+            placeholder=" Search ingredient or brand…"
+            value={stockSearch}
+            onChange={e => setStockSearch(e.target.value)}
+          />
+          {stockSearch && (
+            <button className="ae-clear-filter" onClick={() => setStockSearch("")}>Clear</button>
+          )}
+          <span className="result-count">{filteredIngredients.length} ingredient(s)</span>
+        </div>
       </div>
 
       {/* TABLE */}
-      <div className="stocks-table-wrapper" ref={containerRef}>
-        <table className="stocks-table">
+      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }}  ref={containerRef}>
+        <table className="table">
           <thead>
             <tr>
               <th
@@ -399,13 +404,13 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 </span>
               </th>
               <th>Disabled In</th>
-              <th>Edit</th>
+              <th className="icon-width">Edit</th>
             </tr>
           </thead>
 
           <tbody>
             {filteredIngredients.length === 0 ? (
-              <EmptyRow colSpan={6} message="No stock data available" />
+              <EmptyRow colSpan={9} message="No stock data available" />
             ) : (
               filteredIngredients.slice(0, displayLimit).map((ing) => (
                 <tr key={ing.id}>
@@ -467,15 +472,8 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                       );
                     })()}
                   </td>
-                  <td>
-                    <button
-                      className="modal-cancel-btn"
-                      onClick={() => openEditModal(ing)}
-                    >
-                      <span className="shadow"></span>
-                      <span className="edge"></span>
-                      <span className="front close-padding"><img src={editIcon} /></span>
-                    </button>
+                  <td className="icon-width">
+                    <Button3D variant="cancel" iconOnly onClick={() => openEditModal(ing)}><img src={editIcon} /></Button3D>
                   </td>
                 </tr>
               )))}
@@ -492,14 +490,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
           <div className="modal">
             <div className="modal-header">
               <h3>Edit Stock & Price for {selectedIngredient.name}</h3>
-              <button
-                className="modal-cancel-btn"
-                onClick={closeModal}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={closeModal}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="modal-body">
@@ -604,27 +595,19 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                       placeholder="Select Dish"
                     />
 
-                    <button
-                      type="button"
-                      className="modal-save-btn"
-                      onClick={() => {
-                        if (!selectedDishToDisable) return;
+                    <Button3D onClick={() => {
+                      if (!selectedDishToDisable) return;
 
-                        setSelectedIngredient(prev => ({
-                          ...prev,
-                          disabledForDishes: [
-                            ...(prev.disabledForDishes || []),
-                            selectedDishToDisable
-                          ]
-                        }));
+                      setSelectedIngredient(prev => ({
+                        ...prev,
+                        disabledForDishes: [
+                          ...(prev.disabledForDishes || []),
+                          selectedDishToDisable
+                        ]
+                      }));
 
-                        setSelectedDishToDisable("");
-                      }}
-                    >
-                      <span className="shadow"></span>
-                      <span className="edge"></span>
-                      <span className="front">Add</span>
-                    </button>
+                      setSelectedDishToDisable("");
+                    }}>Add</Button3D>
                   </div>
                 </div>
 
@@ -675,22 +658,8 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
             </div>
 
             <div className="modal-footer">
-              <button
-                onClick={closeModal}
-                className="modal-cancel-btn"
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
-              <button
-                className="modal-save-btn"
-                onClick={handleSave}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Save</span>
-              </button>
+              <Button3D variant="cancel" onClick={closeModal}>Cancel</Button3D>
+              <Button3D onClick={handleSave}>Save</Button3D>
             </div>
           </div>
         </div>

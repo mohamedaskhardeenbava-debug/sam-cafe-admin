@@ -1,3 +1,8 @@
+/* ═══════════════════════════════════════════════════════
+   Orders.css  —  Sam Cafe Admin  —  Orders page
+   Depends on Common.css + ModalCSS.css
+═══════════════════════════════════════════════════════ */
+
 .orders-page {
   width: 100%;
   max-width: 100%;
@@ -8,16 +13,16 @@
 /* HEADER */
 .orders-header {
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: start;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: 10px;
   margin-bottom: 20px;
 }
 
 .orders-header-div {
   display: flex;
-  align-items: center;
+  align-items: stretch;
+  height: 40px;
   gap: 12px;
 }
 
@@ -426,30 +431,6 @@
   background-color: #fff;
 }
 
-.order-items-table th:nth-child(3),
-.order-items-table td:nth-child(3) {
-  width: 50px;
-  max-width: 50px;
-}
-
-.order-items-table th:nth-child(4),
-.order-items-table td:nth-child(4) {
-  width: 120px;
-  max-width: 120px;
-}
-
-.order-items-table th:nth-child(5),
-.order-items-table td:nth-child(5) {
-  width: 120px;
-  max-width: 120px;
-}
-
-.order-items-table th:nth-child(6),
-.order-items-table td:nth-child(6) {
-  width: 100px;
-  max-width: 100px;
-}
-
 .pickup-btn {
   padding: 9px 0;
   width: 100%;
@@ -677,7 +658,6 @@
 }
 
 .bill-split-actions button {
-  padding: 6px 12px;
   border-radius: 999px;
   border: 1px solid #111;
   background: #111;
@@ -809,17 +789,6 @@
 }
 
 /* animation */
-@keyframes dropdownFade {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
 .priority-row {
   border: 2px solid #ff3b3b;

@@ -1,3 +1,8 @@
+/* ═══════════════════════════════════════════════════════
+   OfferDetails.css  —  Sam Cafe Admin  —  OfferDetails page
+   Depends on Common.css
+═══════════════════════════════════════════════════════ */
+
 .offer-details-page {
   display: flex;
 }

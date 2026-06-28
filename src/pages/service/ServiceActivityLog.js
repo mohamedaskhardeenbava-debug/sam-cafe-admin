@@ -1,18 +1,18 @@
 /**
- * ServiceActivityLog.js  (refactored)
- *
- * Now a thin wrapper around the shared <ActivityLog> component.
- * All filter / search / export logic lives in ActivityLog.jsx.
+ * ServiceActivityLog.js  —  Sam Cafe Admin Panel
+ * Service activity log (thin wrapper around ActivityLog)
  */
+
 import ActivityLog from "../../components/ActivityLog";
+
 import "./ServiceActivityLog.css";
 
 export default function ServiceActivityLog({ adminData }) {
-    return (
-        <ActivityLog
-            title="Service Activity Log"
-            items={adminData?.serviceActivity || []}
-            exportFilePrefix="service_activity"
-        />
-    );
+  return (
+    <ActivityLog
+      title="Service Activity Log"
+      items={adminData?.serviceActivity || []}
+      exportFilePrefix="service_activity"
+    />
+  );
 }

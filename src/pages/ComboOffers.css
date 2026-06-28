@@ -1,7 +1,7 @@
-/* ═══════════════════════════════════════════════════
-   ComboOffers.css
-   Additive styles that extend Dishes.css + ModalCSS.css
-═══════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════
+   ComboOffers.css  —  Sam Cafe Admin  —  ComboOffers page
+   Depends on Common.css + ModalCSS.css
+═══════════════════════════════════════════════════════ */
 
 /* ── Toast ───────────────────────────────────────── */
 .co-toast {
@@ -63,11 +63,6 @@
     to {
         transform: rotate(360deg);
     }
-}
-
-/* ── Table pills ─────────────────────────────────── */
-.co-table td {
-    vertical-align: middle;
 }
 
 .co-pill {
@@ -495,129 +490,6 @@
     font-size: 12px;
     color: #ef4444;
     margin-top: -6px;
-}
-
-.combo-table-wrapper {
-    width: 100%;
-    height: calc(100vh - 180px);
-    overflow-y: auto;
-    padding: 0 10px;
-    background: #e9e9e9;
-    border-radius: 20px;
-    box-sizing: border-box;
-}
-
-.combo-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0 5px;
-    /* row spacing */
-    background: transparent;
-    table-layout: fixed;
-}
-
-.combo-table thead {
-    position: sticky;
-    top: 0;
-    z-index: 5;
-    background-color: #414141;
-}
-
-.combo-table th {
-    padding: 16px 12px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #555;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    background: #e9e9e9;
-    text-align: left;
-}
-
-.combo-table td {
-    font-size: 14px;
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    border-bottom: 1px solid #cacaca;
-}
-
-.combo-table tbody tr:hover {
-    background-color: rgb(234, 234, 234);
-}
-
-.combo-table tbody tr {
-    background: #ffffff !important;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
-    transition: all 0.25s ease;
-}
-
-.combo-table tbody tr td {
-    padding: 10px;
-    font-size: 14px;
-    border: none;
-    background: #ffffff;
-}
-
-.combo-table tbody tr td:first-child {
-    border-top-left-radius: 16px;
-    border-bottom-left-radius: 16px;
-}
-
-.combo-table tbody tr td:last-child {
-    border-top-right-radius: 16px;
-    border-bottom-right-radius: 16px;
-}
-
-/* 
-.combo-table th:nth-child(1),
-.combo-table td:nth-child(1) {
-    width: 48px;
-    max-width: 48px;
-}
-
-.combo-table th:nth-child(3),
-.combo-table td:nth-child(3) {
-    width: 90px !important;
-    max-width: 90px !important;
-}
-
-.combo-table th:nth-child(4),
-.combo-table td:nth-child(4) {
-    width: 100px !important;
-    max-width: 100px !important;
-}
-
-.combo-table th:nth-child(5),
-.combo-table td:nth-child(5) {
-    width: 120px !important;
-    max-width: 120px !important;
-}
-
-.combo-table th:nth-child(6),
-.combo-table td:nth-child(6) {
-    width: 72px !important;
-    max-width: 72px !important;
-    text-align: center;
-} */
-
-.combo-table th:nth-child(1),
-.combo-table td:nth-child(1),
-.combo-table th:nth-child(2),
-.combo-table td:nth-child(2),
-.combo-table th:nth-child(3),
-.combo-table td:nth-child(3) {
-    width: 220px;
-}
-
-.combo-table th:nth-child(7),
-.combo-table td:nth-child(7),
-.combo-table th:nth-child(8),
-.combo-table td:nth-child(8) {
-    width: 70px !important;
-    max-width: 70px !important;
-    text-align: center;
 }
 
 @media screen and (max-width: 1400px) {

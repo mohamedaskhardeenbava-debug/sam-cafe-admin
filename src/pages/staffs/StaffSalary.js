@@ -1,15 +1,28 @@
+/**
+ * StaffSalary.js  —  Sam Cafe Admin Panel
+ * Staff salary management page
+ */
+
 import React, { useState, useEffect } from "react";
+
 import { exportToExcel } from "../../utils/excelUtils";
-import "./StaffModules.css";
 import api from "../../api";
+
 import closeIcon from "../../icon/close-icon.png";
 import editIcon from "../../icon/edit-icon.png";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 import { useToast } from "../../useToast";
+import Button3D from "../../components/Button3D";
+
+import "./StaffModules.css";
+import PageLoader from "../../components/PageLoader";
 
 export default function StaffSalary({ adminData, setAdminData }) {
+  // ── Hooks
+
   const { toast } = useToast();
+
   const [selected, setSelected] = useState(null);
   const [staffList, setStaffList] = useState(adminData.staff);
   const [salarySearch, setSalarySearch] = useState("");
@@ -40,6 +53,8 @@ export default function StaffSalary({ adminData, setAdminData }) {
       overtime: Number(latest?.overtime || 0),
     });
   };
+
+  // ── Handlers
 
   const closeModal = () => setSelected(null);
 
@@ -103,62 +118,56 @@ export default function StaffSalary({ adminData, setAdminData }) {
 
   const { displayLimit, sentinelRef, containerRef, hasMore } =
     useInfiniteScroll(filteredList.length, 30);
+  if (!adminData?.staff?.length) return <PageLoader label="Loading salary records…" />;
 
   return (
-    <div className="staff-page">
-      <div className="staff-header">
-        <h2>Salary Management</h2>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            className="modal-save-btn"
-            onClick={() => {
-              const rows = filteredList.map((s, i) => {
-                const rec = (s.remainingSalary || [])[0] || {};
-                const totalAdvance = Number(rec.advance || 0);
-                const totalDeduction = Number(rec.deduction || 0);
-                const totalPenalty = Number(rec.penalty || 0);
-                const totalBonus = Number(rec.bonus || 0);
-                const totalOvertime = Number(rec.overtime || 0);
-                const remaining = Number(s.salary) + totalBonus + totalOvertime - totalAdvance - totalDeduction - totalPenalty;
-                return {
-                  Name: s.name || "—",
-                  Role: s.role || "—",
-                  "Base Salary (₹)": Number(s.salary || 0),
-                  "Advance (₹)": totalAdvance,
-                  "Deduction (₹)": totalDeduction,
-                  "Penalty (₹)": totalPenalty,
-                  "Bonus (₹)": totalBonus,
-                  "Overtime (₹)": totalOvertime,
-                  "Remaining (₹)": remaining,
-                };
-              });
-              if (!rows.length) { toast.warning("No salary data to export"); return; }
-              exportToExcel({ rows, sheetName: "Salary", fileName: `salary_${new Date().toISOString().slice(0, 10)}.xlsx` });
-            }}
-          >
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
-        </div>
+    <div className="inner-page">
+      <div className="header">
+        <h2 className="title">Salary Management</h2>
+        <Button3D onClick={() => {
+          const rows = filteredList.map((s, i) => {
+            const rec = (s.remainingSalary || [])[0] || {};
+            const totalAdvance = Number(rec.advance || 0);
+            const totalDeduction = Number(rec.deduction || 0);
+            const totalPenalty = Number(rec.penalty || 0);
+            const totalBonus = Number(rec.bonus || 0);
+            const totalOvertime = Number(rec.overtime || 0);
+            const remaining = Number(s.salary) + totalBonus + totalOvertime - totalAdvance - totalDeduction - totalPenalty;
+            return {
+              Name: s.name || "—",
+              Role: s.role || "—",
+              "Base Salary (₹)": Number(s.salary || 0),
+              "Advance (₹)": totalAdvance,
+              "Deduction (₹)": totalDeduction,
+              "Penalty (₹)": totalPenalty,
+              "Bonus (₹)": totalBonus,
+              "Overtime (₹)": totalOvertime,
+              "Remaining (₹)": remaining,
+            };
+          });
+          if (!rows.length) { toast.warning("No salary data to export"); return; }
+          exportToExcel({ rows, sheetName: "Salary", fileName: `salary_${new Date().toISOString().slice(0, 10)}.xlsx` });
+        }}>Export</Button3D>
       </div>
 
       {/* FILTER BAR */}
-      <div className="staff-filter-bar">
-        <input
-          className="search-input"
-          placeholder=" Search name or role…"
-          value={salarySearch}
-          onChange={e => setSalarySearch(e.target.value)}
-        />
-        {salarySearch && (
-          <button className="ae-clear-filter" onClick={() => setSalarySearch("")}>Clear</button>
-        )}
-        <span className="ae-result-count">{filteredList.length} staff</span>
+      <div className="filter-bar">
+        <div className="justify">
+          <input
+            className="search-input"
+            placeholder=" Search name or role…"
+            value={salarySearch}
+            onChange={e => setSalarySearch(e.target.value)}
+          />
+          {salarySearch && (
+            <button className="ae-clear-filter" onClick={() => setSalarySearch("")}>Clear</button>
+          )}
+          <span className="result-count">{filteredList.length} staff</span>
+        </div>
       </div>
 
-      <div className="staff-salary-table-wrapper" ref={containerRef}>
-        <table className="staff-salary-table">
+      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} ref={containerRef}>
+        <table className="table">
           <thead>
             <tr>
               <th>Name</th>
@@ -169,7 +178,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
               <th>Bonus</th>
               <th>Overtime</th>
               <th>Remaining</th>
-              <th>Edit</th>
+              <th className="icon-width">Edit</th>
             </tr>
           </thead>
 
@@ -218,14 +227,8 @@ export default function StaffSalary({ adminData, setAdminData }) {
                       </div>
                     </div>
                   </td>
-                  <td>
-                    <button className="modal-cancel-btn" onClick={() => openModal(s)}>
-                      <span className="shadow"></span>
-                      <span className="edge"></span>
-                      <span className="front close-padding">
-                        <img src={editIcon} alt="" />
-                      </span>
-                    </button>
+                  <td className="icon-width">
+                    <Button3D variant="cancel" iconOnly onClick={() => openModal(s)}><img src={editIcon} alt="" /></Button3D>
                   </td>
                 </tr>
               );
@@ -244,11 +247,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
 
             <div className="modal-header">
               <h3>{selected.name}</h3>
-              <button onClick={closeModal} className="modal-cancel-btn">
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={closeModal}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="modal-body">
@@ -325,22 +324,8 @@ export default function StaffSalary({ adminData, setAdminData }) {
             </div>
 
             <div className="modal-footer">
-              <button
-                className="modal-cancel-btn"
-                onClick={closeModal}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
-              <button
-                className="modal-save-btn"
-                onClick={handleSave}>
-
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Save</span>
-              </button>
+              <Button3D variant="cancel" onClick={closeModal}>Cancel</Button3D>
+              <Button3D onClick={handleSave}>Save</Button3D>
             </div>
 
           </div>

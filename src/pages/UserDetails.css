@@ -1,3 +1,8 @@
+/* ═══════════════════════════════════════════════════════
+   UserDetails.css  —  Sam Cafe Admin  —  UserDetails page
+   Depends on Common.css
+═══════════════════════════════════════════════════════ */
+
 .user-info-table {
   width: 100%;
   border-collapse: collapse;

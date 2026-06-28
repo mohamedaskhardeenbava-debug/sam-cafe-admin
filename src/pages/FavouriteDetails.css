@@ -1,25 +1,7 @@
-.back-btn {
-  width: 50px;
-  height: 50px;
-  border-radius: 25px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  position: relative;
-  text-align: center;
-}
-
-.back-btn::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 40%;
-  width: 12px;
-  height: 12px;
-  border-left: 3px solid #111;
-  border-bottom: 3px solid #111;
-  transform: translateY(-50%) rotate(45deg);
-}
+/* ═══════════════════════════════════════════════════════
+   FavouriteDetails.css  —  Sam Cafe Admin  —  FavouriteDetails page
+   Depends on Common.css
+═══════════════════════════════════════════════════════ */
 
 .favourite-details-image {
   position: relative;

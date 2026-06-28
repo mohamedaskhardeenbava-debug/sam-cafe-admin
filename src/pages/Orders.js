@@ -1,19 +1,30 @@
+/**
+ * Orders.js  —  Sam Cafe Admin Panel
+ * Orders management page
+ */
+
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { exportToExcel } from "../utils/excelUtils";
 import { useNavigate, useLocation } from "react-router-dom";
-import api from "../api";
-import "./Orders.css";
-import closeIcon from "../icon/close-icon.png";
-import { EmptyRow } from "../App";
-import { QRCodeCanvas } from "qrcode.react";
 import { createPortal } from "react-dom";
-import { formatDisplayDate } from "../App";
-import { formatIndianTime } from "../App";
+
+import { QRCodeCanvas } from "qrcode.react";
+
+import { exportToExcel } from "../utils/excelUtils";
+import api from "../api";
 import socket from "../socket";
 import { CustomDatePicker } from "../components/CustomDatePicker";
+
+import closeIcon from "../icon/close-icon.png";
+import { EmptyRow } from "../App";
+import { formatDisplayDate } from "../App";
+import { formatIndianTime } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import Button3D from "../components/Button3D";
+
+import "./Orders.css";
+import PageLoader from "../components/PageLoader";
 
 const SEVEN_MIN = 7 * 60 * 1000;
 const ONE_MIN = 60 * 1000;
@@ -174,18 +185,11 @@ const BillLayout = React.memo(({
   return (
     <div className="bill-receipt">
       <div className="bill-header">
-        <button
-          className="modal-cancel-btn"
-          style={{ position: "absolute", right: 0 }}
+        <Button3D variant="cancel" iconOnly style={{ position: "absolute", right: 0 }}
           onClick={(e) => {
             e.stopPropagation();
             onClose();
-          }}
-        >
-          <span className="shadow"></span>
-          <span className="edge"></span>
-          <span className="front close-padding"><img src={closeIcon} alt="" /></span>
-        </button>
+          }}><img src={closeIcon} alt="" /></Button3D>
         <h3>Sam Cafe</h3>
         <p>Contact: +91-9080179608</p>
         <hr />
@@ -284,14 +288,7 @@ const BillLayout = React.memo(({
               value={splitPeople}
               onChange={(e) => setSplitPeople(e.target.value)}
             />
-            <button
-              className="modal-save-btn"
-              onClick={applySplitAmount}
-            >
-              <span className="shadow"></span>
-              <span className="edge"></span>
-              <span className="front close-padding">Split Amount</span>
-            </button>
+            <Button3D iconOnly onClick={applySplitAmount}>Split Amount</Button3D>
           </div>
 
           {/* SPLIT BY BILL */}
@@ -302,14 +299,7 @@ const BillLayout = React.memo(({
               value={splitBills}
               onChange={(e) => setSplitBills(e.target.value)}
             />
-            <button
-              className="modal-save-btn"
-              onClick={applySplitBill}
-            >
-              <span className="shadow"></span>
-              <span className="edge"></span>
-              <span className="front close-padding">Split Bill</span>
-            </button>
+            <Button3D iconOnly onClick={applySplitBill}>Split Bill</Button3D>
           </div>
 
         </div>
@@ -324,6 +314,7 @@ const BillLayout = React.memo(({
 });
 
 const ItemTimer = React.memo(({ item, order }) => {
+
   const [, setTick] = useState(0);
 
   const isDone =
@@ -513,17 +504,11 @@ const OrderRow = React.memo(({
                     {order.status === "preparing" && (
                       <td>
                         {item.status === "preparing" && (
-                          <button
-                            className="modal-save-btn"
+                          <Button3D style={{ boxSizing: "border-box" }}
                             onClick={(e) => {
                               e.stopPropagation();
                               onPickup({ orderId: order.id, itemIndex: idx, item });
-                            }}
-                          >
-                            <span className="shadow"></span>
-                            <span className="edge"></span>
-                            <span className="front" style={{padding: "8px 10px"}}>Order Pickup</span>
-                          </button>
+                            }}>Order Pickup</Button3D>
                         )}
                       </td>
                     )}
@@ -538,8 +523,6 @@ const OrderRow = React.memo(({
   );
 });
 
-
-
 const Orders = ({ adminData, setAdminData }) => {
   // Orders owns its own sort state instead of sharing App.js's global
   // sortConfig. The shared sortConfig was also written to by Categories,
@@ -547,6 +530,9 @@ const Orders = ({ adminData, setAdminData }) => {
   // sorting Users by "mobile" left sortConfig.key = "mobile", which falls
   // through to this page's `default: return 0` case and silently skips
   // sorting entirely. A page-local sort key avoids that cross-page leak.
+
+  // ── Hooks
+
   const [sortConfig, setSortConfig] = useState({ key: "id", direction: "desc" });
   const handleSort = useCallback((key) => {
     setSortConfig(prev => {
@@ -649,8 +635,6 @@ const Orders = ({ adminData, setAdminData }) => {
   const [editableBill, setEditableBill] = useState(null);
   const [menuPos, setMenuPos] = useState(null);
   const tableWrapperRef = useRef(null);
-
-
 
   useEffect(() => {
     const id = location.state?.scrollToOrderId;
@@ -1027,6 +1011,8 @@ const Orders = ({ adminData, setAdminData }) => {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [openMenuOrderId, closeOptionsMenu]);
 
+  if (!adminData?.orders?.length) return <PageLoader label="Loading orders…" />;
+
   const recalcOrderTotals = (order) => {
     const items = order.items.map(item => {
       const qty = Number(item.quantity || 0);
@@ -1112,69 +1098,62 @@ const Orders = ({ adminData, setAdminData }) => {
 
   return (
     <div className="orders-page">
-
       <div className="orders-header">
+        <h2 className="orders-title">Orders</h2>
+
+        <div className="orders-search-wrapper">
+          <input
+            className="search-input"
+            placeholder=" Search by order ID, customer, dish…"
+            value={orderSearch}
+            onChange={e => setOrderSearch(e.target.value)}
+          />
+          {orderSearch && (
+            <button className="orders-search-clear" onClick={() => setOrderSearch("")}>✕</button>
+          )}
+        </div>
+
         <div className="orders-header-div">
-          <h2 className="orders-title">Orders</h2>
-
-          <div className="orders-search-wrapper">
-            <input
-              className="search-input"
-              placeholder=" Search by order ID, customer, dish…"
-              value={orderSearch}
-              onChange={e => setOrderSearch(e.target.value)}
-            />
-            {orderSearch && (
-              <button className="orders-search-clear" onClick={() => setOrderSearch("")}>✕</button>
-            )}
-          </div>
-
-          <div className="orders-filter">
-            <button
-              type="button"
-              className={`filter-pill${datePreset === "today" ? " active" : ""}`}
-              onClick={() => applyPreset("today")}
-            >
-              Today
-            </button>
-            <button
-              type="button"
-              className={`filter-pill${datePreset === "week" ? " active" : ""}`}
-              onClick={() => applyPreset("week")}
-            >
-              This Week
-            </button>
-            <button
-              type="button"
-              className={`filter-pill${datePreset === "month" ? " active" : ""}`}
-              onClick={() => applyPreset("month")}
-            >
-              This Month
-            </button>
-            <CustomDatePicker
-              label="From"
-              value={fromDate}
-              max={toDate}
-              onChange={(s) => { setFromDate(s); setDatePreset("custom"); if (s > toDate) setToDate(s); }}
-            />
-            <CustomDatePicker
-              label="To"
-              value={toDate}
-              min={fromDate}
-              max={todayISO}
-              onChange={(s) => { setToDate(s); setDatePreset("custom"); }}
-            />
-          </div>
-
           <button
-            className="modal-save-btn"
-            onClick={() => exportOrders(filteredOrders, fromDate, toDate)}
+            type="button"
+            className={`filter-pill${datePreset === "today" ? " active" : ""}`}
+            onClick={() => applyPreset("today")}
           >
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
+            Today
+          </button>
+          <button
+            type="button"
+            className={`filter-pill${datePreset === "week" ? " active" : ""}`}
+            onClick={() => applyPreset("week")}
+          >
+            This Week
+          </button>
+          <button
+            type="button"
+            className={`filter-pill${datePreset === "month" ? " active" : ""}`}
+            onClick={() => applyPreset("month")}
+          >
+            This Month
           </button>
         </div>
+
+        <div className="orders-header-div">
+          <CustomDatePicker
+            label="From"
+            value={fromDate}
+            max={toDate}
+            onChange={(s) => { setFromDate(s); setDatePreset("custom"); if (s > toDate) setToDate(s); }}
+          />
+          <CustomDatePicker
+            label="To"
+            value={toDate}
+            min={fromDate}
+            max={todayISO}
+            onChange={(s) => { setToDate(s); setDatePreset("custom"); }}
+          />
+        </div>
+
+        <Button3D onClick={() => exportOrders(filteredOrders, fromDate, toDate)}>Export</Button3D>
 
         <div className="orders-header-div">
           <div className="orders-dropdown-wrapper">
@@ -1366,64 +1345,50 @@ const Orders = ({ adminData, setAdminData }) => {
             )}
 
             <div className="pickup-actions">
-              <button
-                className="modal-cancel-btn"
-                onClick={() => setPickupConfirm(null)}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => setPickupConfirm(null)}>Cancel</Button3D>
 
-              <button
-                className="modal-save-btn"
-                onClick={() => {
-                  const { orderId, itemIndex } = pickupConfirm;
+              <Button3D onClick={() => {
+                const { orderId, itemIndex } = pickupConfirm;
 
-                  setAdminData(prev => ({
-                    ...prev,
-                    orders: prev.orders.map(o => {
-                      if (o.id !== orderId) return o;
+                setAdminData(prev => ({
+                  ...prev,
+                  orders: prev.orders.map(o => {
+                    if (o.id !== orderId) return o;
 
-                      const items = o.items.map((i, index) => {
-                        if (index !== itemIndex) return i;
+                    const items = o.items.map((i, index) => {
+                      if (index !== itemIndex) return i;
 
-                        const now = Date.now();
-                        const start = i.createdAt
-                          ? new Date(i.createdAt).getTime()
-                          : getCreatedTime(o);
+                      const now = Date.now();
+                      const start = i.createdAt
+                        ? new Date(i.createdAt).getTime()
+                        : getCreatedTime(o);
 
-                        const pickupStatus =
-                          now - start <= SEVEN_MIN ? "on_time" : "late";
+                      const pickupStatus =
+                        now - start <= SEVEN_MIN ? "on_time" : "late";
 
-                        return {
-                          ...i,
-                          status: "service pickup",
-                          pickupAt: new Date().toISOString(),
-                          pickupStatus
-                        };
-                      });
-
-                      const newStatus = deriveOrderStatusFromItems(items);
-
-                      const updated = {
-                        ...o,
-                        items,
-                        status: newStatus
+                      return {
+                        ...i,
+                        status: "service pickup",
+                        pickupAt: new Date().toISOString(),
+                        pickupStatus
                       };
-                      persistOrder(updated);
+                    });
 
-                      return updated;
-                    })
-                  }));
+                    const newStatus = deriveOrderStatusFromItems(items);
 
-                  setPickupConfirm(null);
-                }}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Confirm</span>
-              </button>
+                    const updated = {
+                      ...o,
+                      items,
+                      status: newStatus
+                    };
+                    persistOrder(updated);
+
+                    return updated;
+                  })
+                }));
+
+                setPickupConfirm(null);
+              }}>Confirm</Button3D>
             </div>
           </div>
         </div>
@@ -1524,11 +1489,7 @@ const Orders = ({ adminData, setAdminData }) => {
             />
 
             <div className="modal-footer">
-              <button className="modal-cancel-btn" onClick={() => setEditBillOrder(null)}>
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => setEditBillOrder(null)}>Cancel</Button3D>
               <button
                 className="modal-prev-btn"
                 onClick={() => {
@@ -1542,34 +1503,27 @@ const Orders = ({ adminData, setAdminData }) => {
                 <span className="edge"></span>
                 <span className="front">Preview</span>
               </button>
-              <button
-                className="modal-save-btn"
-                onClick={async () => {
-                  try {
-                    const updatedOrder = recalcOrderTotals(
-                      JSON.parse(JSON.stringify(editableBill))
-                    );
+              <Button3D onClick={async () => {
+                try {
+                  const updatedOrder = recalcOrderTotals(
+                    JSON.parse(JSON.stringify(editableBill))
+                  );
 
-                    await persistOrderEverywhere(updatedOrder);
+                  await persistOrderEverywhere(updatedOrder);
 
-                    setAdminData(prev => ({
-                      ...prev,
-                      orders: prev.orders.map(o =>
-                        o.id === updatedOrder.id ? updatedOrder : o
-                      )
-                    }));
+                  setAdminData(prev => ({
+                    ...prev,
+                    orders: prev.orders.map(o =>
+                      o.id === updatedOrder.id ? updatedOrder : o
+                    )
+                  }));
 
-                    setEditBillOrder(null);
-                  } catch (err) {
-                    toast.error("Failed to save bill");
-                    console.error("Save failed", err);
-                  }
-                }}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Save</span>
-              </button>
+                  setEditBillOrder(null);
+                } catch (err) {
+                  toast.error("Failed to save bill");
+                  console.error("Save failed", err);
+                }
+              }}>Save</Button3D>
             </div>
           </div>
         </div>

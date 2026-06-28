@@ -1,10 +1,19 @@
+/**
+ * StaffCareer.js  —  Sam Cafe Admin Panel
+ * Staff career/promotion records page
+ */
+
 import React, { useState, useEffect } from "react";
+
 import { exportToExcel } from "../../utils/excelUtils";
-import "./StaffModules.css";
 import api from "../../api";
+
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
 import CustomDropdown from "../../components/CustomDropdown";
+import Button3D from "../../components/Button3D";
+
+import "./StaffModules.css";
 
 const roles = ["Chef", "Waiter", "Supervisor", "Manager", "Cleaner"];
 
@@ -24,6 +33,8 @@ const expLabel = (yrs) => {
 };
 
 export default function StaffCareer() {
+  // ── Hooks
+
   const { toast } = useToast();
   const [jobs, setJobs] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -74,50 +85,38 @@ export default function StaffCareer() {
   };
 
   return (
-    <div className="staff-page">
+    <div className="inner-page">
 
       {/* HEADER */}
-      <div className="staff-header">
-        <h2>Career</h2>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            className="modal-save-btn"
-            onClick={exportJobs}
-          >
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
-          <button
-            className="modal-save-btn"
-            onClick={() => setShowForm(true)}
-          >
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">+ Add Job Vacancy</span>
-          </button>
+      <div className="header">
+        <h2 className="title">Career</h2>
+        <div className="header-btn-container">
+          <Button3D onClick={exportJobs}>Export</Button3D>
+          <Button3D onClick={() => setShowForm(true)}>+ Add Job Vacancy</Button3D>
         </div>
       </div>
 
       {/* FILTER BAR */}
-      <div className="staff-filter-bar">
-        <input
-          className="search-input"
-          placeholder=" Search role or description…"
-          value={careerSearch}
-          onChange={e => setCareerSearch(e.target.value)}
-        />
-        <div className="staff-filter-group">
-          <span className="staff-filter-label">Role</span>
-          {["", ...roles].map(r => (
-            <button key={r} className={`filter-pill${careerRoleFilter === r ? " active" : ""}`}
-              onClick={() => setCareerRoleFilter(r)}>{r || "All"}</button>
-          ))}
+      <div className="filter-bar">
+        <div className="filter-groups">
+          <input
+            className="search-input"
+            placeholder=" Search role or description…"
+            value={careerSearch}
+            onChange={e => setCareerSearch(e.target.value)}
+          />
+          <div className="filter-group">
+            <span className="filter-group-label">Role</span>
+            {["", ...roles].map(r => (
+              <button key={r} className={`filter-pill${careerRoleFilter === r ? " active" : ""}`}
+                onClick={() => setCareerRoleFilter(r)}>{r || "All"}</button>
+            ))}
+          </div>
+          {(careerSearch || careerRoleFilter) && (
+            <button className="ae-clear-filter" onClick={() => { setCareerSearch(""); setCareerRoleFilter(""); }}>Clear</button>
+          )}
+          <span className="result-count">{filteredJobs.length} opening(s)</span>
         </div>
-        {(careerSearch || careerRoleFilter) && (
-          <button className="ae-clear-filter" onClick={() => { setCareerSearch(""); setCareerRoleFilter(""); }}>Clear</button>
-        )}
-        <span className="ae-result-count">{filteredJobs.length} opening(s)</span>
       </div>
 
       {/* EMPTY STATE */}
@@ -172,11 +171,7 @@ export default function StaffCareer() {
           <form className="modal" onSubmit={addJob}>
             <div className="modal-header">
               <h3>Add Job Vacancy</h3>
-              <button type="button" className="modal-cancel-btn" onClick={() => { setShowForm(false); setFormErrors({}); }}>
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => { setShowForm(false); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="modal-body">
@@ -221,20 +216,8 @@ export default function StaffCareer() {
             </div>
 
             <div className="modal-footer">
-              <button
-                type="button"
-                onClick={() => { setShowForm(false); setFormErrors({}); }}
-                className="modal-cancel-btn"
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
-              <button type="submit" className="modal-save-btn">
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Save Vacancy</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => { setShowForm(false); setFormErrors({}); }}>Cancel</Button3D>
+              <Button3D type="submit">Save Vacancy</Button3D>
             </div>
           </form>
         </div>
@@ -249,11 +232,7 @@ export default function StaffCareer() {
                 <h3>{selected.role}</h3>
                 <span className="sc-modal-sub">Job Vacancy</span>
               </div>
-              <button type="button" className="modal-cancel-btn" onClick={() => setSelected(null)}>
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => setSelected(null)}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="modal-body">
@@ -267,15 +246,7 @@ export default function StaffCareer() {
             </div>
 
             <div className="modal-footer">
-              <button
-                type="button"
-                onClick={() => setSelected(null)}
-                className="modal-cancel-btn"
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Close</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => setSelected(null)}>Close</Button3D>
             </div>
           </div>
         </div>

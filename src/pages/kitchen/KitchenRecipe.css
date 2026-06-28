@@ -1,3 +1,8 @@
+/* ═══════════════════════════════════════════════════════
+   KitchenRecipe.css  —  Sam Cafe Admin  —  KitchenRecipe page
+   Depends on Common.css + ModalCSS.css
+═══════════════════════════════════════════════════════ */
+
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
 
 :root {
@@ -20,31 +25,6 @@
     --t: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* PAGE */
-.recipe-page {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    box-sizing: border-box;
-    font-family: var(--font);
-}
-
-/* HEADER */
-.recipe-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.recipe-header h2 {
-    font-size: 22px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    color: var(--ink);
-    margin: 0;
-}
-
 .card-grid-wrapper {
     width: 100%;
     height: calc(100vh - 250px);
@@ -57,7 +37,6 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 14px;
-    padding-top: 8px;
 }
 
 /* RECIPE CARD */
@@ -205,82 +184,4 @@
 .recipe-empty span {
     font-size: 13px;
     color: var(--ink-4);
-}
-
-/* ── Shared kitchen filter bar ── */
-.kgroom-filter-bar,
-.assign-filter-bar,
-.recipe-filter-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-    padding: 10px 14px 12px;
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    border: 1px solid #f0f0f0;
-    margin-bottom: 4px;
-}
-
-.kgroom-filter-label {
-    font-size: 10px;
-    font-weight: 700;
-    color: #aaa;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    white-space: nowrap;
-}
-
-/* ── Shared pill btn ── */
-.sched-pill-btn {
-    padding: 5px 12px;
-    border-radius: 999px;
-    border: 1.5px solid #e5e7eb;
-    background: #f9fafb;
-    color: #555;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s;
-    font-family: inherit;
-    white-space: nowrap;
-}
-
-.sched-pill-btn:hover {
-    border-color: #bbb;
-    background: #f3f4f6;
-    color: #111;
-}
-
-.sched-pill-btn.active {
-    background: #111;
-    border-color: #111;
-    color: #fff;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
-/* ── Shared clear + count ── */
-.ae-clear-filter {
-    padding: 5px 12px;
-    border-radius: 999px;
-    border: 1.5px solid #fca5a5;
-    background: #fee2e2;
-    color: #dc2626;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.15s;
-}
-
-.ae-clear-filter:hover {
-    background: #fecaca;
-}
-
-.ae-result-count {
-    font-size: 12px;
-    color: #888;
-    font-weight: 500;
-    white-space: nowrap;
 }

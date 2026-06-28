@@ -33,10 +33,14 @@
  */
 
 import React, { useState, useMemo } from "react";
+
 import { format } from "date-fns";
+
 import { CustomDatePicker } from "./CustomDatePicker";
 import { exportToExcel } from "../utils/excelUtils";
+
 import { useToast } from "../useToast";
+import Button3D from "../components/Button3D";
 
 const PRESETS = [
   { label: "All", getRange: () => ["2000-01-01", "2099-12-31"] },
@@ -109,56 +113,63 @@ const ActivityLog = ({ title, items = [], exportFilePrefix }) => {
   };
 
   return (
-    <div className="activity-page">
-      <div className="activity-header">
-        <h2 className="activity-title">{title}</h2>
-        <button className="modal-save-btn" onClick={handleExport}>
-          <span className="shadow" />
-          <span className="edge" />
-          <span className="front">Export</span>
-        </button>
+    <div className="inner-page">
+      <div className="header">
+        <h2 className="title">{title}</h2>
+        <Button3D onClick={handleExport}>Export</Button3D>
       </div>
 
-      <div className="activity-filter-bar">
-        <input
-          className="search-input"
-          placeholder=" Search work / staff…"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-        />
-        <CustomDatePicker
-          label="From"
-          value={fromDate}
-          max={toDate}
-          onChange={(s) => {
-            setFromDate(s);
-            if (s > toDate) setToDate(s);
-            setActivePreset("custom");
-          }}
-        />
-        <CustomDatePicker
-          label="To"
-          value={toDate}
-          min={fromDate}
-          max={todayStr}
-          onChange={(s) => {
-            setToDate(s);
-            setActivePreset("custom");
-          }}
-        />
-        {PRESETS.map((p) => (
-          <button
-            key={p.label}
-            className={`filter-pill${activePreset === p.label ? " active" : ""}`}
-            onClick={() => applyPreset(p)}
-          >
-            {p.label}
-          </button>
-        ))}
+      <div className="filter-bar">
+        <div className="filter-group">
+          <input
+            className="search-input"
+            placeholder=" Search work / staff…"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+
+          <div className="filter-group">
+            <span className="filter-group-label">from</span>
+            <CustomDatePicker
+              label="From"
+              value={fromDate}
+              max={toDate}
+              onChange={(s) => {
+                setFromDate(s);
+                if (s > toDate) setToDate(s);
+                setActivePreset("custom");
+              }}
+            />
+            <span className="filter-group-label">to</span>
+            <CustomDatePicker
+              label="To"
+              value={toDate}
+              min={fromDate}
+              max={todayStr}
+              onChange={(s) => {
+                setToDate(s);
+                setActivePreset("custom");
+              }}
+            />
+          </div>
+
+          <div className="filter-group">
+            <span className="filter-group-label">period</span>
+            {PRESETS.map((p) => (
+              <button
+                key={p.label}
+                className={`filter-pill${activePreset === p.label ? " active" : ""}`}
+                onClick={() => applyPreset(p)}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div className="activity-table-wrapper">
-        <table className="activity-table">
+      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} >
+        <table className="table">
           <thead>
             <tr>
               <th>Work</th>
@@ -175,7 +186,7 @@ const ActivityLog = ({ title, items = [], exportFilePrefix }) => {
               </tr>
             ) : (
               filtered.map((item, i) => (
-                <tr key={item.id ?? i}>
+                <tr key={`${item.id ?? ""}-${i}`}>
                   <td>{item.work || "—"}</td>
                   <td>{item.staff || "—"}</td>
                   <td>{item.date || "—"}</td>

@@ -1,143 +1,19 @@
-.dishes-page {
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-}
-
-.dish-header {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px !important;
-  align-items: start !important;
-  justify-content: space-between;
+/* ═══════════════════════════════════════════════════════
+   Dishes.css  —  Sam Cafe Admin  —  Dishes page
+   Depends on Common.css + ModalCSS.css
+═══════════════════════════════════════════════════════ */
+.dish-page-table {
+  height: calc(100vh - 240px) !important;
 }
 
 .dish-block {
   overflow: hidden;
 }
 
-.dish-title {
-  font-size: 24px !important;
-  font-weight: 600;
-  color: #111;
-  margin: 0;
-}
-
 .dish-category-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-}
-
-.dish-title {
-  font-size: 32px;
-  font-weight: 600;
-  color: #111;
-  margin: 0;
-}
-
-.dish-table-wrapper {
-  width: 100%;
-  height: calc(100vh - 240px);
-  overflow-y: auto;
-  padding: 0 10px;
-  background: #e9e9e9;
-  border-radius: 20px;
-  box-sizing: border-box;
-}
-
-.dish-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 5px;
-  background: transparent;
-  table-layout: fixed;
-}
-
-.dish-table thead {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  background-color: #414141;
-}
-
-.dish-table th {
-  padding: 16px 12px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #555;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: #e9e9e9;
-  text-align: left;
-}
-
-.dish-table td {
-  font-size: 14px;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  border-bottom: 1px solid #cacaca;
-}
-
-.dish-table tbody tr:hover {
-  background-color: rgb(234, 234, 234);
-}
-
-.dish-table tbody tr {
-  background: #ffffff !important;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
-  transition: all 0.25s ease;
-}
-
-.dish-table tbody tr td {
-  padding: 10px;
-  font-size: 14px;
-  border: none;
-  background: #ffffff;
-}
-
-.dish-table tbody tr td:first-child {
-  border-top-left-radius: 16px;
-  border-bottom-left-radius: 16px;
-}
-
-.dish-table tbody tr td:last-child {
-  border-top-right-radius: 16px;
-  border-bottom-right-radius: 16px;
-}
-
-.dish-table th:nth-child(1),
-.dish-table td:nth-child(1) {
-  width: 48px;
-  max-width: 48px;
-}
-
-.dish-table th:nth-child(3),
-.dish-table td:nth-child(3) {
-  width: 90px !important;
-  max-width: 90px !important;
-}
-
-.dish-table th:nth-child(4),
-.dish-table td:nth-child(4) {
-  width: 100px !important;
-  max-width: 100px !important;
-}
-
-.dish-table th:nth-child(5),
-.dish-table td:nth-child(5) {
-  width: 120px !important;
-  max-width: 120px !important;
-}
-
-.dish-table th:nth-child(6),
-.dish-table td:nth-child(6) {
-  width: 72px !important;
-  max-width: 72px !important;
-  text-align: center;
 }
 
 /* Veg / Non-Veg badge */
@@ -259,7 +135,6 @@
   border: none;
   padding: 0;
 }
-
 
 .-edit-btn {
   color: red;
@@ -409,7 +284,6 @@
   cursor: pointer;
 }
 
-
 .ingredient-delete-btn img {
   width: 16px;
   height: 16px;
@@ -495,20 +369,6 @@
   color: #111;
 }
 
-@media screen and (max-width: 768px) {
-  .dish-table-wrapper {
-    width: 100% !important;
-  }
-
-  .dish-table th {
-    font-size: 12px;
-  }
-
-  .dish-table td {
-    font-size: 12px;
-  }
-}
-
 /* ── Floating label wrapper for CustomDropdown — mirrors .mat exactly ─────── */
 .mat-select {
   position: relative;
@@ -570,10 +430,10 @@
 .mat-select.has-value>.mat-label {
   top: 4px !important;
   font-size: 10px !important;
-    font-weight: 700 !important;
-    color: var(--color-blue) !important;
-    letter-spacing: 0.06em !important;
-    text-transform: uppercase !important;
+  font-weight: 700 !important;
+  color: var(--color-blue) !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
 }
 
 /* Floated + active — dropdown open */
@@ -583,11 +443,11 @@
   color: #111;
 
   top: 4px !important;
-    font-size: 10px !important;
-    font-weight: 700 !important;
-    color: var(--color-blue) !important;
-    letter-spacing: 0.06em !important;
-    text-transform: uppercase !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: var(--color-blue) !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
 }
 
 /* Bottom bar — same as .mat .mat-bar */

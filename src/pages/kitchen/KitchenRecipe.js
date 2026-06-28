@@ -1,12 +1,23 @@
+/**
+ * KitchenRecipe.js  —  Sam Cafe Admin Panel
+ * Kitchen recipe management page
+ */
+
 import React, { useState, useMemo } from "react";
+
 import { exportToExcel } from "../../utils/excelUtils";
-import "./KitchenRecipe.css";
+import api from "../../api";
+
 import deleteIcon from "../../icon/delete-icon.png";
 import closeIcon from "../../icon/close-icon.png";
-import api from "../../api";
 import { useToast } from "../../useToast";
+import Button3D from "../../components/Button3D";
+
+import "./KitchenRecipe.css";
 
 export default function KitchenRecipe({ adminData, setAdminData }) {
+  // ── Hooks
+
   const { toast } = useToast();
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -77,40 +88,31 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
     (desc || "").split("\n").filter(l => l.trim() !== "").length;
 
   return (
-    <div className="recipe-page">
+    <div className="inner-page">
 
       {/* HEADER */}
-      <div className="recipe-header">
-        <h2>Recipes</h2>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            className="modal-save-btn"
-            onClick={exportRecipes}
-          >
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
-          <button className="modal-save-btn" onClick={() => setShowForm(true)}>
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">+ Add Recipe</span>
-          </button>
+      <div className="header">
+        <h2 className="title">Recipes</h2>
+        <div className="header-btn-container">
+          <Button3D onClick={exportRecipes}>Export</Button3D>
+          <Button3D onClick={() => setShowForm(true)}>+ Add Recipe</Button3D>
         </div>
       </div>
 
       {/* FILTER BAR */}
-      <div className="recipe-filter-bar">
-        <input
-          className="search-input"
-          placeholder=" Search recipes…"
-          value={recipeSearch}
-          onChange={e => setRecipeSearch(e.target.value)}
-        />
-        {recipeSearch && (
-          <button className="ae-clear-filter" onClick={() => setRecipeSearch("")}>Clear</button>
-        )}
-        <span className="ae-result-count">{filteredRecipes.length} recipe(s)</span>
+      <div className="filter-bar">
+        <div className="justify">
+          <input
+            className="search-input"
+            placeholder=" Search recipes…"
+            value={recipeSearch}
+            onChange={e => setRecipeSearch(e.target.value)}
+          />
+          {recipeSearch && (
+            <button className="ae-clear-filter" onClick={() => setRecipeSearch("")}>Clear</button>
+          )}
+          <span className="result-count">{filteredRecipes.length} recipe(s)</span>
+        </div>
       </div>
 
       {/* EMPTY STATE */}
@@ -140,20 +142,11 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
                   )}
                 </div>
 
-                <button
-                  className="modal-cancel-btn"
-                  title="Delete recipe"
+                <Button3D variant="cancel" iconOnly title="Delete recipe"
                   onClick={e => {
                     e.stopPropagation();
                     deleteRecipe(r.id);
-                  }}
-                >
-                  <span className="shadow"></span>
-                  <span className="edge"></span>
-                  <span className="front close-padding">
-                    <img src={deleteIcon} alt="" />
-                  </span>
-                </button>
+                  }}><img src={deleteIcon} alt="" /></Button3D>
               </div>
             );
           })}
@@ -166,15 +159,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
           <form className="modal" onSubmit={addRecipe}>
             <div className="modal-header">
               <h3>Add Recipe</h3>
-              <button
-                type="button"
-                className="modal-cancel-btn"
-                onClick={() => { resetForm(); setShowForm(false); }}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => { resetForm(); setShowForm(false); }}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="modal-body">
@@ -208,23 +193,8 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
             </div>
 
             <div className="modal-footer ">
-              <button
-                className="modal-cancel-btn"
-                type="button"
-                onClick={() => { resetForm(); setShowForm(false); }}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
-              <button
-                className="modal-save-btn"
-                type="submit"
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Save Recipe</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => { resetForm(); setShowForm(false); }}>Cancel</Button3D>
+              <Button3D type="submit">Save Recipe</Button3D>
             </div>
           </form>
         </div>
@@ -241,15 +211,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
                   {countSteps(selected.description)} step{countSteps(selected.description) !== 1 ? "s" : ""}
                 </span>
               </div>
-              <button
-                type="button"
-                className="modal-cancel-btn"
-                onClick={() => setSelected(null)}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => setSelected(null)}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="modal-body">
@@ -264,20 +226,11 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
             </div>
 
             <div className="modal-footer">
-              <button
-                className="modal-cancel-btn"
-                type="button"
-                onClick={() => setSelected(null)}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Close</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => setSelected(null)}>Close</Button3D>
             </div>
           </div>
         </div>
       )}
-
 
     </div>
   );

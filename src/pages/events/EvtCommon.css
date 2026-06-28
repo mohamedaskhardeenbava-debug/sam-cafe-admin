@@ -1,443 +1,438 @@
-/* ------------------------------------------------------------------------------------------------------------------------------------ */
+/* ═══════════════════════════════════════════════════════
+   EvtCommon.css  —  Shared styles for event-type pages
+   (Events, Reservations, Catering, PreBookings, Celebrations)
+   Depends on Common.css and ModalCSS.css.
+═══════════════════════════════════════════════════════ */
 
-/* KPI ROW */
+/* ── Page wrapper ── */
+.evt-page {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.evt-page .filter-bar {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+
+/* ── Header ── */
+.evt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.evt-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 2px;
+  color: #111;
+}
+
+.evt-subtitle {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+}
+
+
+/* ── KPI row ── */
 .evt-kpi-row {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .evt-kpi {
-    background: #fff;
-    border-radius: 8px;
-    padding: 10px;
-    box-shadow: inset 5px 5px 10px #bbb, inset -5px -5px 10px #fff;
-    flex: 1;
-    min-width: 80px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: inset 5px 5px 10px #bbb, inset -5px -5px 10px #fff;
+  flex: 1;
+  min-width: 80px;
 }
 
 .evt-kpi-val {
-    font-size: 22px;
-    font-weight: 800;
-    line-height: 1;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .evt-kpi-label {
-    font-size: 12px;
-    color: #666;
-    margin-top: 3px;
-    font-weight: 500;
+  font-size: 12px;
+  color: #666;
+  margin-top: 3px;
+  font-weight: 500;
 }
 
-/* FILTER BAR */
-.evt-filter-bar {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 8px 10px;
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    border: 1px solid #f0f0f0;
+
+/* ── Filter bar ── */
+.filter-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 10px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0f0f0;
+  margin-bottom: 14px;
 }
 
-.evt-filter-groups {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 16px;
-    align-items: center;
+.filter-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  align-items: center;
 }
 
-.evt-filter-group {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 5px;
+.filter-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
 }
 
-.evt-filter-group-label {
-    font-size: 10px;
-    font-weight: 700;
-    color: #aaa;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    white-space: nowrap;
-    margin-right: 1px;
+.filter-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+  margin-right: 1px;
 }
 
-.evt-filter-group+.evt-filter-group {
-    padding-left: 14px;
-    border-left: 1.5px solid #ebebeb;
-}
 
-/* ---------- MODAL OVERLAY ---------- */
+/* ── Event modal overlay ── */
 .event-modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.45);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 999;
-    animation: evt-overlay-in 0.22s ease;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  animation: evt-overlay-in 0.22s ease;
 }
 
 @keyframes evt-overlay-in {
-    from {
-        opacity: 0;
-    }
+  from {
+    opacity: 0;
+  }
 
-    to {
-        opacity: 1;
-    }
+  to {
+    opacity: 1;
+  }
 }
 
-/* ---------- MODAL CARD ---------- */
+
+/* ── Event modal card ── */
 .event-modal {
-    padding: 20px;
-    background: #ffffff;
-    width: 80% !important;
-    min-height: 85vh;
-    max-height: 85vh;
-    border-radius: 20px;
-    box-shadow:
-        0 32px 80px rgba(0, 0, 0, 0.28),
-        0 8px 24px rgba(0, 0, 0, 0.12),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    gap: 10px;
-    animation: evt-modal-rise 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  padding: 20px;
+  background: #ffffff;
+  width: 80%;
+  min-height: 85vh;
+  max-height: 85vh;
+  border-radius: 20px;
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.28),
+    0 8px 24px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  gap: 10px;
+  animation: evt-modal-rise 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes evt-modal-rise {
-    from {
-        transform: scale(0.92) translateY(24px);
-        opacity: 0;
-    }
+  from {
+    transform: scale(0.92) translateY(24px);
+    opacity: 0;
+  }
 
-    to {
-        transform: scale(1) translateY(0);
-        opacity: 1;
-    }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
 }
 
 .event-modal-header {
-    position: sticky;
-    display: flex;
-    justify-content: space-between;
-    top: 0;
-    z-index: 2;
-    background-color: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: #ffffff;
+  display: flex;
+  justify-content: space-between;
 }
 
 .event-modal-header h3 {
-    margin: 0;
+  margin: 0;
 }
 
 .event-modal-body {
-    overflow-y: auto;
-    overflow-x: hidden;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-sizing: border-box;
+  max-height: 400px;
 }
 
-/* --------------------- FOOTER ---------------------- */
 .event-modal-footer {
-    position: sticky;
-    bottom: 0;
-    z-index: 2;
-    background: #fff;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 10px;
-    box-sizing: border-box;
-    margin-top: auto;
-}
-
-
-/* BUTTONS */
-.event-modal-footer button {
-    padding: 8px 14px;
-    font-size: 13px;
-    border-radius: 6px;
-    cursor: pointer;
-    border: none;
-    background: #f0f0f0;
-    color: #333;
-}
-
-.event-modal-footer button:last-child {
-    background: #2563eb;
-    color: white;
-}
-
-.event-modal-footer button:hover {
-    transform: scale(1.05);
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: #fff;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  margin-top: auto;
 }
 
 .event-package-body {
-    display: flex;
-    gap: 16px;
+  display: flex;
+  gap: 16px;
+  max-height: 400px;
 }
 
-.event-modal-body,
-.event-package-body {
-    max-height: 400px;
-}
-
+/* Activity modal */
 .act-modal {
-    width: 80% !important;
-    max-width: 96vw;
+  width: 80%;
+  max-width: 96vw;
 }
 
 .act-modal-body {
-    padding: 8px 0;
-    max-height: 400px;
-    overflow-y: auto;
+  padding: 8px 0;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
-/* Split tab: no outer scroll — the ae-dishes-split manages all scroll internally */
+/* Split tab: manages all scroll internally */
 .act-modal-body--split {
-    overflow: visible !important;
-    max-height: none !important;
-    padding: 0;
+  overflow: visible !important;
+  max-height: none !important;
+  padding: 0;
 }
 
-/* FORM INTERNALS */
-.evt-res-form-section-label {
-    font-size: 11px;
-    font-weight: 700;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-}
 
-/* ── Form section label ── */
-.evt-res-form-section-label {
-    font-size: 11px;
-    font-weight: 700;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.evt-res-create-btn {
-    height: 38px;
-    padding: 0 18px;
-    border-radius: 999px;
-    border: none;
-    background: #111;
-    color: #fff;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 13px;
-    transition: all 0.2s;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.evt-res-create-btn:hover {
-    background: #333;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
-}
-
+/* ── Create / spec buttons ── */
+.evt-res-create-btn,
 .ae-spec-btn {
-    height: 38px;
-    padding: 0 18px;
-    border-radius: 999px;
-    background: #111;
-    color: #fff;
-    font-weight: 600;
-    font-size: 13px;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.25s;
-    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25);
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: none;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
+.evt-res-create-btn:hover,
 .ae-spec-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.38);
+  background: #333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
 }
 
-/* STEPPER */
+
+/* ── Stepper ── */
 .evt-stepper {
-    display: flex;
-    align-items: center;
-    border: 1.5px solid #e5e7eb;
-    border-radius: 10px;
-    overflow: hidden;
-    background: #f9fafb;
-    height: 32px;
-    width: fit-content;
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f9fafb;
+  height: 32px;
+  width: fit-content;
 }
 
 .evt-stepper button {
-    width: 36px;
-    height: 100%;
-    border: none;
-    background: transparent;
-    font-size: 14px;
-    cursor: pointer;
-    color: #333;
-    font-weight: 300;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.15s;
+  width: 36px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  cursor: pointer;
+  color: #333;
+  font-weight: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
 }
 
 .evt-stepper button:hover {
-    background: #f0f0f0;
+  background: #f0f0f0;
 }
 
 .evt-stepper span {
-    min-width: 40px;
-    text-align: center;
-    font-size: 14px;
-    font-weight: 700;
-    border-left: 1px solid #e5e7eb;
-    border-right: 1px solid #e5e7eb;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
+  min-width: 40px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  border-left: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
 }
 
-/* Input border turns red */
+
+/* ── Form section label ── */
+.evt-res-form-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+
+/* ── Validation error states ── */
+
+/* Input underline */
 .mat-input.mat-error,
 .ae-addr-input.mat-error {
-    border-bottom-color: #ef4444 !important;
-    caret-color: #ef4444;
+  border-bottom-color: #ef4444 !important;
+  caret-color: #ef4444;
+  animation: mat-shake 0.35s ease;
 }
 
-/* Label turns red (floated up AND placeholder state) */
+/* Label */
 .mat-label.mat-label-error,
-.ae-addr-label.mat-label-error {
-    color: #ef4444 !important;
+.ae-addr-label.mat-label-error,
+.mat-area-label.mat-label-error,
+label.mat-label-error {
+  color: #ef4444 !important;
 }
 
-/* Animated underline bar turns red */
+/* Animated underline bar */
 .mat-bar.mat-bar-error,
-.ae-addr-bar.mat-bar-error {
-    background: #ef4444 !important;
+.ae-addr-bar.mat-bar-error,
+.mat-area-bar.mat-bar-error {
+  background: #ef4444 !important;
 }
 
-/* Expand the error bar immediately (don't wait for focus) */
 .mat-bar.mat-bar-error::before,
 .mat-bar.mat-bar-error::after,
 .ae-addr-bar.mat-bar-error::before,
-.ae-addr-bar.mat-bar-error::after {
-    width: 50% !important;
-    background: #ef4444 !important;
+.ae-addr-bar.mat-bar-error::after,
+.mat-area-bar.mat-bar-error::before,
+.mat-area-bar.mat-bar-error::after {
+  width: 50% !important;
+  background: #ef4444 !important;
 }
 
 /* Textarea variant */
 .mat-area .mat-input.mat-error {
-    border-bottom-color: #ef4444 !important;
+  border-bottom-color: #ef4444 !important;
 }
 
-.mat-area-label.mat-label-error {
-    color: #ef4444 !important;
-}
-
-.mat-area-bar.mat-bar-error::before,
-.mat-area-bar.mat-bar-error::after {
-    width: 50% !important;
-    background: #ef4444 !important;
-}
-
-/* ── CustomDatePicker / plain label error ─────────────────────────────────── */
-label.mat-label-error {
-    color: #ef4444 !important;
-}
-
-/* ── ecard step button — show red dot when that step has errors ───────────── */
-.ebutton.has-error .eevt-step-num {
-    background: #ef4444 !important;
-    border-color: #ef4444 !important;
-    color: #fff !important;
-}
-
-.ebutton.has-error .eevt-step-label {
-    color: #ef4444 !important;
-}
-
-.ebutton.has-error {
-    border-color: #fca5a5 !important;
-    background: #fff5f5 !important;
-}
-
-/* ── Shake animation on validation failure ───────────────────────────────── */
-@keyframes mat-shake {
-
-    0%,
-    100% {
-        transform: translateX(0);
-    }
-
-    20% {
-        transform: translateX(-5px);
-    }
-
-    40% {
-        transform: translateX(5px);
-    }
-
-    60% {
-        transform: translateX(-4px);
-    }
-
-    80% {
-        transform: translateX(4px);
-    }
-}
-
-.mat-input.mat-error,
-.ae-addr-input.mat-error {
-    animation: mat-shake 0.35s ease;
-}
-
-/* ── Remove old error span style (kept for backward compat, now hidden) ──── */
-.evt-res-form-error,
-.evt-pre-req+.evt-res-form-error {
-    display: none !important;
-}
-
-/* ── File upload error ────────────────────────────────────────────────────── */
-.file-wrap.file-error {
-    border: 1.5px solid #ef4444 !important;
-    border-radius: 8px;
-}
-
-.file-label.file-label-error {
-    color: #ef4444 !important;
-}
-
-/* ── CustomDropdown (mat-select) error ───────────────────────────────────── */
+/* Dropdown (mat-select) error */
 .mat-select-error .mat-select,
 .mat-select-error .dishes-status-dropdown {
-    border-bottom-color: #ef4444 !important;
+  border-bottom-color: #ef4444 !important;
 }
 
 .mat-select-error .mat-label {
-    color: #ef4444 !important;
+  color: #ef4444 !important;
 }
 
 .mat-select-error .mat-bar {
-    background: #ef4444 !important;
+  background: #ef4444 !important;
 }
 
 .mat-select-error .mat-bar::before,
 .mat-select-error .mat-bar::after {
-    width: 50% !important;
-    background: #ef4444 !important;
+  width: 50% !important;
+  background: #ef4444 !important;
+}
+
+/* File upload error */
+.file-wrap.file-error {
+  border: 1.5px solid #ef4444 !important;
+  border-radius: 8px;
+}
+
+.file-label.file-label-error {
+  color: #ef4444 !important;
+}
+
+/* Step button error indicator */
+.ebutton.has-error {
+  border-color: #fca5a5 !important;
+  background: #fff5f5 !important;
+}
+
+.ebutton.has-error .eevt-step-num {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: #fff !important;
+}
+
+.ebutton.has-error .eevt-step-label {
+  color: #ef4444 !important;
+}
+
+/* Shake animation */
+@keyframes mat-shake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-5px);
+  }
+
+  40% {
+    transform: translateX(5px);
+  }
+
+  60% {
+    transform: translateX(-4px);
+  }
+
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+/* Hide old error span (backward compat) */
+.evt-res-form-error,
+.evt-pre-req+.evt-res-form-error {
+  display: none !important;
+}
+
+
+/* ── Responsive ── */
+@media screen and (max-width: 768px) {
+  .evt-kpi-row {
+    width: 100%;
+  }
+
+  .evt-kpi {
+    min-width: 50px;
+  }
 }

@@ -1,11 +1,23 @@
-import React, { useState, useMemo, useEffect } from "react";
+/**
+ * ServiceAssign.js  —  Sam Cafe Admin Panel
+ * Service duty assignment page
+ */
+
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+
 import { exportToExcel } from "../../utils/excelUtils";
-import "./ServiceAssign.css";
-import { getTomorrowKey, getTomorrowFormatted } from "../../App";
 import api from "../../api";
+
+import { getTomorrowKey, getTomorrowFormatted } from "../../App";
 import { useToast } from "../../useToast";
 import deleteIcon from "../../icon/delete-icon.png";
 import closeIcon from "../../icon/close-icon.png";
+import Button3D from "../../components/Button3D";
+import CustomDropdown from "../../components/CustomDropdown";
+
+import "./ServiceAssign.css";
+import PageLoader from "../../components/PageLoader";
 
 /*
   DATA SHAPE (serviceAssign in db.json):
@@ -21,58 +33,94 @@ import closeIcon from "../../icon/close-icon.png";
   { mise: [...], cleaning: [...] }
 */
 
-// ── Floating-label CustomDropdown ────────────────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select Staff", label, required }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
-  const wrapperClass = ["mat-select", value ? "has-value" : "", open ? "is-open" : ""].filter(Boolean).join(" ");
-  return (
-    <div className={wrapperClass} ref={ref}>
-      {label && <label className="mat-label">{label}{required && <span className="rf-req">*</span>}</label>}
-      <div className="dishes-dropdown-wrapper" style={{ height: "32px" }}>
-        <button type="button" className="dishes-status-dropdown" style={{ height: "32px", paddingLeft: "10px", paddingTop: "0px" }}
-          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-          {displayLabel || <span className="dropdown-placeholder">{placeholder}</span>}
-        </button>
-        {open && (
-          <div className="dropdown-menu">
-            <div onClick={() => { onChange(""); setOpen(false); }}>
-              {placeholder}
-            </div>
-            {options.map((o, i) => {
-              const val = o.value !== undefined ? o.value : o;
-              const lbl = o.label !== undefined ? o.label : o;
-              return (
-                <div key={i} onClick={() => { onChange(val); setOpen(false); }}>
-                  {lbl}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <span className="mat-bar" />
-    </div>
-  );
-}
-
 const SECTION_META = {
   mise: { label: "Mise en Place", color: "#8b5cf6", icon: "" },
   cleaning: { label: "Cleaning", color: "#f59e0b", icon: "" },
 };
 
+/* ─── PORTAL STAFF DROPDOWN ─────────────────────────────────────
+   Renders the dropdown-menu via document.body so it escapes
+   .table-wrapper's overflow:auto and .table td's overflow:hidden
+   clipping. Position is computed with getBoundingClientRect.
+──────────────────────────────────────────────────────────────── */
+function StaffDropdown({ task, entry, adminData, handleChange, dropKey, openStaffDropdown, setOpenStaffDropdown, placeholder = "— Select —" }) {
+  const btnRef = useRef(null);
+  const [menuStyle, setMenuStyle] = useState({});
+  const isOpen = openStaffDropdown === dropKey;
+
+  const updatePosition = () => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setMenuStyle({
+        position: "fixed",
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+        zIndex: 9999,
+      });
+    }
+  };
+
+  // Close on any scroll (so the menu never floats over headers/filter bar).
+  // Reposition on resize so it stays aligned if the layout shifts.
+  useEffect(() => {
+    if (!isOpen) return;
+    const close = () => setOpenStaffDropdown(null);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [isOpen]);
+
+  const handleOpen = (e) => {
+    e.stopPropagation();
+    updatePosition();
+    setOpenStaffDropdown(p => p === dropKey ? null : dropKey);
+  };
+
+  return (
+    <div className="dishes-dropdown-wrapper" style={{ height: "32px" }}>
+      <button
+        ref={btnRef}
+        type="button"
+        className="dishes-status-dropdown"
+        style={{ height: "32px", paddingTop: "0px", paddingLeft: "10px" }}
+        onClick={handleOpen}
+      >
+        {entry?.staff || placeholder}
+      </button>
+
+      {openStaffDropdown === dropKey && createPortal(
+        <div className="dropdown-menu" style={menuStyle}>
+          <div onClick={e => { e.stopPropagation(); handleChange(task, ""); setOpenStaffDropdown(null); }}>
+            {placeholder}
+          </div>
+          {adminData.staff.map(s => (
+            <div
+              key={s.id}
+              className={entry?.staff === s.name ? "dropdown-item-active" : ""}
+              onClick={e => { e.stopPropagation(); handleChange(task, s.name); setOpenStaffDropdown(null); }}
+            >
+              {s.name}
+            </div>
+          ))}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
 export default function ServiceAssign({ adminData, setAdminData }) {
+  // ── Hooks
+
   const { toast } = useToast();
   const tasks = adminData.tasks?.service || {};
   const tomorrow = getTomorrowKey();
   const tomorrowFmt = getTomorrowFormatted();
+
 
   const [newTask, setNewTask] = useState("");
   const [section, setSection] = useState("mise");
@@ -103,6 +151,7 @@ export default function ServiceAssign({ adminData, setAdminData }) {
     });
     return result;
   }, [tasks, assignSearch, sectionFilter]);
+  if (!adminData?.staff?.length) return <PageLoader label="Loading assignments…" />;
 
   const assignedCount = Object.values(assignedDay).filter(v => v?.staff).length;
   const totalTasks = Object.values(tasks).flat().length;
@@ -203,15 +252,15 @@ export default function ServiceAssign({ adminData, setAdminData }) {
   };
 
   return (
-    <div className="service-assign-page">
+    <div className="inner-page">
 
       {/* HEADER */}
-      <div className="service-assign-header">
-        <div className="service-assign-header-left">
-          <h2 className="service-assign-title">Service Staff Assigning</h2>
-          <span className="service-assign-date">{tomorrowFmt}</span>
+      <div className="header">
+        <div>
+          <h2 className="title">Service Staff Assigning</h2>
+          <span className="subtitle">{tomorrowFmt}</span>
         </div>
-        <div className="service-assign-header-right">
+        <div className="header-btn-container">
           <div className="service-assign-progress-badge">
             <span className="service-assign-progress-num">{assignedCount}/{totalTasks}</span>
             <span className="service-assign-progress-lbl">Assigned</span>
@@ -227,44 +276,33 @@ export default function ServiceAssign({ adminData, setAdminData }) {
               {listView ? "⊞ Table" : "≡ List"}
             </span>
           </button>
-          <button
-            className="modal-save-btn"
-            onClick={exportAssign}
-          >
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
-          <button
-            className="modal-save-btn"
-            onClick={() => setShowTaskModal(true)}>
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">+ Task</span>
-          </button>
+          <Button3D onClick={exportAssign}>Export</Button3D>
+          <Button3D onClick={() => setShowTaskModal(true)}>+ Task</Button3D>
         </div>
       </div>
 
       {/* FILTER BAR */}
-      <div className="service-assign-filter-bar">
-        <input
-          className="search-input"
-          placeholder=" Search tasks…"
-          value={assignSearch}
-          onChange={e => setAssignSearch(e.target.value)}
-        />
-        <div className="service-assign-pills">
-          <span className="service-assign-filter-lbl">Section</span>
-          {[["all", "All"], ...Object.keys(tasks).map(s => [s, SECTION_META[s]?.label || s])].map(([k, lbl]) => (
-            <button key={k}
-              className={`filter-pill${sectionFilter === k ? " active" : ""}`}
-              onClick={() => setSectionFilter(k)}>{lbl}</button>
-          ))}
+      <div className="filter-bar">
+        <div className="filter-groups">
+          <input
+            className="search-input"
+            placeholder=" Search tasks…"
+            value={assignSearch}
+            onChange={e => setAssignSearch(e.target.value)}
+          />
+          <div className="filter-group">
+            <span className="filter-group-label">Section</span>
+            {[["all", "All"], ...Object.keys(tasks).map(s => [s, SECTION_META[s]?.label || s])].map(([k, lbl]) => (
+              <button key={k}
+                className={`filter-pill${sectionFilter === k ? " active" : ""}`}
+                onClick={() => setSectionFilter(k)}>{lbl}</button>
+            ))}
+          </div>
+          {(assignSearch || sectionFilter !== "all") && (
+            <button className="ae-clear-filter"
+              onClick={() => { setAssignSearch(""); setSectionFilter("all"); }}>Clear</button>
+          )}
         </div>
-        {(assignSearch || sectionFilter !== "all") && (
-          <button className="ae-clear-filter"
-            onClick={() => { setAssignSearch(""); setSectionFilter("all"); }}>Clear</button>
-        )}
       </div>
 
       {/* CONTENT */}
@@ -293,11 +331,7 @@ export default function ServiceAssign({ adminData, setAdminData }) {
           }}>
             <div className="modal-header">
               <h3>Add Task</h3>
-              <button type="button" className="modal-cancel-btn" onClick={() => { setShowTaskModal(false); setNewTask(""); setTaskErrors({}); }} >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => { setShowTaskModal(false); setNewTask(""); setTaskErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
             <div className="modal-body">
               <div className="form-group">
@@ -322,21 +356,8 @@ export default function ServiceAssign({ adminData, setAdminData }) {
               </div>
             </div>
             <div className="modal-footer">
-              <button
-                type="button"
-                className="modal-cancel-btn"
-                onClick={() => { setShowTaskModal(false); setNewTask(""); setTaskErrors({}); }}>
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
-              <button
-                type="submit"
-                className="modal-save-btn">
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Add Task</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => { setShowTaskModal(false); setNewTask(""); setTaskErrors({}); }}>Cancel</Button3D>
+              <Button3D type="submit">Add Task</Button3D>
             </div>
           </form>
         </div>
@@ -354,15 +375,16 @@ function STableLayout({ filteredTasks, assignedDay, adminData, handleChange, han
     window.addEventListener("click", close);
     return () => window.removeEventListener("click", close);
   }, []);
+
   return (
-    <div className="service-assign-table-wrapper">
-      <table className="service-assign-table">
+    <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} >
+      <table className="table">
         <thead>
           <tr>
             <th>Task</th>
             <th>Staff</th>
             <th>Assigned At</th>
-            <th>Delete</th>
+            <th className="icon-width">Delete</th>
           </tr>
         </thead>
         <tbody>
@@ -385,39 +407,21 @@ function STableLayout({ filteredTasks, assignedDay, adminData, handleChange, han
                       {task}
                     </td>
                     <td>
-                      <div className="dishes-dropdown-wrapper" style={{ height: "32px" }}>
-                        <button
-                          type="button"
-                          className="dishes-status-dropdown"
-                          style={{ height: "32px", paddingTop: "0px", paddingLeft: "10px" }}
-                          onClick={e => { e.stopPropagation(); setOpenStaffDropdown(p => p === dropKey ? null : dropKey); }}
-                        >
-                          {entry?.staff || "— Select —"}
-                        </button>
-                        {openStaffDropdown === dropKey && (
-                          <div className="dropdown-menu">
-                            <div onClick={e => { e.stopPropagation(); handleChange(task, ""); setOpenStaffDropdown(null); }}>
-                              — Select —
-                            </div>
-                            {adminData.staff.map(s => (
-                              <div key={s.id} onClick={e => { e.stopPropagation(); handleChange(task, s.name); setOpenStaffDropdown(null); }}>
-                                {s.name}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      <StaffDropdown
+                        task={task}
+                        entry={entry}
+                        adminData={adminData}
+                        handleChange={handleChange}
+                        dropKey={dropKey}
+                        openStaffDropdown={openStaffDropdown}
+                        setOpenStaffDropdown={setOpenStaffDropdown}
+                        placeholder="— Select —"
+                      />
                     </td>
                     <td className="service-assign-time">{entry?.assignedAt || "—"}</td>
-                    <td>
-                      <button role="button" className="modal-cancel-btn"
-                        onClick={() => handleDelete(task, sec)}>
-                        <span className="shadow"></span>
-                        <span className="edge"></span>
-                        <span className="front close-padding">
-                          <img src={deleteIcon} alt="" />
-                        </span>
-                      </button>
+                    <td className="icon-width">
+                      <Button3D variant="cancel" iconOnly role="button"
+                        onClick={() => handleDelete(task, sec)}><img src={deleteIcon} alt="" /></Button3D>
                     </td>
                   </tr>
                 );
@@ -439,6 +443,7 @@ function SListLayout({ filteredTasks, assignedDay, adminData, handleChange, hand
     window.addEventListener("click", close);
     return () => window.removeEventListener("click", close);
   }, []);
+
   return (
     <div className="service-assign-list-container">
       {Object.entries(filteredTasks).map(([sec, items]) => (
@@ -463,43 +468,24 @@ function SListLayout({ filteredTasks, assignedDay, adminData, handleChange, hand
                       <span className={`service-assign-task-dot ${isAssigned ? "dot-filled" : ""}`} />
                       {task}
                     </div>
-                    <button role="button" className="modal-cancel-btn"
-                      onClick={() => handleDelete(task, sec)}>
-                      <span className="shadow"></span>
-                      <span className="edge"></span>
-                      <span className="front close-padding">
-                        <img src={deleteIcon} alt="" />
-                      </span>
-                    </button>
+                    <Button3D variant="cancel" iconOnly role="button"
+                      onClick={() => handleDelete(task, sec)}><img src={deleteIcon} alt="" /></Button3D>
                   </div>
                   <div className="assign-list-card-bot">
-                    <div className="dishes-dropdown-wrapper" style={{ height: "32px" }}>
-                      <button
-                        type="button"
-                        className="dishes-status-dropdown" style={{ height: "32px", paddingLeft: "10px", paddingTop: "0px" }}
-                        onClick={e => { e.stopPropagation(); setOpenStaffDropdown(p => p === dropKey ? null : dropKey); }}
-                      >
-                        {entry?.staff || "— Select Staff —"}
-                      </button>
-                      {openStaffDropdown === dropKey && (
-                        <div className="dropdown-menu">
-                          <div onClick={e => { e.stopPropagation(); handleChange(task, ""); setOpenStaffDropdown(null); }}>
-                            — Select Staff —
-                          </div>
-                          {adminData.staff.map(s => (
-                            <div key={s.id} onClick={e => { e.stopPropagation(); handleChange(task, s.name); setOpenStaffDropdown(null); }}>
-                              {s.name}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    <StaffDropdown
+                      task={task}
+                      entry={entry}
+                      adminData={adminData}
+                      handleChange={handleChange}
+                      dropKey={dropKey}
+                      openStaffDropdown={openStaffDropdown}
+                      setOpenStaffDropdown={setOpenStaffDropdown}
+                      placeholder="— Select Staff —"
+                    />
                     {entry?.assignedAt && (
                       <span className="service-assign-list-time">⏱ {entry.assignedAt}</span>
                     )}
-
                   </div>
-
                 </div>
               );
             })}

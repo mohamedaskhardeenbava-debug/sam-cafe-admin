@@ -1,3 +1,8 @@
+/**
+ * useInfiniteScroll.js  —  Sam Cafe Admin Panel
+ * Infinite-scroll IntersectionObserver hook
+ */
+
 import { useState, useRef, useEffect, useCallback } from "react";
 
 /**

@@ -1,9 +1,18 @@
+/**
+ * ServiceMise.js  —  Sam Cafe Admin Panel
+ * Service mise-en-place tracking page
+ */
+
 import React, { useState, useMemo } from "react";
+
 import { exportToExcel } from "../../utils/excelUtils";
-import "./ServiceMise.css";
-import { getTodayKey, getTodayFormatted } from "../../App";
 import api from "../../api";
+
+import { getTodayKey, getTodayFormatted } from "../../App";
 import { useToast } from "../../useToast";
+import Button3D from "../../components/Button3D";
+
+import "./ServiceMise.css";
 
 /*
   DATA SHAPE (serviceMise in db.json):
@@ -22,6 +31,8 @@ const SECTION_META = {
 };
 
 export default function ServiceMise({ adminData, setAdminData }) {
+  // ── Hooks
+
   const { toast } = useToast();
   const today = getTodayKey();
   const todayFmt = getTodayFormatted();
@@ -91,15 +102,15 @@ export default function ServiceMise({ adminData, setAdminData }) {
   };
 
   return (
-    <div className="service-mise-page">
+    <div className="inner-page">
 
       {/* HEADER */}
-      <div className="service-mise-header">
-        <div className="service-mise-header-left">
-          <h2 className="service-mise-title">Service Mise en Place & Cleaning</h2>
-          <span className="service-mise-date">{todayFmt}</span>
+      <div className="header">
+        <div >
+          <h2 className="title">Service Mise en Place & Cleaning</h2>
+          <span className="subtitle">{todayFmt}</span>
         </div>
-        <div className="service-mise-header-right">
+        <div className="header-btn-container">
           <div className="service-mise-stat-badge service-mise-stat-assigned">
             <span className="service-mise-stat-num">{assignedCnt}/{allTasks.length}</span>
             <span className="service-mise-stat-lbl">Assigned</span>
@@ -108,11 +119,7 @@ export default function ServiceMise({ adminData, setAdminData }) {
             <span className="service-mise-stat-num">{verifiedCnt}/{allTasks.length}</span>
             <span className="service-mise-stat-lbl">Verified</span>
           </div>
-          <button className="modal-save-btn" onClick={exportMise}>
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
+          <Button3D onClick={exportMise}>Export</Button3D>
         </div>
       </div>
 
@@ -125,30 +132,32 @@ export default function ServiceMise({ adminData, setAdminData }) {
       </div>
 
       {/* FILTER BAR */}
-      <div className="service-mise-filter-bar">
-        <input
-          className="search-input"
-          placeholder=" Search tasks…"
-          value={miseSearch}
-          onChange={e => setMiseSearch(e.target.value)}
-        />
-        <div className="service-mise-pills">
-          <span className="service-mise-filter-lbl">Section</span>
-          {[["all", "All"], ...Object.keys(tasks).map(s => [s, SECTION_META[s]?.label || s])].map(([k, lbl]) => (
-            <button key={k}
-              className={`filter-pill${sectionFilter === k ? " active" : ""}`}
-              onClick={() => setSectionFilter(k)}>{lbl}</button>
-          ))}
+      <div className="filter-bar">
+        <div className="filter-group">
+          <input
+            className="search-input"
+            placeholder=" Search tasks…"
+            value={miseSearch}
+            onChange={e => setMiseSearch(e.target.value)}
+          />
+          <div className="filter-group">
+            <span className="filter-group-label">Section</span>
+            {[["all", "All"], ...Object.keys(tasks).map(s => [s, SECTION_META[s]?.label || s])].map(([k, lbl]) => (
+              <button key={k}
+                className={`filter-pill${sectionFilter === k ? " active" : ""}`}
+                onClick={() => setSectionFilter(k)}>{lbl}</button>
+            ))}
+          </div>
+          {(miseSearch || sectionFilter !== "all") && (
+            <button className="ae-clear-filter"
+              onClick={() => { setMiseSearch(""); setSectionFilter("all"); }}>Clear</button>
+          )}
         </div>
-        {(miseSearch || sectionFilter !== "all") && (
-          <button className="ae-clear-filter"
-            onClick={() => { setMiseSearch(""); setSectionFilter("all"); }}>Clear</button>
-        )}
       </div>
 
       {/* UNIFIED TABLE */}
-      <div className="mise-table-wrapper">
-        <table className="mise-table">
+      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 265px)" }} >
+        <table className="table">
           <thead>
             <tr>
               <th>Task</th>

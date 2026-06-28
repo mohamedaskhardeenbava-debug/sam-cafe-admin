@@ -1,10 +1,20 @@
+/**
+ * StaffTraining.js  —  Sam Cafe Admin Panel
+ * Staff training records page
+ */
+
 import React, { useState, useEffect } from "react";
+
 import { exportToExcel } from "../../utils/excelUtils";
-import "./StaffModules.css";
 import api from "../../api";
+
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
 import CustomDropdown from "../../components/CustomDropdown";
+import Button3D from "../../components/Button3D";
+
+import "./StaffModules.css";
+import PageLoader from "../../components/PageLoader";
 
 const typeColors = {
   Online: { bg: "#dbeafe", color: "#1e40af" },
@@ -14,7 +24,10 @@ const typeColors = {
 };
 
 export default function StaffTraining({ adminData, setAdminData }) {
+  // ── Hooks
+
   const { toast } = useToast();
+
   const [trainings, setTrainings] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -40,6 +53,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
     };
     load();
   }, []);
+  if (!adminData?.staff?.length) return <PageLoader label="Loading training records…" />;
 
   const addTraining = async (e) => {
     e.preventDefault();
@@ -97,47 +111,38 @@ export default function StaffTraining({ adminData, setAdminData }) {
   };
 
   return (
-    <div className="staff-page">
+    <div className="inner-page">
 
       {/* HEADER */}
-      <div className="staff-header">
-        <h2>Training</h2>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            className="modal-save-btn"
-            onClick={exportTrainings}
-          >
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
-          <button className="modal-save-btn" onClick={() => setShowForm(true)}>
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">+ Add Training</span>
-          </button>
+      <div className="header">
+        <h2 className="title">Training</h2>
+        <div className="header-btn-container">
+          <Button3D onClick={exportTrainings}>Export</Button3D>
+          <Button3D onClick={() => setShowForm(true)}>+ Add Training</Button3D>
         </div>
       </div>
 
       {/* FILTER BAR */}
-      <div className="staff-filter-bar">
-        <input
-          className="search-input"
-          placeholder=" Search staff, role, type…"
-          value={trainingSearch}
-          onChange={e => setTrainingSearch(e.target.value)}
-        />
-        <div className="staff-filter-group">
-          <span className="staff-filter-label">Type</span>
-          {["", "Online", "Training", "Internship", "Workshop"].map(t => (
-            <button key={t} className={`filter-pill${trainingTypeFilter === t ? " active" : ""}`}
-              onClick={() => setTrainingTypeFilter(t)}>{t || "All"}</button>
-          ))}
+      <div className="filter-bar">
+        <div className="filter-groups">
+          <input
+            className="search-input"
+            placeholder=" Search staff, role, type…"
+            value={trainingSearch}
+            onChange={e => setTrainingSearch(e.target.value)}
+          />
+          <div className="filter-group">
+            <span className="filter-group-label">Type</span>
+            {["", "Online", "Training", "Internship", "Workshop"].map(t => (
+              <button key={t} className={`filter-pill${trainingTypeFilter === t ? " active" : ""}`}
+                onClick={() => setTrainingTypeFilter(t)}>{t || "All"}</button>
+            ))}
+          </div>
+          {(trainingSearch || trainingTypeFilter) && (
+            <button className="ae-clear-filter" onClick={() => { setTrainingSearch(""); setTrainingTypeFilter(""); }}>Clear</button>
+          )}
+          <span className="result-count">{filteredTrainings.length} record(s)</span>
         </div>
-        {(trainingSearch || trainingTypeFilter) && (
-          <button className="ae-clear-filter" onClick={() => { setTrainingSearch(""); setTrainingTypeFilter(""); }}>Clear</button>
-        )}
-        <span className="ae-result-count">{filteredTrainings.length} record(s)</span>
       </div>
 
       {/* EMPTY STATE */}
@@ -206,11 +211,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
           <form className="modal" onSubmit={addTraining}>
             <div className="modal-header">
               <h3>Add Training Record</h3>
-              <button type="button" className="modal-cancel-btn" onClick={() => { setShowForm(false); setFormErrors({}); }}>
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => { setShowForm(false); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="modal-body">
@@ -281,20 +282,8 @@ export default function StaffTraining({ adminData, setAdminData }) {
             </div>
 
             <div className="modal-footer">
-              <button
-                className="modal-cancel-btn"
-                type="button"
-                onClick={() => { setShowForm(false); setFormErrors({}); }}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
-              <button type="submit" className="modal-save-btn">
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Save Training</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => { setShowForm(false); setFormErrors({}); }}>Cancel</Button3D>
+              <Button3D type="submit">Save Training</Button3D>
             </div>
           </form>
         </div>
@@ -309,11 +298,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
                 <h3>{selected.role}</h3>
                 <span className="sc-modal-sub">Training Record</span>
               </div>
-              <button type="button" className="modal-cancel-btn" onClick={() => setSelected(null)}>
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => setSelected(null)}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="modal-body">
@@ -344,15 +329,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
             </div>
 
             <div className="modal-footer">
-              <button
-                type="button"
-                onClick={() => setSelected(null)}
-                className="modal-cancel-btn"
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Close</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => setSelected(null)}>Close</Button3D>
             </div>
           </div>
         </div>

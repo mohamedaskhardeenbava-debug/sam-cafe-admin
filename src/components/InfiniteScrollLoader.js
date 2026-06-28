@@ -1,4 +1,10 @@
+/**
+ * InfiniteScrollLoader.js  —  Sam Cafe Admin Panel
+ * Shared infinite-scroll sentinel + spinner component
+ */
+
 import React from "react";
+
 import "./InfiniteScrollLoader.css";
 
 /**

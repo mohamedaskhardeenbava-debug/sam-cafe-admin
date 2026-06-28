@@ -1,13 +1,17 @@
-import "./App.css"; //admin panel
+/**
+ * App.js  —  Sam Cafe Admin Panel
+ * Root router, global state, socket listener
+ */
+
 import { useState, useEffect, useRef } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+
 import api from "./api";
 import socket from "./socket";
-import { useToast } from "./useToast";
 
+import { useToast } from "./useToast";
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
-
 import Dashboard from "./pages/Dashboard";
 import Ingredients from "./pages/Ingredients";
 import Dishes from "./pages/Dishes";
@@ -25,6 +29,8 @@ import Offers from "./pages/Offers";
 import OfferDetails from "./pages/OfferDetails";
 import Users from "./pages/Users";
 import UserDetails from "./pages/UserDetails";
+
+import "./App.css"; //admin panel
 
 // EVENTS
 import Reservations from "./pages/events/Reservations";
@@ -64,7 +70,7 @@ import ServiceActivityLog from "./pages/service/ServiceActivityLog";
 import ServiceSchedules from "./pages/service/ServiceSchedules";
 
 import ThemeSettings from "./ThemeSettings";
-
+import PageLoader from "./components/PageLoader";
 
 // Hard input limiter (chars + words)
 export const allowTextInput = (
@@ -94,6 +100,7 @@ function App() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isAppLoading, setIsAppLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [sortConfig, setSortConfig] = useState({
     key: "id",
@@ -158,6 +165,7 @@ function App() {
     if (!isAuthenticated) return;
 
     const fetchAllData = async () => {
+      setIsAppLoading(true);
       try {
         const [
           catRes,
@@ -249,6 +257,8 @@ function App() {
 
       } catch (err) {
         console.error("Failed to fetch admin data", err);
+      } finally {
+        setIsAppLoading(false);
       }
     };
 
@@ -525,6 +535,8 @@ function App() {
       .replace(/\s+/g, "_");
 
   /* ---------------- ADMIN LAYOUT ---------------- */
+  if (isAppLoading) return <PageLoader label="Loading Sam Cafe…" />;
+
   return (
     <div className="app">
       <Sidebar
@@ -867,6 +879,10 @@ function App() {
 
 export default App;
 
+// ─────────────────────────────────────────────────────
+// Utility exports (shared across all pages)
+// ─────────────────────────────────────────────────────
+
 export const sortArray = (data, sortConfig) => {
   if (!sortConfig.key) return data;
 
@@ -949,7 +965,9 @@ export const formatIndianTime = (dateStr, timeStr) => {
   });
 };
 
-// ------------------------------- DATE UTILITIES (GLOBAL) -------------------------------
+// ─────────────────────────────────────────────────────
+// Date utilities
+// ─────────────────────────────────────────────────────
 
 // Safe local date key (NO timezone bug)
 export const getTodayKey = () => {

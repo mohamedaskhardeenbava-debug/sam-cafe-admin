@@ -1,8 +1,17 @@
+/**
+ * UserDetails.js  —  Sam Cafe Admin Panel
+ * Single user detail page
+ */
+
 import { useParams, useNavigate } from "react-router-dom";
-import "./UserDetails.css";
+
 import { formatDisplayDate } from "../App"
 
+import "./UserDetails.css";
+
 const UserDetails = ({ users }) => {
+  // ── Hooks
+
   const { userId } = useParams();
   const navigate = useNavigate();
 

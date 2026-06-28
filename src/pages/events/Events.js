@@ -1,13 +1,23 @@
+/**
+ * Events.js  —  Sam Cafe Admin Panel
+ * Events management page
+ */
+
 import React, { useState, useMemo, useRef } from "react";
+
 import { exportToExcel } from "../../utils/excelUtils";
-import "./Events.css";
-import "../ModalCSS.css";
-import closeIcon from "../../icon/close-icon.png";
 import api from "../../api";
+import { CustomDatePicker } from "../../components/CustomDatePicker";
+
+import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
-import { CustomDatePicker } from "../../components/CustomDatePicker";
 import CustomDropdown from "../../components/CustomDropdown";
+import Button3D from "../../components/Button3D";
+
+import "./Events.css";
+import "../ModalCSS.css";
+import PageLoader from "../../components/PageLoader";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const generateId = (name) =>
@@ -132,6 +142,8 @@ const getMonthRange = () => {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
+  // ── Hooks
+
   const { toast } = useToast();
   const events = useMemo(
     () => adminData?.events ?? [],
@@ -158,6 +170,9 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
   // Destructure persisted filter state from App
   const { activeTab, filterEventId, filterStatus, filterFromDate, filterToDate, searchQuery,
     evtSearch, evtFilterStatus, evtFilterType, evtFilterPublish, evtFromDate, evtToDate, evtDatePreset } = filters;
+
+  // ── Helpers
+
   const setActiveTab = (v) => patchFilters({ activeTab: v });
   const setFilterEventId = (v) => patchFilters({ filterEventId: v });
   const setFilterStatus = (v) => patchFilters({ filterStatus: v });
@@ -171,6 +186,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
   const setEvtFromDate = (v) => patchFilters({ evtFromDate: v });
   const setEvtToDate = (v) => patchFilters({ evtToDate: v });
   const setEvtDatePreset = (v) => patchFilters({ evtDatePreset: v });
+
 
   const [showForm, setShowForm] = useState(false);
   const [showSpecForm, setShowSpecForm] = useState(false);
@@ -252,8 +268,6 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
     return list;
   }, [events, evtSearch, evtFilterStatus, evtFilterType, evtFilterPublish, evtFromDate, evtToDate]);
 
-
-
   const exportEvents = () => {
     if (!filteredEvents.length) { toast.warning("No events to export"); return; }
     const rows = filteredEvents.map(evt => {
@@ -322,6 +336,10 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
     }, 0);
     return baseFee + pkgPrice + addonsTotal;
   }, [specFormData.eventCategory, specFormData.selectedPackage, specFormData.selectedAddons, specFormData.guests]);
+
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
+  if (!adminData?.events?.length) return <PageLoader label="Loading events…" />;
 
   const resetForm = () => {
     setShowForm(false);
@@ -502,8 +520,6 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
     }
   };
 
-  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
-
   const confirmDelete = async () => {
     const id = confirmDeleteId;
     setConfirmDeleteId(null);
@@ -673,17 +689,9 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                     <span className="act-dish-price">₹{dish.basePrice}</span>
                   </div>
                   {sel ? (
-                    <button type="button" className="modal-save-btn" onClick={() => onToggle(dish.id)}>
-                      <span className="shadow"></span>
-                      <span className="edge"></span>
-                      <span className="front close-padding">✓ Added</span>
-                    </button>
+                    <Button3D iconOnly onClick={() => onToggle(dish.id)}>✓ Added</Button3D>
                   ) : (
-                    <button type="button" className="modal-cancel-btn" onClick={() => onToggle(dish.id)}>
-                      <span className="shadow"></span>
-                      <span className="edge"></span>
-                      <span className="front close-padding">+ Add</span>
-                    </button>
+                    <Button3D variant="cancel" iconOnly onClick={() => onToggle(dish.id)}>+ Add</Button3D>
                   )}
                 </div>
               );
@@ -741,12 +749,12 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
   );
 
   return (
-    <div className="admin-events-page">
+    <div className="inner-page">
       {/* PAGE HEADER */}
-      <div className="ae-page-header">
+      <div className="evt-header">
         <div>
-          <h2 className="ae-page-title">Events</h2>
-          <p className="ae-page-sub">Manage restaurant events &amp; track bookings</p>
+          <h2 className="evt-title">Events</h2>
+          <p className="evt-subtitle">Manage restaurant events &amp; track bookings</p>
         </div>
         <div className="ae-header-actions">
           <div className="ae-tab-pills">
@@ -761,10 +769,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
           </div>
           {activeTab === "events" && (
             <div className="ae-btn-group">
-              <button className="modal-save-btn" onClick={openSpecAdd}>
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Create Event</span></button>
+              <Button3D onClick={openSpecAdd}>Create Event</Button3D>
             </div>
           )}
         </div>
@@ -774,7 +779,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
       {activeTab === "events" && (
         <>
           {/* EVENTS FILTER BAR */}
-          <div className="ae-events-filter-bar">
+          <div className="filter-bar">
             <div className="ae-events-filter-top">
               <input
                 className="search-input"
@@ -782,15 +787,11 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                 value={evtSearch}
                 onChange={e => setEvtSearch(e.target.value)}
               />
-              <button className="modal-save-btn" onClick={exportEvents}>
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Export</span>
-              </button>
+              <Button3D onClick={exportEvents}>Export</Button3D>
             </div>
-            <div className="ae-events-filter-groups">
+            <div className="filter-groups">
               {/* Status */}
-              <div className="ae-events-filter-group">
+              <div className="filter-group">
                 <span className="ae-filter-group-label">Status</span>
                 {[
                   ["all", "All"],
@@ -809,7 +810,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                 ))}
               </div>
               {/* Date quick presets */}
-              <div className="ae-events-filter-group">
+              <div className="filter-group">
                 <span className="ae-filter-group-label">Period</span>
                 {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
                   <button key={preset}
@@ -829,7 +830,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                 ))}
               </div>
               {/* Date range pickers */}
-              <div className="ae-events-filter-group">
+              <div className="filter-group">
                 <span className="ae-filter-group-label">From</span>
                 <div style={{ minWidth: 140 }}>
                   <CustomDatePicker value={evtFromDate} onChange={v => { setEvtFromDate(v); setEvtDatePreset(""); if (evtToDate && v > evtToDate) setEvtToDate(v); }} placeholder="Start date" />
@@ -840,7 +841,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                 </div>
               </div>
               {/* Type */}
-              <div className="ae-events-filter-group">
+              <div className="filter-group">
                 <span className="ae-filter-group-label">Type</span>
                 {[
                   ["all", "All"],
@@ -859,7 +860,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                 ))}
               </div>
               {/* Publish */}
-              <div className="ae-events-filter-group">
+              <div className="filter-group">
                 <span className="ae-filter-group-label">Publish</span>
                 {[["all", "All"], ["live", "Live"], ["draft", "Draft"]].map(([val, label]) => (
                   <button key={val}
@@ -877,7 +878,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                   setEvtFromDate(""); setEvtToDate(""); setEvtDatePreset("");
                 }}>Clear</button>
               )}
-              <span className="ae-result-count">{filteredEvents.length} event(s)</span>
+              <span className="result-count">{filteredEvents.length} event(s)</span>
             </div>
           </div>
 
@@ -971,48 +972,44 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
       {/* BOOKINGS TAB */}
       {activeTab === "bookings" && (
         <div className="admin-events-page">
-          <div className="ae-events-filter-bar">
-            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-              <input type="text" placeholder="Search by name, email or phone…" className="ae-search-input" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          <div className="filter-bar">
+            <div className="ae-events-filter-top">
+              <input type="text" placeholder="Search by name, email or phone…" className="search-input" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
 
-              {/* Quick date presets */}
-              {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => {
-                const isActive = (() => {
-                  if (preset === "today") { const t = todayStr(); return filterFromDate === t && filterToDate === t; }
-                  if (preset === "week") { const [f, t] = getWeekRange(); return filterFromDate === f && filterToDate === t; }
-                  const [f, t] = getMonthRange(); return filterFromDate === f && filterToDate === t;
-                })();
-                return (
-                  <button key={preset}
-                    className={`filter-pill${isActive ? " active" : ""}`}
-                    onClick={() => {
-                      if (isActive) { setFilterFromDate(""); setFilterToDate(""); return; }
-                      if (preset === "today") { const t = todayStr(); setFilterFromDate(t); setFilterToDate(t); }
-                      else if (preset === "week") { const [f, t] = getWeekRange(); setFilterFromDate(f); setFilterToDate(t); }
-                      else { const [f, t] = getMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
-                    }}>
-                    {label}
-                  </button>
-                );
-              })}
+              <Button3D onClick={exportBookings} style={{ marginLeft: "auto" }}>Export</Button3D>
 
-
-              <button className="modal-save-btn" onClick={exportBookings} style={{ marginLeft: "auto" }}>
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Export</span>
-              </button>
+              <div className="filter-group">
+                {/* Quick date presets */}
+                <span className="filter-group-label">period</span>
+                {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => {
+                  const isActive = (() => {
+                    if (preset === "today") { const t = todayStr(); return filterFromDate === t && filterToDate === t; }
+                    if (preset === "week") { const [f, t] = getWeekRange(); return filterFromDate === f && filterToDate === t; }
+                    const [f, t] = getMonthRange(); return filterFromDate === f && filterToDate === t;
+                  })();
+                  return (
+                    <button key={preset}
+                      className={`filter-pill${isActive ? " active" : ""}`}
+                      onClick={() => {
+                        if (isActive) { setFilterFromDate(""); setFilterToDate(""); return; }
+                        if (preset === "today") { const t = todayStr(); setFilterFromDate(t); setFilterToDate(t); }
+                        else if (preset === "week") { const [f, t] = getWeekRange(); setFilterFromDate(f); setFilterToDate(t); }
+                        else { const [f, t] = getMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
+                      }}>
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", alignItems: "center", marginTop: 4 }}>
+            <div className="filter-groups">
               {/* Date range */}
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div className="filter-group">
                 <span className="ae-filter-group-label">From</span>
                 <div style={{ minWidth: 150 }}>
                   <CustomDatePicker value={filterFromDate} onChange={(v) => { setFilterFromDate(v); if (filterToDate && v > filterToDate) setFilterToDate(v); }} placeholder="Start date" />
                 </div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span className="ae-filter-group-label">To</span>
                 <div style={{ minWidth: 150 }}>
                   <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={setFilterToDate} placeholder="End date" />
@@ -1023,8 +1020,8 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               </div>
 
               {/* Event filter */}
-              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <span className="ae-filter-group-label">Event</span>
+              <div className="filter-group">
+                <span className="filter-group-label">Event</span>
                 <CustomDropdown
                   value={filterEventId}
                   onChange={setFilterEventId}
@@ -1036,8 +1033,8 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               </div>
 
               {/* Status pills */}
-              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <span className="ae-filter-group-label">Status</span>
+              <div className="filter-group">
+                <span className="filter-group-label">Status</span>
                 {[
                   ["all", "All", "", "All"],
                   ["pending", "P", "clb-status-pending", "Pending"],
@@ -1063,11 +1060,11 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
             </div>
           </div>
 
-          <div className="ae-booking-table-wrapper">
+          <div className="table-wrapper">
             {filteredBookings.length === 0 ? (
               <div className="ae-empty-state"><p>No bookings found.</p></div>
             ) : (
-              <table className="ae-booking-table">
+              <table className="table">
                 <thead>
                   <tr>
                     <th>#</th>
@@ -1137,11 +1134,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                         </td>
                         <td>
                           <div className="ae-booking-actions">
-                            <button className="modal-cancel-btn" onClick={() => setViewBooking(b)}>
-                              <span className="shadow"></span>
-                              <span className="edge"></span>
-                              <span className="front close-padding">View</span>
-                            </button>
+                            <Button3D variant="cancel" iconOnly onClick={() => setViewBooking(b)}>View</Button3D>
                           </div>
                         </td>
                       </tr>
@@ -1177,11 +1170,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                   ))}
                 </div>
               </div>
-              <button className="modal-cancel-btn" onClick={() => { resetForm(); setFormErrors({}); }} aria-label="Close">
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} alt="" /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => { resetForm(); setFormErrors({}); }} aria-label="Close"><img src={closeIcon} alt="" /></Button3D>
             </div>
 
             <div className="event-modal-body ae-event-form-body">
@@ -1390,10 +1379,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
             </div>
 
             <div className="event-modal-footer">
-              <button type="button" className="modal-cancel-btn" onClick={resetForm}>
-                <span className="shadow"></span><span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
+              <Button3D variant="cancel" onClick={resetForm}>Cancel</Button3D>
               {editFormStep > 1 && (
                 <button type="button" className="modal-prev-btn" onClick={() => setEditFormStep(s => s - 1)}>
                   <span className="shadow"></span><span className="edge"></span>
@@ -1408,10 +1394,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                   <span className="front">Next →</span>
                 </button>
               ) : (
-                <button type="button" className="modal-save-btn" onClick={handleSave}>
-                  <span className="shadow"></span><span className="edge"></span>
-                  <span className="front">{isEditMode ? "Save Changes" : "Create Event"}</span>
-                </button>
+                <Button3D onClick={handleSave}>{isEditMode ? "Save Changes" : "Create Event"}</Button3D>
               )}
             </div>
           </div>
@@ -1441,11 +1424,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                   ))}
                 </div>
               </div>
-              <button className="modal-cancel-btn" onClick={resetSpecForm} aria-label="Close" >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} alt="" /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={resetSpecForm} aria-label="Close"><img src={closeIcon} alt="" /></Button3D>
             </div>
 
             <div className={`event-modal-body ae-spec-form-body${specFormStep === 3 ? " ae-spec-form-body--split" : ""}`}>
@@ -1802,10 +1781,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
             </div>
 
             <div className="evt-modal-footer">
-              <button type="button" className="modal-cancel-btn" onClick={resetSpecForm}>
-                <span className="shadow"></span><span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
+              <Button3D variant="cancel" onClick={resetSpecForm}>Cancel</Button3D>
               {specFormStep > 1 && (
                 <button type="button" className="modal-prev-btn" onClick={() => setSpecFormStep(s => s - 1)}>
                   <span className="shadow"></span><span className="edge"></span>
@@ -1820,10 +1796,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                   <span className="front">Next →</span>
                 </button>
               ) : (
-                <button type="button" className="modal-save-btn" onClick={handleSpecSave}>
-                  <span className="shadow"></span><span className="edge"></span>
-                  <span className="front">{isSpecEditMode ? "Save Changes" : "Create Event"}</span>
-                </button>
+                <Button3D onClick={handleSpecSave}>{isSpecEditMode ? "Save Changes" : "Create Event"}</Button3D>
               )}
 
             </div>
@@ -1837,11 +1810,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
           <div className="event-modal ae-booking-detail-modal">
             <div className="modal-header">
               <h3>Booking Details</h3>
-              <button className="modal-cancel-btn" onClick={() => setViewBooking(null)} aria-label="Close">
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} alt="" /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => setViewBooking(null)} aria-label="Close"><img src={closeIcon} alt="" /></Button3D>
             </div>
             <div className="event-modal-body ae-booking-detail-body">
               {(() => {
@@ -1918,15 +1887,9 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                 </button>
               )}
               {viewBooking.status !== "cancelled" && (
-                <button className="modal-danger-btn" onClick={() => handleBookingStatus(viewBooking.id, "cancelled")}>
-                  <span className="shadow"></span><span className="edge"></span>
-                  <span className="front">Cancel Booking</span>
-                </button>
+                <Button3D variant="danger" onClick={() => handleBookingStatus(viewBooking.id, "cancelled")}>Cancel Booking</Button3D>
               )}
-              <button className="modal-cancel-btn" onClick={() => { setViewBooking(null); setAddGuestCount(1); }}>
-                <span className="shadow"></span><span className="edge"></span>
-                <span className="front">Close</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => { setViewBooking(null); setAddGuestCount(1); }}>Close</Button3D>
 
             </div>
           </div>
@@ -1939,11 +1902,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
           <div className="event-modal ae-confirm-modal">
             <div className="modal-header">
               <h3>Delete Event</h3>
-              <button className="modal-cancel-btn" onClick={() => setConfirmDeleteId(null)} aria-label="Close">
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} alt="" /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => setConfirmDeleteId(null)} aria-label="Close"><img src={closeIcon} alt="" /></Button3D>
             </div>
             <div className="event-modal-body">
               <p style={{ margin: "8px 0 20px", color: "#444", fontSize: 14, lineHeight: 1.6 }}>
@@ -1951,14 +1910,8 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               </p>
             </div>
             <div className="event-modal-footer">
-              <button className="modal-cancel-btn" onClick={() => setConfirmDeleteId(null)}>
-                <span className="shadow"></span><span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
-              <button className="modal-danger-btn" onClick={confirmDelete}>
-                <span className="shadow"></span><span className="edge"></span>
-                <span className="front">Delete Event</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => setConfirmDeleteId(null)}>Cancel</Button3D>
+              <Button3D variant="danger" onClick={confirmDelete}>Delete Event</Button3D>
 
             </div>
           </div>

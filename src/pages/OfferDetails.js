@@ -1,14 +1,26 @@
+/**
+ * OfferDetails.js  —  Sam Cafe Admin Panel
+ * Single offer detail/edit page
+ */
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+
 import api from "../api";
-import editIcon from "../icon/edit-icon.png";
-import "./OfferDetails.css";
 import { CustomDatePicker } from "../components/CustomDatePicker";
+
+import editIcon from "../icon/edit-icon.png";
 import { CustomTimePicker } from "../components/CustomTimePicker";
 import CustomDropdown from "../components/CustomDropdown";
 import { useToast } from "../useToast";
+import Button3D from "../components/Button3D";
+
+import "./OfferDetails.css";
+import PageLoader from "../components/PageLoader";
 
 const OfferDetails = ({ adminData, setAdminData }) => {
+  // ── Hooks
+
   const { toast } = useToast();
   const { offerId } = useParams();
   const navigate = useNavigate();
@@ -32,7 +44,7 @@ const OfferDetails = ({ adminData, setAdminData }) => {
     }
   }, [offer]);
 
-  if (!localOffer) return <div className="page">Loading offer...</div>;
+  if (!localOffer) return <PageLoader label="Loading offer…" />;
 
   const selectedDish = allDishes.find(d => d.id === localOffer.dishId);
   const originalPrice = selectedDish?.basePrice || localOffer.originalPrice || 0;
@@ -89,14 +101,10 @@ const OfferDetails = ({ adminData, setAdminData }) => {
           <h2>{selectedDish?.name || "Offer"}</h2>
 
           {!isEditing && (
-            <button className="modal-cancel-btn" onClick={() => setIsEditing(true)}>
-              <span className="shadow"></span>
-              <span className="edge"></span>
-              <span className="front">
-                <img src={editIcon} alt="edit" />
-                Edit
-              </span>
-            </button>
+            <Button3D variant="cancel" onClick={() => setIsEditing(true)}>
+              <img src={editIcon} alt="edit" />
+              Edit
+            </Button3D>
           )}
         </div>
 
@@ -241,22 +249,8 @@ const OfferDetails = ({ adminData, setAdminData }) => {
         {/* STICKY SAVE / CANCEL BAR */}
         {isEditing && (
           <div className="details-footer">
-            <button
-              className="modal-cancel-btn"
-              onClick={resetEditState}
-            >
-              <span className="shadow"></span>
-              <span className="edge"></span>
-              <span className="front">Cancel</span>
-            </button>
-            <button
-              className="modal-save-btn"
-              onClick={persistOffer}
-            >
-              <span className="shadow"></span>
-              <span className="edge"></span>
-              <span className="front">Save</span>
-            </button>
+            <Button3D variant="cancel" onClick={resetEditState}>Cancel</Button3D>
+            <Button3D onClick={persistOffer}>Save</Button3D>
           </div>
         )}
 

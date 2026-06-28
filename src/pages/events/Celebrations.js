@@ -1,19 +1,28 @@
-/* admin panel */
+/**
+ * Celebrations.js  —  Sam Cafe Admin Panel
+ * Celebrations management page
+ */
+
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { exportToExcel } from "../../utils/excelUtils";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
+
+import { exportToExcel } from "../../utils/excelUtils";
 import api from "../../api";
+import { CustomDatePicker } from "../../components/CustomDatePicker";
+
 import closeIcon from "../../icon/close-icon.png";
+import { useToast } from "../../useToast";
+import { CustomTimePicker } from "../../components/CustomTimePicker";
+import useInfiniteScroll from "../../components/useInfiniteScroll";
+import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+import Button3D from "../../components/Button3D";
+
 import "./Celebrations.css";
 import "./EvtCommon.css";
 import "../ModalCSS.css";
 import "./PreviewModal.css";
-import { useToast } from "../../useToast";
-import { CustomTimePicker } from "../../components/CustomTimePicker";
-import { CustomDatePicker } from "../../components/CustomDatePicker";
-import useInfiniteScroll from "../../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+import PageLoader from "../../components/PageLoader";
 
 const pad = (n) => String(n).padStart(2, "0");
 const todayStr = () => new Date().toISOString().split("T")[0];
@@ -143,7 +152,12 @@ const EMPTY_FORM = {
    Main Component
 ══════════════════════════════════════ */
 const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetFilters }) => {
+  // ── State & Setup
+
   const { fromDate: filterFromDate, toDate: filterToDate, preset: filterDatePreset, type: filterType, status: filterStatus, search } = filters;
+
+  // ── Helpers
+
   const setFilterFromDate = (v) => patchFilters({ fromDate: v });
   const setFilterToDate = (v) => patchFilters({ toDate: v });
   const setFilterDatePreset = (v) => patchFilters({ preset: v });
@@ -180,6 +194,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
     setFormErrors(e);
     return Object.keys(e).length === 0;
   };
+
 
   const data = adminData?.celebrations || [];
 
@@ -230,6 +245,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
   const { displayLimit, sentinelRef, containerRef, hasMore } =
     useInfiniteScroll(sortedData.length, 30);
+  if (!adminData?.celebrations?.length) return <PageLoader label="Loading celebrations…" />;
 
   /* ─── Inline status update ─── */
   const updateStatus = async (e, id, newStatus) => {
@@ -393,7 +409,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
   const isDefaultFilter = filterFromDate === todayStr() && filterToDate === todayStr() && filterDatePreset === "today" && !filterType && !filterStatus && !search.trim();
   const activeFilters = !isDefaultFilter;
 
-  const exportToExcel = () => {
+  const handleExport = () => {
     if (!sortedData.length) { toast.warning("No celebrations to export"); return; }
     const rows = sortedData.map(item => ({
       Name: item.name || "—",
@@ -415,13 +431,13 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
   };
 
   return (
-    <div className="evt-clb-page">
+    <div className="inner-page">
 
       {/* HEADER */}
-      <div className="evt-clb-header">
+      <div className="evt-header">
         <div>
-          <h2 className="evt-clb-title">Celebrations</h2>
-          <p className="evt-clb-subtitle">Manage event & celebration bookings</p>
+          <h2 className="evt-title">Celebrations</h2>
+          <p className="evt-subtitle">Manage event & celebration bookings</p>
         </div>
 
         {/* KPI STRIP */}
@@ -440,21 +456,15 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
           ))}
         </div>
 
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="modal-save-btn" onClick={exportToExcel}>
-            <span className="shadow"></span><span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
-          <button className="modal-save-btn" onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setCreateTab(0); }}>
-            <span className="shadow"></span><span className="edge"></span>
-            <span className="front">+ Add Celebration</span>
-          </button>
+        <div className="header-btn-container">
+          <Button3D onClick={handleExport}>Export</Button3D>
+          <Button3D onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setCreateTab(0); }}>+ Add Celebration</Button3D>
         </div>
       </div>
 
       {/* FILTER BAR */}
-      <div className="evt-filter-bar">
-        <div className="evt-filter-groups">
+      <div className="filter-bar">
+        <div className="filter-groups">
           <input
             className="search-input"
             placeholder="Search name / mobile / ID..."
@@ -463,8 +473,8 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
           />
 
           {/* Quick date presets */}
-          <div className="evt-filter-group">
-            <span className="evt-filter-group-label">Period</span>
+          <div className="filter-group">
+            <span className="filter-group-label">Period</span>
             {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
               <button key={preset}
                 className={`filter-pill${filterDatePreset === preset ? " active" : ""}`}
@@ -483,12 +493,12 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
             ))}
           </div>
           {/* From / To date pickers */}
-          <div className="evt-filter-group" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="evt-filter-group-label">From</span>
+          <div className="filter-group">
+            <span className="filter-group-label">From</span>
             <div style={{ minWidth: 148 }}>
               <CustomDatePicker value={filterFromDate} onChange={v => { setFilterFromDate(v); setFilterDatePreset(""); if (filterToDate && v > filterToDate) setFilterToDate(v); }} placeholder="Start date" />
             </div>
-            <span className="evt-filter-group-label" style={{ marginLeft: 2 }}>To</span>
+            <span className="filter-group-label" style={{ marginLeft: 2 }}>To</span>
             <div style={{ minWidth: 148 }}>
               <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={v => { setFilterToDate(v); setFilterDatePreset(""); }} placeholder="End date" />
             </div>
@@ -498,9 +508,9 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
           </div>
 
         </div>
-        <div className="evt-filter-groups">
-          <div className="evt-filter-group">
-            <span className="evt-filter-group-label">Type</span>
+        <div className="filter-groups">
+          <div className="filter-group">
+            <span className="filter-group-label">Type</span>
             {CELEBRATION_TYPES.map(t => (
               <button key={t.value} title={t.label}
                 className={`filter-pill${filterType === t.value ? " active" : ""}`}
@@ -509,8 +519,8 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
               </button>
             ))}
           </div>
-          <div className="evt-filter-group">
-            <span className="evt-filter-group-label">Status</span>
+          <div className="filter-group">
+            <span className="filter-group-label">Status</span>
             {[
               ["pending", "P", "clb-status-pending", "Pending"],
               ["confirmed", "C", "clb-status-confirmed", "Confirmed"],
@@ -533,8 +543,8 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       </div>
 
       {/* TABLE */}
-      <div className="evt-clb-table-wrapper" ref={containerRef}>
-        <table className="evt-clb-table">
+      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 300px)" }} ref={containerRef}>
+        <table className="table">
           <thead>
             <tr>
               <th onClick={() => handleSort("name")} className={sortField === "name" ? "sorted" : ""}>
@@ -602,12 +612,12 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                 if (item.pens) extras.push("Pens");
 
                 return (
-                  <tr key={item.id} className="evt-clb-row">
+                  <tr key={item.id} >
                     <td>
                       <span>
                         <span
                           className="evt-clb-name"
-                          key={item.id} className="evt-clb-row clickable"
+                          key={item.id} className="clickable"
                           onClick={() => navigate(`/celebrations/${item.id}`, { state: { fromDetail: true } })}
                         >
                           {item.name || "—"}
@@ -677,13 +687,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                               }
                             }}
                             onMouseLeave={() => setCallTooltipId(null)}>
-                            <button className="modal-cancel-btn" onClick={e => handleCall(e, item.id)}>
-                              <span className="shadow"></span>
-                              <span className="edge"></span>
-                              <span className="front close-padding">
-                                📞 Call{history.length > 0 ? ` (${history.length})` : ""}
-                              </span>
-                            </button>
+                            <Button3D variant="cancel" iconOnly onClick={e => handleCall(e, item.id)}>📞 Call{history.length > 0 ? ` (${history.length})` : ""}</Button3D>
                           </div>
                         );
                       })()}
@@ -700,7 +704,6 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
           </tbody>
         </table>
       </div>
-
 
       {/* ── Call History Portal Tooltip ── */}
       {callTooltipId && createPortal(
@@ -750,11 +753,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                   ))}
                 </div>
               </div>
-              <button className="modal-cancel-btn" onClick={() => { setShowCreate(false); setFormErrors({}); }} >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => { setShowCreate(false); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="event-modal-body" style={{ padding: "8px 0" }}>
@@ -1081,10 +1080,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
             </div>
 
             <div className="event-modal-footer">
-              <button className="modal-cancel-btn" onClick={() => { setShowCreate(false); setFormErrors({}); }}>
-                <span className="shadow"></span><span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => { setShowCreate(false); setFormErrors({}); }}>Cancel</Button3D>
               {createTab === 0 ? (
                 <button type="button" className="modal-next-btn" onClick={() => {
                   if (validateCelebTab0()) handleCreateNext();
@@ -1098,10 +1094,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     <span className="shadow"></span><span className="edge"></span>
                     <span className="front">← Edit</span>
                   </button>
-                  <button className="modal-save-btn" onClick={handleCreate} disabled={saving}>
-                    <span className="shadow"></span><span className="edge"></span>
-                    <span className="front">{saving ? "Saving..." : "Create Celebration"}</span>
-                  </button>
+                  <Button3D onClick={handleCreate} disabled={saving}>{saving ? "Saving..." : "Create Celebration"}</Button3D>
                 </>
               )}
             </div>

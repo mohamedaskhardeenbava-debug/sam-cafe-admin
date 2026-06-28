@@ -1,13 +1,22 @@
+/**
+ * ServiceGrooming.js  —  Sam Cafe Admin Panel
+ * Service grooming checklist page
+ */
+
 import React, { useState, useMemo, useRef, useEffect } from "react";
+
 import { exportToExcel } from "../../utils/excelUtils";
-import "./ServiceGrooming.css";
 import api from "../../api";
+import { CustomDatePicker } from "../../components/CustomDatePicker";
+
 import { useToast } from "../../useToast";
 import closeIcon from "../../icon/close-icon.png";
-import { CustomDatePicker } from "../../components/CustomDatePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 import CustomDropdown from "../../components/CustomDropdown";
+import Button3D from "../../components/Button3D";
+
+import "./ServiceGrooming.css";
 
 /*
   DATA SHAPE (serviceGrooming in db.json):
@@ -43,6 +52,8 @@ function getMonthStart() {
 }
 
 export default function ServiceGrooming({ adminData, setAdminData }) {
+  // ── Hooks
+
   const { toast } = useToast();
   const today = toLocalISO(new Date());
 
@@ -61,6 +72,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
   const [memoErrors, setMemoErrors] = useState({});
   const [saving, setSaving] = useState({});
   const [sgroomSearch, setSgroomSearch] = useState("");
+
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef(null);
   const [sgroomFrom, setSgroomFrom] = useState(getWeekStart);
@@ -172,119 +184,107 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
   };
 
   return (
-    <div className="sgroom-page">
+    <div className="inner-page">
 
       {/* HEADER */}
-      <div className="sgroom-header">
+      <div className="header">
         <div>
-          <h2 className="sgroom-title">Service Grooming</h2>
-          <p className="sgroom-subtitle">Uniform · Shoes · Grooming</p>
+          <h2 className="title">Service Grooming</h2>
+          <p className="subtitle">Uniform · Shoes · Grooming</p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            className="modal-save-btn"
-            onClick={exportGrooming}
-          >
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
-          <button
-            className="modal-save-btn"
-            onClick={() => setShowMemo(true)}
-          >
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">+ Add Memo</span>
-          </button>
+        <div className="header-btn-container">
+          <Button3D onClick={exportGrooming}>Export</Button3D>
+          <Button3D onClick={() => setShowMemo(true)}>+ Add Memo</Button3D>
         </div>
       </div>
 
       {/* FILTER BAR */}
-      <div className="sgroom-filter-bar">
-        {/* SEARCH WITH DROPDOWN */}
-        <div className="sgroom-search-wrap" ref={searchRef}>
-          <input
-            className="search-input"
-            placeholder=" Search staff…"
-            value={sgroomSearch}
-            onChange={e => { setSgroomSearch(e.target.value); setSearchOpen(true); }}
-            onFocus={() => setSearchOpen(true)}
-          />
-          {searchOpen && staffStats.length > 0 && (
-            <div className="sgroom-search-dropdown">
-              {staffStats
-                .filter(s =>
+      <div className="filter-bar">
+        <div className="filter-group">
+          {/* SEARCH WITH DROPDOWN */}
+          <div className="sgroom-search-wrap" ref={searchRef}>
+            <input
+              className="search-input"
+              placeholder=" Search staff…"
+              value={sgroomSearch}
+              onChange={e => { setSgroomSearch(e.target.value); setSearchOpen(true); }}
+              onFocus={() => setSearchOpen(true)}
+            />
+            {searchOpen && staffStats.length > 0 && (
+              <div className="sgroom-search-dropdown">
+                {staffStats
+                  .filter(s =>
+                    s.name.toLowerCase().includes(sgroomSearch.toLowerCase()) ||
+                    (s.role || "").toLowerCase().includes(sgroomSearch.toLowerCase())
+                  )
+                  .map((s, i) => (
+                    <div
+                      key={s.id}
+                      className="sgroom-search-suggestion"
+                      onMouseDown={() => {
+                        setSgroomSearch(s.name);
+                        setSearchOpen(false);
+                      }}
+                    >
+                      <div className="sgroom-sug-avatar" style={{ background: `hsl(${i * 55 + 200},70%,55%)` }}>
+                        {s.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="sgroom-sug-info">
+                        <span className="sgroom-sug-name">{s.name}</span>
+                        {s.role && <span className="sgroom-sug-role">{s.role}</span>}
+                      </div>
+                      <div className="sgroom-sug-bar-wrap">
+                        <div
+                          className="sgroom-sug-bar"
+                          style={{
+                            width: `${s.pct}%`,
+                            background: s.pct >= 80 ? "#16a34a" : s.pct >= 50 ? "#f59e0b" : "#dc2626"
+                          }}
+                        />
+                      </div>
+                      <span
+                        className="sgroom-sug-pct"
+                        style={{ color: s.pct >= 80 ? "#16a34a" : s.pct >= 50 ? "#f59e0b" : "#dc2626" }}
+                      >{s.pct}%</span>
+                    </div>
+                  ))}
+                {staffStats.filter(s =>
                   s.name.toLowerCase().includes(sgroomSearch.toLowerCase()) ||
                   (s.role || "").toLowerCase().includes(sgroomSearch.toLowerCase())
-                )
-                .map((s, i) => (
-                  <div
-                    key={s.id}
-                    className="sgroom-search-suggestion"
-                    onMouseDown={() => {
-                      setSgroomSearch(s.name);
-                      setSearchOpen(false);
-                    }}
-                  >
-                    <div className="sgroom-sug-avatar" style={{ background: `hsl(${i * 55 + 200},70%,55%)` }}>
-                      {s.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="sgroom-sug-info">
-                      <span className="sgroom-sug-name">{s.name}</span>
-                      {s.role && <span className="sgroom-sug-role">{s.role}</span>}
-                    </div>
-                    <div className="sgroom-sug-bar-wrap">
-                      <div
-                        className="sgroom-sug-bar"
-                        style={{
-                          width: `${s.pct}%`,
-                          background: s.pct >= 80 ? "#16a34a" : s.pct >= 50 ? "#f59e0b" : "#dc2626"
-                        }}
-                      />
-                    </div>
-                    <span
-                      className="sgroom-sug-pct"
-                      style={{ color: s.pct >= 80 ? "#16a34a" : s.pct >= 50 ? "#f59e0b" : "#dc2626" }}
-                    >{s.pct}%</span>
-                  </div>
-                ))}
-              {staffStats.filter(s =>
-                s.name.toLowerCase().includes(sgroomSearch.toLowerCase()) ||
-                (s.role || "").toLowerCase().includes(sgroomSearch.toLowerCase())
-              ).length === 0 && (
-                  <div className="sgroom-search-no-result">No staff found</div>
-                )}
-            </div>
+                ).length === 0 && (
+                    <div className="sgroom-search-no-result">No staff found</div>
+                  )}
+              </div>
+            )}
+          </div>
+          <div className="filter-group">
+            <span className="filter-group-label">period</span>
+            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([k, lbl]) => (
+              <button key={k} className={`filter-pill${sgroomPreset === k ? " active" : ""}`}
+                onClick={() => applyPreset(k)}>{lbl}</button>
+            ))}
+          </div>
+          <div className="filter-group">
+            <span className="filter-group-label">From</span>
+            <CustomDatePicker value={sgroomFrom} max={sgroomTo || today}
+              onChange={v => { setSgroomFrom(v); setSgroomPreset("custom"); }} placeholder="Start date" />
+
+            <span className="filter-group-label">To</span>
+            <CustomDatePicker value={sgroomTo} min={sgroomFrom} max={today}
+              onChange={v => { setSgroomTo(v); setSgroomPreset("custom"); }} placeholder="End date" />
+          </div>
+          {(sgroomSearch || sgroomPreset === "custom") && (
+            <button className="ae-clear-filter" onClick={() => { setSgroomSearch(""); applyPreset("week"); }}>Clear</button>
           )}
+          <span className="result-count">{visibleDates.length} day(s) · {visibleStaff.length} staff</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([k, lbl]) => (
-            <button key={k} className={`filter-pill${sgroomPreset === k ? " active" : ""}`}
-              onClick={() => applyPreset(k)}>{lbl}</button>
-          ))}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="sgroom-filter-label">From</span>
-          <CustomDatePicker value={sgroomFrom} max={sgroomTo || today}
-            onChange={v => { setSgroomFrom(v); setSgroomPreset("custom"); }} placeholder="Start date" />
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="sgroom-filter-label">To</span>
-          <CustomDatePicker value={sgroomTo} min={sgroomFrom} max={today}
-            onChange={v => { setSgroomTo(v); setSgroomPreset("custom"); }} placeholder="End date" />
-        </div>
-        {(sgroomSearch || sgroomPreset === "custom") && (
-          <button className="ae-clear-filter" onClick={() => { setSgroomSearch(""); applyPreset("week"); }}>Clear</button>
-        )}
-        <span className="ae-result-count">{visibleDates.length} day(s) · {visibleStaff.length} staff</span>
       </div>
 
       {/* SUMMARY CARDS REMOVED — now shown in search dropdown */}
 
       {/* TABLE */}
-      <div className="sgroom-table-wrapper" ref={containerRef}>
-        <table className="sgroom-table">
+      <div className="table-wrapper" ref={containerRef}>
+        <table className="table">
           <thead>
             <tr>
               <th className="sgroom-staff-th">Staff</th>
@@ -370,11 +370,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
           <div className="modal">
             <div className="modal-header">
               <h3>Grooming Details</h3>
-              <button className="modal-cancel-btn" onClick={() => setSelected(null)} >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => setSelected(null)}><img src={closeIcon} /></Button3D>
             </div>
             <div className="modal-body">
               <div className="sgroom-detail-info">
@@ -403,11 +399,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
           <div className="modal">
             <div className="modal-header">
               <h3>Add Memo</h3>
-              <button className="modal-cancel-btn" onClick={() => { setShowMemo(false); setMemoErrors({}); }} >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => { setShowMemo(false); setMemoErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
             <div className="modal-body">
               <div className={`form-group${memoErrors.staffId ? " mat-select-error" : ""}`}>
@@ -434,22 +426,8 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
               </div>
             </div>
             <div className="modal-footer">
-              <button
-                className="modal-cancel-btn"
-                onClick={() => { setShowMemo(false); setMemoErrors({}); }}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
-              <button
-                className="modal-save-btn"
-                onClick={saveMemo}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Save Memo</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => { setShowMemo(false); setMemoErrors({}); }}>Cancel</Button3D>
+              <Button3D onClick={saveMemo}>Save Memo</Button3D>
             </div>
           </div>
         </div>

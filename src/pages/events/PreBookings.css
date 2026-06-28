@@ -1,35 +1,7 @@
-/* ══════════════════════════════════════════════════════
-   PreBookings.css  —  Admin Panel
-══════════════════════════════════════════════════════ */
-
-.evt-pre-page {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-/* HEADER */
-.evt-pre-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.evt-pre-title {
-  font-size: 24px;
-  font-weight: 600;
-  margin: 0 0 2px;
-  color: #111;
-}
-
-.evt-pre-subtitle {
-  font-size: 13px;
-  color: #666;
-  margin: 0;
-}
+/* ═══════════════════════════════════════════════════════
+   PreBookings.css  —  Sam Cafe Admin  —  PreBookings page
+   Depends on Common.css + EvtCommon.css + ModalCSS.css
+═══════════════════════════════════════════════════════ */
 
 /* ── ADD BUTTON ── */
 .evt-pre-add-btn {
@@ -366,8 +338,6 @@
     opacity: 1;
   }
 }
-
-
 
 .evt-pre-call-tooltip-title {
   font-size: 11px;

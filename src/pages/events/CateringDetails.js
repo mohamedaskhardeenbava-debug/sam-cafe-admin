@@ -1,16 +1,28 @@
-/* admin panel */
+/**
+ * CateringDetails.js  —  Sam Cafe Admin Panel
+ * Single catering order detail page
+ */
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
+
 import api from "../../api";
-import "./CateringDetails.css";
-import { useToast } from "../../useToast";
 import { fmtDateTime } from "../../utils/dateUtils";
+
+import { useToast } from "../../useToast";
+import Button3D from "../../components/Button3D";
+
+import "./CateringDetails.css";
 
 /* ── Component ── */
 const CateringDetails = ({ adminData, setAdminData }) => {
+  // ── Hooks
+
   const { toast } = useToast();
   const { id } = useParams();
   const navigate = useNavigate();
+
+  // ── Helpers
 
   const data = (adminData?.cateringOrders || []).find((i) => i.id === id);
   const [saving, setSaving] = useState(false);
@@ -201,18 +213,11 @@ const CateringDetails = ({ adminData, setAdminData }) => {
           <div className="evt-details-section-title">Update Status</div>
           <div className="evt-details-status-row">
             {["pending", "confirmed", "completed", "cancelled"].map(s => (
-              <button
-                key={s}
-                className="modal-cancel-btn"
+              <Button3D variant="cancel" key={s}
                 onClick={() => handleStatusChange(s)}
-                disabled={saving || localStatus === s}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">
-                  {saving && localStatus !== s ? "…" : s.charAt(0).toUpperCase() + s.slice(1)}
-                </span>
-              </button>
+                disabled={saving || localStatus === s}>
+                {saving && localStatus !== s ? "…" : s.charAt(0).toUpperCase() + s.slice(1)}
+              </Button3D>
             ))}
           </div>
         </div>

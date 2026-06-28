@@ -1,2 +1,6 @@
-/* reuse same as service */
+/* ═══════════════════════════════════════════════════════
+   KitchenActivityLog.css  —  Sam Cafe Admin  —  KitchenActivityLog page
+   Depends on Common.css
+═══════════════════════════════════════════════════════ */
+
 @import "../service/ServiceActivityLog.css";

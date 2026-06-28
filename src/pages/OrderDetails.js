@@ -1,10 +1,21 @@
+/**
+ * OrderDetails.js  —  Sam Cafe Admin Panel
+ * Single order detail page
+ */
+
 import { useParams, useNavigate } from "react-router-dom";
-import "./OrderDetails.css";
+
 import { formatDisplayDate } from "../App"
 
+import "./OrderDetails.css";
+
 const OrderDetails = ({ orders, menu }) => {
+  // ── Hooks
+
   const { orderId } = useParams();
   const navigate = useNavigate();
+
+  // ── Helpers
 
   const resolveItemTotal = (item) =>
     Number(
