@@ -1,12 +1,20 @@
+/**
+ * Favourites.js  —  Sam Cafe Admin Panel
+ * Favourites list page
+ */
+
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import "./Favourites.css";
+
 import { EmptyRow } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 
+import "./Favourites.css";
 
 const Favourites = ({ adminData, handleSort, sortConfig }) => {
+  // ── Hooks
+
   const navigate = useNavigate();
   const dishes = adminData.favourites || [];
 
@@ -38,14 +46,16 @@ const Favourites = ({ adminData, handleSort, sortConfig }) => {
     useInfiniteScroll(sortedFavourites.length, 30);
 
   return (
-    <div className="favourites-page">
-      <h2 className="favourites-title">Favourites</h2>
+    <div className="inner-page">
+      <div className="header">
+        <h2 className="title">Favourites</h2>
+      </div>
 
-      <div className="favourites-table-wrapper" ref={containerRef}>
-        <table className="favourites-table">
+      <div className="table-wrapper" ref={containerRef}>
+        <table className="table">
           <thead>
             <tr>
-              <th>Image</th>
+              <th className="icon-width">Image</th>
               <th
                 onClick={() => handleSort("name")}
                 className={sortConfig.key === "name" ? "sorted" : ""}
@@ -53,11 +63,25 @@ const Favourites = ({ adminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Dish Name</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "name"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
-              <th>Price</th>
+              <th
+                onClick={() => handleSort("price")}
+                className={`${sortConfig.key === "price" ? "sorted" : ""} icon-width`}
+              >
+                <span className="th-content sort-th">
+                  <span>Price</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "price"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
+                  </span>
+                </span>
+              </th>
             </tr>
           </thead>
 

@@ -1,9 +1,19 @@
+/**
+ * StaffCareer.js  —  Sam Cafe Admin Panel
+ * Staff career/promotion records page
+ */
+
 import React, { useState, useEffect } from "react";
+
 import { exportToExcel } from "../../utils/excelUtils";
-import "./StaffModules.css";
 import api from "../../api";
+
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
+import CustomDropdown from "../../components/CustomDropdown";
+import Button3D from "../../components/Button3D";
+
+import "./StaffModules.css";
 
 const roles = ["Chef", "Waiter", "Supervisor", "Manager", "Cleaner"];
 
@@ -22,60 +32,9 @@ const expLabel = (yrs) => {
   return `${n}+ yrs experience`;
 };
 
-// ── CustomDropdown ───────────────────────────────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
-
-  const wrapperClass = [
-    "mat-select",
-    value ? "has-value" : "",
-    open ? "is-open" : "",
-  ].filter(Boolean).join(" ");
-
-  return (
-    <div className={wrapperClass} ref={ref}>
-      {label && (
-        <label className="mat-label">
-          {label}{required && <span className="rf-req">*</span>}
-        </label>
-      )}
-      <div className="dishes-dropdown-wrapper">
-        <button type="button" className="dishes-status-dropdown"
-          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-          {displayLabel || ""}
-        </button>
-        {open && (
-          <div className="dropdown-menu">
-            <div onClick={() => { onChange(""); setOpen(false); }}
-            >
-              {placeholder}
-            </div>
-            {options.map((o, i) => {
-              const val = o.value !== undefined ? o.value : o;
-              const lbl = o.label !== undefined ? o.label : o;
-              return (
-                <div key={i} onClick={() => { onChange(val); setOpen(false); }}>
-                  {lbl}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <span className="mat-bar" />
-    </div>
-  );
-}
-
 export default function StaffCareer() {
+  // ── Hooks
+
   const { toast } = useToast();
   const [jobs, setJobs] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -96,7 +55,7 @@ export default function StaffCareer() {
     if (!form.description.trim()) err.description = true;
     if (Object.keys(err).length) { setFormErrors(err); return; }
     try {
-      const res = await api.post("/careers", { id: Date.now(), ...form });
+      const res = await api.post("/careers", { id: String(Date.now()), ...form });
       setJobs(prev => [...prev, res.data]);
       setForm({ role: "", description: "", experience: "" });
       setFormErrors({});
@@ -126,50 +85,38 @@ export default function StaffCareer() {
   };
 
   return (
-    <div className="staff-page">
+    <div className="inner-page">
 
       {/* HEADER */}
-      <div className="staff-header">
-        <h2>Career</h2>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            className="modal-save-btn"
-            onClick={exportJobs}
-          >
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
-          <button
-            className="modal-save-btn"
-            onClick={() => setShowForm(true)}
-          >
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">+ Add Job Vacancy</span>
-          </button>
+      <div className="header">
+        <h2 className="title">Career</h2>
+        <div className="header-btn-container">
+          <Button3D onClick={exportJobs}>Export</Button3D>
+          <Button3D onClick={() => setShowForm(true)}>+ Add Job Vacancy</Button3D>
         </div>
       </div>
 
       {/* FILTER BAR */}
-      <div className="staff-filter-bar">
-        <input
-          className="search-input"
-          placeholder=" Search role or description…"
-          value={careerSearch}
-          onChange={e => setCareerSearch(e.target.value)}
-        />
-        <div className="staff-filter-group">
-          <span className="staff-filter-label">Role</span>
-          {["", ...roles].map(r => (
-            <button key={r} className={`filter-pill${careerRoleFilter === r ? " active" : ""}`}
-              onClick={() => setCareerRoleFilter(r)}>{r || "All"}</button>
-          ))}
+      <div className="filter-bar">
+        <div className="filter-groups">
+          <input
+            className="search-input"
+            placeholder=" Search role or description…"
+            value={careerSearch}
+            onChange={e => setCareerSearch(e.target.value)}
+          />
+          <div className="filter-group">
+            <span className="filter-group-label">Role</span>
+            {["", ...roles].map(r => (
+              <button key={r} className={`filter-pill${careerRoleFilter === r ? " active" : ""}`}
+                onClick={() => setCareerRoleFilter(r)}>{r || "All"}</button>
+            ))}
+          </div>
+          {(careerSearch || careerRoleFilter) && (
+            <button className="ae-clear-filter" onClick={() => { setCareerSearch(""); setCareerRoleFilter(""); }}>Clear</button>
+          )}
+          <span className="result-count">{filteredJobs.length} opening(s)</span>
         </div>
-        {(careerSearch || careerRoleFilter) && (
-          <button className="ae-clear-filter" onClick={() => { setCareerSearch(""); setCareerRoleFilter(""); }}>Clear</button>
-        )}
-        <span className="ae-result-count">{filteredJobs.length} opening(s)</span>
       </div>
 
       {/* EMPTY STATE */}
@@ -187,7 +134,7 @@ export default function StaffCareer() {
           {filteredJobs.map((job, i) => {
             const colors = roleColors[job.role] || { bg: "#f5f4f1", color: "#3a3a3a" };
             return (
-              <div className="card sc-card" key={i} onClick={() => setSelected(job)}>
+              <div className="card sc-card" key={job.id} onClick={() => setSelected(job)}>
                 <div className="st-card-accent" style={{ background: colors.color }} />
 
                 <div className="sc-card-body">
@@ -224,11 +171,7 @@ export default function StaffCareer() {
           <form className="modal" onSubmit={addJob}>
             <div className="modal-header">
               <h3>Add Job Vacancy</h3>
-              <button type="button" className="modal-cancel-btn" onClick={() => { setShowForm(false); setFormErrors({}); }}>
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => { setShowForm(false); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="modal-body">
@@ -273,20 +216,8 @@ export default function StaffCareer() {
             </div>
 
             <div className="modal-footer">
-              <button
-                type="button"
-                onClick={() => { setShowForm(false); setFormErrors({}); }}
-                className="modal-cancel-btn"
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
-              <button type="submit" className="modal-save-btn">
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Save Vacancy</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => { setShowForm(false); setFormErrors({}); }}>Cancel</Button3D>
+              <Button3D type="submit">Save Vacancy</Button3D>
             </div>
           </form>
         </div>
@@ -301,11 +232,7 @@ export default function StaffCareer() {
                 <h3>{selected.role}</h3>
                 <span className="sc-modal-sub">Job Vacancy</span>
               </div>
-              <button type="button" className="modal-cancel-btn" onClick={() => setSelected(null)}>
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => setSelected(null)}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="modal-body">
@@ -319,15 +246,7 @@ export default function StaffCareer() {
             </div>
 
             <div className="modal-footer">
-              <button
-                type="button"
-                onClick={() => setSelected(null)}
-                className="modal-cancel-btn"
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Close</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => setSelected(null)}>Close</Button3D>
             </div>
           </div>
         </div>

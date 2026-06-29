@@ -1,62 +1,29 @@
+/**
+ * PreBookings.js  —  Sam Cafe Admin Panel
+ * Pre-bookings management page
+ */
+
 import React, { useMemo, useState, useRef, useEffect } from "react";
-import { exportToExcel } from "../../utils/excelUtils";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
+
+import { exportToExcel } from "../../utils/excelUtils";
 import api from "../../api";
+import { CustomDatePicker } from "../../components/CustomDatePicker";
+
 import closeIcon from "../../icon/close-icon.png";
+import { useToast } from "../../useToast";
+import { CustomTimePicker } from "../../components/CustomTimePicker";
+import useInfiniteScroll from "../../components/useInfiniteScroll";
+import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+import Button3D from "../../components/Button3D";
+import CustomDropdown from "../../components/CustomDropdown";
+
 import "./PreBookings.css";
 import "./EvtCommon.css";
 import "../ModalCSS.css";
 import "./PreviewModal.css";
-import { useToast } from "../../useToast";
-import { CustomTimePicker } from "../../components/CustomTimePicker";
-import { CustomDatePicker } from "../../components/CustomDatePicker";
-import useInfiniteScroll from "../../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
-
-
-// ── CustomDropdown ────────────────────────────────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
-  const wrapperClass = ["mat-select", value ? "has-value" : "", open ? "is-open" : ""].filter(Boolean).join(" ");
-  return (
-    <div className={wrapperClass} ref={ref}>
-      {label && <label className="mat-label">{label}{required && <span className="rf-req">*</span>}</label>}
-      <div className="dishes-dropdown-wrapper">
-        <button type="button" className="dishes-status-dropdown"
-          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-          {displayLabel || ""}
-        </button>
-        {open && (
-          <div className="dropdown-menu">
-            <div onClick={() => { onChange(""); setOpen(false); }}>{placeholder}</div>
-            {options.map((o, i) => {
-              const val = o.value !== undefined ? o.value : o;
-              const lbl = o.label !== undefined ? o.label : o;
-              return (
-                <div key={i} onClick={() => { onChange(val); setOpen(false); }}
-                  style={{ padding: "8px 12px", fontSize: 14, cursor: "pointer" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"}
-                  onMouseLeave={e => e.currentTarget.style.background = ""}>
-                  {lbl}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <span className="mat-bar" />
-    </div>
-  );
-}
+import PageLoader from "../../components/PageLoader";
 
 const pad = (n) => String(n).padStart(2, "0");
 const todayStr = () => new Date().toISOString().split("T")[0];
@@ -202,17 +169,9 @@ const PreDishPicker = ({ menuData, selectedItems, setSelectedItems, guests }) =>
                       <span className="act-dish-price">₹{dish.price}/person × {guestCount} = <strong style={{ color: "#e74c3c" }}>₹{(dish.price * guestCount).toLocaleString()}</strong></span>
                     </div>
                     {sel ? (
-                      <button type="button" className="modal-save-btn" onClick={() => toggle(dish)}>
-                        <span className="shadow"></span>
-                        <span className="edge"></span>
-                        <span className="front close-padding">✓ Added</span>
-                      </button>
+                      <Button3D iconOnly onClick={() => toggle(dish)}>✓ Added</Button3D>
                     ) : (
-                      <button type="button" className="modal-cancel-btn" onClick={() => toggle(dish)}>
-                        <span className="shadow"></span>
-                        <span className="edge"></span>
-                        <span className="front close-padding">+ Add</span>
-                      </button>
+                      <Button3D variant="cancel" iconOnly onClick={() => toggle(dish)}>+ Add</Button3D>
                     )}
                   </div>
                 );
@@ -366,11 +325,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
               ))}
             </div>
           </div>
-          <button className="modal-cancel-btn" onClick={() => { onClose(); setErrors({}); }}>
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front close-padding"><img src={closeIcon} /></span>
-          </button>
+          <Button3D variant="cancel" iconOnly onClick={() => { onClose(); setErrors({}); }}><img src={closeIcon} /></Button3D>
         </div>
 
         <div className="event-modal-body">
@@ -450,7 +405,6 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                     })}
                   </div>
                 </div>
-
 
                 <div className="form-group">
                   <label className={errors.time ? "mat-label-error" : ""}>Time <span className="evt-pre-req">*</span>{!form.slotGroup && <span className="evt-pre-opt"> (select slot first)</span>}</label>
@@ -589,10 +543,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
         </div>
 
         <div className="modal-footer">
-          <button type="button" className="modal-cancel-btn" onClick={() => { onClose(); setErrors({}); }}>
-            <span className="shadow"></span><span className="edge"></span>
-            <span className="front">Cancel</span>
-          </button>
+          <Button3D variant="cancel" onClick={() => { onClose(); setErrors({}); }}>Cancel</Button3D>
           {tab > 0 && (
             <button type="button" className="modal-prev-btn" onClick={() => setTab(t => t - 1)}>
               <span className="shadow"></span><span className="edge"></span>
@@ -612,10 +563,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
               <span className="front">Next →</span>
             </button>
           ) : (
-            <button type="button" className="modal-save-btn" disabled={saving} onClick={handleSave}>
-              <span className="shadow"></span><span className="edge"></span>
-              <span className="front">{saving ? "Saving..." : "Create PreBooking"}</span>
-            </button>
+            <Button3D disabled={saving} onClick={handleSave}>{saving ? "Saving..." : "Create PreBooking"}</Button3D>
           )}
         </div>
 
@@ -628,7 +576,12 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
    Main Component
 ══════════════════════════════════════════════ */
 const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFilters }) => {
+  // ── State & Setup
+
   const { fromDate: filterFromDate, toDate: filterToDate, preset: filterDatePreset, slots: filterSlots, statuses: filterStatuses, search } = filters;
+
+  // ── Helpers
+
   const setFilterFromDate = (v) => patchFilters({ fromDate: v });
   const setFilterToDate = (v) => patchFilters({ toDate: v });
   const setFilterDatePreset = (v) => patchFilters({ preset: v });
@@ -641,6 +594,7 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
   const [callTooltipPos, setCallTooltipPos] = useState({ top: 0, left: 0 });
   const callWrapRefs = useRef({});
   const [showAddModal, setShowAddModal] = useState(false);
+
 
   const data = adminData?.preBookings || [];
 
@@ -690,6 +644,7 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
 
   const { displayLimit, sentinelRef, containerRef, hasMore } =
     useInfiniteScroll(sortedData.length, 30);
+  if (!adminData?.preBookings?.length) return <PageLoader label="Loading pre-bookings…" />;
 
   /* inline status update */
   const updateStatus = async (e, id, status) => {
@@ -748,7 +703,7 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
   const isDefaultFilter = filterFromDate === todayStr() && filterToDate === todayStr() && filterDatePreset === "today" && filterSlots.size === 0 && filterStatuses.size === 0 && !search.trim();
   const activeFilters = !isDefaultFilter;
 
-  const exportToExcel = () => {
+  const handleExport = () => {
     if (!sortedData.length) { alert("No pre-bookings to export"); return; }
     const rows = sortedData.map(item => ({
       Name: item.name || "—",
@@ -769,16 +724,14 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
     exportToExcel({ rows, sheetName: "PreBookings", fileName: `prebookings_${suffix}.xlsx` });
   };
 
-
-
   return (
-    <div className="evt-pre-page">
+    <div className="inner-page">
 
       {/* HEADER */}
-      <div className="evt-pre-header">
+      <div className="evt-header">
         <div>
-          <h2 className="evt-pre-title">PreBookings</h2>
-          <p className="evt-pre-subtitle">Manage pre-orders &amp; advance bookings</p>
+          <h2 className="evt-title">PreBookings</h2>
+          <p className="evt-subtitle">Manage pre-orders &amp; advance bookings</p>
         </div>
         {/* KPI STRIP */}
         <div className="evt-kpi-row">
@@ -795,51 +748,47 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
             </div>
           ))}
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="modal-save-btn" onClick={exportToExcel}>
-            <span className="shadow"></span><span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
-          <button className="modal-save-btn" onClick={() => setShowAddModal(true)}>
-            <span className="shadow"></span><span className="edge"></span>
-            <span className="front">+ Add PreBooking</span>
-          </button>
+        <div className="header-btn-container">
+          <Button3D onClick={handleExport}>Export</Button3D>
+          <Button3D onClick={() => setShowAddModal(true)}>+ Add PreBooking</Button3D>
         </div>
       </div>
 
       {/* FILTER BAR */}
-      <div className="evt-filter-bar">
-        <div className="evt-filter-groups">
+      <div className="filter-bar">
+        <div className="filter-groups">
           <input className="search-input" placeholder="Search name / mobile / ID..."
-            value={search} onChange={e => setSearch(e.target.value)} />
+            value={search} onChange={(e) => setSearch(e.target.value)} />
 
-          {/* Quick date presets */}
-          {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
-            <button key={preset}
-              className={`filter-pill${filterDatePreset === preset ? " active" : ""}`}
-              onClick={() => {
-                if (filterDatePreset === preset) {
-                  setFilterDatePreset(""); setFilterFromDate(""); setFilterToDate("");
-                } else {
-                  setFilterDatePreset(preset);
-                  if (preset === "today") { const t = todayStr(); setFilterFromDate(t); setFilterToDate(t); }
-                  else if (preset === "week") { const [f, t] = getWeekRange(); setFilterFromDate(f); setFilterToDate(t); }
-                  else { const [f, t] = getMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
-                }
-              }}>
-              {label}
-            </button>
-          ))}
+          <div className="filter-group">
+            <span className="filter-group-label">period</span>
+            {/* Quick date presets */}
+            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
+              <button key={preset}
+                className={`filter-pill${filterDatePreset === preset ? " active" : ""}`}
+                onClick={() => {
+                  if (filterDatePreset === preset) {
+                    setFilterDatePreset(""); setFilterFromDate(""); setFilterToDate("");
+                  } else {
+                    setFilterDatePreset(preset);
+                    if (preset === "today") { const t = todayStr(); setFilterFromDate(t); setFilterToDate(t); }
+                    else if (preset === "week") { const [f, t] = getWeekRange(); setFilterFromDate(f); setFilterToDate(t); }
+                    else { const [f, t] = getMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
+                  }
+                }}>
+                {label}
+              </button>
+            ))}
+          </div>
 
           {/* From / To date pickers */}
-          <div className="evt-filter-group">
-            <span className="evt-filter-group-label">From</span>
+          <div className="filter-group">
+            <span className="filter-group-label">From</span>
             <div style={{ minWidth: 148 }}>
               <CustomDatePicker value={filterFromDate} onChange={v => { setFilterFromDate(v); setFilterDatePreset(""); if (filterToDate && v > filterToDate) setFilterToDate(v); }} placeholder="Start date" />
             </div>
-          </div>
-          <div className="evt-filter-group">
-            <span className="evt-filter-group-label">To</span>
+
+            <span className="filter-group-label">To</span>
             <div style={{ minWidth: 148 }}>
               <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={v => { setFilterToDate(v); setFilterDatePreset(""); }} placeholder="End date" />
             </div>
@@ -849,9 +798,9 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
           </div>
         </div>
 
-        <div className="evt-filter-groups">
-          <div className="evt-filter-group">
-            <span className="evt-filter-group-label">Slot</span>
+        <div className="filter-groups">
+          <div className="filter-group">
+            <span className="filter-group-label">Slot</span>
             {SLOT_GROUPS.map(sg => (
               <button key={sg.key} title={`${sg.label} (${sg.start}–${sg.end})`}
                 className={`filter-pill${filterSlots.has(sg.key) ? " active" : ""}`}
@@ -861,8 +810,8 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
             ))}
           </div>
 
-          <div className="evt-filter-group">
-            <span className="evt-filter-group-label">Status</span>
+          <div className="filter-group">
+            <span className="filter-group-label">Status</span>
             {[
               ["pending", "P", "clb-status-pending", "Pending"],
               ["confirmed", "C", "clb-status-confirmed", "Confirmed"],
@@ -886,8 +835,8 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
       </div>
 
       {/* TABLE */}
-      <div className="evt-pre-table-wrapper" ref={containerRef}>
-        <table className="evt-pre-table">
+      <div className="table-wrapper" ref={containerRef}>
+        <table className="table">
           <thead>
             <tr>
               <th onClick={() => handleSort("name")} className={sortField === "name" ? "sorted" : ""}>
@@ -938,13 +887,16 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
                 const history = item.callHistory || [];
 
                 return (
-                  <tr className="evt-pre-row">
+                  <tr
+                    className="evt-pre-row"
+                    key={item.id}
+                  >
 
                     {/* Guest name */}
                     <td>
                       <span>
-                        <span className="evt-pre-name clickable"
-                          key={item.id}
+                        <span
+                          className="evt-pre-name clickable"
                           onClick={() => navigate(`/prebookings/${item.id}`, { state: { fromDetail: true } })}
                         >
                           {item.name || "—"}
@@ -1018,13 +970,7 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
                           }
                         }}
                         onMouseLeave={() => setCallTooltipId(null)}>
-                        <button className="modal-cancel-btn" onClick={e => handleCall(e, item.id)}>
-                          <span className="shadow"></span>
-                          <span className="edge"></span>
-                          <span className="front close-padding">
-                            📞 Call{history.length > 0 ? ` (${history.length})` : ""}
-                          </span>
-                        </button>
+                        <Button3D variant="cancel" iconOnly onClick={e => handleCall(e, item.id)}>📞 Call{history.length > 0 ? ` (${history.length})` : ""}</Button3D>
                       </div>
                     </td>
 
@@ -1040,7 +986,6 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
           </tbody>
         </table>
       </div>
-
 
       {/* ── Call History Portal Tooltip ── */}
       {callTooltipId && createPortal(

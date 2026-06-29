@@ -14,6 +14,7 @@
  */
 
 import React from "react";
+
 import { fmtDateTime } from "../utils/dateUtils";
 
 const CallHistory = ({ history = [], sectionClassName = "evt-section" }) => {

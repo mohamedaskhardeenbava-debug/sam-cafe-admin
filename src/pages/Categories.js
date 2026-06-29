@@ -1,22 +1,43 @@
+/**
+ * Categories.js  —  Sam Cafe Admin Panel
+ * Food categories management page
+ */
+
 import React, { useState } from "react";
-import "./Categories.css";
-import "./ModalCSS.css";
 import { useNavigate } from "react-router-dom";
+import { useMemo } from "react";
+
 import api from "../api";
+
 import closeIcon from "../icon/close-icon.png";
 import deleteIcon from "../icon/delete-icon.png";
 import editIcon from "../icon/edit-icon.png";
 import { allowTextInput } from "../App";
-import { useMemo } from "react";
 import { sortArray } from "../App";
 import { EmptyRow } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 import { useToast } from "../useToast";
+import Button3D from "../components/Button3D";
+
+import "./Categories.css";
+import "./ModalCSS.css";
+import PageLoader from "../components/PageLoader";
 
 const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }) => {
+  // ── Hooks
+
   const navigate = useNavigate();
   const { toast } = useToast();
+  // Keep a ref that always points to the current adminData so toast.confirm
+  // callbacks (which close over the adminData at render time) can read
+  // fresh state when the user actually clicks "Yes, delete".
+
+  const adminDataRef = React.useRef(adminData);
+
+  // ── Effects
+
+  React.useEffect(() => { adminDataRef.current = adminData; }, [adminData]);
   const [showForm, setShowForm] = useState(false);
   const [imagePreview, setImagePreview] = useState("")
   const [showEditModal, setShowEditModal] = useState(false);
@@ -60,11 +81,12 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
   const { displayLimit, sentinelRef, containerRef, hasMore } =
     useInfiniteScroll(sortedCategories.length, 30);
+  if (!adminData?.categories?.length) return <PageLoader label="Loading categories…" />;
 
   const generateCategoryId = (name) => {
     const base = name.toLowerCase().trim()
       .replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, "_");
-    return "cat_" + (base || "item") + "_" + Date.now();
+    return "cat_" + (base || "item") + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
   };
 
   const handleAddCategory = async () => {
@@ -97,15 +119,36 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
     };
 
     try {
-      await api.post("/categories", newCategoryPayload);
-      // State update is handled by the socket data-change handler in App.js.
-      // Do NOT call setAdminData here — it would race the socket and add duplicates.
+      const res = await api.post("/categories", newCategoryPayload);
+      const saved = { ...(res.data || newCategoryPayload), id: categoryId };
+
+      // Update local state immediately from the server's response. This is
+      // safe even though the socket will also broadcast this same creation
+      // back to us — App.js's socket handler dedupes "created" events by
+      // id before appending, so the later echo is a harmless no-op. Without
+      // this, the new category wouldn't appear until the socket echo
+      // arrived (or a reload), which is exactly what looked like "add
+      // doesn't update instantly".
+      setAdminData(prev => {
+        const alreadyExists = (prev.categories || []).some(
+          c => String(c.id) === String(saved.id)
+        );
+        if (alreadyExists) return prev;
+        return { ...prev, categories: [...(prev.categories || []), saved] };
+      });
+
       toast.success("Category added");
       resetAddCategoryForm();
     } catch (error) {
       console.error("Failed to add category:", error);
       toast.error("Failed to add category");
     }
+  };
+
+  const generateSubCategoryId = (name) => {
+    const base = name.toLowerCase().trim()
+      .replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, "_");
+    return "sub_" + (base || "item") + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
   };
 
   const addSubCategory = () => {
@@ -119,18 +162,28 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
         ? prev.subCategories.map((s, idx) =>
           idx === editingSubIndex
             ? {
-              id: newSubCategoryData.name.toLowerCase().replace(/\s+/g, "_"),
+              // Keep the existing id on edit — regenerating it from the
+              // (possibly just-renamed) name would silently disconnect
+              // this subcategory from any dishes already filed under it.
+              id: s.id,
               name: newSubCategoryData.name,
               image: newSubCategoryData.image,
               sizes: newSubCategoryData.sizes,
-              dishes: []
+              dishes: s.dishes || []
             }
             : s
         )
         : [
           ...prev.subCategories,
           {
-            id: newSubCategoryData.name.toLowerCase().replace(/\s+/g, "_"),
+            // Unique, timestamped id — a name-derived id collides whenever
+            // two subcategories share a name (in the same or different
+            // parent categories). Every lookup elsewhere (Dishes.js,
+            // DishDetails.js, OfferDetails.js) resolves a subcategory by id
+            // alone across ALL categories, so a collision made dish
+            // add/delete apply to "whichever matching subcategory is found
+            // first" — looking like duplication or synchronized deletion.
+            id: generateSubCategoryId(newSubCategoryData.name),
             name: newSubCategoryData.name,
             image: newSubCategoryData.image,
             sizes: newSubCategoryData.sizes,
@@ -149,17 +202,32 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
   };
 
   const deleteSubCategory = (categoryId, subId) => {
-    const category = adminData.categories.find(c => c.id === categoryId);
+    // Read from ref (always current) — the toast label is shown immediately,
+    // but the confirm callback fires only after the user clicks "Yes, delete",
+    // by which time adminData in the closure could be stale.
+    const category = adminDataRef.current.categories.find(c => c.id === categoryId);
     if (!category) return;
     const sub = category.subCategories?.find(s => s.id === subId);
 
     toast.confirm(`Delete "${sub?.name || "this sub-category"}"?`, async () => {
-      const updatedSubs = (category.subCategories || []).filter(s => s.id !== subId);
-      const updatedCategory = { ...category, subCategories: updatedSubs };
+      // Always read from ref at the moment the user confirms
+      const freshCategory = adminDataRef.current.categories.find(c => c.id === categoryId);
+      if (!freshCategory) return;
+
+      const updatedSubs = (freshCategory.subCategories || []).filter(s => s.id !== subId);
+      const updatedCategory = { ...freshCategory, subCategories: updatedSubs };
 
       try {
-        await api.put(`/categories/${categoryId}`, updatedCategory);
-        // State update handled by socket data-change handler in App.js
+        const res = await api.put(`/categories/${categoryId}`, updatedCategory);
+        const saved = { ...(res.data || updatedCategory), id: categoryId };
+
+        setAdminData(prev => ({
+          ...prev,
+          categories: (prev.categories || []).map(c =>
+            String(c.id) === String(saved.id) ? saved : c
+          ),
+        }));
+
         toast.success("Sub-category deleted");
       } catch (error) {
         console.error("Failed to delete sub-category:", error);
@@ -243,30 +311,39 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
   };
 
   const handleDeleteCategory = (categoryId) => {
-    const category = adminData.categories.find((cat) => cat.id === categoryId);
+    const category = adminDataRef.current.categories.find(c => c.id === categoryId);
     if (!category) return;
 
-    const hasDishs = (category.dishes || []).length > 0;
-    const msg = hasDishs
+    const hasDishes = (category.dishes || []).length > 0;
+    const msg = hasDishes
       ? `"${category.name}" has dishes. Delete anyway?`
       : `Delete "${category.name}"?`;
 
     toast.confirm(msg, async () => {
-      // Optimistic update — remove immediately so the UI responds at once
+      // Capture the current index so we can re-insert at the right spot on revert
+      const currentCategories = adminDataRef.current.categories;
+      const originalIndex = currentCategories.findIndex(c => c.id === categoryId);
+      const freshCategory = currentCategories[originalIndex];
+      if (!freshCategory) return;
+
+      // Optimistic removal
       setAdminData(prev => ({
         ...prev,
         categories: prev.categories.filter(c => c.id !== categoryId)
       }));
+
       try {
         await api.delete(`/categories/${categoryId}`);
         toast.success("Category deleted");
       } catch (error) {
-        // Revert the optimistic removal only on a true server failure
+        // Revert at the original position (not appended to end)
         console.error("Failed to delete category:", error);
-        setAdminData(prev => ({
-          ...prev,
-          categories: [...prev.categories, category]
-        }));
+        setAdminData(prev => {
+          const next = [...prev.categories];
+          const insertAt = Math.min(originalIndex, next.length);
+          next.splice(insertAt, 0, freshCategory);
+          return { ...prev, categories: next };
+        });
         toast.error("Failed to delete category");
       }
     });
@@ -314,8 +391,14 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
           subCategories: updatedSubCategories
         };
 
-        await api.put(`/categories/${category.id}`, updatedCategory);
-        // State update handled by socket data-change handler in App.js
+        const res = await api.put(`/categories/${category.id}`, updatedCategory);
+        const saved = { ...(res.data || updatedCategory), id: category.id };
+        setAdminData(prev => ({
+          ...prev,
+          categories: (prev.categories || []).map(c =>
+            String(c.id) === String(saved.id) ? saved : c
+          ),
+        }));
 
         // -------- CATEGORY EDIT --------
       } else {
@@ -346,7 +429,14 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
         };
 
         // ONLY UPDATE (no delete + no id change)
-        await api.put(`/categories/${existing.id}`, updatedCategory);
+        const res = await api.put(`/categories/${existing.id}`, updatedCategory);
+        const saved = { ...(res.data || updatedCategory), id: existing.id };
+        setAdminData(prev => ({
+          ...prev,
+          categories: (prev.categories || []).map(c =>
+            String(c.id) === String(saved.id) ? saved : c
+          ),
+        }));
       }
 
       resetEditCategoryForm();
@@ -420,24 +510,17 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
   };
 
   return (
-    <div className="categories-page">
-      <div className="category-header">
-        <h2 className="category-title">Categories</h2>
-        <button
-          className="modal-save-btn"
-          onClick={() => setShowForm(true)}
-        >
-          <span className="shadow"></span>
-          <span className="edge"></span>
-          <span className="front">+ Add Category</span>
-        </button>
+    <div className="inner-page">
+      <div className="header">
+        <h2 className="title">Categories</h2>
+        <Button3D onClick={() => setShowForm(true)}>+ Add Category</Button3D>
       </div>
 
-      <div className="category-table-wrapper" ref={containerRef}>
-        <table className="category-table">
+      <div className="table-wrapper" ref={containerRef}>
+        <table className="table">
           <thead>
             <tr>
-              <th>Image</th>
+              <th className="icon-width">Image</th>
               <th
                 onClick={() => handleSort("name")}
                 className={sortConfig.key === "name" ? "sorted" : ""}
@@ -454,8 +537,8 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                 </span>
               </th>
               <th>No. of Dishes</th>
-              <th>Edit</th>
-              <th>Delete</th>
+              <th className="icon-width">Edit</th>
+              <th className="icon-width">Delete</th>
             </tr>
           </thead>
 
@@ -470,9 +553,9 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                   <React.Fragment key={category.id}>
                     <tr>
 
-                      <td>
+                      <td className="icon-width">
                         <div
-                          className="category-image"
+                          className="table-image"
                         >
                           <img src={category.image} alt="" />
                         </div>
@@ -496,36 +579,18 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
                       <td>{(category.dishes || []).length}</td>
 
-                      <td>
-                        <button
-                          className="modal-cancel-btn"
-                          onClick={(e) => {
-                            openEditModal(category)
-                            e.stopPropagation()
-                          }}
-                        >
-                          <span className="shadow"></span>
-                          <span className="edge"></span>
-                          <span className="front close-padding">
-                            <img src={editIcon} alt="" />
-                          </span>
-                        </button>
+                      <td className="icon-width">
+                        <Button3D variant="cancel" iconOnly onClick={(e) => {
+                          openEditModal(category)
+                          e.stopPropagation()
+                        }}><img src={editIcon} alt="" /></Button3D>
                       </td>
 
-                      <td>
-                        <button
-                          className="modal-cancel-btn"
-                          onClick={(e) => {
-                            handleDeleteCategory(category.id)
-                            e.stopPropagation()
-                          }}
-                        >
-                          <span className="shadow"></span>
-                          <span className="edge"></span>
-                          <span className="front close-padding">
-                            <img src={deleteIcon} alt="" />
-                          </span>
-                        </button>
+                      <td className="icon-width">
+                        <Button3D variant="cancel" iconOnly onClick={(e) => {
+                          handleDeleteCategory(category.id)
+                          e.stopPropagation()
+                        }}><img src={deleteIcon} alt="" /></Button3D>
                       </td>
 
                     </tr >
@@ -551,7 +616,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
                                   {category.subCategories.map((sub, i) => (
 
-                                    <tr>
+                                    <tr key={sub.id || i}>
                                       <td>
                                         <div className="subcategory-image">
                                           <img src={sub.image} alt="" />
@@ -572,42 +637,28 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
                                       <td>
 
-                                        <button
-                                          className="modal-cancel-btn"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
+                                        <Button3D variant="cancel" iconOnly onClick={(e) => {
+                                          e.stopPropagation();
 
-                                            setIsEditingSubCategory(true);
-                                            setEditingParentCategoryId(category.id);
-                                            setEditingSubCategory(sub);
+                                          setIsEditingSubCategory(true);
+                                          setEditingParentCategoryId(category.id);
+                                          setEditingSubCategory(sub);
 
-                                            setEditName(sub.name);
-                                            setEditImage(sub.image);
-                                            setEditSizes(sub.sizes || []);
+                                          setEditName(sub.name);
+                                          setEditImage(sub.image);
+                                          setEditSizes(sub.sizes || []);
 
-                                            setShowEditModal(true);
-                                          }}
-                                        >
-                                          <span className="shadow"></span>
-                                          <span className="edge"></span>
-                                          <span className="front close-padding"><img src={editIcon} /></span>
-                                        </button>
+                                          setShowEditModal(true);
+                                        }}><img src={editIcon} /></Button3D>
 
                                       </td>
 
                                       <td>
 
-                                        <button
-                                          className="modal-cancel-btn"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            deleteSubCategory(category.id, sub.id);
-                                          }}
-                                        >
-                                          <span className="shadow"></span>
-                                          <span className="edge"></span>
-                                          <span className="front close-padding"><img src={deleteIcon} /></span>
-                                        </button>
+                                        <Button3D variant="cancel" iconOnly onClick={(e) => {
+                                          e.stopPropagation();
+                                          deleteSubCategory(category.id, sub.id);
+                                        }}><img src={deleteIcon} /></Button3D>
 
                                       </td>
 
@@ -646,16 +697,8 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
             }} className="modal">
               <div className="modal-header">
                 <h3>Add New Category</h3>
-                <button
-                  type="button"
-                  className="modal-cancel-btn"
-                  aria-label="Close"
-                  onClick={resetAddCategoryForm}
-                >
-                  <span className="shadow"></span>
-                  <span className="edge"></span>
-                  <span className="front close-padding"><img src={closeIcon} /></span>
-                </button>
+                <Button3D variant="cancel" iconOnly aria-label="Close"
+                  onClick={resetAddCategoryForm}><img src={closeIcon} /></Button3D>
               </div>
 
               <div className="modal-body">
@@ -750,15 +793,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                       </div>
                     </div>
 
-                    <button
-                      className="modal-save-btn"
-                      type="button"
-                      onClick={addSize}
-                    >
-                      <span className="shadow"></span>
-                      <span className="edge"></span>
-                      <span className="front">Add</span>
-                    </button>
+                    <Button3D onClick={addSize}>Add</Button3D>
 
                   </div>
                 )}
@@ -783,20 +818,12 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                           <td>{s.description}</td>
                           <td>x{s.priceMultiplier}</td>
                           <td>
-                            <button
-                              type="button"
-                              className="modal-danger-btn"
-                              onClick={() => {
-                                setNewCategory(prev => ({
-                                  ...prev,
-                                  sizes: prev.sizes.filter((_, x) => x !== i)
-                                }))
-                              }}
-                            >
-                              <span className="shadow"></span>
-                              <span className="edge"></span>
-                              <span className="front close-padding">Remove</span>
-                            </button>
+                            <Button3D variant="danger" iconOnly onClick={() => {
+                              setNewCategory(prev => ({
+                                ...prev,
+                                sizes: prev.sizes.filter((_, x) => x !== i)
+                              }))
+                            }}>Remove</Button3D>
                           </td>
                         </tr>
                       ))}
@@ -808,15 +835,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
                 <div className="form-group">
                   <div style={{ display: "flex", gap: "8px" }}>
-                    <button
-                      className="modal-save-btn"
-                      type="button"
-                      onClick={() => setShowSubCategoryForm(true)}
-                    >
-                      <span className="shadow"></span>
-                      <span className="edge"></span>
-                      <span className="front">Add Subcategory</span>
-                    </button>
+                    <Button3D onClick={() => setShowSubCategoryForm(true)}>Add Subcategory</Button3D>
                   </div>
                 </div>
 
@@ -920,15 +939,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                         </div>
                       </div>
 
-                      <button
-                        className="modal-save-btn"
-                        type="button"
-                        onClick={() => addSize("subcategory")}
-                      >
-                        <span className="shadow"></span>
-                        <span className="edge"></span>
-                        <span className="front">Add Size</span>
-                      </button>
+                      <Button3D onClick={() => addSize("subcategory")}>Add Size</Button3D>
 
                     </div>
 
@@ -955,19 +966,12 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                               <td>x{s.priceMultiplier}</td>
 
                               <td>
-                                <button
-                                  className="modal-danger-btn"
-                                  onClick={() => {
-                                    setNewSubCategoryData(prev => ({
-                                      ...prev,
-                                      sizes: prev.sizes.filter((_, x) => x !== i)
-                                    }))
-                                  }}
-                                >
-                                  <span className="shadow"></span>
-                                  <span className="edge"></span>
-                                  <span className="front close-padding">Remove</span>
-                                </button>
+                                <Button3D variant="danger" iconOnly onClick={() => {
+                                  setNewSubCategoryData(prev => ({
+                                    ...prev,
+                                    sizes: prev.sizes.filter((_, x) => x !== i)
+                                  }))
+                                }}>Remove</Button3D>
                               </td>
 
                             </tr>
@@ -992,33 +996,20 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
                         <span>{sub.name}</span>
 
-                        <button
-                          className="modal-danger-btn"
-                          type="button"
-                          onClick={() => {
-                            setNewCategory(prev => ({
-                              ...prev,
-                              subCategories: prev.subCategories.filter((_, x) => x !== i)
-                            }))
-                          }}
-                        >
-                          <span className="shadow"></span>
-                          <span className="edge"></span>
-                          <span className="front close-padding">Remove</span>
-                        </button>
+                        <Button3D variant="danger" iconOnly onClick={() => {
+                          setNewCategory(prev => ({
+                            ...prev,
+                            subCategories: prev.subCategories.filter((_, x) => x !== i)
+                          }))
+                        }}>Remove</Button3D>
 
                       </div>
 
                     ))}
 
-                    <button
-                      className="modal-save-btn"
-                      type="button"
-                      onClick={addSubCategory}>
-                      <span className="shadow"></span>
-                      <span className="edge"></span>
-                      <span className="front">{editingSubIndex !== null ? "Save Subcategory" : "Add Subcategory"}</span>
-                    </button>
+                    <Button3D onClick={addSubCategory}>
+                      {editingSubIndex !== null ? "Save Subcategory" : "Add Subcategory"}
+                    </Button3D>
 
                   </div>
                 )}
@@ -1058,26 +1049,19 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                           <td>
                             <div className="subcategory-actions">
 
-                              <button
-                                className="modal-cancel-btn"
-                                onClick={(e) => {
-                                  e.stopPropagation()
+                              <Button3D variant="cancel" iconOnly onClick={(e) => {
+                                e.stopPropagation()
 
-                                  setIsEditingSubCategory(true);
-                                  setEditingParentCategoryId(editCategoryId);
+                                setIsEditingSubCategory(true);
+                                setEditingParentCategoryId(editCategoryId);
 
-                                  setEditName(sub.name);
-                                  setEditImage(sub.image);
-                                  setEditSizes(sub.sizes || []);
+                                setEditName(sub.name);
+                                setEditImage(sub.image);
+                                setEditSizes(sub.sizes || []);
 
-                                  setEditingSubCategory(sub);
-                                  setShowEditModal(true);
-                                }}
-                              >
-                                <span className="shadow"></span>
-                                <span className="edge"></span>
-                                <span className="front close-padding"><img src={editIcon} /></span>
-                              </button>
+                                setEditingSubCategory(sub);
+                                setShowEditModal(true);
+                              }}><img src={editIcon} /></Button3D>
 
                               <button
                                 className="sub-delete-btn"
@@ -1104,23 +1088,8 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
               </div>
 
               <div className="modal-footer">
-                <button
-                  className="modal-cancel-btn"
-                  type="button"
-                  onClick={resetAddCategoryForm}
-                >
-                  <span className="shadow"></span>
-                  <span className="edge"></span>
-                  <span className="front">cancel</span>
-                </button>
-                <button
-                  type="submit"
-                  className="modal-save-btn"
-                >
-                  <span className="shadow"></span>
-                  <span className="edge"></span>
-                  <span className="front">Add</span>
-                </button>
+                <Button3D variant="cancel" onClick={resetAddCategoryForm}>cancel</Button3D>
+                <Button3D type="submit">Add</Button3D>
               </div>
             </form>
           </div>
@@ -1133,16 +1102,8 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
             <div className="modal">
               <div className="modal-header">
                 <h3>{isEditingSubCategory ? "Edit Subcategory" : "Edit Category"}</h3>
-                <button
-                  type="button"
-                  className="modal-cancel-btn"
-                  aria-label="Close"
-                  onClick={resetEditCategoryForm}
-                >
-                  <span className="shadow"></span>
-                  <span className="edge"></span>
-                  <span className="front close-padding"><img src={closeIcon} /></span>
-                </button>
+                <Button3D variant="cancel" iconOnly aria-label="Close"
+                  onClick={resetEditCategoryForm}><img src={closeIcon} /></Button3D>
               </div>
 
               <div className="modal-body">
@@ -1163,7 +1124,6 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                     <span className={`mat-bar${editFormErrors.name ? " mat-bar-error" : ""}`} />
                   </div>
                 </div>
-
 
                 <div className="form-group">
                   <div className="file-wrap">
@@ -1226,28 +1186,21 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                               </td>
 
                               <td>
-                                <button
-                                  className="modal-save-btn"
-                                  onClick={() => {
-                                    setEditSizes(prev =>
-                                      prev.map((sz, idx) =>
-                                        idx === i
-                                          ? {
-                                            name: sizeName,
-                                            description: sizeDescription,
-                                            priceMultiplier: Number(sizeMultiplier)
-                                          }
-                                          : sz
-                                      )
+                                <Button3D onClick={() => {
+                                  setEditSizes(prev =>
+                                    prev.map((sz, idx) =>
+                                      idx === i
+                                        ? {
+                                          name: sizeName,
+                                          description: sizeDescription,
+                                          priceMultiplier: Number(sizeMultiplier)
+                                        }
+                                        : sz
                                     )
+                                  )
 
-                                    setEditingSizeIndex(null)
-                                  }}
-                                >
-                                  <span className="shadow"></span>
-                                  <span className="edge"></span>
-                                  <span className="front">Save</span>
-                                </button>
+                                  setEditingSizeIndex(null)
+                                }}>Save</Button3D>
                               </td>
 
                               <td>-</td>
@@ -1262,36 +1215,22 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
                               <td>
 
-                                <button
-                                  className="modal-save-btn"
-                                  onClick={() => {
-                                    setEditingSizeIndex(i)
-                                    setSizeName(s.name)
-                                    setSizeDescription(s.description)
-                                    setSizeMultiplier(s.priceMultiplier)
-                                  }}
-                                >
-                                  <span className="shadow"></span>
-                                  <span className="edge"></span>
-                                  <span className="front">Edit</span>
-                                </button>
+                                <Button3D onClick={() => {
+                                  setEditingSizeIndex(i)
+                                  setSizeName(s.name)
+                                  setSizeDescription(s.description)
+                                  setSizeMultiplier(s.priceMultiplier)
+                                }}>Edit</Button3D>
 
                               </td>
 
                               <td>
 
-                                <button
-                                  className="modal-danger-btn"
-                                  onClick={() => {
-                                    setEditSizes(prev =>
-                                      prev.filter((_, x) => x !== i)
-                                    )
-                                  }}
-                                >
-                                  <span className="shadow"></span>
-                                  <span className="edge"></span>
-                                  <span className="front">Delete</span>
-                                </button>
+                                <Button3D variant="danger" onClick={() => {
+                                  setEditSizes(prev =>
+                                    prev.filter((_, x) => x !== i)
+                                  )
+                                }}>Delete</Button3D>
 
                               </td>
 
@@ -1354,64 +1293,40 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                         </div>
                       </div>
 
-                      <button
-                        className="modal-save-btn"
-                        type="button"
-                        onClick={() => {
+                      <Button3D onClick={() => {
 
-                          if (!sizeName.trim()) return;
+                        if (!sizeName.trim()) return;
 
-                          if (!isValidSizeDescription(sizeDescription)) {
-                            toast.warning("Description max 3 words and 20 characters");
-                            return;
-                          }
+                        if (!isValidSizeDescription(sizeDescription)) {
+                          toast.warning("Description max 3 words and 20 characters");
+                          return;
+                        }
 
-                          // reset edit mode
-                          setEditingSizeIndex(null);
+                        // reset edit mode
+                        setEditingSizeIndex(null);
 
-                          const newSize = {
-                            name: sizeName,
-                            description: sizeDescription,
-                            priceMultiplier: Number(sizeMultiplier || 1)
-                          };
+                        const newSize = {
+                          name: sizeName,
+                          description: sizeDescription,
+                          priceMultiplier: Number(sizeMultiplier || 1)
+                        };
 
-                          setEditSizes(prev => [...prev, newSize]);
+                        setEditSizes(prev => [...prev, newSize]);
 
-                          setSizeName("");
-                          setSizeDescription("");
-                          setSizeMultiplier("");
+                        setSizeName("");
+                        setSizeDescription("");
+                        setSizeMultiplier("");
 
-                        }}
-                      >
-                        <span className="shadow"></span>
-                        <span className="edge"></span>
-                        <span className="front">Add Size</span>
-                      </button>
+                      }}>Add Size</Button3D>
 
                     </div>
                   )}
               </div>
 
               <div className="modal-footer">
-                <button
-                  className="modal-cancel-btn"
-                  type="button"
-                  onClick={resetEditCategoryForm}
-                >
-                  <span className="shadow"></span>
-                  <span className="edge"></span>
-                  <span className="front">Cancel</span>
-                </button>
+                <Button3D variant="cancel" onClick={resetEditCategoryForm}>Cancel</Button3D>
 
-                <button
-                  className="modal-save-btn"
-                  type="button"
-                  onClick={handleSaveEdit}
-                >
-                  <span className="shadow"></span>
-                  <span className="edge"></span>
-                  <span className="front">Save</span>
-                </button>
+                <Button3D onClick={handleSaveEdit}>Save</Button3D>
               </div>
             </div>
           </div>

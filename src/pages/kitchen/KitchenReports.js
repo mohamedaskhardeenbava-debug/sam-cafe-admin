@@ -1,9 +1,18 @@
+/**
+ * KitchenReports.js  —  Sam Cafe Admin Panel
+ * Kitchen reports and analytics page
+ */
+
 import React, { useMemo, useState } from "react";
+
 import { exportMultiSheet } from "../../utils/excelUtils";
-import "./KitchenReports.css";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
+
+import Button3D from "../../components/Button3D";
+
+import "./KitchenReports.css";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Sector,
   CartesianGrid
 } from "recharts";
@@ -135,7 +144,11 @@ const renderActiveShape = (props) => {
 
 /* ─── Main ────────────────────────────────────────────── */
 const KitchenReports = ({ adminData = {} }) => {
-  const { grooming = {}, mise = {}, kitchenAssign = {}, recipes = [], orders = [], staff = [], ingredients = [] } = adminData;
+  // ── State & Setup
+
+  const { grooming = {}, kitchenMise: mise = {}, kitchenAssign = {}, recipes = [], orders = [], staff = [], ingredients = [] } = adminData;
+
+  // ── Helpers
 
   const roundTo = (v, d = 2) => Math.round((Number(v) + Number.EPSILON) * 10 ** d) / 10 ** d;
   const [activePie, setActivePie] = useState(null);
@@ -248,11 +261,7 @@ const KitchenReports = ({ adminData = {} }) => {
           {(reportFrom || reportTo) && (
             <button className="ae-clear-filter" onClick={() => { setReportFrom(""); setReportTo(""); }}>Clear</button>
           )}
-          <button className="modal-save-btn" onClick={exportReport}>
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
+          <Button3D onClick={exportReport} style={{ marginLeft: "auto" }}>Export</Button3D>
         </div>
       </div>
 

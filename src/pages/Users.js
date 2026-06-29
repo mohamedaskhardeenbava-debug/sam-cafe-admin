@@ -11,13 +11,17 @@
  */
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import api from "../api";
-import { sortArray, EmptyRow } from "../App";
 import { exportToExcel } from "../utils/excelUtils";
-import { useToast } from "../useToast";
 import { todayStr } from "../utils/dateUtils";
+
+import { sortArray, EmptyRow } from "../App";
+import { useToast } from "../useToast";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import Button3D from "../components/Button3D";
+
 import "./Users.css";
 
 /* ── helpers ── */
@@ -33,9 +37,13 @@ const getTotalItemsOrdered = (user) => {
 };
 
 const Users = ({ handleSort, sortConfig, users }) => {
+  // ── Hooks
+
   const navigate = useNavigate();
   const { toast } = useToast();
   const [userSearch, setUserSearch] = useState("");
+
+  // ── Derived Values
 
   const sortedUsers = useMemo(() => sortArray(users, sortConfig), [users, sortConfig]);
 
@@ -85,44 +93,38 @@ const Users = ({ handleSort, sortConfig, users }) => {
   };
 
   return (
-    <div className="users-page">
-      <div className="users-header">
-        <h2 className="users-title">Users</h2>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="modal-save-btn" onClick={handleExport}>
-            <span className="shadow" />
-            <span className="edge" />
-            <span className="front">Export</span>
-          </button>
-          <button className="modal-save-btn" onClick={sendCampaignToAllUsers}>
-            <span className="shadow" />
-            <span className="edge" />
-            <span className="front">Campaign</span>
-          </button>
+    <div className="inner-page">
+      <div className="header">
+        <h2 className="title">Users</h2>
+        <div className="header-btn-container">
+          <Button3D onClick={handleExport}>Export</Button3D>
+          <Button3D onClick={sendCampaignToAllUsers}>Campaign</Button3D>
         </div>
       </div>
 
       {/* FILTER BAR */}
-      <div className="users-filter-bar">
-        <input
-          className="search-input"
-          placeholder=" Search name or mobile…"
-          value={userSearch}
-          onChange={(e) => setUserSearch(e.target.value)}
-        />
-        {userSearch && (
-          <button className="ae-clear-filter" onClick={() => setUserSearch("")}>
-            Clear
-          </button>
-        )}
-        <span className="ae-result-count">{filteredUsers.length} user(s)</span>
+      <div className="filter-bar">
+        <div className="justify">
+          <input
+            className="search-input"
+            placeholder=" Search name or mobile…"
+            value={userSearch}
+            onChange={(e) => setUserSearch(e.target.value)}
+          />
+          {userSearch && (
+            <button className="ae-clear-filter" onClick={() => setUserSearch("")}>
+              Clear
+            </button>
+          )}
+          <span className="ae-result-count">{filteredUsers.length} user(s)</span>
+        </div>
       </div>
 
-      <div className="users-table-wrapper" ref={containerRef}>
-        <table className="users-table">
+      <div className="table-wrapper" ref={containerRef}>
+        <table className="table">
           <thead>
             <tr>
-              <th>#</th>
+              <th className="icon-width">#</th>
               <th
                 onClick={() => handleSort("name")}
                 className={sortConfig.key === "name" ? "sorted" : ""}
@@ -130,7 +132,9 @@ const Users = ({ handleSort, sortConfig, users }) => {
                 <span className="th-content sort-th">
                   <span>User Name</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "name"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -141,7 +145,9 @@ const Users = ({ handleSort, sortConfig, users }) => {
                 <span className="th-content sort-th">
                   <span>Mobile Number</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "mobile"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -155,7 +161,7 @@ const Users = ({ handleSort, sortConfig, users }) => {
             ) : (
               filteredUsers.slice(0, displayLimit).map((user, index) => (
                 <tr key={user.id}>
-                  <td>{index + 1}</td>
+                  <td className="icon-width">{index + 1}</td>
                   <td>
                     <span
                       className="clickable"

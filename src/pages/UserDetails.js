@@ -1,10 +1,17 @@
-import { useEffect, useState } from "react";
+/**
+ * UserDetails.js  —  Sam Cafe Admin Panel
+ * Single user detail page
+ */
+
 import { useParams, useNavigate } from "react-router-dom";
-import api from "../api";
-import "./UserDetails.css";
+
 import { formatDisplayDate } from "../App"
 
+import "./UserDetails.css";
+
 const UserDetails = ({ users }) => {
+  // ── Hooks
+
   const { userId } = useParams();
   const navigate = useNavigate();
 
@@ -20,7 +27,7 @@ const UserDetails = ({ users }) => {
     ) || 0;
 
   return (
-    <div className="user-details-page">
+    <div className="details-page">
       <div className="details-container ">
 
         <div className="details-header">

@@ -1,10 +1,13 @@
-/* ═══════════════════════════════════════════════
-   ServiceReports.css — Service Management System
-   Light theme · matches Dashboard.css white-card style
-═══════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════
+   ServiceReports.css  —  Sam Cafe Admin  —  ServiceReports page
+   Depends on Common.css + ModalCSS.css
+═══════════════════════════════════════════════════════ */
 
 /* ── PAGE ───────────────────────────────────── */
 .s-page {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     box-sizing: border-box;
     background: transparent;
 }
@@ -12,8 +15,6 @@
 /* ── HEADER ─────────────────────────────────── */
 .s-header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
     margin-bottom: 16px;
     gap: 12px;
 }
@@ -777,34 +778,6 @@
     white-space: nowrap;
 }
 
-/* ── Shared pill btn ── */
-.sched-pill-btn {
-    padding: 5px 12px;
-    border-radius: 999px;
-    border: 1.5px solid #e5e7eb;
-    background: #f9fafb;
-    color: #555;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s;
-    font-family: inherit;
-    white-space: nowrap;
-}
-
-.sched-pill-btn:hover {
-    border-color: #bbb;
-    background: #f3f4f6;
-    color: #111;
-}
-
-.sched-pill-btn.active {
-    background: #111;
-    border-color: #111;
-    color: #fff;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
 /* ── Shared clear + count ── */
 .ae-clear-filter {
     padding: 5px 12px;
@@ -1167,4 +1140,10 @@
 
 .rpt-evt-num.total span {
     color: #111;
+}
+
+@media screen and (max-width:768px) {
+    .s-header {
+        flex-direction: column;
+    }
 }

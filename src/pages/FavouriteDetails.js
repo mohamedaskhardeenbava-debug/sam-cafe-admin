@@ -1,8 +1,16 @@
+/**
+ * FavouriteDetails.js  —  Sam Cafe Admin Panel
+ * Single favourite detail page
+ */
+
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
+
 import "./FavouriteDetails.css";
 
 const FavouriteDetails = ({ adminData }) => {
+  // ── Hooks
+
   const { dishId } = useParams();
   const navigate = useNavigate();
 
@@ -19,7 +27,7 @@ const FavouriteDetails = ({ adminData }) => {
   }
 
   return (
-    <div className="favourite-details-page">
+    <div className="details-page">
 
       <div className="details-container">
         <div className="details-header">
@@ -35,7 +43,6 @@ const FavouriteDetails = ({ adminData }) => {
                 alt={dish.name}
               />
             </div>
-
 
             <div className="section">
               <div className="section-title">

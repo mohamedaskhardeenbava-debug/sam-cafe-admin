@@ -1,18 +1,20 @@
 /**
- * ReservationDetails.js
- * Class names unified to evt-details-* (matches CelebrationDetails)
- * Inline emoji icons removed throughout
+ * ReservationDetails.js  —  Sam Cafe Admin Panel
+ * Single reservation detail page
  */
-import { useParams, useNavigate } from "react-router-dom";
-import "./ReservationDetails.css";
-import { fmtTime, fmtDateTime } from "../../utils/dateUtils";
-import useStatusUpdate from "../../hooks/useStatusUpdate";
-import HeroCard from "../../components/HeroCard";
-import InfoGrid from "../../components/InfoGrid";
-import CallHistory from "../../components/CallHistory";
-import StatusUpdateButtons from "../../components/StatusUpdateButtons";
-import ReminderCallCard from "../../components/ReminderCallCard";
 
+import { useParams, useNavigate } from "react-router-dom";
+import { useState } from "react";
+
+import api from "../../api";
+import { fmtTime, fmtDateTime } from "../../utils/dateUtils";
+
+import { useToast } from "../../useToast";
+import Button3D from "../../components/Button3D";
+
+import "./ReservationDetails.css";
+
+/* ── Constants ── */
 const SLOT_MAP = {
   BF: { label: "Breakfast", color: "#92400e", bg: "#fef3c7" },
   BR: { label: "Brunch", color: "#3f6212", bg: "#ecfccb" },
@@ -31,37 +33,61 @@ const slotFromTime = (time) => {
   return SLOT_MAP.DI;
 };
 
+/* ── Component ── */
 const ReservationDetails = ({ adminData, setAdminData }) => {
+  // ── Hooks
+
+  const { toast } = useToast();
   const { id } = useParams();
   const navigate = useNavigate();
 
+  // ── Helpers
+
   const data = (adminData?.reservations || []).find((r) => r.id === id);
+  const [saving, setSaving] = useState(false);
+  const [localStatus, setLocalStatus] = useState(data?.status || "pending");
 
-  const { localStatus, saving, handleStatusChange } = useStatusUpdate({
-    id,
-    data,
-    apiPath: "/reservations",
-    adminDataKey: "reservations",
-    setAdminData,
-    initialStatus: data?.status || "pending",
-  });
-
-  if (!data)
-    return (
-      <div className="details-container">
+  if (!data) return (
+    <div className="details-container">
+      <div className="evt-details-container">
         <div className="details-header">
           <button className="back-btn" onClick={() => navigate(-1)} />
-          <h2 className="evt-details-title">Reservation Detail</h2>
+          <div>
+            <h2 className="evt-details-title">Reservation Detail</h2>
+          </div>
         </div>
-        <p style={{ color: "#a3a3a3", fontSize: 14, padding: 16 }}>
-          Reservation not found.
-        </p>
+        <div className="evt-details-section">
+          <p style={{ color: "#a3a3a3", fontSize: 14, margin: 0 }}>Reservation not found.</p>
+        </div>
       </div>
-    );
+    </div>
+  );
 
   const slotInfo = data.slotGroup
     ? SLOT_MAP[data.slotGroup] || slotFromTime(data.time)
     : slotFromTime(data.time);
+
+  const handleStatusChange = async (newStatus) => {
+    setSaving(true);
+    try {
+      await api.patch(`/reservations/${id}`, { status: newStatus });
+      setLocalStatus(newStatus);
+      toast.success(`Status updated to ${newStatus}.`);
+      if (typeof setAdminData === "function") {
+        setAdminData(p => ({
+          ...p,
+          reservations: (p.reservations || []).map(r =>
+            r.id === id ? { ...r, status: newStatus } : r
+          ),
+        }));
+      }
+    } catch (err) {
+      console.error("Update failed", err);
+      toast.error("Failed to update status. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const infoRows = [
     { label: "Guest Name", val: data.name || "—" },
@@ -80,46 +106,57 @@ const ReservationDetails = ({ adminData, setAdminData }) => {
 
   return (
     <div className="details-container">
-      {/* HEADER */}
+
+      {/* ── HEADER ── */}
       <div className="details-header">
         <button className="back-btn" onClick={() => navigate(-1)} />
         <div>
           <h2 className="evt-details-title">Reservation Detail</h2>
-          <p className="evt-details-id">
-            ID: <code>{data.id}</code>
-          </p>
+          <p className="evt-details-id">ID: <code>{data.id}</code></p>
         </div>
-        <span className={`evt-details-status-badge evt-details-status-${localStatus}`}>
-          {localStatus}
-        </span>
+        <span className={`evt-details-status-badge evt-details-status-${localStatus}`}>{localStatus}</span>
       </div>
 
       <div className="details-body">
-        {/* HERO */}
-        <HeroCard
-          className="evt-details-hero"
-          name={data.name}
-          mobile={data.mobile}
-          email={data.email}
-          chips={[
-            data.date || "—",
-            fmtTime(data.time),
-            slotInfo ? slotInfo.label : null,
-            `Table ${data.tableNo || "—"}`,
-            `${data.guests || 1} guests`,
-            data.tablePref || null,
-            data.source || null,
-          ].filter(Boolean)}
-        />
 
-        {/* INFO GRID */}
-        <InfoGrid
-          rows={infoRows}
-          title="Reservation Information"
-          sectionClassName="evt-details-section"
-        />
+        {/* ── HERO CARD ── */}
+        <div className="evt-details-hero">
+          <div className="evt-details-hero-avatar">
+            {(data.name || "?").charAt(0).toUpperCase()}
+          </div>
+          <div className="evt-details-hero-info">
+            <div className="evt-details-hero-name">{data.name || "—"}</div>
+            <div className="evt-details-hero-sub">
+              {data.mobile}{data.email ? ` · ${data.email}` : ""}
+            </div>
+            <div className="evt-details-hero-meta">
+              <span>{data.date || "—"}</span>
+              <span>{fmtTime(data.time)}</span>
+              {slotInfo && <span>{slotInfo.label}</span>}
+              <span>Table {data.tableNo || "—"}</span>
+              <span>{data.guests || 1} guests</span>
+              {data.tablePref && <span>{data.tablePref}</span>}
+              {data.source && <span>{data.source}</span>}
+            </div>
+          </div>
+        </div>
 
-        {/* NOTES */}
+        {/* ── INFO GRID ── */}
+        <div className="evt-details-section">
+          <div className="evt-details-section-title">Reservation Information</div>
+          <div className="evt-details-info-grid">
+            {infoRows.map((row, i) => (
+              <div key={i} className="evt-details-info-cell">
+                <div>
+                  <div className="evt-details-info-label">{row.label}</div>
+                  <div className="evt-details-info-val">{row.val}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── NOTES ── */}
         {data.notes && (
           <div className="evt-details-section">
             <div className="evt-details-section-title">Notes / Special Requests</div>
@@ -127,24 +164,52 @@ const ReservationDetails = ({ adminData, setAdminData }) => {
           </div>
         )}
 
-        {/* CALL HISTORY */}
-        <CallHistory
-          history={data.callHistory}
-          sectionClassName="evt-details-section"
-        />
+        {/* ── CALL HISTORY ── */}
+        {data.callHistory?.length > 0 && (
+          <div className="evt-details-section">
+            <div className="evt-details-section-title">Call History ({data.callHistory.length})</div>
+            <div className="evt-details-call-history">
+              {data.callHistory.map((ts, i) => (
+                <div key={i} className="evt-details-call-history-item">
+                  <span>Call #{i + 1}</span>
+                  <span style={{ marginLeft: "auto", color: "#a3a3a3" }}>{fmtDateTime(ts)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-        {/* STATUS UPDATE */}
+        {/* ── STATUS UPDATE ── */}
         <div className="evt-details-section">
           <div className="evt-details-section-title">Update Status</div>
-          <StatusUpdateButtons
-            currentStatus={localStatus}
-            onUpdate={handleStatusChange}
-            saving={saving}
-          />
+          <div className="evt-details-status-row">
+            {["pending", "confirmed", "completed", "cancelled"].map(s => (
+              <Button3D variant="cancel" key={s}
+                onClick={() => handleStatusChange(s)}
+                disabled={saving || localStatus === s}>
+                {saving && localStatus !== s ? "…" : s.charAt(0).toUpperCase() + s.slice(1)}
+              </Button3D>
+            ))}
+          </div>
         </div>
 
-        {/* REMINDER CALL */}
-        <ReminderCallCard mobile={data.mobile} className="evt-details-reminder" />
+        {/* ── CALL CARD ── */}
+        <div className="evt-details-reminder">
+          <div>
+            <div className="evt-details-reminder-label">Reminder Call</div>
+            <div className="evt-details-reminder-num">{data.mobile || "—"}</div>
+          </div>
+          <a
+            className="modal-save-btn"
+            href={data.mobile ? `tel:${data.mobile}` : undefined}
+            onClick={e => !data.mobile && e.preventDefault()}
+          >
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">Call Now</span>
+          </a>
+        </div>
+
       </div>
     </div>
   );

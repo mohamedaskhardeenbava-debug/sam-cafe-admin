@@ -1,10 +1,19 @@
+/**
+ * ServiceReports.js  —  Sam Cafe Admin Panel
+ * Service reports and analytics page
+ */
+
 import React, { useMemo, useState } from "react";
+
 import { exportMultiSheet } from "../../utils/excelUtils";
-import "./ServiceReports.css";
 import api from "../../api";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
+
+import Button3D from "../../components/Button3D";
+
+import "./ServiceReports.css";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Sector,
   AreaChart, Area, CartesianGrid,
 } from "recharts";
@@ -178,6 +187,8 @@ const ServiceReports = ({ adminData = {} }) => {
     reservations = [], celebrations = [], preBookings = [], cateringOrders = [],
   } = adminData;
 
+  // ── Hooks
+
   const [activePie, setActivePie] = useState(null);
   const [activeEventPie, setActiveEventPie] = useState(null);
   const [reportFrom, setReportFrom] = useState("");
@@ -193,6 +204,9 @@ const ServiceReports = ({ adminData = {} }) => {
   }), [orders, reportFrom, reportTo]);
 
   /* derived */
+
+  // ── Derived Values
+
   const miseData = useMemo(() => parseServiceMise(serviceMise), [serviceMise]);
   const assignData = useMemo(() => parseServiceAssign(serviceAssign), [serviceAssign]);
   const groomData = useMemo(() => parseServiceGrooming(serviceGrooming, staff, reportFrom, reportTo), [serviceGrooming, staff, reportFrom, reportTo]);
@@ -250,11 +264,7 @@ const ServiceReports = ({ adminData = {} }) => {
           {(reportFrom || reportTo) && (
             <button className="ae-clear-filter" onClick={() => { setReportFrom(""); setReportTo(""); }}>Clear</button>
           )}
-          <button className="modal-save-btn" onClick={exportReport}>
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
+          <Button3D style={{ marginLeft: "auto" }} onClick={exportReport}>Export</Button3D>
         </div>
       </div>
 

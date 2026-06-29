@@ -1,10 +1,20 @@
+/**
+ * ComboOffers.js  —  Sam Cafe Admin Panel
+ * Combo offers management page
+ */
+
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+
 import api from "../api";
-import "./ComboOffers.css";
+
 import closeIcon from "../icon/close-icon.png";
 import deleteIcon from "../icon/delete-icon.png";
 import editIcon from "../icon/edit-icon.png";
 import { useToast } from "../useToast";
+import Button3D from "../components/Button3D";
+
+import "./ComboOffers.css";
+import PageLoader from "../components/PageLoader";
 
 /* ─── helpers ─────────────────────────────────────────────── */
 const uid = () => `offer_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -62,6 +72,9 @@ const DishList = ({ items, sectionKey, usedDishNames, onDragStart }) => {
 
 const ComboOffers = () => {
   /* ── top-level data ── */
+
+  // ── Hooks
+
   const [comboSections, setComboSections] = useState({ starters: [], mainCourse: [], beverages: [] });
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -90,6 +103,9 @@ const ComboOffers = () => {
         : { key, direction: "asc" }
     );
   };
+
+  // ── Helpers
+
   const getActual = (o) =>
     (o.condition?.starterPrice || 0) + (o.condition?.mainPrice || 0) + (o.condition?.beveragesPrice || 0);
   const sortedOffers = useMemo(() => {
@@ -218,15 +234,16 @@ const ComboOffers = () => {
   };
 
   /* ── delete ── */
-  const handleDelete = async (id, label) => {
-    if (!window.confirm(`Delete "${label}"?`)) return;
-    try {
-      await api.delete(`/combo_offers/${id}`);
-      setOffers(prev => prev.filter(o => o.id !== id));
-      toast.success("Offer deleted");
-    } catch {
-      toast.error("Delete failed", "error");
-    }
+  const handleDelete = (id, label) => {
+    toast.confirm(`Delete "${label}"?`, async () => {
+      try {
+        await api.delete(`/combo_offers/${id}`);
+        setOffers(prev => prev.filter(o => o.id !== id));
+        toast.success("Offer deleted");
+      } catch {
+        toast.error("Delete failed", "error");
+      }
+    });
   };
 
   /* ── drag ── */
@@ -266,111 +283,99 @@ const ComboOffers = () => {
 
   if (loading) return (
     <div className="dishes-page">
-      <div className="co-loading"><span className="co-spinner" /> Loading combo offers…</div>
+      <PageLoader label="Loading combo offers…" />
     </div>
   );
 
   return (
-    <div className="dishes-page">
+    <div className="inner-page">
 
       {/* ── header ── */}
-      <div className="dish-header">
-        <h2 className="dish-title">Combo Offers</h2>
-        <button className="modal-save-btn" onClick={openNew}>
-          <span className="shadow" /><span className="edge" />
-          <span className="front">+ Add Combo</span>
-        </button>
+      <div className="header">
+        <h2 className="title">Combo Offers</h2>
+        <Button3D onClick={openNew}>+ Add Combo</Button3D>
       </div>
 
-      {/* ── table ── */}
-      <div className="dish-block">
-        <div className="combo-table-wrapper">
-          <table className="combo-table">
-            <thead>
-              <tr>
-                {[
-                  { label: "Starter", key: "starter" },
-                  { label: "Main Course", key: "main" },
-                  { label: "Beverages", key: "bev" },
-                  { label: "Discount", key: "discount" },
-                  { label: "Actual Price", key: "actual" },
-                  { label: "Discounted Price", key: "final" },
-                ].map(col => (
-                  <th
-                    key={col.key}
-                    onClick={() => handleSort(col.key)}
-                    className={sortConfig.key === col.key ? "sorted" : ""}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <span className="th-content sort-th">
-                      <span>{col.label}</span>
-                      <span className="sort-arrow">
-                        {sortConfig.key === col.key
-                          ? sortConfig.direction === "asc" ? "▲" : "▼"
-                          : "⇅"}
-                      </span>
+      <div className="table-wrapper">
+        <table className="table">
+          <thead>
+            <tr>
+              {[
+                { label: "Starter", key: "starter" },
+                { label: "Main Course", key: "main" },
+                { label: "Beverages", key: "bev" },
+                { label: "Discount", key: "discount" },
+                { label: "Actual Price", key: "actual" },
+                { label: "Discounted Price", key: "final" },
+              ].map(col => (
+                <th
+                  key={col.key}
+                  onClick={() => handleSort(col.key)}
+                  className={sortConfig.key === col.key ? "sorted" : ""}
+                  style={{ cursor: "pointer" }}
+                >
+                  <span className="th-content sort-th">
+                    <span>{col.label}</span>
+                    <span className="sort-arrow">
+                      {sortConfig.key === col.key
+                        ? sortConfig.direction === "asc" ? "▲" : "▼"
+                        : "⇅"}
                     </span>
-                  </th>
-                ))}
-                <th>Edit</th>
-                <th>Delete</th>
-              </tr>
-            </thead>
-            <tbody>
-              {offers.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="co-empty-row">No combo offers yet. Click "+ Add Combo" to create one.</td>
-                </tr>
-              )}
-              {sortedOffers.map((o, i) => (
-                <tr key={o.id}>
-                  <td>
-                    <span className="">{o.condition?.starter || "—"}</span>
-                  </td>
-                  <td>
-                    <span className="">{o.condition?.main || "—"}</span>
-                  </td>
-                  <td>
-                    <span className="">{o.condition?.beverages || "—"}</span>
-                  </td>
-                  <td>
-                    <span className={`co-discount-badge ${o.type === "FLAT" ? "flat" : "pct"}`}>
-                      {o.type === "FLAT" ? `₹${o.value}` : `${o.value}%`}
-                    </span>
-                  </td>
-                  <td>
-                    {(() => {
-                      const actual = (o.condition?.starterPrice || 0) + (o.condition?.mainPrice || 0) + (o.condition?.beveragesPrice || 0);
-                      return actual > 0
-                        ? <span className="co-actual-price">₹{actual}</span>
-                        : <span style={{ color: "#ccc" }}>—</span>;
-                    })()}
-                  </td>
-                  <td>
-                    {(() => {
-                      const actual = (o.condition?.starterPrice || 0) + (o.condition?.mainPrice || 0) + (o.condition?.beveragesPrice || 0);
-                      if (!actual) return <span style={{ color: "#ccc" }}>—</span>;
-                      const final = calcFinal(actual, o.type, o.value);
-                      return <span className="co-final-price">₹{final}</span>;
-                    })()}
-                  </td>
-                  <td>
-                    <button className="modal-cancel-btn" onClick={() => openEdit(o)}>
-                      <span className="shadow" /><span className="edge" />
-                      <span className="front close-padding"><img src={editIcon} /></span>
-                    </button>
-                  </td>
-                  <td>
-                    <button className="modal-cancel-btn" onClick={() => handleDelete(o.id, o.label)}>
-                      <span className="shadow" /><span className="edge" />
-                      <span className="front close-padding"><img src={deleteIcon} /></span>
-                    </button>
-                  </td>
-                </tr>
+                  </span>
+                </th>
               ))}
-            </tbody>
-          </table>
-        </div>
+              <th className="icon-width">Edit</th>
+              <th className="icon-width">Delete</th>
+            </tr>
+          </thead>
+          <tbody>
+            {offers.length === 0 && (
+              <tr>
+                <td colSpan={7} className="co-empty-row">No combo offers yet. Click "+ Add Combo" to create one.</td>
+              </tr>
+            )}
+            {sortedOffers.map((o, i) => (
+              <tr key={o.id}>
+                <td>
+                  <span className="">{o.condition?.starter || "—"}</span>
+                </td>
+                <td>
+                  <span className="">{o.condition?.main || "—"}</span>
+                </td>
+                <td>
+                  <span className="">{o.condition?.beverages || "—"}</span>
+                </td>
+                <td>
+                  <span className={`co-discount-badge ${o.type === "FLAT" ? "flat" : "pct"}`}>
+                    {o.type === "FLAT" ? `₹${o.value}` : `${o.value}%`}
+                  </span>
+                </td>
+                <td>
+                  {(() => {
+                    const actual = (o.condition?.starterPrice || 0) + (o.condition?.mainPrice || 0) + (o.condition?.beveragesPrice || 0);
+                    return actual > 0
+                      ? <span className="co-actual-price">₹{actual}</span>
+                      : <span style={{ color: "#ccc" }}>—</span>;
+                  })()}
+                </td>
+                <td>
+                  {(() => {
+                    const actual = (o.condition?.starterPrice || 0) + (o.condition?.mainPrice || 0) + (o.condition?.beveragesPrice || 0);
+                    if (!actual) return <span style={{ color: "#ccc" }}>—</span>;
+                    const final = calcFinal(actual, o.type, o.value);
+                    return <span className="co-final-price">₹{final}</span>;
+                  })()}
+                </td>
+                <td className="icon-width">
+                  <Button3D variant="cancel" iconOnly onClick={() => openEdit(o)}><img src={editIcon} /></Button3D>
+                </td>
+                <td className="icon-width">
+                  <Button3D variant="cancel" iconOnly onClick={() => handleDelete(o.id, o.label)}><img src={deleteIcon} /></Button3D>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* ═══ MODAL ══════════════════════════════════════════════ */}
@@ -381,10 +386,7 @@ const ComboOffers = () => {
             {/* header */}
             <div className="modal-header">
               <h3>{editOffer ? "Edit Combo Offer" : "Add Combo Offer"}</h3>
-              <button type="button" className="modal-cancel-btn" onClick={() => setModalOpen(false)}>
-                <span className="shadow" /><span className="edge" />
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => setModalOpen(false)}><img src={closeIcon} /></Button3D>
             </div>
 
             {/* two-column body */}
@@ -490,23 +492,23 @@ const ComboOffers = () => {
                       >₹ FLAT</button>
                     </div>
                     <div className="form-group">
-                    <div className="mat" style={{ flex: 1 }}>
-                      <input
-                        className={`mat-input${errors.discount ? " mat-error" : ""}`}
-                        type="number"
-                        min={0}
-                        placeholder=" "
-                        value={discountVal}
-                        onChange={e => {
-                          setDiscountVal(e.target.value);
-                          setErrors(prev => { const n = { ...prev }; delete n.discount; return n; });
-                        }}
-                      />
-                      <label className={`mat-label${errors.discount ? " mat-label-error" : ""}`}>
-                        {offerType === "PERCENT" ? "Discount %" : "Flat Discount ₹"}
-                      </label>
-                      <span className={`mat-bar${errors.discount ? " mat-bar-error" : ""}`} />
-                    </div>
+                      <div className="mat" style={{ flex: 1 }}>
+                        <input
+                          className={`mat-input${errors.discount ? " mat-error" : ""}`}
+                          type="number"
+                          min={0}
+                          placeholder=" "
+                          value={discountVal}
+                          onChange={e => {
+                            setDiscountVal(e.target.value);
+                            setErrors(prev => { const n = { ...prev }; delete n.discount; return n; });
+                          }}
+                        />
+                        <label className={`mat-label${errors.discount ? " mat-label-error" : ""}`}>
+                          {offerType === "PERCENT" ? "Discount %" : "Flat Discount ₹"}
+                        </label>
+                        <span className={`mat-bar${errors.discount ? " mat-bar-error" : ""}`} />
+                      </div>
                     </div>
                   </div>
                   {errors.discount && <div className="co-field-error">{errors.discount}</div>}
@@ -529,14 +531,10 @@ const ComboOffers = () => {
 
             {/* footer */}
             <div className="modal-footer">
-              <button type="button" className="modal-cancel-btn" onClick={() => setModalOpen(false)}>
-                <span className="shadow" /><span className="edge" />
-                <span className="front">Cancel</span>
-              </button>
-              <button type="button" className="modal-save-btn" onClick={handleSave} disabled={saving}>
-                <span className="shadow" /><span className="edge" />
-                <span className="front">{saving ? "Saving…" : editOffer ? "Update Offer" : "Create Offer"}</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => setModalOpen(false)}>Cancel</Button3D>
+              <Button3D onClick={handleSave} disabled={saving}>
+                {saving ? "Saving…" : editOffer ? "Update Offer" : "Create Offer"}
+              </Button3D>
             </div>
           </div>
         </div>

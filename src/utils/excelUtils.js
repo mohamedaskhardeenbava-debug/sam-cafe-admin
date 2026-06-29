@@ -18,7 +18,7 @@
  *
  * USAGE — single sheet
  * ──────────────────────
- *   import { exportToExcel } from "../utils/excelUtils";
+ *   import { handleExport} from "../utils/excelUtils";
  *
  *   const ok = exportToExcel({
  *     rows: filteredUsers.map((u, i) => ({ "#": i + 1, Name: u.name })),

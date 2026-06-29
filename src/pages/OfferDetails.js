@@ -1,50 +1,26 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import api from "../api";
-import editIcon from "../icon/edit-icon.png";
-import "./OfferDetails.css";
-import { CustomDatePicker } from "../components/CustomDatePicker";
-import { CustomTimePicker } from "../components/CustomTimePicker";
-import { useToast } from "../useToast";
+/**
+ * OfferDetails.js  —  Sam Cafe Admin Panel
+ * Single offer detail/edit page
+ */
 
-// ── CustomDropdown (floating label version) ───────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
-  const wrapperClass = ["mat-select", value ? "has-value" : "", open ? "is-open" : ""].filter(Boolean).join(" ");
-  return (
-    <div className={wrapperClass} ref={ref}>
-      <div className="dishes-dropdown-wrapper">
-        <button type="button" className="dishes-status-dropdown"
-          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-          {displayLabel || ""}
-        </button>
-        {open && (
-          <div className="dropdown-menu">
-            <div onClick={() => { onChange(""); setOpen(false); }}>{placeholder}</div>
-            {options.map((o, i) => {
-              const val = o.value !== undefined ? o.value : o;
-              const lbl = o.label !== undefined ? o.label : o;
-              return (
-                <div key={i} onClick={() => { onChange(val); setOpen(false); }}>{lbl}</div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <span className="mat-bar" />
-    </div>
-  );
-}
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+
+import api from "../api";
+import { CustomDatePicker } from "../components/CustomDatePicker";
+
+import editIcon from "../icon/edit-icon.png";
+import { CustomTimePicker } from "../components/CustomTimePicker";
+import CustomDropdown from "../components/CustomDropdown";
+import { useToast } from "../useToast";
+import Button3D from "../components/Button3D";
+
+import "./OfferDetails.css";
+import PageLoader from "../components/PageLoader";
 
 const OfferDetails = ({ adminData, setAdminData }) => {
+  // ── Hooks
+
   const { toast } = useToast();
   const { offerId } = useParams();
   const navigate = useNavigate();
@@ -68,7 +44,7 @@ const OfferDetails = ({ adminData, setAdminData }) => {
     }
   }, [offer]);
 
-  if (!localOffer) return <div className="page">Loading offer...</div>;
+  if (!localOffer) return <PageLoader label="Loading offer…" />;
 
   const selectedDish = allDishes.find(d => d.id === localOffer.dishId);
   const originalPrice = selectedDish?.basePrice || localOffer.originalPrice || 0;
@@ -110,7 +86,7 @@ const OfferDetails = ({ adminData, setAdminData }) => {
   };
 
   return (
-    <div className="offer-details-page">
+    <div className="details-page">
       <div className="details-container">
 
         {/* HEADER */}
@@ -125,14 +101,10 @@ const OfferDetails = ({ adminData, setAdminData }) => {
           <h2>{selectedDish?.name || "Offer"}</h2>
 
           {!isEditing && (
-            <button className="modal-cancel-btn" onClick={() => setIsEditing(true)}>
-              <span className="shadow"></span>
-              <span className="edge"></span>
-              <span className="front">
-                <img src={editIcon} alt="edit" />
-                Edit
-              </span>
-            </button>
+            <Button3D variant="cancel" onClick={() => setIsEditing(true)}>
+              <img src={editIcon} alt="edit" />
+              Edit
+            </Button3D>
           )}
         </div>
 
@@ -277,22 +249,8 @@ const OfferDetails = ({ adminData, setAdminData }) => {
         {/* STICKY SAVE / CANCEL BAR */}
         {isEditing && (
           <div className="details-footer">
-            <button
-              className="modal-cancel-btn"
-              onClick={resetEditState}
-            >
-              <span className="shadow"></span>
-              <span className="edge"></span>
-              <span className="front">Cancel</span>
-            </button>
-            <button
-              className="modal-save-btn"
-              onClick={persistOffer}
-            >
-              <span className="shadow"></span>
-              <span className="edge"></span>
-              <span className="front">Save</span>
-            </button>
+            <Button3D variant="cancel" onClick={resetEditState}>Cancel</Button3D>
+            <Button3D onClick={persistOffer}>Save</Button3D>
           </div>
         )}
 

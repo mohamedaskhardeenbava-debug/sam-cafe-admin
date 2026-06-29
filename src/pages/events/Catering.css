@@ -1,25 +1,8 @@
-/* PAGE */
-.evt-cat-page {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-}
+/* ═══════════════════════════════════════════════════════
+   Catering.css  —  Sam Cafe Admin  —  Catering page
+   Depends on Common.css + EvtCommon.css + ModalCSS.css
+═══════════════════════════════════════════════════════ */
 
-/* HEADER */
-.evt-cat-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.evt-cat-title {
-  font-size: 24px;
-  font-weight: 600;
-  margin: 0;
-}
-
-/* ACTIONS */
 .evt-cat-actions {
   display: flex;
   gap: 10px;
@@ -775,8 +758,6 @@
     transform: translateY(0);
   }
 }
-
-
 
 .evt-pre-call-tooltip-title {
   font-size: 11px;

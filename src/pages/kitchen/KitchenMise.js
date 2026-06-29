@@ -1,9 +1,18 @@
+/**
+ * KitchenMise.js  —  Sam Cafe Admin Panel
+ * Kitchen mise-en-place tracking page
+ */
+
 import React, { useState, useMemo } from "react";
+
 import { exportToExcel } from "../../utils/excelUtils";
-import "./KitchenMise.css";
-import { getTodayKey, getTodayFormatted } from "../../App";
 import api from "../../api";
+
+import { getTodayKey, getTodayFormatted } from "../../App";
 import { useToast } from "../../useToast";
+import Button3D from "../../components/Button3D";
+
+import "./KitchenMise.css";
 
 /*
   DATA SHAPE (kitchenMise in db.json):
@@ -24,6 +33,8 @@ const SECTION_META = {
 };
 
 export default function KitchenMise({ adminData, setAdminData }) {
+  // ── Hooks
+
   const { toast } = useToast();
   const today = getTodayKey();
   const todayFmt = getTodayFormatted();
@@ -35,11 +46,16 @@ export default function KitchenMise({ adminData, setAdminData }) {
   // Use today's mise data; fall back to empty
   const miseDay = adminData.kitchenMise?.[today] || {};
 
+  // ── Derived Values
+
   const filteredTasks = useMemo(() => {
     const q = miseSearch.toLowerCase();
     const result = {};
     Object.entries(tasks).forEach(([sec, items]) => {
       if (sectionFilter !== "all" && sec !== sectionFilter) return;
+
+      // ── Helpers
+
       const filtered = (items || []).filter(t => !q || t.toLowerCase().includes(q));
       if (filtered.length) result[sec] = filtered;
     });
@@ -73,6 +89,7 @@ export default function KitchenMise({ adminData, setAdminData }) {
   // ── Toggle verified ───────────────────────────────────────────
   const toggle = async (task) => {
     const isChecked = miseDay[task]?.verified;
+    const prevData = adminData.kitchenMise;
     const updated = {
       ...adminData.kitchenMise,
       [today]: {
@@ -84,25 +101,25 @@ export default function KitchenMise({ adminData, setAdminData }) {
         }
       }
     };
+    setAdminData(prev => ({ ...prev, kitchenMise: updated }));
     try {
       await api.put("/kitchenMise", updated);
-      setAdminData(prev => ({ ...prev, kitchenMise: updated }));
     } catch (err) {
       toast.error("Failed to save. Please try again.");
-      setAdminData(prev => ({ ...prev, kitchenMise: updated }));
+      setAdminData(prev => ({ ...prev, kitchenMise: prevData }));
     }
   };
 
   return (
-    <div className="mise-page">
+    <div className="inner-page">
 
       {/* HEADER */}
-      <div className="mise-header">
-        <div className="mise-header-left">
-          <h2 className="mise-title">Kitchen Mise en Place & Cleaning</h2>
-          <span className="mise-date">{todayFmt}</span>
+      <div className="header">
+        <div >
+          <h2 className="title">Kitchen Mise en Place & Cleaning</h2>
+          <span className="subtitle">{todayFmt}</span>
         </div>
-        <div className="mise-header-right">
+        <div className="header-btn-container">
           <div className="mise-stat-badge mise-stat-assigned">
             <span className="mise-stat-num">{assignedCnt}/{allTasks.length}</span>
             <span className="mise-stat-lbl">Assigned</span>
@@ -111,11 +128,7 @@ export default function KitchenMise({ adminData, setAdminData }) {
             <span className="mise-stat-num">{verifiedCnt}/{allTasks.length}</span>
             <span className="mise-stat-lbl">Verified</span>
           </div>
-          <button className="modal-save-btn" onClick={exportMise}>
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
+          <Button3D onClick={exportMise}>Export</Button3D>
         </div>
       </div>
 
@@ -128,30 +141,32 @@ export default function KitchenMise({ adminData, setAdminData }) {
       </div>
 
       {/* FILTER BAR */}
-      <div className="mise-filter-bar">
-        <input
-          className="search-input"
-          placeholder=" Search tasks…"
-          value={miseSearch}
-          onChange={e => setMiseSearch(e.target.value)}
-        />
-        <div className="mise-pills">
-          <span className="mise-filter-lbl">Section</span>
-          {[["all", "All"], ...Object.keys(tasks).map(s => [s, SECTION_META[s]?.label || s])].map(([k, lbl]) => (
-            <button key={k}
-              className={`filter-pill${sectionFilter === k ? " active" : ""}`}
-              onClick={() => setSectionFilter(k)}>{lbl}</button>
-          ))}
+      <div className="filter-bar">
+        <div className="filter-groups">
+          <input
+            className="search-input"
+            placeholder=" Search tasks…"
+            value={miseSearch}
+            onChange={e => setMiseSearch(e.target.value)}
+          />
+          <div className="filter-group">
+            <span className="filter-group-label">Section</span>
+            {[["all", "All"], ...Object.keys(tasks).map(s => [s, SECTION_META[s]?.label || s])].map(([k, lbl]) => (
+              <button key={k}
+                className={`filter-pill${sectionFilter === k ? " active" : ""}`}
+                onClick={() => setSectionFilter(k)}>{lbl}</button>
+            ))}
+          </div>
+          {(miseSearch || sectionFilter !== "all") && (
+            <button className="ae-clear-filter"
+              onClick={() => { setMiseSearch(""); setSectionFilter("all"); }}>Clear</button>
+          )}
         </div>
-        {(miseSearch || sectionFilter !== "all") && (
-          <button className="ae-clear-filter"
-            onClick={() => { setMiseSearch(""); setSectionFilter("all"); }}>Clear</button>
-        )}
       </div>
 
       {/* UNIFIED TABLE */}
-      <div className="mise-table-wrapper">
-        <table className="mise-table">
+      <div className="table-wrapper">
+        <table className="table">
           <thead>
             <tr>
               <th>Task</th>

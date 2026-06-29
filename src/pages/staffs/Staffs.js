@@ -1,75 +1,31 @@
+/**
+ * Staffs.js  —  Sam Cafe Admin Panel
+ * Staff list and management page
+ */
+
 import React, { useState, useMemo } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+
 import { exportToExcel } from "../../utils/excelUtils";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
-import "./Staffs.css";
-import "../ModalCSS.css";
+import api from "../../api";
+import { createRecord, updateRecord, deleteRecord } from "../../utils/crudUtils";
+
 import { sortArray } from "../../App";
 import editIcon from "../../icon/edit-icon.png";
 import closeIcon from "../../icon/close-icon.png";
 import deleteIcon from "../../icon/delete-icon.png";
-import { useNavigate, useLocation } from "react-router-dom";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 import { useToast } from "../../useToast";
-import api from "../../api";
+import Button3D from "../../components/Button3D";
+import CustomDropdown from "../../components/CustomDropdown";
+
+import "./Staffs.css";
+import "../ModalCSS.css";
+import PageLoader from "../../components/PageLoader";
 
 const roles = ["Chef", "Waiter", "Supervisor", "Manager", "Cleaner"];
-
-// ── CustomDropdown (floating label version) ──────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
-
-  const wrapperClass = [
-    "mat-select",
-    value ? "has-value" : "",
-    open ? "is-open" : "",
-  ].filter(Boolean).join(" ");
-
-  return (
-    <div className={wrapperClass} ref={ref}>
-      {label && (
-        <label className="mat-label">
-          {label}{required && <span className="rf-req">*</span>}
-        </label>
-      )}
-      <div className="dishes-dropdown-wrapper">
-        <button type="button" className="dishes-status-dropdown"
-          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-          {displayLabel || ""}
-        </button>
-        {open && (
-          <div className="dropdown-menu">
-            <div onClick={() => { onChange(""); setOpen(false); }}>
-              {placeholder}
-            </div>
-            {options.map((o, i) => {
-              const val = o.value !== undefined ? o.value : o;
-              const lbl = o.label !== undefined ? o.label : o;
-              return (
-                <div key={i} onClick={() => { onChange(val); setOpen(false); }}
-                  style={{ padding: "8px 12px", fontSize: 14, cursor: "pointer" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"}
-                  onMouseLeave={e => e.currentTarget.style.background = ""}>
-                  {lbl}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <span className="mat-bar" />
-    </div>
-  );
-}
-
 
 const EMPTY_FORM = {
   id: "",
@@ -100,7 +56,7 @@ const EMPTY_FORM = {
 
 const generateStaffId = (name) => {
   const base = name.toLowerCase().replace(/\s+/g, "_");
-  return "staff_" + (base || "member") + "_" + Date.now();
+  return "staff_" + (base || "member") + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
 };
 
 export default function Staffs({
@@ -112,9 +68,12 @@ export default function Staffs({
   sortConfig,
   handleSort
 }) {
+  // ── Hooks
+
   const { toast } = useToast();
   const [showModal, setShowModal] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
+
   const [isEditMode, setIsEditMode] = useState(false);
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [tempExp, setTempExp] = useState({ org: "", place: "" });
@@ -143,6 +102,7 @@ export default function Staffs({
 
   const { displayLimit, sentinelRef, containerRef, hasMore } =
     useInfiniteScroll(staffs.length, 30);
+  if (!adminData?.staff?.length) return <PageLoader label="Loading staff…" />;
 
   const exportStaffs = () => {
     if (!staffs.length) { toast.warning("No staff to export"); return; }
@@ -214,7 +174,7 @@ export default function Staffs({
   const handleSave = () => {
     const payload = {
       ...formData,
-      id: generateStaffId(formData.name)
+      id: isEditMode ? formData.id : generateStaffId(formData.name)
     };
 
     isEditMode ? onUpdate(payload.id, payload) : onAdd(payload);
@@ -223,61 +183,50 @@ export default function Staffs({
   };
 
   return (
-    <div className="staff-page">
+    <div className="inner-page">
       {/* HEADER */}
-      <div className="staff-header">
-        <h2 className="staff-page-title">Staff</h2>
-        <div style={{ display: "flex", gap: 8, overflow: "visible" }}>
-          <button
-            className="modal-save-btn"
-            onClick={exportStaffs}
-          >
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
-          <button
-            className="modal-save-btn"
-            onClick={() => { setFormData(EMPTY_FORM); setShowModal(true); }}
-          >
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">+ Add Staff</span>
-          </button>
+      <div className="header">
+        <h2 className="title">Staff</h2>
+        <div className="header-btn-container">
+          <Button3D onClick={exportStaffs}>Export</Button3D>
+          <Button3D onClick={() => { setFormData(EMPTY_FORM); setShowModal(true); }}>+ Add Staff</Button3D>
         </div>
       </div>
 
       {/* FILTER BAR */}
-      <div className="staff-filter-bar">
-        <input
-          className="search-input"
-          placeholder=" Search name, role, contact…"
-          value={staffSearch}
-          onChange={e => setStaffSearch(e.target.value)}
-        />
-        <div className="staff-filter-group">
-          <span className="staff-filter-label">Work Type</span>
-          {[["", "All"], ["full-time", "Full-Time"], ["part-time", "Part-Time"], ["double-shift", "Double Shift"]].map(([k, lbl]) => (
-            <button key={k} className={`filter-pill${workTypeFilter === k ? " active" : ""}`} onClick={() => setWorkTypeFilter(k)}>{lbl}</button>
-          ))}
+      <div className="filter-bar">
+        <div className="filter-groups">
+          <input
+            className="search-input"
+            placeholder=" Search name, role, contact…"
+            value={staffSearch}
+            onChange={e => setStaffSearch(e.target.value)}
+          />
+
+          <div className="filter-group">
+            <span className="filter-group-label">Work Type</span>
+            {[["", "All"], ["full-time", "Full-Time"], ["part-time", "Part-Time"], ["double-shift", "Double Shift"]].map(([k, lbl]) => (
+              <button key={k} className={`filter-pill${workTypeFilter === k ? " active" : ""}`} onClick={() => setWorkTypeFilter(k)}>{lbl}</button>
+            ))}
+          </div>
+          <div className="filter-group">
+            <span className="filter-group-label">Role</span>
+            {[["", "All"], ...roles.map(r => [r, r])].map(([k, lbl]) => (
+              <button key={k} className={`filter-pill${roleFilter === k ? " active" : ""}`} onClick={() => setRoleFilter(k)}>{lbl}</button>
+            ))}
+          </div>
+          {(staffSearch || workTypeFilter || roleFilter) && (
+            <button className="ae-clear-filter" onClick={() => { setStaffSearch(""); setWorkTypeFilter(""); setRoleFilter(""); }}>Clear</button>
+          )}
         </div>
-        <div className="staff-filter-group">
-          <span className="staff-filter-label">Role</span>
-          {[["", "All"], ...roles.map(r => [r, r])].map(([k, lbl]) => (
-            <button key={k} className={`filter-pill${roleFilter === k ? " active" : ""}`} onClick={() => setRoleFilter(k)}>{lbl}</button>
-          ))}
-        </div>
-        {(staffSearch || workTypeFilter || roleFilter) && (
-          <button className="ae-clear-filter" onClick={() => { setStaffSearch(""); setWorkTypeFilter(""); setRoleFilter(""); }}>Clear</button>
-        )}
       </div>
 
       {/* TABLE */}
-      <div className="staff-table-wrapper" ref={containerRef}>
-        <table className="staff-table">
+      <div className="table-wrapper" ref={containerRef}>
+        <table className="table">
           <thead>
             <tr>
-              <th style={{ width: 200 }} onClick={() => handleSort("name")} className={sortConfig.key === "name" ? "sorted" : ""}>
+              <th onClick={() => handleSort("name")} className={`${sortConfig.key === "name" ? "sorted" : ""}`}>
                 <span className="th-content sort-th">
                   <span>Name</span>
                   <span className="sort-arrow">{sortConfig.key === "name" ? (sortConfig.direction === "asc" ? "▲" : "▼") : "▼"}</span>
@@ -308,8 +257,8 @@ export default function Staffs({
                   <span className="sort-arrow">{sortConfig.key === "workType" ? (sortConfig.direction === "asc" ? "▲" : "▼") : "▼"}</span>
                 </span>
               </th>
-              <th>Edit</th>
-              <th>Delete</th>
+              <th className="icon-width">Edit</th>
+              <th className="icon-width">Delete</th>
             </tr>
           </thead>
           <tbody>
@@ -317,7 +266,7 @@ export default function Staffs({
               const PALETTE = ["#4361ee", "#06d6a0", "#ffd166", "#ef476f", "#7209b7", "#4cc9f0", "#f72585", "#3a0ca3", "#fb8500", "#023e8a"];
               const avatarBg = PALETTE[i % PALETTE.length];
               return (
-                <tr>
+                <tr key={staff.id}>
                   <td>
                     <div className="st-name-cell">
                       <div className="st-avatar" style={{ background: avatarBg }}>
@@ -326,7 +275,6 @@ export default function Staffs({
                       <span>
                         <span
                           className="st-name clickable"
-                          key={staff.id}
                           onClick={() => navigate(`/staff/${staff.id}`)}
                         >
                           {staff.name}
@@ -353,50 +301,24 @@ export default function Staffs({
                     </span>
                   </td>
                   <td onClick={e => e.stopPropagation()}>
-                    <button className="modal-cancel-btn"
-                      onClick={() => { setFormData(staff); setIsEditMode(true); setShowModal(true); }}
-                      title="Edit">
-                      <span className="shadow"></span>
-                      <span className="edge"></span>
-                      <span className="front close-padding">
-                        <img src={editIcon} alt="" />
-                      </span>
-                    </button>
+                    <Button3D variant="cancel" iconOnly onClick={() => { setFormData(staff); setIsEditMode(true); setShowModal(true); }}
+                      title="Edit"><img src={editIcon} alt="" /></Button3D>
                   </td>
 
                   <td onClick={e => e.stopPropagation()}>
-                    <button className="modal-cancel-btn"
-                      onClick={() => {
-                        toast.confirm(
-                          `Delete "${staff.name}"?`,
-                          async () => {
-                            // Optimistic update — remove immediately
-                            setAdminData(prev => ({
-                              ...prev,
-                              staff: prev.staff.filter(s => s.id !== staff.id)
-                            }));
-                            try {
-                              await api.delete(`/staff/${staff.id}`);
-                              toast.success("Staff deleted");
-                            } catch (err) {
-                              // Revert on true server failure
-                              console.error("Delete staff error:", err);
-                              setAdminData(prev => ({
-                                ...prev,
-                                staff: [...prev.staff, staff]
-                              }));
-                              toast.error("Failed to delete staff");
-                            }
-                          }
-                        );
-                      }}
-                      title="Delete">
-                      <span className="shadow"></span>
-                      <span className="edge"></span>
-                      <span className="front close-padding">
-                        <img src={deleteIcon} alt="" />
-                      </span>
-                    </button>
+                    <Button3D variant="cancel" iconOnly title="Delete" onClick={() => deleteRecord({
+                      api, toast,
+                      endpoint: `/staff/${staff.id}`,
+                      item: staff,
+                      stateKey: "staff",
+                      adminData,
+                      setAdminData,
+                      confirmMsg: `Delete "${staff.name}"?`,
+                      successMsg: "Staff deleted",
+                      errorMsg: "Failed to delete staff",
+                    })}>
+                      <img src={deleteIcon} alt="" />
+                    </Button3D>
                   </td>
                 </tr>
               );
@@ -423,11 +345,7 @@ export default function Staffs({
                     ? "Edit Staff"
                     : "Add Staff"}
               </h3>
-              <button className="modal-cancel-btn" onClick={resetForm}>
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={resetForm}><img src={closeIcon} /></Button3D>
             </div>
 
             {/* BODY */}
@@ -673,27 +591,19 @@ export default function Staffs({
                           </div>
                         </div>
 
-                        <button
-                          className="modal-save-btn"
-                          type="button"
-                          onClick={() => {
-                            if (!tempExp.org || !tempExp.place) return;
+                        <Button3D onClick={() => {
+                          if (!tempExp.org || !tempExp.place) return;
 
-                            setFormData({
-                              ...formData,
-                              previousExperience: [
-                                ...formData.previousExperience.filter(e => e.org || e.place),
-                                tempExp
-                              ]
-                            });
+                          setFormData({
+                            ...formData,
+                            previousExperience: [
+                              ...formData.previousExperience.filter(e => e.org || e.place),
+                              tempExp
+                            ]
+                          });
 
-                            setTempExp({ org: "", place: "" });
-                          }}
-                        >
-                          <span className="shadow"></span>
-                          <span className="edge"></span>
-                          <span className="front">Add</span>
-                        </button>
+                          setTempExp({ org: "", place: "" });
+                        }}>Add</Button3D>
                       </div>
 
                       {/* TABLE */}
@@ -1014,48 +924,14 @@ export default function Staffs({
             <div className="modal-footer">
               {!previewMode ? (
                 <>
-                  <button
-                    className="modal-cancel-btn"
-                    onClick={resetForm}
-                  >
-                    <span className="shadow"></span>
-                    <span className="edge"></span>
-                    <span className="front">Cancel</span>
-                  </button>
-                  <button
-                    className="modal-save-btn"
-                    onClick={() => { if (validateStaff()) setPreviewMode(true); }}
-                  >
-                    <span className="shadow"></span>
-                    <span className="edge"></span>
-                    <span className="front">Preview</span>
-                  </button>
+                  <Button3D variant="cancel" onClick={resetForm}>Cancel</Button3D>
+                  <Button3D onClick={() => { if (validateStaff()) setPreviewMode(true); }}>Preview</Button3D>
                 </>
               ) : (
                 <>
-                  <button
-                    className="modal-cancel-btn"
-                    onClick={resetForm}
-                  >
-                    <span className="shadow"></span>
-                    <span className="edge"></span>
-                    <span className="front">Cancel</span></button>
-                  <button
-                    className="modal-save-btn"
-                    onClick={() => setPreviewMode(false)}
-                  >
-                    <span className="shadow"></span>
-                    <span className="edge"></span>
-                    <span className="front">edit</span>
-                  </button>
-                  <button
-                    className="modal-save-btn"
-                    onClick={handleSave}
-                  >
-                    <span className="shadow"></span>
-                    <span className="edge"></span>
-                    <span className="front">Save</span>
-                  </button>
+                  <Button3D variant="cancel" onClick={resetForm}>Cancel</Button3D>
+                  <Button3D onClick={() => setPreviewMode(false)}>edit</Button3D>
+                  <Button3D onClick={handleSave}>Save</Button3D>
 
                 </>
               )}

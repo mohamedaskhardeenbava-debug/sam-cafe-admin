@@ -1,13 +1,6 @@
+/* ═══════════════════════════════════════════════════════
+   KitchenSchedules.css  —  Sam Cafe Admin  —  KitchenSchedules page
+   Depends on Common.css
+═══════════════════════════════════════════════════════ */
+
 @import "../service/ServiceSchedules.css";
-
-.schedule-table td {
-    color: #000 !important;
-}
-
-.schedule-table th {
-    color: #333 !important;
-}
-
-.schedule-table tr {
-    background: #fff !important;
-}

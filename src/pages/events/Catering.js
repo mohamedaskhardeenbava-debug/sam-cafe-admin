@@ -1,62 +1,29 @@
-/* admin panel */
+/**
+ * Catering.js  —  Sam Cafe Admin Panel
+ * Catering orders management page
+ */
+
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import { exportToExcel } from "../../utils/excelUtils";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import closeIcon from "../../icon/close-icon.png";
+
+import { exportToExcel } from "../../utils/excelUtils";
 import api from "../../api";
+import { CustomDatePicker } from "../../components/CustomDatePicker";
+
+import closeIcon from "../../icon/close-icon.png";
+import { useToast } from "../../useToast";
+import { CustomTimePicker } from "../../components/CustomTimePicker";
+import useInfiniteScroll from "../../components/useInfiniteScroll";
+import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+import Button3D from "../../components/Button3D";
+import CustomDropdown from "../../components/CustomDropdown";
+
 import "./Catering.css";
 import "./PreviewModal.css";
 import "../ModalCSS.css";
 import "./EvtCommon.css";
-import { useToast } from "../../useToast";
-import { CustomTimePicker } from "../../components/CustomTimePicker";
-import { CustomDatePicker } from "../../components/CustomDatePicker";
-import useInfiniteScroll from "../../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
-
-// ── CustomDropdown ────────────────────────────────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
-  const wrapperClass = ["mat-select", value ? "has-value" : "", open ? "is-open" : ""].filter(Boolean).join(" ");
-  return (
-    <div className={wrapperClass} ref={ref}>
-      {label && <label className="mat-label">{label}{required && <span className="rf-req">*</span>}</label>}
-      <div className="dishes-dropdown-wrapper">
-        <button type="button" className="dishes-status-dropdown"
-          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-          {displayLabel || ""}
-        </button>
-        {open && (
-          <div className="dropdown-menu">
-            <div onClick={() => { onChange(""); setOpen(false); }}>{placeholder}</div>
-            {options.map((o, i) => {
-              const val = o.value !== undefined ? o.value : o;
-              const lbl = o.label !== undefined ? o.label : o;
-              return (
-                <div key={i} onClick={() => { onChange(val); setOpen(false); }}
-                  style={{ padding: "8px 12px", fontSize: 14, cursor: "pointer" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"}
-                  onMouseLeave={e => e.currentTarget.style.background = ""}>
-                  {lbl}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <span className="mat-bar" />
-    </div>
-  );
-}
+import PageLoader from "../../components/PageLoader";
 
 /* ─── helpers ─── */
 const pad = (n) => String(n).padStart(2, "0");
@@ -223,17 +190,9 @@ const DishPicker = ({ menuData, selectedItems, setSelectedItems, guests }) => {
                   {dish.category && <div className="act-dish-cat">{dish.category}</div>}
                 </div>
                 {sel ? (
-                  <button type="button" className="modal-save-btn" onClick={() => toggle(dish)}>
-                    <span className="shadow"></span>
-                    <span className="edge"></span>
-                    <span className="front close-padding">✓ Added</span>
-                  </button>
+                  <Button3D iconOnly onClick={() => toggle(dish)}>✓ Added</Button3D>
                 ) : (
-                  <button type="button" className="modal-cancel-btn" onClick={() => toggle(dish)}>
-                    <span className="shadow"></span>
-                    <span className="edge"></span>
-                    <span className="front close-padding">+ Add</span>
-                  </button>
+                  <Button3D variant="cancel" iconOnly onClick={() => toggle(dish)}>+ Add</Button3D>
                 )}
               </div>
             );
@@ -269,7 +228,12 @@ const EMPTY_FORM = {
    Main Component — Admin Catering
 ══════════════════════════════════════ */
 const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilters }) => {
+  // ── State & Setup
+
   const { fromDate: filterFromDate, toDate: filterToDate, preset: filterDatePreset, status: filterStatus, search } = filters;
+
+  // ── Helpers
+
   const setFilterFromDate = (v) => patchFilters({ fromDate: v });
   const setFilterToDate = (v) => patchFilters({ toDate: v });
   const setFilterDatePreset = (v) => patchFilters({ preset: v });
@@ -303,6 +267,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
     if (sortField === field) setSortDir(d => d === "asc" ? "desc" : "asc");
     else { setSortField(field); setSortDir("asc"); }
   };
+
 
   const data = adminData?.cateringOrders || [];
 
@@ -355,6 +320,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
 
   const { displayLimit, sentinelRef, containerRef, hasMore } =
     useInfiniteScroll(sortedData.length, 30);
+  if (!adminData?.cateringOrders?.length) return <PageLoader label="Loading catering orders…" />;
 
   const updateStatus = async (e, id, newStatus) => {
     e.stopPropagation();
@@ -477,7 +443,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
     if (!validateTab0()) { setTab(0); return; }
     setSaving(true);
     try {
-      const id = `cat_${Date.now()}`;
+      const id = `cater_${Date.now()}`;
       const payload = {
         id, ...form,
         date: form.eventDate,
@@ -509,7 +475,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
   const isDefaultFilter = filterFromDate === todayStr() && filterToDate === todayStr() && filterDatePreset === "today" && !filterStatus && !search.trim();
   const activeFilters = !isDefaultFilter;
 
-  const exportToExcel = () => {
+  const handleExport = () => {
     if (!sortedData.length) { toast.warning("No catering orders to export"); return; }
     const rows = sortedData.map(item => ({
       Name: item.name || "—", Mobile: item.mobile || "—", Email: item.email || "—",
@@ -526,12 +492,12 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
   };
 
   return (
-    <div className="act-page">
+    <div className="inner-page">
 
-      <div className="act-header">
+      <div className="evt-header">
         <div>
-          <h2 className="act-title">Catering Orders</h2>
-          <p className="act-subtitle">Manage catering & event food orders</p>
+          <h2 className="evt-title">Catering Orders</h2>
+          <p className="evt-subtitle">Manage catering & event food orders</p>
         </div>
         <div className="evt-kpi-row">
           {[
@@ -547,23 +513,17 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
             </div>
           ))}
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="modal-save-btn" onClick={exportToExcel}>
-            <span className="shadow"></span><span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
-          <button className="modal-save-btn" onClick={openCreate}>
-            <span className="shadow"></span><span className="edge"></span>
-            <span className="front">+ Add Catering Order</span>
-          </button>
+        <div className="header-btn-container">
+          <Button3D onClick={handleExport}>Export</Button3D>
+          <Button3D onClick={openCreate}>+ Add Catering Order</Button3D>
         </div>
       </div>
 
-      <div className="evt-filter-bar">
-        <div className="evt-filter-groups">
+      <div className="filter-bar">
+        <div className="filter-groups">
           <input className="search-input" placeholder="Search name / mobile / ID..." value={search} onChange={e => setSearch(e.target.value)} />
-          <div className="evt-filter-group">
-            <span className="evt-filter-group-label">Period</span>
+          <div className="filter-group">
+            <span className="filter-group-label">Period</span>
             {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
               <button key={preset}
                 className={`filter-pill${filterDatePreset === preset ? " active evt-status-confirmed" : ""}`}
@@ -583,11 +543,11 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
           </div>
           {/* From / To date pickers */}
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="evt-filter-group-label">From</span>
+            <span className="filter-group-label">From</span>
             <div style={{ minWidth: 148 }}>
               <CustomDatePicker value={filterFromDate} onChange={v => { setFilterFromDate(v); setFilterDatePreset(""); if (filterToDate && v > filterToDate) setFilterToDate(v); }} placeholder="Start date" />
             </div>
-            <span className="evt-filter-group-label" style={{ marginLeft: 2 }}>To</span>
+            <span className="filter-group-label" style={{ marginLeft: 2 }}>To</span>
             <div style={{ minWidth: 148 }}>
               <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={v => { setFilterToDate(v); setFilterDatePreset(""); }} placeholder="End date" />
             </div>
@@ -596,10 +556,10 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
             )}
           </div>
         </div>
-        <div className="evt-filter-groups">
+        <div className="filter-groups">
 
-          <div className="evt-filter-group">
-            <span className="evt-filter-group-label">Status</span>
+          <div className="filter-group">
+            <span className="filter-group-label">Status</span>
             {[
               ["pending", "P", "clb-status-pending", "Pending"],
               ["confirmed", "C", "clb-status-confirmed", "Confirmed"],
@@ -619,8 +579,8 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
         </div>
       </div>
 
-      <div className="act-table-wrapper" ref={containerRef}>
-        <table className="act-table">
+      <div className="table-wrapper" ref={containerRef}>
+        <table className="table">
           <thead>
             <tr>
               <th onClick={() => handleSort("name")} className={sortField === "name" ? "sorted" : ""}>
@@ -769,13 +729,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                               }
                             }}
                             onMouseLeave={() => setCallTooltipId(null)}>
-                            <button className="modal-cancel-btn" onClick={e => handleCall(e, item.id)}>
-                              <span className="shadow"></span>
-                              <span className="edge"></span>
-                              <span className="front close-padding">
-                                📞 Call{history.length > 0 ? ` (${history.length})` : ""}
-                              </span>
-                            </button>
+                            <Button3D variant="cancel" iconOnly onClick={e => handleCall(e, item.id)}>📞 Call{history.length > 0 ? ` (${history.length})` : ""}</Button3D>
                           </div>
                         );
                       })()}
@@ -884,13 +838,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
           <div className="ingredient-modal" style={{ width: 520, maxWidth: "95vw" }} onClick={e => e.stopPropagation()}>
             <div className="ingredient-modal-header">
               <h3>Dishes — {itemsPopup.name} <span style={{ fontSize: 12, fontWeight: 400, color: "#888", marginLeft: 8 }}>#{(itemsPopup.id || "").slice(-6)}</span></h3>
-              <button
-                className="modal-cancel-btn" onClick={() => setItemsPopup(null)}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => setItemsPopup(null)}><img src={closeIcon} /></Button3D>
             </div>
             <div className="ingredient-modal-body" style={{ padding: "12px 20px 20px" }}>
               {(!itemsPopup.items || itemsPopup.items.length === 0) ? (
@@ -954,11 +902,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                   ))}
                 </div>
               </div>
-              <button className="modal-cancel-btn" onClick={() => setShowCreate(false)} >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => setShowCreate(false)}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className={`event-modal-body act-modal-body${tab === 1 ? " act-modal-body--split" : ""}`}>
@@ -1072,7 +1016,6 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                       {useRestaurantAddr ? "✓ " : ""}Use restaurant location
                     </button>
                   </div>
-
 
                   {!useRestaurantAddr && <div className="ae-addr-grid">
                     {[
@@ -1342,10 +1285,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
             </div>
 
             <div className="event-modal-footer">
-              <button type="button" className="modal-cancel-btn" onClick={() => setShowCreate(false)}>
-                <span className="shadow"></span><span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => setShowCreate(false)}>Cancel</Button3D>
               {tab > 0 && (
                 <button type="button" className="modal-prev-btn" onClick={() => setTab(t => t - 1)}>
                   <span className="shadow"></span><span className="edge"></span>
@@ -1360,10 +1300,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                   </button>
                 )
                 : (
-                  <button type="button" className="modal-save-btn" onClick={handleCreate} disabled={saving}>
-                    <span className="shadow"></span><span className="edge"></span>
-                    <span className="front">{saving ? "Saving..." : "Create Order"}</span>
-                  </button>
+                  <Button3D onClick={handleCreate} disabled={saving}>{saving ? "Saving..." : "Create Order"}</Button3D>
                 )
               }
             </div>

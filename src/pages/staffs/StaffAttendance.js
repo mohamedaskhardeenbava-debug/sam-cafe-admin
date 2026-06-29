@@ -1,14 +1,24 @@
+/**
+ * StaffAttendance.js  —  Sam Cafe Admin Panel
+ * Staff attendance tracking page
+ */
+
 import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
+
 import { exportToExcel } from "../../utils/excelUtils";
-import "./StaffAttendance.css";
 import api from "../../api";
+import { CustomDatePicker } from "../../components/CustomDatePicker";
+
 import editIcon from "../../icon/edit-icon.png";
 import closeIcon from "../../icon/close-icon.png";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
-import { CustomDatePicker } from "../../components/CustomDatePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 import { useToast } from "../../useToast";
+import Button3D from "../../components/Button3D";
+
+import "./StaffAttendance.css";
+import PageLoader from "../../components/PageLoader";
 
 /*
   DATA SHAPE: attendance lives on staff[].attendance
@@ -35,6 +45,8 @@ const normalizeDate = (d) => {
 const WEEKDAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function StaffAttendance({ adminData, setAdminData }) {
+  // ── Hooks
+
   const { toast } = useToast();
   const todayStr = normalizeDate(new Date());
   const firstOfMonth = normalizeDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
@@ -50,6 +62,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
   }, [firstOfMonth, todayStr]);
 
   // State
+
   const [localAttendance, setLocalAttendance] = useState({});
   const [editMode, setEditMode] = useState({});
   const [holidays, setHolidays] = useState({});
@@ -137,7 +150,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
         try {
           const res = await api.put(`/staff/${staff.id}`, { ...staff, attendance: updatedAtt });
           setAdminData(prev => ({ ...prev, staff: prev.staff.map(s => s.id === staff.id ? res.data : s) }));
-        } catch (err) { toast.warn(`Auto-absent failed for ${staff.name}:`, err.message); }
+        } catch (err) { toast.warning(`Auto-absent failed for ${staff.name}: ${err.message}`); }
       }
     })();
   }, [loadingHolidays]);
@@ -157,7 +170,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
         try {
           const res = await api.put(`/staff/${staff.id}`, { ...staff, attendance: updatedAtt });
           setAdminData(prev => ({ ...prev, staff: prev.staff.map(s => s.id === staff.id ? res.data : s) }));
-        } catch (err) {  }
+        } catch (err) { }
       }
     })();
   }, [loadingHolidays]);
@@ -267,124 +280,107 @@ export default function StaffAttendance({ adminData, setAdminData }) {
 
   const { displayLimit, sentinelRef, containerRef, hasMore } =
     useInfiniteScroll(visibleStaff.length, 20);
+  if (!adminData?.staff?.length) return <PageLoader label="Loading attendance…" />;
 
   return (
-    <div className="att-page">
+    <div className="inner-page">
 
       {/* HEADER */}
-      <div className="att-header">
+      <div className="header">
         <div className="att-header-left">
-          <h2 className="att-title">Staff Attendance</h2>
-          <h5 className="att-subtitle">
+          <h2 className="title">Staff Attendance</h2>
+          <h5 className="subtitle">
             - {new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" })}
           </h5>
         </div>
-        <div className="att-header-right">
-          <button
-            className="modal-save-btn"
-            onClick={exportAttendance}
-          >
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
-          <button className="modal-save-btn" onClick={() => setShowHolidayModal(true)}>
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">+ Add Holiday</span>
-          </button>
+        <div className="header-btn-container">
+          <Button3D onClick={exportAttendance}>Export</Button3D>
+          <Button3D onClick={() => setShowHolidayModal(true)}>+ Add Holiday</Button3D>
         </div>
       </div>
 
       {/* FILTER BAR */}
-      <div className="att-filter-bar">
+      <div className="filter-bar">
         {/* SEARCH WITH STATS DROPDOWN */}
-        <div className="att-search-wrap" ref={searchRef}>
-          <input className="search-input" placeholder=" Search staff…"
-            value={attSearch}
-            onChange={e => { setAttSearch(e.target.value); setSearchOpen(true); }}
-            onFocus={() => setSearchOpen(true)}
-          />
-          {searchOpen && (
-            <div className="att-search-dropdown">
-              {staffStats
-                .filter(s =>
+        <div className="filter-groups">
+          <div className="att-search-wrap" ref={searchRef}>
+            <input className="search-input" placeholder=" Search staff…"
+              value={attSearch}
+              onChange={e => { setAttSearch(e.target.value); setSearchOpen(true); }}
+              onFocus={() => setSearchOpen(true)}
+            />
+            {searchOpen && (
+              <div className="att-search-dropdown">
+                {staffStats
+                  .filter(s =>
+                    !attSearch ||
+                    s.name.toLowerCase().includes(attSearch.toLowerCase()) ||
+                    (s.role || "").toLowerCase().includes(attSearch.toLowerCase())
+                  )
+                  .map((s, i) => (
+                    <div key={s.id} className="att-search-suggestion"
+                      onMouseDown={() => { setAttSearch(s.name); setSearchOpen(false); }}>
+                      <div className="att-sug-avatar" style={{ background: `hsl(${i * 55 + 180},65%,55%)` }}>
+                        {s.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="att-sug-info">
+                        <span className="att-sug-name">{s.name}</span>
+                        {s.role && <span className="att-sug-role">{s.role}</span>}
+                      </div>
+                      <div className="att-sug-bar-wrap">
+                        <div className="att-sug-bar" style={{
+                          width: `${s.pct}%`,
+                          background: s.pct >= 80 ? "#16a34a" : s.pct >= 60 ? "#f59e0b" : "#dc2626"
+                        }} />
+                      </div>
+                      <div className="att-sug-nums">
+                        <span className="att-sug-p">✔{s.present}</span>
+                        <span className="att-sug-a">✖{s.absent}</span>
+                        {s.leave > 0 && <span className="att-sug-l">L{s.leave}</span>}
+                      </div>
+                      <span className="att-sug-pct" style={{ color: s.pct >= 80 ? "#16a34a" : s.pct >= 60 ? "#f59e0b" : "#dc2626" }}>{s.pct}%</span>
+                    </div>
+                  ))
+                }
+                {staffStats.filter(s =>
                   !attSearch ||
                   s.name.toLowerCase().includes(attSearch.toLowerCase()) ||
                   (s.role || "").toLowerCase().includes(attSearch.toLowerCase())
-                )
-                .map((s, i) => (
-                  <div key={s.id} className="att-search-suggestion"
-                    onMouseDown={() => { setAttSearch(s.name); setSearchOpen(false); }}>
-                    <div className="att-sug-avatar" style={{ background: `hsl(${i * 55 + 180},65%,55%)` }}>
-                      {s.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="att-sug-info">
-                      <span className="att-sug-name">{s.name}</span>
-                      {s.role && <span className="att-sug-role">{s.role}</span>}
-                    </div>
-                    <div className="att-sug-bar-wrap">
-                      <div className="att-sug-bar" style={{
-                        width: `${s.pct}%`,
-                        background: s.pct >= 80 ? "#16a34a" : s.pct >= 60 ? "#f59e0b" : "#dc2626"
-                      }} />
-                    </div>
-                    <div className="att-sug-nums">
-                      <span className="att-sug-p">✔{s.present}</span>
-                      <span className="att-sug-a">✖{s.absent}</span>
-                      {s.leave > 0 && <span className="att-sug-l">L{s.leave}</span>}
-                    </div>
-                    <span className="att-sug-pct" style={{ color: s.pct >= 80 ? "#16a34a" : s.pct >= 60 ? "#f59e0b" : "#dc2626" }}>{s.pct}%</span>
-                  </div>
-                ))
-              }
-              {staffStats.filter(s =>
-                !attSearch ||
-                s.name.toLowerCase().includes(attSearch.toLowerCase()) ||
-                (s.role || "").toLowerCase().includes(attSearch.toLowerCase())
-              ).length === 0 && <div className="att-search-no-result">No staff found</div>}
-            </div>
-          )}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <span className="att-filter-lbl">Range</span>
-          {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([k, lbl]) => (
-            <button key={k} className={`filter-pill${attPreset === k ? " active" : ""}`}
-              onClick={() => applyAttPreset(k)}>{lbl}</button>
-          ))}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="att-filter-lbl">From</span>
-          <CustomDatePicker value={attFromDate} max={attToDate || maxDateStr}
-            onChange={v => { setAttFromDate(v); setAttPreset("custom"); }} placeholder="Start" />
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="att-filter-lbl">To</span>
-          <CustomDatePicker value={attToDate} min={attFromDate} max={maxDateStr}
-            onChange={v => { setAttToDate(v); setAttPreset("custom"); }} placeholder="End" />
-        </div>
-        {(attSearch || attPreset === "custom") && (
-          <button className="ae-clear-filter" onClick={() => { setAttSearch(""); applyAttPreset("month"); }}>Clear</button>
-        )}
+                ).length === 0 && <div className="att-search-no-result">No staff found</div>}
+              </div>
+            )}
+          </div>
+          <div className="filter-group">
+            <span className="filter-group-label">Range</span>
+            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([k, lbl]) => (
+              <button key={k} className={`filter-pill${attPreset === k ? " active" : ""}`}
+                onClick={() => applyAttPreset(k)}>{lbl}</button>
+            ))}
+          </div>
+          <div className="filter-group">
+            <span className="filter-group-label">From</span>
+            <CustomDatePicker value={attFromDate} max={attToDate || maxDateStr}
+              onChange={v => { setAttFromDate(v); setAttPreset("custom"); }} placeholder="Start" />
 
-        {/* Column-edit all toggle */}
-        <button
-          className="modal-cancel-btn"
-          onClick={() => {
+            <span className="filter-group-label">To</span>
+            <CustomDatePicker value={attToDate} min={attFromDate} max={maxDateStr}
+              onChange={v => { setAttToDate(v); setAttPreset("custom"); }} placeholder="End" />
+          </div>
+          {(attSearch || attPreset === "custom") && (
+            <button className="ae-clear-filter" onClick={() => { setAttSearch(""); applyAttPreset("month"); }}>Clear</button>
+          )}
+
+          {/* Column-edit all toggle */}
+          <Button3D variant="cancel" onClick={() => {
             const allOn = visibleDates.every(d => columnEdit[d]);
             const next = {};
             if (!allOn) visibleDates.forEach(d => { next[d] = true; });
             setColumnEdit(next);
           }}>
-          <span className="shadow"></span>
-          <span className="edge"></span>
-          <span className="front">
             {visibleDates.every(d => columnEdit[d]) ? "Lock All" : "Edit All"}
-          </span>
-        </button>
+          </Button3D>
+        </div>
       </div>
-
-
 
       {/* TABLE WRAPPER */}
       <div className="att-scroll-wrap">
@@ -578,11 +574,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
           <div className="modal">
             <div className="modal-header">
               <h3>Add Holiday</h3>
-              <button className="modal-cancel-btn" onClick={() => { setShowHolidayModal(false); setHolidayErrors({}); setHolidayForm({ date: "", reason: "" }); }}>
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => { setShowHolidayModal(false); setHolidayErrors({}); setHolidayForm({ date: "", reason: "" }); }}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="modal-body">
@@ -609,22 +601,8 @@ export default function StaffAttendance({ adminData, setAdminData }) {
             </div>
 
             <div className="modal-footer">
-              <button
-                onClick={() => { setShowHolidayModal(false); setHolidayErrors({}); setHolidayForm({ date: "", reason: "" }); }}
-                className="modal-cancel-btn"
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
-              <button
-                onClick={addHoliday}
-                className="modal-save-btn"
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Save Holiday</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => { setShowHolidayModal(false); setHolidayErrors({}); setHolidayForm({ date: "", reason: "" }); }}>Cancel</Button3D>
+              <Button3D onClick={addHoliday}>Save Holiday</Button3D>
             </div>
           </div>
         </div>

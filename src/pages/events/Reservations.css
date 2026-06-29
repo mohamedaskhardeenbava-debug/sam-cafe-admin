@@ -1,36 +1,7 @@
-/* ══════════════════════════════════════════════════════
-   Reservations.css  —  Admin Panel (Updated)
-══════════════════════════════════════════════════════ */
-
-.evt-res-page {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.evt-res-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.evt-res-title {
-  font-size: 24px;
-  font-weight: 600;
-  margin: 0 0 2px;
-  color: #111;
-}
-
-.evt-res-subtitle {
-  font-size: 13px;
-  color: #666;
-  margin: 0;
-}
-
-
+/* ═══════════════════════════════════════════════════════
+   Reservations.css  —  Sam Cafe Admin  —  Reservations page
+   Depends on Common.css + EvtCommon.css + ModalCSS.css
+═══════════════════════════════════════════════════════ */
 
 .evt-res-clear-all {
   padding: 5px 12px;
@@ -48,41 +19,6 @@
 
 .evt-res-clear-all:hover {
   background: #fecaca;
-}
-
-/* TABLE WRAPPER */
-.evt-res-table-wrapper {
-  width: 100%;
-  height: calc(100vh - 290px);
-  overflow-y: auto;
-  overflow-x: auto;
-  padding: 0 8px;
-  background: #e9e9e9;
-  border-radius: 20px;
-}
-
-.evt-res-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 6px;
-  min-width: 950px;
-}
-
-.evt-res-table thead {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.evt-res-table th {
-  padding: 12px 12px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #555;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: #e9e9e9;
-  text-align: left;
 }
 
 .evt-res-row {
@@ -219,27 +155,6 @@
   background: #fee2e2;
   border-color: #fca5a5;
   color: #dc2626;
-}
-
-/* TABLE SELECT */
-.evt-res-table-select {
-  height: 30px;
-  padding: 0 8px;
-  border-radius: 8px;
-  border: 1.5px solid #e5e7eb;
-  background: #f9f9f9;
-  font-size: 12px;
-  font-weight: 600;
-  color: #111;
-  cursor: pointer;
-  outline: none;
-  min-width: 80px;
-  transition: border-color 0.15s;
-}
-
-.evt-res-table-select:focus {
-  border-color: #111;
-  background: #fff;
 }
 
 /* ACTION BUTTONS */

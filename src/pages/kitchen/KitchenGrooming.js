@@ -1,12 +1,22 @@
+/**
+ * KitchenGrooming.js  —  Sam Cafe Admin Panel
+ * Kitchen grooming checklist page
+ */
+
 import React, { useState, useMemo, useRef, useEffect } from "react";
+
 import { exportToExcel } from "../../utils/excelUtils";
-import "./KitchenGrooming.css";
 import api from "../../api";
+import { CustomDatePicker } from "../../components/CustomDatePicker";
+
 import { useToast } from "../../useToast";
 import closeIcon from "../../icon/close-icon.png";
-import { CustomDatePicker } from "../../components/CustomDatePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+import CustomDropdown from "../../components/CustomDropdown";
+import Button3D from "../../components/Button3D";
+
+import "./KitchenGrooming.css";
 
 /*
   DATA SHAPE (grooming in db.json):
@@ -43,48 +53,9 @@ function getMonthStart() {
   return toLocalISO(new Date(d.getFullYear(), d.getMonth(), 1));
 }
 
-// ── CustomDropdown (floating label version) ──────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
-  const wrapperClass = ["mat-select", value ? "has-value" : "", open ? "is-open" : ""].filter(Boolean).join(" ");
-  return (
-    <div className={wrapperClass} ref={ref}>
-      {label && <label className="mat-label">{label}{required && <span className="rf-req">*</span>}</label>}
-      <div className="dishes-dropdown-wrapper">
-        <button type="button" className="dishes-status-dropdown"
-          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-          {displayLabel || ""}
-        </button>
-        {open && (
-          <div className="dropdown-menu">
-            <div onClick={() => { onChange(""); setOpen(false); }}
-            >
-              {placeholder}
-            </div>
-            {options.map((o, i) => {
-              const val = o.value !== undefined ? o.value : o;
-              const lbl = o.label !== undefined ? o.label : o;
-              return (
-                <div key={i} onClick={() => { onChange(val); setOpen(false); }}>{lbl}</div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <span className="mat-bar" />
-    </div>
-  );
-}
-
 export default function KitchenGrooming({ adminData, setAdminData }) {
+  // ── Hooks
+
   const { toast } = useToast();
   const today = toLocalISO(new Date());
 
@@ -104,6 +75,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
   const [memoErrors, setMemoErrors] = useState({});
   const [saving, setSaving] = useState({});
   const [groomSearch, setGroomSearch] = useState("");
+
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef(null);
   const [groomFrom, setGroomFrom] = useState(getWeekStart);
@@ -221,116 +193,107 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
   };
 
   return (
-    <div className="kgroom-page">
+    <div className="inner-page">
 
       {/* HEADER */}
-      <div className="kgroom-header">
+      <div className="header">
         <div>
-          <h2 className="kgroom-title">Kitchen Grooming</h2>
-          <p className="kgroom-subtitle">Uniform · Shoes · Grooming</p>
+          <h2 className="title">Kitchen Grooming</h2>
+          <p className="subtitle">Uniform · Shoes · Grooming</p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            className="modal-save-btn"
-            onClick={exportGrooming}
-          >
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
-          <button className="modal-save-btn" onClick={() => setShowMemo(true)}>
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">+ Add Memo</span>
-          </button>
+        <div className="header-btn-container">
+          <Button3D onClick={exportGrooming}>Export</Button3D>
+          <Button3D onClick={() => setShowMemo(true)}>+ Add Memo</Button3D>
         </div>
       </div>
 
       {/* FILTER BAR */}
-      <div className="kgroom-filter-bar">
-        {/* SEARCH WITH DROPDOWN */}
-        <div className="kgroom-search-wrap" ref={searchRef}>
-          <input
-            className="search-input"
-            placeholder=" Search staff…"
-            value={groomSearch}
-            onChange={e => { setGroomSearch(e.target.value); setSearchOpen(true); }}
-            onFocus={() => setSearchOpen(true)}
-          />
-          {searchOpen && staffStats.length > 0 && (
-            <div className="kgroom-search-dropdown">
-              {staffStats
-                .filter(s =>
+      <div className="filter-bar">
+        <div className="filter-groups">
+          {/* SEARCH WITH DROPDOWN */}
+          <div className="kgroom-search-wrap" ref={searchRef}>
+            <input
+              className="search-input"
+              placeholder=" Search staff…"
+              value={groomSearch}
+              onChange={e => { setGroomSearch(e.target.value); setSearchOpen(true); }}
+              onFocus={() => setSearchOpen(true)}
+            />
+            {searchOpen && staffStats.length > 0 && (
+              <div className="kgroom-search-dropdown">
+                {staffStats
+                  .filter(s =>
+                    s.name.toLowerCase().includes(groomSearch.toLowerCase()) ||
+                    (s.role || "").toLowerCase().includes(groomSearch.toLowerCase())
+                  )
+                  .map((s, i) => (
+                    <div
+                      key={s.id}
+                      className="kgroom-search-suggestion"
+                      onMouseDown={() => {
+                        setGroomSearch(s.name);
+                        setSearchOpen(false);
+                      }}
+                    >
+                      <div className="kgroom-sug-avatar" style={{ background: PALETTE[i % PALETTE.length] }}>
+                        {s.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="kgroom-sug-info">
+                        <span className="kgroom-sug-name">{s.name}</span>
+                        {s.role && <span className="kgroom-sug-role">{s.role}</span>}
+                      </div>
+                      <div className="kgroom-sug-bar-wrap">
+                        <div
+                          className="kgroom-sug-bar"
+                          style={{
+                            width: `${s.pct}%`,
+                            background: s.pct >= 80 ? "#06d6a0" : s.pct >= 50 ? "#ffd166" : "#ef476f"
+                          }}
+                        />
+                      </div>
+                      <span
+                        className="kgroom-sug-pct"
+                        style={{ color: s.pct >= 80 ? "#06d6a0" : s.pct >= 50 ? "#f59e0b" : "#ef476f" }}
+                      >{s.pct}%</span>
+                    </div>
+                  ))}
+                {staffStats.filter(s =>
                   s.name.toLowerCase().includes(groomSearch.toLowerCase()) ||
                   (s.role || "").toLowerCase().includes(groomSearch.toLowerCase())
-                )
-                .map((s, i) => (
-                  <div
-                    key={s.id}
-                    className="kgroom-search-suggestion"
-                    onMouseDown={() => {
-                      setGroomSearch(s.name);
-                      setSearchOpen(false);
-                    }}
-                  >
-                    <div className="kgroom-sug-avatar" style={{ background: PALETTE[i % PALETTE.length] }}>
-                      {s.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="kgroom-sug-info">
-                      <span className="kgroom-sug-name">{s.name}</span>
-                      {s.role && <span className="kgroom-sug-role">{s.role}</span>}
-                    </div>
-                    <div className="kgroom-sug-bar-wrap">
-                      <div
-                        className="kgroom-sug-bar"
-                        style={{
-                          width: `${s.pct}%`,
-                          background: s.pct >= 80 ? "#06d6a0" : s.pct >= 50 ? "#ffd166" : "#ef476f"
-                        }}
-                      />
-                    </div>
-                    <span
-                      className="kgroom-sug-pct"
-                      style={{ color: s.pct >= 80 ? "#06d6a0" : s.pct >= 50 ? "#f59e0b" : "#ef476f" }}
-                    >{s.pct}%</span>
-                  </div>
-                ))}
-              {staffStats.filter(s =>
-                s.name.toLowerCase().includes(groomSearch.toLowerCase()) ||
-                (s.role || "").toLowerCase().includes(groomSearch.toLowerCase())
-              ).length === 0 && (
-                  <div className="kgroom-search-no-result">No staff found</div>
-                )}
-            </div>
+                ).length === 0 && (
+                    <div className="kgroom-search-no-result">No staff found</div>
+                  )}
+              </div>
+            )}
+          </div>
+          <div className="filter-group">
+            <span className="filter-group-label">period</span>
+            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([k, lbl]) => (
+              <button key={k} className={`filter-pill${groomPreset === k ? " active" : ""}`}
+                onClick={() => applyPreset(k)}>{lbl}</button>
+            ))}
+          </div>
+          <div className="filter-group">
+            <span className="filter-group-label">From</span>
+            <CustomDatePicker value={groomFrom} max={groomTo || today}
+              onChange={v => { setGroomFrom(v); setGroomPreset("custom"); }} placeholder="Start date" />
+
+            <span className="filter-group-label">To</span>
+            <CustomDatePicker value={groomTo} min={groomFrom} max={today}
+              onChange={v => { setGroomTo(v); setGroomPreset("custom"); }} placeholder="End date" />
+          </div>
+          {(groomSearch || groomPreset === "custom") && (
+            <button className="ae-clear-filter" onClick={() => { setGroomSearch(""); applyPreset("week"); }}>Clear</button>
           )}
+          <span className="result-count">{visibleDates.length} day(s) · {visibleStaff.length} staff</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([k, lbl]) => (
-            <button key={k} className={`filter-pill${groomPreset === k ? " active" : ""}`}
-              onClick={() => applyPreset(k)}>{lbl}</button>
-          ))}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="kgroom-filter-label">From</span>
-          <CustomDatePicker value={groomFrom} max={groomTo || today}
-            onChange={v => { setGroomFrom(v); setGroomPreset("custom"); }} placeholder="Start date" />
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="kgroom-filter-label">To</span>
-          <CustomDatePicker value={groomTo} min={groomFrom} max={today}
-            onChange={v => { setGroomTo(v); setGroomPreset("custom"); }} placeholder="End date" />
-        </div>
-        {(groomSearch || groomPreset === "custom") && (
-          <button className="ae-clear-filter" onClick={() => { setGroomSearch(""); applyPreset("week"); }}>Clear</button>
-        )}
-        <span className="ae-result-count">{visibleDates.length} day(s) · {visibleStaff.length} staff</span>
       </div>
 
       {/* SUMMARY CARDS REMOVED — now shown in search dropdown */}
 
       {/* TABLE */}
-      <div className="kgroom-table-wrapper" ref={containerRef}>
-        <table className="kgroom-table">
+      <div className="table-wrapper" ref={containerRef}>
+        <table className="table">
           <thead>
             <tr>
               <th className="kgroom-staff-th">Staff</th>
@@ -416,11 +379,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
           <div className="modal">
             <div className="modal-header">
               <h3>Grooming Details</h3>
-              <button className="modal-cancel-btn" onClick={() => setSelected(null)} >
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => setSelected(null)}><img src={closeIcon} /></Button3D>
             </div>
             <div className="modal-body">
               <div className="kgroom-detail-info">
@@ -449,11 +408,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
           <div className="modal">
             <div className="modal-header">
               <h3>Add Memo</h3>
-              <button className="modal-cancel-btn" onClick={() => { setShowMemo(false); setMemoErrors({}); }} >
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => { setShowMemo(false); setMemoErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
             <div className="modal-body">
               <div className={`form-group${memoErrors.staffId ? " mat-select-error" : ""}`}>
@@ -480,22 +435,8 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
               </div>
             </div>
             <div className="modal-footer">
-              <button
-                className="modal-cancel-btn"
-                onClick={() => { setShowMemo(false); setMemoErrors({}); }}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
-              <button
-                className="modal-save-btn"
-                onClick={saveMemo}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Save Memo</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => { setShowMemo(false); setMemoErrors({}); }}>Cancel</Button3D>
+              <Button3D onClick={saveMemo}>Save Memo</Button3D>
             </div>
           </div>
         </div>

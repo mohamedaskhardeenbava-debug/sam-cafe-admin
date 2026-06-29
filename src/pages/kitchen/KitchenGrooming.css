@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════
-   KitchenGrooming.css – Enhanced modern design
+   KitchenGrooming.css  —  Sam Cafe Admin  —  KitchenGrooming page
+   Depends on Common.css + ModalCSS.css
 ═══════════════════════════════════════════════════════ */
 
 .kgroom-page {
@@ -8,28 +9,6 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-/* ── HEADER ──────────────────────────────────────────── */
-.kgroom-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.kgroom-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: #111;
-  margin: 0;
-}
-
-.kgroom-subtitle {
-  font-size: 13px;
-  color: #888;
-  margin: 2px 0 0;
 }
 
 /* ── SUMMARY ROW ─────────────────────────────────────── */
@@ -119,7 +98,6 @@
 /* ── TABLE WRAPPER ───────────────────────────────────── */
 .kgroom-table-wrapper {
   width: 100%;
-  height: calc(100vh - 270px);
   overflow: auto;
   background: #e9e9e9;
   border-radius: 16px;

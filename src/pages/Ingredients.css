@@ -1,144 +1,7 @@
-.ingredients-page {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.ingredient-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: start !important;
-  margin-bottom: 20px;
-}
-
-.ingredient-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #111;
-  margin: 0;
-}
-
-.ingredient-table-wrapper {
-  width: 100%;
-  height: calc(100vh - 250px);
-  overflow-y: auto;
-  padding: 0 10px;
-  background: #e9e9e9;
-  border-radius: 20px;
-  box-sizing: border-box;
-}
-
-.ingredient-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 5px;
-  background: transparent;
-  table-layout: fixed;
-}
-
-.ingredient-table thead {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  border-radius: 30px;
-}
-
-
-.ingredient-table th {
-  padding: 16px 12px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #555;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: #e9e9e9;
-  text-align: left;
-}
-
-.ingredient-table td {
-  font-size: 14px;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  border-bottom: 1px solid #cacaca;
-}
-
-.ingredient-table tbody tr:hover {
-  background-color: rgb(234, 234, 234);
-}
-
-.ingredient-table tbody tr {
-  background: #ffffff !important;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
-  transition: all 0.25s ease;
-}
-
-.ingredient-table tbody tr td {
-  padding: 10px;
-  font-size: 14px;
-  border: none;
-  background: #ffffff;
-}
-
-.ingredient-table tbody tr td:first-child {
-  border-top-left-radius: 16px;
-  border-bottom-left-radius: 16px;
-}
-
-.ingredient-table tbody tr td:last-child {
-  border-top-right-radius: 16px;
-  border-bottom-right-radius: 16px;
-}
-
-.ingredient-table th:nth-child(1),
-.ingredient-table td:nth-child(1),
-.ingredient-table th:nth-child(9),
-.ingredient-table td:nth-child(9) {
-  width: 48px;
-  max-width: 48px;
-}
-
-
-.ingredient-table th:nth-child(2),
-.ingredient-table td:nth-child(2) {
-  width: 225px;
-  max-width: 400px;
-}
-
-.ingredient-table th:nth-child(3),
-.ingredient-table td:nth-child(3) {
-  max-width: 100px;
-}
-
-.ingredient-table th:nth-child(4),
-.ingredient-table td:nth-child(4),
-.ingredient-table th:nth-child(5),
-.ingredient-table td:nth-child(5),
-.ingredient-table th:nth-child(6),
-.ingredient-table td:nth-child(6),
-.ingredient-table th:nth-child(7),
-.ingredient-table td:nth-child(7),
-.ingredient-table th:nth-child(8),
-.ingredient-table td:nth-child(8) {
-  width: 70px;
-  max-width: 70px !important;
-  text-align: center;
-}
-
-.ingredient-table td:nth-child(2) {
-  white-space: normal;
-  word-break: keep-all;
-  font-weight: 500;
-}
-
-.ingredient-table td:nth-child(3),
-.ingredient-table td:nth-child(4) {
-  white-space: nowrap;
-}
+/* ═══════════════════════════════════════════════════════
+   Ingredients.css  —  Sam Cafe Admin  —  Ingredients page
+   Depends on Common.css + ModalCSS.css
+═══════════════════════════════════════════════════════ */
 
 .ingredient-input {
   width: 100%;
@@ -148,11 +11,6 @@
   border: 1px solid #ccc;
   border-radius: 6px;
   box-sizing: border-box;
-}
-
-.ingredient-table td button,
-.ingredient-table td svg {
-  max-width: 100%;
 }
 
 .ingredient-image,
@@ -177,7 +35,6 @@
   border: none;
   padding: 0;
 }
-
 
 .ingredient-edit-btn {
   color: red !important;
@@ -242,85 +99,7 @@
   align-items: center;
 }
 
-/* ── Ingredient filter bar ── */
-.ingredient-filter-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  padding: 10px 14px 12px;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  border: 1px solid #f0f0f0;
-  margin-bottom: 12px;
-}
-
-.ae-clear-filter {
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 1.5px solid #fca5a5;
-  background: #fee2e2;
-  color: #dc2626;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s;
-}
-
-.ae-clear-filter:hover {
-  background: #fecaca;
-}
-
-.ae-result-count {
-  font-size: 12px;
-  color: #888;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
 @media (max-width: 768px) {
-
-  .ingredient-table th,
-  .ingredient-table td {
-    font-size: 12px;
-  }
-
-  .ingredient-table th:nth-child(1),
-  .ingredient-table td:nth-child(1) {
-    width: 48px;
-  }
-
-  .ingredient-table th:nth-child(5),
-  .ingredient-table td:nth-child(5),
-  .ingredient-table th:nth-child(6),
-  .ingredient-table td:nth-child(6),
-  .ingredient-table th:nth-child(7),
-  .ingredient-table td:nth-child(7),
-  .ingredient-table th:nth-child(8),
-  .ingredient-table td:nth-child(8) {
-    max-width: 50px;
-    padding: 10px 8px;
-    text-align: center;
-  }
-
-  .ingredient-table th:nth-child(2),
-  .ingredient-table td:nth-child(2) {
-    width: 100px;
-  }
-
-  .ingredient-table th:nth-child(3),
-  .ingredient-table td:nth-child(3) {
-    max-width: 50px;
-  }
-
-  .ingredient-table th:nth-child(9),
-  .ingredient-table td:nth-child(9),
-  .ingredient-table th:nth-child(10),
-  .ingredient-table td:nth-child(10) {
-    max-width: 42px;
-  }
 
   .ingredient-icon-btn {
     font-size: 12px;

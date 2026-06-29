@@ -1,14 +1,19 @@
-/* ═══════════════════════════════════════════
-   ThemeSettings.css
-═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════
+   ThemeSettings.css  —  Sam Cafe Admin  —  ThemeSettings page
+   Depends on Common.css
+═══════════════════════════════════════════════════════ */
 
 /* ── Page ── */
 .ts-page {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     width: 100%;
     max-width: 100%;
     display: flex;
     flex-direction: column;
     gap: 24px;
+    box-sizing: border-box;
 }
 
 /* ── Loading ── */

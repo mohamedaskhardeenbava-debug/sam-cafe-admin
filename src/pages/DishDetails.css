@@ -1,26 +1,7 @@
-.back-btn {
-  width: 50px;
-  height: 50px;
-  border-radius: 25px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  position: relative;
-  text-align: center;
-  z-index: 10;
-}
-
-.back-btn::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 40%;
-  width: 12px;
-  height: 12px;
-  border-left: 3px solid #111;
-  border-bottom: 3px solid #111;
-  transform: translateY(-50%) rotate(45deg);
-}
+/* ═══════════════════════════════════════════════════════
+   DishDetails.css  —  Sam Cafe Admin  —  DishDetails page
+   Depends on Common.css
+═══════════════════════════════════════════════════════ */
 
 .dish-details-image {
   position: relative;
@@ -58,16 +39,6 @@
   border: none;
   color: #1976d2;
   cursor: pointer;
-}
-
-.table-wrapper {
-  width: 100%;
-  overflow-x: hidden;
-}
-
-.table-wrapper {
-  width: 100%;
-  overflow-x: hidden;
 }
 
 .table-wrapper .data-table input {

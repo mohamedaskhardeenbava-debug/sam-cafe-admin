@@ -1,85 +1,42 @@
+/**
+ * Stocks.js  —  Sam Cafe Admin Panel
+ * Ingredient stock tracking page
+ */
+
 import React, { useState, useMemo, useEffect } from "react";
-import { exportToExcel } from "../utils/excelUtils";
-import "./Stocks.css";
 import { useNavigate } from "react-router-dom";
+
+import { exportToExcel } from "../utils/excelUtils";
 import api from "../api";
+import { CustomDatePicker } from "../components/CustomDatePicker";
+import socket from "../socket";
+
 import editIcon from "../icon/edit-icon.png";
 import closeIcon from "../icon/close-icon.png";
 import { EmptyRow } from "../App";
 import { formatDisplayDate } from "../App";
-import { CustomDatePicker } from "../components/CustomDatePicker";
-import socket from "../socket";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import CustomDropdown from "../components/CustomDropdown";
+import Button3D from "../components/Button3D";
+
+import "./Stocks.css";
+import PageLoader from "../components/PageLoader";
 
 const toTwoDecimals = (value) =>
   Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 
-
-// ── CustomDropdown (floating label version) ──────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
-
-  const wrapperClass = [
-    "mat-select",
-    value ? "has-value" : "",
-    open ? "is-open" : "",
-  ].filter(Boolean).join(" ");
-
-  return (
-    <div className={wrapperClass} ref={ref}>
-      {label && (
-        <label className="mat-label">
-          {label}{required && <span className="rf-req">*</span>}
-        </label>
-      )}
-      <div className="dishes-dropdown-wrapper">
-        <button type="button" className="dishes-status-dropdown"
-          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-          {displayLabel || ""}
-        </button>
-        {open && (
-          <div className="dropdown-menu">
-            <div onClick={() => { onChange(""); setOpen(false); }}>
-              {placeholder}
-            </div>
-            {options.map((o, i) => {
-              const val = o.value !== undefined ? o.value : o;
-              const lbl = o.label !== undefined ? o.label : o;
-              return (
-                <div key={i} onClick={() => { onChange(val); setOpen(false); }}
-                  style={{ padding: "8px 12px", fontSize: 14, cursor: "pointer" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"}
-                  onMouseLeave={e => e.currentTarget.style.background = ""}>
-                  {lbl}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <span className="mat-bar" />
-    </div>
-  );
-}
-
 const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
+  // ── Hooks
+
   const { toast } = useToast();
   const navigate = useNavigate();
   const today = new Date().toISOString().split("T")[0];
 
+
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
-
 
   const [openFrom, setOpenFrom] = useState(false);
   const [openTo, setOpenTo] = useState(false);
@@ -92,7 +49,6 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
   const [disableGlobally, setDisableGlobally] = useState(false);
   const [selectedDishToDisable, setSelectedDishToDisable] = useState("");
-
 
   const dishesContainingIngredient = useMemo(() => {
     if (!selectedIngredient) return [];
@@ -114,7 +70,6 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
           parentCategoryId: category.id,
           categoryId: category.id
         }));
-
 
       // Dishes inside subCategories
       const subCategoryDishes = (category.subCategories || []).flatMap(sub =>
@@ -208,6 +163,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       )
       : sortedIngredients;
   }, [sortedIngredients, stockSearch]);
+  if (!adminData?.categories?.length) return <PageLoader label="Loading stocks…" />;
 
   /* ---------------- EDIT MODAL ---------------- */
   const openEditModal = (ingredient) => {
@@ -304,9 +260,12 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       return { text: "—", type: "none" };
     }
 
-    // Get dish names
+    // Get dish names (dishes can live directly on a category or nested under its subcategories)
     const dishNames = adminData.categories
-      .flatMap(cat => cat.dishes || [])
+      .flatMap(cat => [
+        ...(cat.dishes || []),
+        ...(cat.subCategories || []).flatMap(sub => sub.dishes || [])
+      ])
       .filter(d => disabled.includes(d.id))
       .map(d => d.name);
 
@@ -332,38 +291,33 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
   };
 
   return (
-    <div className="stocks-page">
+    <div className="inner-page">
       {/* HEADER */}
-      <div className="stocks-header">
-        <h2 className="stocks-title">Stocks</h2>
+      <div className="header">
+        <h2 className="title">Stocks</h2>
 
-        <button
-          className="modal-save-btn"
-          onClick={handleExportStocks}
-        >
-          <span className="shadow"></span>
-          <span className="edge"></span>
-          <span className="front">Export</span>
-        </button>
+        <Button3D onClick={handleExportStocks}>Export</Button3D>
       </div>
 
       {/* FILTER BAR */}
-      <div className="stocks-filter-bar">
-        <input
-          className="search-input"
-          placeholder=" Search ingredient or brand…"
-          value={stockSearch}
-          onChange={e => setStockSearch(e.target.value)}
-        />
-        {stockSearch && (
-          <button className="ae-clear-filter" onClick={() => setStockSearch("")}>Clear</button>
-        )}
-        <span className="ae-result-count">{filteredIngredients.length} ingredient(s)</span>
+      <div className="filter-bar">
+        <div className="justify">
+          <input
+            className="search-input"
+            placeholder=" Search ingredient or brand…"
+            value={stockSearch}
+            onChange={e => setStockSearch(e.target.value)}
+          />
+          {stockSearch && (
+            <button className="ae-clear-filter" onClick={() => setStockSearch("")}>Clear</button>
+          )}
+          <span className="result-count">{filteredIngredients.length} ingredient(s)</span>
+        </div>
       </div>
 
       {/* TABLE */}
-      <div className="stocks-table-wrapper" ref={containerRef}>
-        <table className="stocks-table">
+      <div className="table-wrapper" ref={containerRef}>
+        <table className="table">
           <thead>
             <tr>
               <th
@@ -373,7 +327,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Ingredient</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "name"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -385,7 +341,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Price / 100g</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "price"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -397,7 +355,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Stock (kg)</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "stock"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -409,7 +369,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Stocks (%)</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "stockPercent"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -421,7 +383,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Last Purchased</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "lastUpdated"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -433,12 +397,14 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 <span className="th-content sort-th">
                   <span>Expiry Date</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "expiryDate"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
               <th>Disabled In</th>
-              <th>Edit</th>
+              <th className="icon-width">Edit</th>
             </tr>
           </thead>
 
@@ -506,15 +472,8 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                       );
                     })()}
                   </td>
-                  <td>
-                    <button
-                      className="modal-cancel-btn"
-                      onClick={() => openEditModal(ing)}
-                    >
-                      <span className="shadow"></span>
-                      <span className="edge"></span>
-                      <span className="front close-padding"><img src={editIcon} /></span>
-                    </button>
+                  <td className="icon-width">
+                    <Button3D variant="cancel" iconOnly onClick={() => openEditModal(ing)}><img src={editIcon} /></Button3D>
                   </td>
                 </tr>
               )))}
@@ -531,22 +490,10 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
           <div className="modal">
             <div className="modal-header">
               <h3>Edit Stock & Price for {selectedIngredient.name}</h3>
-              <button
-                className="modal-cancel-btn"
-                onClick={closeModal}
-              >
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={closeModal}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="modal-body">
-              <div className="form-group">
-                <label></label>
-
-              </div>
-
               <div className="form-group">
                 <div className="mat">
                   <input
@@ -648,27 +595,19 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                       placeholder="Select Dish"
                     />
 
-                    <button
-                      type="button"
-                      className="modal-save-btn"
-                      onClick={() => {
-                        if (!selectedDishToDisable) return;
+                    <Button3D onClick={() => {
+                      if (!selectedDishToDisable) return;
 
-                        setSelectedIngredient(prev => ({
-                          ...prev,
-                          disabledForDishes: [
-                            ...(prev.disabledForDishes || []),
-                            selectedDishToDisable
-                          ]
-                        }));
+                      setSelectedIngredient(prev => ({
+                        ...prev,
+                        disabledForDishes: [
+                          ...(prev.disabledForDishes || []),
+                          selectedDishToDisable
+                        ]
+                      }));
 
-                        setSelectedDishToDisable("");
-                      }}
-                    >
-                      <span className="shadow"></span>
-                      <span className="edge"></span>
-                      <span className="front">Add</span>
-                    </button>
+                      setSelectedDishToDisable("");
+                    }}>Add</Button3D>
                   </div>
                 </div>
 
@@ -719,22 +658,8 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
             </div>
 
             <div className="modal-footer">
-              <button
-                onClick={closeModal}
-                className="modal-cancel-btn"
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
-              <button
-                className="modal-save-btn"
-                onClick={handleSave}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Save</span>
-              </button>
+              <Button3D variant="cancel" onClick={closeModal}>Cancel</Button3D>
+              <Button3D onClick={handleSave}>Save</Button3D>
             </div>
           </div>
         </div>

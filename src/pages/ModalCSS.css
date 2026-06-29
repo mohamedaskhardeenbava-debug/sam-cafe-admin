@@ -1,24 +1,24 @@
+/* ═══════════════════════════════════════════════════════
+   ModalCSS.css  —  Sam Cafe Admin  —  Modal base styles
+   Import after Common.css. 3D buttons live in Common.css.
+═══════════════════════════════════════════════════════ */
+
+/* ── Close button ── */
 .close-btn {
     position: relative;
-
     width: 36px;
     height: 36px;
-
     border-radius: 5px;
     border: none;
     background-color: var(--color-offwhite);
-
     cursor: pointer;
     padding: 0;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     transition: background-color 0.2s ease, transform 0.15s ease;
 }
 
-/* hover & active */
 .close-btn:hover {
     background-color: #e5e5e5;
     transform: scale(1.05);
@@ -28,30 +28,26 @@
     transform: scale(0.95);
 }
 
-/* icon */
 .close-btn::before,
 .close-btn::after {
     content: "";
     position: absolute;
-
     width: 18px;
     height: 2px;
-
     background-color: var(--text-secondary);
     border-radius: 2px;
 }
 
-/* first line */
 .close-btn::before {
     transform: rotate(45deg);
 }
 
-/* second line */
 .close-btn::after {
     transform: rotate(-45deg);
 }
 
-/* ---------- MODAL CARD ---------- */
+
+/* ── Overlay ── */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -62,6 +58,8 @@
     z-index: 999;
 }
 
+
+/* ── Modal card ── */
 .modal {
     position: relative;
     background: var(--color-white);
@@ -74,23 +72,36 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    overflow: visible !important;
+    overflow: visible;
 }
 
+.modal.large {
+    width: 480px;
+}
+
+.modal textarea {
+    resize: none;
+    min-height: 70px;
+}
+
+
+/* ── Header ── */
 .modal-header {
     position: sticky;
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
     top: 0;
     z-index: 2;
     background-color: var(--color-white);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
 }
 
 .modal-header h3 {
     margin: 0 !important;
 }
 
+
+/* ── Body ── */
 .modal-body {
     display: flex;
     flex-direction: column;
@@ -111,16 +122,8 @@
     font-weight: 600 !important;
 }
 
-.modal.large {
-    width: 480px;
-}
 
-.modal textarea {
-    resize: none;
-    min-height: 70px;
-}
-
-/* ------------------------------- FOOTER ------------------------------- */
+/* ── Footer ── */
 .modal-footer {
     position: sticky;
     bottom: 0;
@@ -144,34 +147,4 @@
     border-radius: 6px;
     border: none;
     cursor: pointer;
-}
-
-.form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.form-actions button {
-    padding: 8px 14px;
-    font-size: 13px;
-    border-radius: 6px;
-    cursor: pointer;
-    border: none;
-    transition: all 0.3 ease-in;
-}
-
-.form-actions button:first-child {
-    background-color: var(--color-blue);
-    color: var(--color-white);
-}
-
-.form-actions button:last-child {
-    background-color: var(--color-offwhite);
-    color: var(--text-primary);
-}
-
-.form-actions button:hover {
-    scale: 1.05;
 }

@@ -1,51 +1,29 @@
+/**
+ * Reservations.js  —  Sam Cafe Admin Panel
+ * Reservations management page
+ */
+
 import React, { useMemo, useState, useRef, useEffect } from "react";
-import { exportToExcel } from "../../utils/excelUtils";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
+
+import { exportToExcel } from "../../utils/excelUtils";
 import api from "../../api";
+import { CustomDatePicker } from "../../components/CustomDatePicker";
+
 import closeIcon from "../../icon/close-icon.png";
+import { useToast } from "../../useToast";
+import { CustomTimePicker } from "../../components/CustomTimePicker";
+import useInfiniteScroll from "../../components/useInfiniteScroll";
+import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+import Button3D from "../../components/Button3D";
+import CustomDropdown from "../../components/CustomDropdown";
+
 import "./Reservations.css";
 import "./EvtCommon.css";
 import "../ModalCSS.css";
 import "./PreviewModal.css";
-import { useToast } from "../../useToast";
-import { CustomTimePicker } from "../../components/CustomTimePicker";
-import { CustomDatePicker } from "../../components/CustomDatePicker";
-import useInfiniteScroll from "../../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
-
-// ── CustomDropdown (matches Dishes page style) ───────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…" }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-  const label = selected ? (selected.label !== undefined ? selected.label : selected) : placeholder;
-  return (
-    <div className="dishes-dropdown-wrapper" ref={ref}>
-      <button type="button" className="dishes-status-dropdown"
-        style={{ height: "36px", padding: "0 36px 0 10px" }}
-        onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-        {label}
-      </button>
-      {open && (
-        <div className="dropdown-menu">
-          {options.map((o, i) => {
-            const val = o.value !== undefined ? o.value : o;
-            const lbl = o.label !== undefined ? o.label : o;
-            return (
-              <div key={i} onClick={() => { onChange(val); setOpen(false); }}>{lbl}</div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
+import PageLoader from "../../components/PageLoader";
 
 /* admin panel */
 
@@ -206,7 +184,12 @@ const readFileAsDataURL = (file) =>
    Main Component
 ══════════════════════════════════════════════ */
 const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetFilters }) => {
+  // ── State & Setup
+
   const { filterDate, fromDate: filterFromDate, toDate: filterToDate, preset: filterDatePreset, slots: filterSlots, statuses: filterStatuses, sources: filterSources, search } = filters;
+
+  // ── Helpers
+
   const setFilterDate = (v) => patchFilters({ filterDate: v });
   const setFilterFromDate = (v) => patchFilters({ fromDate: v });
   const setFilterToDate = (v) => patchFilters({ toDate: v });
@@ -281,6 +264,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
   // ── Table pref image upload inside create form ──
   const [tablePrefImageFile, setTablePrefImageFile] = useState(null); // { label, dataURL }
   const createImgRef = useRef(null);
+
 
   const data = adminData?.reservations || [];
   const tables = (adminData?.tables?.[0]?.list || []).map(Number).sort((a, b) => a - b);
@@ -364,6 +348,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
   const { displayLimit, sentinelRef, containerRef, hasMore } =
     useInfiniteScroll(sortedData.length, 30);
+  if (!adminData?.reservations?.length) return <PageLoader label="Loading reservations…" />;
 
   const today = todayStr();
   const pendingCount = filteredData.filter(r => (r.status || "pending") === "pending").length;
@@ -506,7 +491,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
     const v = newPrefInput.trim();
     if (!v || prefList.includes(v)) return;
     const newRecord = {
-      id: `pref_${Date.now()}`,
+      id: `pref_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       label: v,
       desc: newPrefDesc.trim(),
       order: prefList.length,
@@ -594,7 +579,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
   const isDefaultFilter = !filterDate && filterFromDate === todayStr() && filterToDate === todayStr() && filterDatePreset === "today" && filterSlots.size === 0 && filterStatuses.size === 0 && filterSources.size === 0 && !search.trim();
   const activeFilters = !isDefaultFilter;
 
-  const exportToExcel = () => {
+  const handleExport = () => {
     if (!sortedData.length) { toast.warning("No reservations to export"); return; }
     const rows = sortedData.map(r => ({
       Name: r.name || "—",
@@ -618,8 +603,6 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
     exportToExcel({ rows, sheetName: "Reservations", fileName: `reservations_${suffix}.xlsx` });
   };
 
-
-
   const availableTablesForForm = tables.filter(t => {
     const tStr = String(t);
     if (form.tableNo && String(form.tableNo) === tStr) return true;
@@ -630,13 +613,13 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
      RENDER
   ══════════════════════════════════════════════ */
   return (
-    <div className="evt-res-page">
+    <div className="inner-page">
 
       {/* HEADER */}
-      <div className="evt-res-header">
+      <div className="evt-header">
         <div>
-          <h2 className="evt-res-title">Reservations</h2>
-          <p className="evt-res-subtitle">Manage table bookings</p>
+          <h2 className="evt-title">Reservations</h2>
+          <p className="evt-subtitle">Manage table bookings</p>
         </div>
         {/* KPI strip */}
         <div className="evt-kpi-row">
@@ -653,61 +636,49 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
             </div>
           ))}
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="modal-cancel-btn" onClick={() => setShowPrefModal(true)}>
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Table Preferences</span>
-          </button>
+        <div className="header-btn-container">
+          <Button3D variant="cancel" onClick={() => setShowPrefModal(true)}>Table Preferences</Button3D>
 
-          <button className="modal-save-btn" onClick={exportToExcel}>
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
+          <Button3D onClick={handleExport}>Export</Button3D>
 
-          <button className="modal-save-btn"
-            onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setTablePrefImageFile(null); setCreateTab(0); }}>
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">+ Add Reservation</span>
-          </button>
+          <Button3D onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setTablePrefImageFile(null); setCreateTab(0); }}>+ Add Reservation</Button3D>
         </div>
       </div>
 
       {/* ── Filter bar ── */}
-      <div className="evt-filter-bar">
-        <div className="evt-filter-groups">
+      <div className="filter-bar">
+        <div className="filter-groups">
           <input className="search-input" placeholder="Search name / mobile / ID..."
             value={search} onChange={e => setSearch(e.target.value)} />
 
-          {/* Quick date presets */}
-          {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
-            <button key={preset}
-              className={`filter-pill ${filterDatePreset === preset ? " active" : ""}`}
-              onClick={() => {
-                if (filterDatePreset === preset) {
-                  setFilterDatePreset(""); setFilterDate(""); setFilterFromDate(""); setFilterToDate("");
-                } else {
-                  setFilterDatePreset(preset); setFilterDate("");
-                  if (preset === "today") { const t = todayStr(); setFilterFromDate(t); setFilterToDate(t); }
-                  else if (preset === "week") { const [f, t] = getWeekRange(); setFilterFromDate(f); setFilterToDate(t); }
-                  else { const [f, t] = getMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
-                }
-              }}>
-              {label}
-            </button>
-          ))}
+          <div className="filter-group">
+            <span className="filter-group-label">period</span>
+            {/* Quick date presets */}
+            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
+              <button key={preset}
+                className={`filter-pill ${filterDatePreset === preset ? " active" : ""}`}
+                onClick={() => {
+                  if (filterDatePreset === preset) {
+                    setFilterDatePreset(""); setFilterDate(""); setFilterFromDate(""); setFilterToDate("");
+                  } else {
+                    setFilterDatePreset(preset); setFilterDate("");
+                    if (preset === "today") { const t = todayStr(); setFilterFromDate(t); setFilterToDate(t); }
+                    else if (preset === "week") { const [f, t] = getWeekRange(); setFilterFromDate(f); setFilterToDate(t); }
+                    else { const [f, t] = getMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
+                  }
+                }}>
+                {label}
+              </button>
+            ))}
+          </div>
 
           {/* From / To date pickers */}
-          <div className="evt-filter-group">
-            <span className="evt-filter-group-label">From</span>
+          <div className="filter-group">
+            <span className="filter-group-label">From</span>
             <div style={{ minWidth: 148 }}>
               <CustomDatePicker value={filterFromDate} onChange={v => { setFilterFromDate(v); setFilterDate(""); setFilterDatePreset(""); if (filterToDate && v > filterToDate) setFilterToDate(v); }} placeholder="Start date" />
             </div>
-          </div>
-          <div className="evt-filter-group">
-            <span className="evt-filter-group-label">To</span>
+            <span className="filter-group-label">To</span>
             <div style={{ minWidth: 148 }}>
               <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={v => { setFilterToDate(v); setFilterDate(""); setFilterDatePreset(""); }} placeholder="End date" />
             </div>
@@ -717,11 +688,11 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
           </div>
         </div>
 
-        <div className="evt-filter-groups">
+        <div className="filter-groups">
 
           {/* ── All 5 Slots ── */}
-          <div className="evt-filter-group">
-            <span className="evt-filter-group-label">Slot</span>
+          <div className="filter-group">
+            <span className="filter-group-label">Slot</span>
             {SLOT_GROUPS.map(sg => (
               <button key={sg.key} title={`${sg.label} (${sg.start}–${sg.end})`}
                 className={`filter-pill ${filterSlots.has(sg.key) ? "active" : ""}`}
@@ -732,8 +703,8 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
           </div>
 
           {/* Status */}
-          <div className="evt-filter-group">
-            <span className="evt-filter-group-label">Status</span>
+          <div className="filter-group">
+            <span className="filter-group-label">Status</span>
             {[
               ["pending", "P", "status-pending", "Pending"],
               ["confirmed", "C", "status-confirmed", "Confirmed"],
@@ -747,8 +718,8 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
           </div>
 
           {/* Source */}
-          <div className="evt-filter-group">
-            <span className="evt-filter-group-label">Source</span>
+          <div className="filter-group">
+            <span className="filter-group-label">Source</span>
             {SOURCE_OPTIONS.map(s => (
               <button key={s.label} title={s.label}
                 className={`filter-pill ${filterSources.has(s.label) ? "active" : ""}`}
@@ -763,8 +734,8 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       </div>
 
       {/* ── TABLE ── */}
-      <div className="evt-res-table-wrapper" ref={containerRef}>
-        <table className="evt-res-table">
+      <div className="table-wrapper" ref={containerRef}>
+        <table className="table">
           <thead>
             <tr>
               <th onClick={() => handleSort("name")} className={sortField === "name" ? "sorted" : ""}>
@@ -822,13 +793,15 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                 const history = item.callHistory || [];
 
                 return (
-                  <tr className="evt-res-row">
+                  <tr
+                    className="evt-res-row"
+                    key={item.id}
+                  >
                     {/* Guest name */}
                     <td>
                       <span
                       >
                         <span className="evt-res-name clickable"
-                          key={item.id}
                           onClick={() => navigate(`/reservations/${item.id}`, { state: { fromDetail: true } })}
                         >
                           {item.name || "—"}
@@ -911,14 +884,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                           }
                         }}
                         onMouseLeave={() => setCallTooltipId(null)}>
-                        <button className="modal-cancel-btn"
-                          onClick={e => handleCall(e, item.id)} title="Log a call">
-                          <span className="shadow"></span>
-                          <span className="edge"></span>
-                          <span className="front close-padding">
-                            📞 Call{history.length > 0 ? ` (${history.length})` : ""}
-                          </span>
-                        </button>
+                        <Button3D variant="cancel" iconOnly onClick={e => handleCall(e, item.id)} title="Log a call">📞 Call{history.length > 0 ? ` (${history.length})` : ""}</Button3D>
                       </div>
                     </td>
                   </tr>
@@ -968,11 +934,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
           <div className="event-modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Table Preferences</h3>
-              <button className="modal-cancel-btn" onClick={() => setShowPrefModal(false)} >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => setShowPrefModal(false)}><img src={closeIcon} /></Button3D>
             </div>
             <div className="event-modal-body" style={{ padding: "16px 0" }}>
               <p style={{ fontSize: 13, color: "#666", margin: "0 0 14px" }}>
@@ -1064,10 +1026,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                   <button className="evt-res-upload-img-btn" onClick={() => newPrefImgRef.current?.click()}>
                     📷 {newPrefImage ? "✓ Image" : "Image"}
                   </button>
-                  <button className="modal-save-btn" onClick={handleAddPref}>
-                    <span className="shadow"></span><span className="edge"></span>
-                    <span className="front" style={{ whiteSpace: "nowrap" }}>+ Add</span>
-                  </button>
+                  <Button3D onClick={handleAddPref}>+ Add</Button3D>
                 </div>
                 {newPrefImage && (
                   <img src={newPrefImage} alt="preview" style={{ marginTop: 8, height: 48, borderRadius: 6, objectFit: "cover" }} />
@@ -1105,11 +1064,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                   ))}
                 </div>
               </div>
-              <button className="modal-cancel-btn" onClick={() => { setShowCreate(false); setFormErrors({}); }}>
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => { setShowCreate(false); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="event-modal-body" style={{ padding: "8px 0" }}>
@@ -1365,10 +1320,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
             </div>
 
             <div className="event-modal-footer">
-              <button className="modal-cancel-btn" onClick={() => { setShowCreate(false); setFormErrors({}); }}>
-                <span className="shadow"></span><span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => { setShowCreate(false); setFormErrors({}); }}>Cancel</Button3D>
               {createTab === 0 ? (
                 <button type="button" className="modal-next-btn" onClick={() => {
                   if (validateResTab()) handleResNext();
@@ -1382,10 +1334,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     <span className="shadow"></span><span className="edge"></span>
                     <span className="front">← Edit</span>
                   </button>
-                  <button className="modal-save-btn" onClick={handleCreate} disabled={saving}>
-                    <span className="shadow"></span><span className="edge"></span>
-                    <span className="front">{saving ? "Saving..." : "Create Reservation"}</span>
-                  </button>
+                  <Button3D onClick={handleCreate} disabled={saving}>{saving ? "Saving..." : "Create Reservation"}</Button3D>
                 </>
               )}
             </div>

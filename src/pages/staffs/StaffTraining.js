@@ -1,9 +1,20 @@
+/**
+ * StaffTraining.js  —  Sam Cafe Admin Panel
+ * Staff training records page
+ */
+
 import React, { useState, useEffect } from "react";
+
 import { exportToExcel } from "../../utils/excelUtils";
-import "./StaffModules.css";
 import api from "../../api";
+
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
+import CustomDropdown from "../../components/CustomDropdown";
+import Button3D from "../../components/Button3D";
+
+import "./StaffModules.css";
+import PageLoader from "../../components/PageLoader";
 
 const typeColors = {
   Online: { bg: "#dbeafe", color: "#1e40af" },
@@ -12,62 +23,11 @@ const typeColors = {
   Workshop: { bg: "#ede9fe", color: "#4c1d95" },
 };
 
-// ── CustomDropdown ───────────────────────────────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
-
-  const wrapperClass = [
-    "mat-select",
-    value ? "has-value" : "",
-    open ? "is-open" : "",
-  ].filter(Boolean).join(" ");
-
-  return (
-    <div className={wrapperClass} ref={ref}>
-      {label && (
-        <label className="mat-label">
-          {label}{required && <span className="rf-req">*</span>}
-        </label>
-      )}
-      <div className="dishes-dropdown-wrapper">
-        <button type="button" className="dishes-status-dropdown"
-          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-          {displayLabel || ""}
-        </button>
-        {open && (
-          <div className="dropdown-menu">
-            <div onClick={() => { onChange(""); setOpen(false); }}
-            >
-              {placeholder}
-            </div>
-            {options.map((o, i) => {
-              const val = o.value !== undefined ? o.value : o;
-              const lbl = o.label !== undefined ? o.label : o;
-              return (
-                <div key={i} onClick={() => { onChange(val); setOpen(false); }}
-                >
-                  {lbl}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <span className="mat-bar" />
-    </div>
-  );
-}
-
 export default function StaffTraining({ adminData, setAdminData }) {
+  // ── Hooks
+
   const { toast } = useToast();
+
   const [trainings, setTrainings] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -80,14 +40,20 @@ export default function StaffTraining({ adminData, setAdminData }) {
 
   useEffect(() => {
     const load = async () => {
-      const res = await api.get("/staff");
-      const all = res.data.flatMap(s =>
-        (s.training || []).map(t => ({ ...t, staffName: s.name }))
-      );
-      setTrainings(all);
+      try {
+        const res = await api.get("/staff");
+        const all = res.data.flatMap(s =>
+          (s.training || []).map(t => ({ ...t, staffName: s.name }))
+        );
+        setTrainings(all);
+      } catch (err) {
+        console.error("Failed to load staff training data:", err);
+        toast.error("Failed to load training data. Please reload the page.");
+      }
     };
     load();
   }, []);
+  if (!adminData?.staff?.length) return <PageLoader label="Loading training records…" />;
 
   const addTraining = async (e) => {
     e.preventDefault();
@@ -145,47 +111,38 @@ export default function StaffTraining({ adminData, setAdminData }) {
   };
 
   return (
-    <div className="staff-page">
+    <div className="inner-page">
 
       {/* HEADER */}
-      <div className="staff-header">
-        <h2>Training</h2>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            className="modal-save-btn"
-            onClick={exportTrainings}
-          >
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
-          <button className="modal-save-btn" onClick={() => setShowForm(true)}>
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">+ Add Training</span>
-          </button>
+      <div className="header">
+        <h2 className="title">Training</h2>
+        <div className="header-btn-container">
+          <Button3D onClick={exportTrainings}>Export</Button3D>
+          <Button3D onClick={() => setShowForm(true)}>+ Add Training</Button3D>
         </div>
       </div>
 
       {/* FILTER BAR */}
-      <div className="staff-filter-bar">
-        <input
-          className="search-input"
-          placeholder=" Search staff, role, type…"
-          value={trainingSearch}
-          onChange={e => setTrainingSearch(e.target.value)}
-        />
-        <div className="staff-filter-group">
-          <span className="staff-filter-label">Type</span>
-          {["", "Online", "Training", "Internship", "Workshop"].map(t => (
-            <button key={t} className={`filter-pill${trainingTypeFilter === t ? " active" : ""}`}
-              onClick={() => setTrainingTypeFilter(t)}>{t || "All"}</button>
-          ))}
+      <div className="filter-bar">
+        <div className="filter-groups">
+          <input
+            className="search-input"
+            placeholder=" Search staff, role, type…"
+            value={trainingSearch}
+            onChange={e => setTrainingSearch(e.target.value)}
+          />
+          <div className="filter-group">
+            <span className="filter-group-label">Type</span>
+            {["", "Online", "Training", "Internship", "Workshop"].map(t => (
+              <button key={t} className={`filter-pill${trainingTypeFilter === t ? " active" : ""}`}
+                onClick={() => setTrainingTypeFilter(t)}>{t || "All"}</button>
+            ))}
+          </div>
+          {(trainingSearch || trainingTypeFilter) && (
+            <button className="ae-clear-filter" onClick={() => { setTrainingSearch(""); setTrainingTypeFilter(""); }}>Clear</button>
+          )}
+          <span className="result-count">{filteredTrainings.length} record(s)</span>
         </div>
-        {(trainingSearch || trainingTypeFilter) && (
-          <button className="ae-clear-filter" onClick={() => { setTrainingSearch(""); setTrainingTypeFilter(""); }}>Clear</button>
-        )}
-        <span className="ae-result-count">{filteredTrainings.length} record(s)</span>
       </div>
 
       {/* EMPTY STATE */}
@@ -254,11 +211,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
           <form className="modal" onSubmit={addTraining}>
             <div className="modal-header">
               <h3>Add Training Record</h3>
-              <button type="button" className="modal-cancel-btn" onClick={() => { setShowForm(false); setFormErrors({}); }}>
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => { setShowForm(false); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="modal-body">
@@ -329,20 +282,8 @@ export default function StaffTraining({ adminData, setAdminData }) {
             </div>
 
             <div className="modal-footer">
-              <button
-                className="modal-cancel-btn"
-                type="button"
-                onClick={() => { setShowForm(false); setFormErrors({}); }}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
-              <button type="submit" className="modal-save-btn">
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Save Training</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => { setShowForm(false); setFormErrors({}); }}>Cancel</Button3D>
+              <Button3D type="submit">Save Training</Button3D>
             </div>
           </form>
         </div>
@@ -357,11 +298,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
                 <h3>{selected.role}</h3>
                 <span className="sc-modal-sub">Training Record</span>
               </div>
-              <button type="button" className="modal-cancel-btn" onClick={() => setSelected(null)}>
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => setSelected(null)}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="modal-body">
@@ -392,15 +329,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
             </div>
 
             <div className="modal-footer">
-              <button
-                type="button"
-                onClick={() => setSelected(null)}
-                className="modal-cancel-btn"
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Close</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => setSelected(null)}>Close</Button3D>
             </div>
           </div>
         </div>

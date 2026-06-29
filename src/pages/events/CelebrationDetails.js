@@ -1,28 +1,18 @@
-/* admin panel */
+/**
+ * CelebrationDetails.js  —  Sam Cafe Admin Panel
+ * Single celebration detail page
+ */
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
+
 import api from "../../api";
-import "./CelebrationDetails.css";
+import { fmtTime, fmtDateTime } from "../../utils/dateUtils";
+
 import { useToast } from "../../useToast";
+import Button3D from "../../components/Button3D";
 
-/* ── Helpers ── */
-const pad = (n) => String(n).padStart(2, "0");
-
-const fmtTime = (t) => {
-  if (!t) return "—";
-  const [h, m] = t.split(":").map(Number);
-  const ap = h >= 12 ? "PM" : "AM";
-  return `${h % 12 || 12}:${pad(m)} ${ap}`;
-};
-
-const fmtDateTime = (iso) => {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return d.toLocaleString("en-IN", {
-    day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit", hour12: true,
-  });
-};
+import "./CelebrationDetails.css";
 
 /* ── Constants ── */
 const CELEBRATION_TYPES = {
@@ -54,9 +44,13 @@ const EXTRAS_MAP = [
 
 /* ── Component ── */
 const CelebrationDetails = ({ adminData, setAdminData }) => {
+  // ── Hooks
+
   const { toast } = useToast();
   const { id } = useParams();
   const navigate = useNavigate();
+
+  // ── Helpers
 
   const data = (adminData?.celebrations || []).find(c => c.id === id);
   const [saving, setSaving] = useState(false);
@@ -88,8 +82,7 @@ const CelebrationDetails = ({ adminData, setAdminData }) => {
   const handleStatusChange = async (newStatus) => {
     setSaving(true);
     try {
-      try { await api.patch(`/celebrations/${id}`, { status: newStatus }); }
-      catch { await api.put(`/celebrations/${id}`, { ...data, status: newStatus }); }
+      await api.patch(`/celebrations/${id}`, { status: newStatus });
       setLocalStatus(newStatus);
       toast.success(`Status updated to ${newStatus}.`);
       if (typeof setAdminData === "function") {
@@ -271,18 +264,11 @@ const CelebrationDetails = ({ adminData, setAdminData }) => {
           <div className="evt-details-section-title">Update Status</div>
           <div className="evt-details-status-row">
             {["pending", "confirmed", "completed", "cancelled"].map(s => (
-              <button
-                key={s}
-                className="modal-cancel-btn"
+              <Button3D variant="cancel" key={s}
                 onClick={() => handleStatusChange(s)}
-                disabled={saving || localStatus === s}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">
-                  {saving && localStatus !== s ? "…" : s.charAt(0).toUpperCase() + s.slice(1)}
-                </span>
-              </button>
+                disabled={saving || localStatus === s}>
+                {saving && localStatus !== s ? "…" : s.charAt(0).toUpperCase() + s.slice(1)}
+              </Button3D>
             ))}
           </div>
         </div>

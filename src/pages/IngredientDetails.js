@@ -1,14 +1,26 @@
+/**
+ * IngredientDetails.js  —  Sam Cafe Admin Panel
+ * Single ingredient detail/edit page
+ */
+
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+
 import api from "../api";
+
 import editIcon from "../icon/edit-icon.png";
-import "./IngredientDetails.css";
 import { allowTextInput } from "../App";
 import deleteIcon from "../icon/delete-icon.png";
 import { formatDisplayDate } from "../App"
 import { useToast } from "../useToast";
+import Button3D from "../components/Button3D";
+
+import "./IngredientDetails.css";
+import PageLoader from "../components/PageLoader";
 
 const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName }) => {
+  // ── Hooks
+
   const { toast } = useToast();
   const { ingredientId } = useParams();
   const navigate = useNavigate();
@@ -40,31 +52,27 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
   };
 
   if (!localIngredient) {
-    return <div className="page">Loading ingredient...</div>;
+    return <PageLoader label="Loading ingredient…" />;
   }
 
   /* ---------------- SAVE TO JSON ---------------- */
   const saveIngredient = async (updated) => {
 
-    const oldId = ingredient.id;   // always use actual ingredient
-    const newId = oldId;
+    const oldId = ingredient.id;   // ingredient ids never change on edit
 
     const payload = {
       ...updated,
-      id: newId
+      id: oldId
     };
 
     try {
 
-      await api.put(`/ingredients/${oldId}`, {
-        ...updated,
-        id: oldId
-      });
+      await api.put(`/ingredients/${oldId}`, payload);
 
       setAdminData(prev => ({
         ...prev,
         ingredients: prev.ingredients.map(i =>
-          i.id === oldId ? { ...updated, id: oldId } : i
+          i.id === oldId ? payload : i
         )
       }));
 
@@ -72,11 +80,6 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
       setIsEditing(false);
       setShowBrandInput(false);
       setBrandInput("");
-
-      // update route if id changed
-      if (oldId !== newId) {
-        navigate(`/ingredients/${newId}`, { replace: true });
-      }
 
     } catch (err) {
       console.error("Ingredient update failed:", err);
@@ -145,7 +148,7 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
   };
 
   return (
-    <div className="ingredient-details-page">
+    <div className="details-page">
 
       <div className="details-container">
         {/* HEADER */}
@@ -159,17 +162,10 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
           />
           <h2>{localIngredient.name}</h2>
           {!isEditing && (
-            <button
-              className="modal-cancel-btn"
-              onClick={() => setIsEditing(true)}
-            >
-              <span className="shadow"></span>
-              <span className="edge"></span>
-              <span className="front">
-                <img src={editIcon} alt="edit" />
-                Edit
-              </span>
-            </button>
+            <Button3D variant="cancel" onClick={() => setIsEditing(true)}>
+              <img src={editIcon} alt="edit" />
+              Edit
+            </Button3D>
           )}
         </div>
 
@@ -179,7 +175,6 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
             <div className="ingredient-details-image">
               <img src={localIngredient.image} alt={localIngredient.name} />
             </div>
-
 
             {isEditing && (
               <div style={{ width: "150px" }}>
@@ -229,14 +224,7 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
               {isEditing ? (
                 <>
                   {!showBrandInput && (
-                    <button
-                      className="modal-save-btn"
-                      onClick={() => setShowBrandInput(true)}
-                    >
-                      <span className="shadow"></span>
-                      <span className="edge"></span>
-                      <span className="front">Add Brand</span>
-                    </button>
+                    <Button3D onClick={() => setShowBrandInput(true)}>Add Brand</Button3D>
                   )}
 
                   {showBrandInput && (
@@ -252,49 +240,35 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
                       />
 
                       <div className="actions">
-                        <button
-                          className="modal-cancel-btn"
-                          onClick={() => {
-                            setBrandInput("");
-                            setShowBrandInput(false);
-                          }}
-                        >
-                          <span className="shadow"></span>
-                          <span className="edge"></span>
-                          <span className="front">Cancel</span>
-                        </button>
+                        <Button3D variant="cancel" onClick={() => {
+                          setBrandInput("");
+                          setShowBrandInput(false);
+                        }}>Cancel</Button3D>
 
-                        <button
-                          className="modal-save-btn"
-                          onClick={() => {
-                            if (!brandInput.trim()) return;
+                        <Button3D onClick={() => {
+                          if (!brandInput.trim()) return;
 
-                            const id = `brand_${brandInput
-                              .toLowerCase()
-                              .replace(/\s+/g, "_")}`;
+                          const id = `brand_${brandInput
+                            .toLowerCase()
+                            .replace(/\s+/g, "_")}`;
 
-                            if (
-                              localIngredient.brands?.some(
-                                b => b.name.toLowerCase() === brandInput.toLowerCase()
-                              )
-                            ) {
-                              toast.warning("Brand already exists");
-                              return;
-                            }
+                          if (
+                            localIngredient.brands?.some(
+                              b => b.name.toLowerCase() === brandInput.toLowerCase()
+                            )
+                          ) {
+                            toast.warning("Brand already exists");
+                            return;
+                          }
 
-                            setLocalIngredient(prev => ({
-                              ...prev,
-                              brands: [...(prev.brands || []), { id, name: brandInput }]
-                            }));
+                          setLocalIngredient(prev => ({
+                            ...prev,
+                            brands: [...(prev.brands || []), { id, name: brandInput }]
+                          }));
 
-                            setBrandInput("");
-                            setShowBrandInput(false);
-                          }}
-                        >
-                          <span className="shadow"></span>
-                          <span className="edge"></span>
-                          <span className="front">Add</span>
-                        </button>
+                          setBrandInput("");
+                          setShowBrandInput(false);
+                        }}>Add</Button3D>
                       </div>
                     </div>
                   )}
@@ -383,8 +357,8 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
                           onChange={(e) => {
 
                             const updated = e.target.checked
-                              ? [...localIngredient.usedInCategories, sub.id]
-                              : localIngredient.usedInCategories.filter(
+                              ? [...(localIngredient.usedInCategories || []), sub.id]
+                              : (localIngredient.usedInCategories || []).filter(
                                 id => id !== sub.id
                               );
 
@@ -414,8 +388,8 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
                         onChange={(e) => {
 
                           const updated = e.target.checked
-                            ? [...localIngredient.usedInCategories, cat.id]
-                            : localIngredient.usedInCategories.filter(
+                            ? [...(localIngredient.usedInCategories || []), cat.id]
+                            : (localIngredient.usedInCategories || []).filter(
                               id => id !== cat.id
                             );
 
@@ -437,7 +411,7 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
               </div>
             ) : (
               <div className="tag-list">
-                {localIngredient.usedInCategories.map((c) => {
+                {(localIngredient.usedInCategories || []).map((c) => {
                   let label = null;
 
                   for (const cat of adminData.categories) {
@@ -522,8 +496,10 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
 
             <table className="data-table">
               <thead>
-                <th>Nutrition</th>
-                <th>Value</th>
+                <tr>
+                  <th>Nutrition</th>
+                  <th>Value</th>
+                </tr>
               </thead>
               <tbody>
                 {Object.entries(localIngredient.nutritionPer100g).map(([key, value]) => (
@@ -581,22 +557,8 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
         {/* GLOBAL SAVE / CANCEL BAR */}
         {isEditing && (
           <div className="details-footer">
-            <button
-              className="modal-cancel-btn"
-              onClick={resetEditState}
-            >
-              <span className="shadow"></span>
-              <span className="edge"></span>
-              <span className="front">Cancel</span>
-            </button>
-            <button
-              className="modal-save-btn"
-              onClick={() => saveIngredient(localIngredient)}
-            >
-              <span className="shadow"></span>
-              <span className="edge"></span>
-              <span className="front">Save</span>
-            </button>
+            <Button3D variant="cancel" onClick={resetEditState}>Cancel</Button3D>
+            <Button3D onClick={() => saveIngredient(localIngredient)}>Save</Button3D>
           </div>
         )}
       </div>

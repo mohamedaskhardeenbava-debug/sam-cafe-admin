@@ -1,51 +1,23 @@
+/**
+ * ServiceSchedules.js  —  Sam Cafe Admin Panel
+ * Service shift schedules page
+ */
+
 import React, { useState, useEffect, useMemo } from "react";
-import { exportToExcel } from "../../utils/excelUtils";
 import { useLocation } from "react-router-dom";
+
 import { format } from "date-fns";
-import "./ServiceSchedules.css";
+
+import { exportToExcel } from "../../utils/excelUtils";
 import api from "../../api";
-import closeIcon from "../../icon/close-icon.png";
-import { useToast } from "../../useToast";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 
-// ── Floating-label CustomDropdown ────────────────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
-  const wrapperClass = ["mat-select", value ? "has-value" : "", open ? "is-open" : ""].filter(Boolean).join(" ");
-  return (
-    <div className={wrapperClass} ref={ref}>
-      {label && <label className="mat-label">{label}{required && <span className="rf-req">*</span>}</label>}
-      <div className="dishes-dropdown-wrapper">
-        <button type="button" className="dishes-status-dropdown"
-          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-          {displayLabel || ""}
-        </button>
-        {open && (
-          <div className="dropdown-menu">
-            {options.map((o, i) => {
-              const val = o.value !== undefined ? o.value : o;
-              const lbl = o.label !== undefined ? o.label : o;
-              return (
-                <div key={i} onClick={(e) => { e.stopPropagation(); onChange(val); setOpen(false); }}>
-                  {lbl}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <span className="mat-bar" />
-    </div>
-  );
-}
+import closeIcon from "../../icon/close-icon.png";
+import { useToast } from "../../useToast";
+import CustomDropdown from "../../components/CustomDropdown";
+import Button3D from "../../components/Button3D";
+
+import "./ServiceSchedules.css";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -89,8 +61,11 @@ const EMPTY_FORM = { work: "", staff: "", date: "", department: "", status: "", 
 const SORT_KEYS = ["date", "work", "staff", "department", "status"];
 
 export default function ServiceSchedules({ adminData, setAdminData }) {
+  // ── Hooks
+
   const location = useLocation();
   const { toast } = useToast();
+
   const [openDropdown, setOpenDropdown] = useState(null);
   const [statusFilter, setStatusFilter] = useState(location.state?.status || "");
   const [searchText, setSearchText] = useState("");
@@ -155,7 +130,6 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
       setShow(false);
       toast.success("Schedule added successfully.");
     } catch (err) {
-      toast.error("Failed to add schedule. Please try again.");
       toast.error("Failed to add schedule. Please try again.");
     }
   };
@@ -222,7 +196,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
     toast.success(`"${item.work}" marked as completed.`);
   };
 
-  const exportToExcel = () => {
+  const handleExport = () => {
     if (!filteredList.length) { toast.warning("No schedule data to export"); return; }
     const rows = filteredList.map(item => ({
       Work: item.work || "—",
@@ -236,47 +210,50 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
   };
 
   return (
-    <div className="schedule-page">
-      <div className="schedule-header">
-        <h2>Service Schedules</h2>
-        <div style={{ display: "flex", gap: "8px" }}>
-          <button className="modal-save-btn" onClick={exportToExcel}>
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
-          <button className="modal-save-btn" onClick={() => setShow(true)}>
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">+ Add Schedule</span>
-          </button>
+    <div className="inner-page">
+      <div className="header">
+        <h2 className="title">Service Schedules</h2>
+        <div className="header-btn-container">
+          <Button3D onClick={handleExport}>Export</Button3D>
+          <Button3D onClick={() => setShow(true)}>+ Add Schedule</Button3D>
         </div>
       </div>
 
-      <div className="ssched-filter-bar">
-        <input className="search-input" placeholder="Search work / staff…" value={searchText} onChange={e => setSearchText(e.target.value)} />
+      <div className="filter-bar">
+        <div className="filter-groups">
+          <input className="search-input" placeholder="Search work / staff…" value={searchText} onChange={e => setSearchText(e.target.value)} />
 
-        <CustomDatePicker label="From" value={fromDate} max={toDate}
-          onChange={s => { setFromDate(s); if (s > toDate) setToDate(s); setActivePreset("custom"); }} />
-        <CustomDatePicker label="To" value={toDate} min={fromDate}
-          onChange={s => { setToDate(s); setActivePreset("custom"); }} />
-        {PRESETS.map(p => (
-          <button key={p.label} className={`filter-pill${activePreset === p.label ? " active" : ""}`} onClick={() => applyPreset(p)}>
-            {p.label}
-          </button>
-        ))}
+          <div className="filter-group">
+            <span className="filter-group-label">from</span>
+            <CustomDatePicker label="From" value={fromDate} max={toDate}
+              onChange={s => { setFromDate(s); if (s > toDate) setToDate(s); setActivePreset("custom"); }} />
+            <span className="filter-group-label">to</span>
+            <CustomDatePicker label="To" value={toDate} min={fromDate}
+              onChange={s => { setToDate(s); setActivePreset("custom"); }} />
+          </div>
 
-        <div className="sched-status-pills">
-          {["", "Scheduled", "Completed", "Pending"].map(s => (
-            <button key={s} className={`filter-pill${statusFilter === s ? " active" : ""}`} onClick={() => setStatusFilter(s)}>
-              {s || "All"}
-            </button>
-          ))}
+          <div className="filter-group">
+            <span className="filter-group-label">period</span>
+            {PRESETS.map(p => (
+              <button key={p.label} className={`filter-pill${activePreset === p.label ? " active" : ""}`} onClick={() => applyPreset(p)}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="filter-group">
+            <span className="filter-group-label">status</span>
+            {["", "Scheduled", "Completed", "Pending"].map(s => (
+              <button key={s} className={`filter-pill${statusFilter === s ? " active" : ""}`} onClick={() => setStatusFilter(s)}>
+                {s || "All"}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="schedule-table-wrapper">
-        <table className="schedule-table">
+      <div className="table-wrapper">
+        <table className="table">
           <thead>
             <tr>
               <th onClick={() => toggleSort("work")} style={{ cursor: "pointer" }}>Work <SortIcon col="work" /></th>
@@ -322,11 +299,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
           <form className="modal" onSubmit={e => { e.preventDefault(); add(); }}>
             <div className="modal-header">
               <h3>Add Schedule</h3>
-              <button type="button" className="modal-cancel-btn" onClick={cancel}>
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={cancel}><img src={closeIcon} /></Button3D>
             </div>
             <div className="modal-body">
               <div className={`form-group${formErrors.department ? " mat-select-error" : ""}`}>
@@ -388,21 +361,8 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
               </div>
             </div>
             <div className="modal-footer">
-              <button
-                type="button"
-                className="modal-cancel-btn"
-                onClick={cancel}>
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
-              <button
-                type="submit"
-                className="modal-save-btn">
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Save Schedule</span>
-              </button>
+              <Button3D variant="cancel" onClick={cancel}>Cancel</Button3D>
+              <Button3D type="submit">Save Schedule</Button3D>
             </div>
           </form>
         </div>

@@ -1,55 +1,29 @@
+/**
+ * Offers.js  —  Sam Cafe Admin Panel
+ * Offers management page
+ */
+
 import React, { useState, useEffect, useMemo } from "react";
-import { exportToExcel } from "../utils/excelUtils";
-import "./Offers.css";
-import api from "../api";
-import closeIcon from "../icon/close-icon.png";
 import { useNavigate } from "react-router-dom";
-import { formatDisplayDate } from "../App";
+
+import { exportToExcel } from "../utils/excelUtils";
+import api from "../api";
 import { CustomDatePicker, todayStr } from "../components/CustomDatePicker";
+
+import closeIcon from "../icon/close-icon.png";
+import { formatDisplayDate } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import CustomDropdown from "../components/CustomDropdown";
+import Button3D from "../components/Button3D";
 
-// ── Floating-label CustomDropdown ────────────────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder = "Select…", label, required }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-  const selected = options.find(o => (o.value !== undefined ? o.value : o) === value);
-  const displayLabel = selected ? (selected.label !== undefined ? selected.label : selected) : "";
-  const wrapperClass = ["mat-select", value ? "has-value" : "", open ? "is-open" : ""].filter(Boolean).join(" ");
-  return (
-    <div className={wrapperClass} ref={ref}>
-      {label && <label className="mat-label">{label}{required && <span className="rf-req">*</span>}</label>}
-      <div className="dishes-dropdown-wrapper">
-        <button type="button" className="dishes-status-dropdown"
-          onClick={(e) => { e.stopPropagation(); setOpen(p => !p); }}>
-          {displayLabel || ""}
-        </button>
-        {open && (
-          <div className="dropdown-menu">
-            {options.map((o, i) => {
-              const val = o.value !== undefined ? o.value : o;
-              const lbl = o.label !== undefined ? o.label : o;
-              return (
-                <div key={i} onClick={(e) => { e.stopPropagation(); onChange(val); setOpen(false); }}>
-                  {lbl}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-      <span className="mat-bar" />
-    </div>
-  );
-}
+import "./Offers.css";
+import PageLoader from "../components/PageLoader";
 
 const Offers = ({ adminData, setAdminData }) => {
+  // ── Hooks
+
   const { toast } = useToast();
   const [showModal, setShowModal] = useState(false);
   const [formErrors, setFormErrors] = useState({});
@@ -71,6 +45,7 @@ const Offers = ({ adminData, setAdminData }) => {
   });
 
   // flatten all dishes
+
   const allDishes = adminData.categories.flatMap(cat => [
     ...(cat.dishes || []).map(d => ({ ...d, categoryId: cat.id })),
     ...(cat.subCategories || []).flatMap(sub =>
@@ -103,16 +78,24 @@ const Offers = ({ adminData, setAdminData }) => {
       offerPrice
     };
 
-    const res = await api.post("/offers", payload);
+    try {
+      const res = await api.post("/offers", payload);
+      const saved = res.data || payload;
 
-    setAdminData(prev => ({
-      ...prev,
-      offers: [...(prev.offers || []), res.data]
-    }));
+      setAdminData(prev => {
+        const alreadyExists = (prev.offers || []).some(o => o.id === saved.id);
+        if (alreadyExists) return prev;
+        return { ...prev, offers: [...(prev.offers || []), saved] };
+      });
 
-    setNewOffer(EMPTY_OFFER);
-    setFormErrors({});
-    setShowModal(false);
+      toast.success("Offer added successfully.");
+      setNewOffer(EMPTY_OFFER);
+      setFormErrors({});
+      setShowModal(false);
+    } catch (err) {
+      console.error("Failed to add offer:", err);
+      toast.error("Failed to add offer");
+    }
   };
 
   const filteredOffers = useMemo(() => {
@@ -128,6 +111,7 @@ const Offers = ({ adminData, setAdminData }) => {
 
   const { displayLimit, sentinelRef, containerRef, hasMore } =
     useInfiniteScroll(filteredOffers.length, 30);
+  if (!adminData?.offers?.length) return <PageLoader label="Loading offers…" />;
 
   const exportOffers = () => {
     if (!filteredOffers.length) { toast.warning("No offers to export"); return; }
@@ -148,74 +132,69 @@ const Offers = ({ adminData, setAdminData }) => {
   };
 
   return (
-    <div className="offers-page">
+    <div className="inner-page">
       {/* HEADER */}
-      <div className="offers-header">
-        <h2 className="offers-title">Offers</h2>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="modal-save-btn" onClick={exportOffers}>
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
-          <button className="modal-save-btn" onClick={() => setShowModal(true)}>
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">+ Add Offer</span>
-          </button>
+      <div className="header">
+        <h2 className="title">Offers</h2>
+        <div className="header-btn-container">
+          <Button3D onClick={exportOffers}>Export</Button3D>
+          <Button3D onClick={() => setShowModal(true)}>+ Add Offer</Button3D>
         </div>
       </div>
 
       {/* FILTER BAR */}
-      <div className="offers-filter-bar">
-        <input
-          className="search-input"
-          placeholder=" Search dish…"
-          value={offerSearch}
-          onChange={e => setOfferSearch(e.target.value)}
-        />
-        {/* Date range */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="offers-filter-label">From</span>
-          <CustomDatePicker
-            value={offerFromDate}
-            onChange={v => { setOfferFromDate(v); if (offerToDate && v > offerToDate) setOfferToDate(v); }}
-            placeholder="Start date"
+      <div className="filter-bar">
+        <div className="filter-groups">
+          <input
+            className="search-input"
+            placeholder=" Search dish…"
+            value={offerSearch}
+            onChange={e => setOfferSearch(e.target.value)}
           />
+          {/* Date range */}
+          <div className="filter-group">
+            <span className="filter-group-label">From</span>
+            <CustomDatePicker
+              value={offerFromDate}
+              onChange={v => { setOfferFromDate(v); if (offerToDate && v > offerToDate) setOfferToDate(v); }}
+              placeholder="Start date"
+            />
+
+            <span className="filter-group-label">To</span>
+            <CustomDatePicker
+              value={offerToDate}
+              min={offerFromDate}
+              onChange={setOfferToDate}
+              placeholder="End date"
+            />
+          </div>
+
+          <div className="filter-group">
+            <span className="filter-group-label">Status</span>
+            {[["all", "All"], ["yes", "Active"], ["no", "Inactive"]].map(([val, lbl]) => (
+              <button
+                key={val}
+                className={`filter-pill${offerStatusFilter === val ? " active" : ""}${val === "yes" && offerStatusFilter === "yes" ? " offer-pill-active" : ""}${val === "no" && offerStatusFilter === "no" ? " offer-pill-inactive" : ""}`}
+                onClick={() => setOfferStatusFilter(val)}
+              >{lbl}</button>
+            ))}
+
+            {(offerSearch || offerStatusFilter !== "all" || offerFromDate || offerToDate) && (
+              <button className="ae-clear-filter" onClick={() => {
+                setOfferSearch("");
+                setOfferStatusFilter("all");
+                setOfferFromDate(todayStr());
+                setOfferToDate(todayStr());
+              }}>Clear</button>
+            )}
+          </div>
+
+          <span className="result-count">{filteredOffers.length} offer(s)</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="offers-filter-label">To</span>
-          <CustomDatePicker
-            value={offerToDate}
-            min={offerFromDate}
-            onChange={setOfferToDate}
-            placeholder="End date"
-          />
-        </div>
-        {/* Status pills */}
-        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <span className="offers-filter-label">Status</span>
-          {[["all", "All"], ["yes", "Active"], ["no", "Inactive"]].map(([val, lbl]) => (
-            <button
-              key={val}
-              className={`filter-pill${offerStatusFilter === val ? " active" : ""}${val === "yes" && offerStatusFilter === "yes" ? " offer-pill-active" : ""}${val === "no" && offerStatusFilter === "no" ? " offer-pill-inactive" : ""}`}
-              onClick={() => setOfferStatusFilter(val)}
-            >{lbl}</button>
-          ))}
-        </div>
-        {(offerSearch || offerStatusFilter !== "all" || offerFromDate || offerToDate) && (
-          <button className="ae-clear-filter" onClick={() => {
-            setOfferSearch("");
-            setOfferStatusFilter("all");
-            setOfferFromDate(todayStr());
-            setOfferToDate(todayStr());
-          }}>Clear</button>
-        )}
-        <span className="ae-result-count">{filteredOffers.length} offer(s)</span>
       </div>
 
-      <div className="offers-table-wrapper" ref={containerRef}>
-        <table className="offers-table">
+      <div className="table-wrapper" ref={containerRef}>
+        <table className="table">
           <thead>
             <tr>
               <th>Dish</th>
@@ -277,15 +256,7 @@ const Offers = ({ adminData, setAdminData }) => {
             {/* HEADER */}
             <div className="modal-header">
               <h3>Add Offer</h3>
-              <button
-                type="button"
-                className="modal-cancel-btn"
-                onClick={() => { setShowModal(false); setFormErrors({}); }}
-              >
-                <span class="shadow"></span>
-                <span class="edge"></span>
-                <span class="front close-padding"><img src={closeIcon} /></span>
-              </button>
+              <Button3D variant="cancel" iconOnly onClick={() => { setShowModal(false); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
 
             {/* BODY */}
@@ -391,23 +362,8 @@ const Offers = ({ adminData, setAdminData }) => {
 
             {/* FOOTER */}
             <div className="modal-footer">
-              <button
-                type="button"
-                className="modal-cancel-btn"
-                onClick={() => { setShowModal(false); setFormErrors({}); }}
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Cancel</span>
-              </button>
-              <button
-                type="submit"
-                className="modal-save-btn"
-              >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Save</span>
-              </button>
+              <Button3D variant="cancel" onClick={() => { setShowModal(false); setFormErrors({}); }}>Cancel</Button3D>
+              <Button3D type="submit">Save</Button3D>
             </div>
 
           </form>
