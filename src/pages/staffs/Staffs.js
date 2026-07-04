@@ -222,8 +222,8 @@ export default function Staffs({
       </div>
 
       {/* TABLE */}
-      <div className="table-wrapper" ref={containerRef}>
-        <table className="table">
+      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} ref={containerRef}>
+        <table >
           <thead>
             <tr>
               <th onClick={() => handleSort("name")} className={`${sortConfig.key === "name" ? "sorted" : ""}`}>
@@ -326,7 +326,7 @@ export default function Staffs({
             <InfiniteScrollLoader
               sentinelRef={sentinelRef}
               hasMore={hasMore}
-              colSpan={7}
+              colSpan={8}
             />
           </tbody>
         </table>
@@ -335,9 +335,9 @@ export default function Staffs({
       {/* MODAL */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal">
+          <div className="admin-modal">
             {/* HEADER */}
-            <div className="modal-header">
+            <div className="admin-modal-header">
               <h3>
                 {previewMode
                   ? "Preview Staff Details"
@@ -349,10 +349,10 @@ export default function Staffs({
             </div>
 
             {/* BODY */}
-            <div className="modal-body">
+            <div className="admin-modal-body">
               {!previewMode ? (
                 <>
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <div className="mat">
                       <input
                         className={`mat-input${formErrors.name ? " mat-error" : ""}`}
@@ -369,7 +369,7 @@ export default function Staffs({
 
                   <div className="horizantal-form-group">
                     <div className="horizontal-form-group" style={{ alignItems: "flex-end" }}>
-                      <div className={`form-group${formErrors.role ? " mat-select-error" : ""}`}>
+                      <div className={`admin-form-group${formErrors.role ? " mat-select-error" : ""}`}>
                         <CustomDropdown
                           label="Role"
                           required
@@ -381,7 +381,7 @@ export default function Staffs({
                         />
                       </div>
 
-                      <div className="form-group">
+                      <div className="admin-form-group">
                         <label className={`mat-label${formErrors.joiningDate ? " mat-label-error" : ""}`} style={{ position: "static", transform: "none", fontSize: 13, display: "block", marginBottom: 4 }}>Joining Date<span className="rf-req">*</span></label>
                         <CustomDatePicker
                           value={formData.joiningDate}
@@ -394,7 +394,7 @@ export default function Staffs({
                   </div>
 
                   {/* ------------------------------- WORK TYPE ------------------------------- */}
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label>Work Type</label>
                     <div className="radio-group">
                       {["part-time", "full-time", "double-shift"].map(type => (
@@ -416,7 +416,7 @@ export default function Staffs({
                     </div>
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label>Employment Type</label>
                     <div className="radio-group">
                       {["permanent", "trainee", "intern"].map(etype => (
@@ -438,11 +438,11 @@ export default function Staffs({
                     </div>
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label htmlFor="">Personal Details</label>
-                    <div className="form-group border">
+                    <div className="admin-form-group border">
                       <div className="horizontal-form-group" style={{ alignItems: "flex-end" }}>
-                        <div className="form-group">
+                        <div className="admin-form-group">
                           <label className={`mat-label${formErrors.dob ? " mat-label-error" : ""}`} style={{ position: "static", transform: "none", fontSize: 13, display: "block", marginBottom: 4 }}>Date of Birth<span className="rf-req">*</span></label>
                           <CustomDatePicker
                             value={formData.dob}
@@ -453,7 +453,7 @@ export default function Staffs({
                           />
                         </div>
 
-                        <div className="form-group">
+                        <div className="admin-form-group">
                           <div className="mat">
                             <input
                               className={`mat-input${formErrors.experience ? " mat-error" : ""}`}
@@ -470,7 +470,7 @@ export default function Staffs({
                       </div>
 
                       <div className="horizontal-form-group">
-                        <div className="form-group">
+                        <div className="admin-form-group">
                           <div className="mat">
                             <input
                               className={`mat-input${formErrors.salary ? " mat-error" : ""}`}
@@ -485,7 +485,7 @@ export default function Staffs({
                           </div>
                         </div>
 
-                        <div className="form-group">
+                        <div className="admin-form-group">
                           <div className="mat">
                             <input
                               className={`mat-input${formErrors.education ? " mat-error" : ""}`}
@@ -503,7 +503,7 @@ export default function Staffs({
                     </div>
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label htmlFor="">Documents</label>
                     <div className="horizontal-form-group border" style={{ flexBasis: "33%" }}>
                       {/* ------------------------------- FILES ------------------------------- */}
@@ -556,14 +556,14 @@ export default function Staffs({
                   </div>
 
                   {/* ------------------------------- PREVIOUS EXPERIENCE ------------------------------- */}
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label>Previous Experience</label>
 
-                    <div className="form-group border">
+                    <div className="admin-form-group border">
                       {/* INPUT ROW */}
                       <div className="experience-input-row">
 
-                        <div className="form-group">
+                        <div className="admin-form-group">
                           <div className="mat">
                             <input
                               className="mat-input"
@@ -577,7 +577,7 @@ export default function Staffs({
                           </div>
                         </div>
 
-                        <div className="form-group">
+                        <div className="admin-form-group">
                           <div className="mat">
                             <input
                               className="mat-input"
@@ -641,13 +641,13 @@ export default function Staffs({
                     </div>
                   </div>
 
-                  <div className="staff-form form-group">
+                  <div className="staff-form admin-form-group">
                     <label htmlFor="">Contact Details</label>
 
                     <div className="horizontal-form-group border">
                       {/* ------------------------------- CONTACT ------------------------------- */}
 
-                      <div className="form-group">
+                      <div className="admin-form-group">
                         <div className="mat">
                           <input
                             className={`mat-input${formErrors.contact ? " mat-error" : ""}`}
@@ -662,7 +662,7 @@ export default function Staffs({
                         </div>
                       </div>
 
-                      <div className="form-group">
+                      <div className="admin-form-group">
                         <div className="mat">
                           <input
                             className={`mat-input${formErrors.altContact ? " mat-error" : ""}`}
@@ -679,12 +679,12 @@ export default function Staffs({
                     </div>
                   </div>
 
-                  <div className="staff-form form-group">
+                  <div className="staff-form admin-form-group">
                     <label htmlFor="">Address Details</label>
 
-                    <div className="form-group border">
+                    <div className="admin-form-group border">
                       {/* ------------------------------- ADDRESS ------------------------------- */}
-                      <div className="form-group">
+                      <div className="admin-form-group">
                         <div className="mat">
                           <textarea
                             className={`mat-input mat-textarea${formErrors.residentialAddress ? " mat-error" : ""}`}
@@ -705,7 +705,7 @@ export default function Staffs({
                         </div>
                       </div>
 
-                      <div className="form-group">
+                      <div className="admin-form-group">
                         <label className={`mat-label${formErrors.permanentAddress ? " mat-label-error" : ""}`} style={{ position: "static", transform: "none", fontSize: 13, color: "#6b7280", marginBottom: 4, display: "block" }}>Permanent Address<span className="rf-req">*</span></label>
                         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, marginBottom: 6 }}>
                           <input required
@@ -741,11 +741,11 @@ export default function Staffs({
                   </div>
 
                   {/* ------------------------------- BANK ------------------------------- */}
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label htmlFor="">Bank Details</label>
                     <div className="horizontal-form-group border">
 
-                      <div className="form-group">
+                      <div className="admin-form-group">
                         <div className="mat">
                           <input
                             className={`mat-input${formErrors.bankName ? " mat-error" : ""}`}
@@ -759,7 +759,7 @@ export default function Staffs({
                         </div>
                       </div>
 
-                      <div className="form-group">
+                      <div className="admin-form-group">
                         <div className="mat">
                           <input
                             className={`mat-input${formErrors.bankAccount ? " mat-error" : ""}`}
@@ -774,7 +774,7 @@ export default function Staffs({
                         </div>
                       </div>
 
-                      <div className="form-group">
+                      <div className="admin-form-group">
                         <div className="mat">
                           <input
                             className={`mat-input${formErrors.bankIfsc ? " mat-error" : ""}`}
@@ -792,7 +792,7 @@ export default function Staffs({
 
                   {/* ------------------------------- REFERENCE ------------------------------- */}
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <div className="mat">
                       <input
                         className={`mat-input${formErrors.reference ? " mat-error" : ""}`}
@@ -824,7 +824,7 @@ export default function Staffs({
                       <h4>Documents</h4>
                       <div style={{ display: "flex", gap: "10px" }}>
                         {formData.idProof &&
-                          <div className="form-group">
+                          <div className="admin-form-group">
                             <label>ID proof</label>
                             <img
                               src={formData.idProof}
@@ -834,7 +834,7 @@ export default function Staffs({
                         }
 
                         {formData.idProof &&
-                          <div className="form-group">
+                          <div className="admin-form-group">
                             <label>ID Image</label>
                             <img
                               src={formData.idImage}
@@ -844,7 +844,7 @@ export default function Staffs({
                         }
 
                         {formData.bonafide &&
-                          <div className="form-group">
+                          <div className="admin-form-group">
                             <label>Bonafide</label>
                             <img
                               src={formData.bonafide}
@@ -921,7 +921,7 @@ export default function Staffs({
             </div>
 
             {/* FOOTER */}
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               {!previewMode ? (
                 <>
                   <Button3D variant="cancel" onClick={resetForm}>Cancel</Button3D>

@@ -27,7 +27,7 @@ const FavouriteDetails = ({ adminData }) => {
   }
 
   return (
-    <div className="details-page">
+    <div className="favourite-details-page">
 
       <div className="details-container">
         <div className="details-header">

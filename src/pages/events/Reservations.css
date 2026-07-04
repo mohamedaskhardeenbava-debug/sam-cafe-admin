@@ -21,34 +21,6 @@
   background: #fecaca;
 }
 
-.evt-res-row {
-  background: #fff;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
-}
-
-.evt-res-row td {
-  padding: 11px 12px;
-  font-size: 13px;
-  border: none;
-  border-top: 1px solid #f5f5f5;
-  border-bottom: 1px solid #f5f5f5;
-}
-
-.evt-res-row td:first-child {
-  border-left: 1px solid #f5f5f5;
-  border-radius: 12px 0 0 12px;
-}
-
-.evt-res-row td:last-child {
-  border-right: 1px solid #f5f5f5;
-  border-radius: 0 12px 12px 0;
-}
-
-.evt-res-row:hover {
-  background: #fafafa;
-}
-
 .clickable {
   cursor: pointer;
 }

@@ -2,6 +2,9 @@
    Dishes.css  —  Sam Cafe Admin  —  Dishes page
    Depends on Common.css + ModalCSS.css
 ═══════════════════════════════════════════════════════ */
+.dish-page-table {
+  height: calc(100vh - 240px) !important;
+}
 
 .dish-block {
   overflow: hidden;
@@ -465,7 +468,7 @@
 }
 
 /* Dropdown menu — must escape the relative wrapper via high z-index */
-.mat-select .dropdown-menu {
+.mat-select .dishes-dropdown-menu {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;

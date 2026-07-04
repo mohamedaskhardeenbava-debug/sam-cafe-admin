@@ -201,7 +201,7 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
 
   if (dishId === "__custom__" && orderItem) {
     return (
-      <div className="details-page">
+      <div className="dish-details-page">
         <div className="details-container">
           <button className="back-btn" onClick={() => navigate(-1)} />
           <h2>{orderItem.dishName}</h2>
@@ -228,7 +228,7 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
   );
 
   return (
-    <div className="details-page">
+    <div className="dish-details-page">
       <div className="details-container">
 
         {/* HEADER */}

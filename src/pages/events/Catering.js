@@ -579,8 +579,8 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
         </div>
       </div>
 
-      <div className="table-wrapper" ref={containerRef}>
-        <table className="table">
+      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 300px)" }} ref={containerRef}>
+        <table >
           <thead>
             <tr>
               <th onClick={() => handleSort("name")} className={sortField === "name" ? "sorted" : ""}>
@@ -882,7 +882,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
         <div className="event-modal-overlay" onClick={() => setShowCreate(false)}>
           <div className="event-modal act-modal" onClick={e => e.stopPropagation()}>
 
-            <div className="modal-header">
+            <div className="admin-modal-header">
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 <h3>Add Catering Order</h3>
                 <div className="ecard">
@@ -912,7 +912,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                 <>
                   <div className="evt-res-form-section-label">Customer Information</div>
                   <div className="horizontal-form-group">
-                    <div className="form-group" style={{ flex: 1.4 }}>
+                    <div className="admin-form-group" style={{ flex: 1.4 }}>
                       <div className="mat">
                         <input className={`mat-input${formErrors.name ? " mat-error" : ""}`} placeholder=" "
                           value={form.name} onChange={e => setF("name", e.target.value)} />
@@ -920,7 +920,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                         <span className={`mat-bar${formErrors.name ? " mat-bar-error" : ""}`} />
                       </div>
                     </div>
-                    <div className="form-group" style={{ flex: 1 }}>
+                    <div className="admin-form-group" style={{ flex: 1 }}>
                       <label>Guests</label>
                       <div className="evt-stepper">
                         <button type="button" onClick={() => setF("guests", Math.max(1, form.guests - 1))}>−</button>
@@ -931,7 +931,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                   </div>
 
                   <div className="horizontal-form-group">
-                    <div className="form-group" style={{ flex: 1 }}>
+                    <div className="admin-form-group" style={{ flex: 1 }}>
                       <div className="mat">
                         <input className={`mat-input${formErrors.mobile ? " mat-error" : ""}`} placeholder=" " type="tel"
                           value={form.mobile} onChange={e => setF("mobile", e.target.value.replace(/\D/g, "").slice(0, 10))} />
@@ -939,7 +939,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                         <span className={`mat-bar${formErrors.mobile ? " mat-bar-error" : ""}`} />
                       </div>
                     </div>
-                    <div className="form-group" style={{ flex: 1 }}>
+                    <div className="admin-form-group" style={{ flex: 1 }}>
                       <div className="mat">
                         <input className="mat-input" placeholder=" " value={form.email} onChange={e => setF("email", e.target.value)} />
                         <label className="mat-label">Email</label>
@@ -950,13 +950,13 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
 
                   <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>Event Details</div>
                   <div className="horizontal-form-group">
-                    <div className="form-group" style={{ flex: 1 }}>
+                    <div className="admin-form-group" style={{ flex: 1 }}>
                       <label className={formErrors.eventDate ? "mat-label-error" : ""}>Event Date <span className="evt-res-req">*</span></label>
                       <CustomDatePicker value={form.eventDate} min={tomorrowStr()} onChange={v => { setF("eventDate", v); setF("time", ""); setF("slotGroup", ""); setFormErrors(p => ({ ...p, eventDate: false })); }} placeholder="Select date" hasError={!!formErrors.eventDate} />
                     </div>
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label>Dining Slot <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400 }}>(select to restrict time picker)</span></label>
                     <div className="evt-res-pref-grid">
                       {SLOT_GROUPS.map(sg => (
@@ -974,7 +974,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                     </div>
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label className={formErrors.time ? "mat-label-error" : ""}>
                       Time <span className="evt-res-req">*</span>
                       {form.slotGroup && (() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()}
@@ -1028,7 +1028,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                       { key: "addrState", label: "State", optional: false },
                       { key: "addrPincode", label: "Pincode", optional: false },
                     ].map(field => (
-                      <div key={field.key} className="form-group">
+                      <div key={field.key} className="admin-form-group">
                         <div className="mat">
                           <input
                             className={`mat-input${formErrors[field.key] ? " mat-error" : ""}`}
@@ -1058,7 +1058,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
 
                   {/* Decoration */}
                   <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>Decoration</div>
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <div className="evt-res-source-chips">
                       <button type="button" className={`evt-res-source-chip${!form.decoration ? " active" : ""}`} onClick={() => setF("decoration", null)}>None</button>
                       {DECORATION_TIERS.map(d => (
@@ -1073,7 +1073,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
 
                   {/* Add-ons — celebration fields + catering extras (no Get Together, no event type) */}
                   <div className="evt-res-form-section-label" style={{ marginTop: 4 }}>Add-ons & Services</div>
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <div className="evt-res-source-chips">
                       {[
                         { k: "cake", l: "Cake +₹500" },
@@ -1107,7 +1107,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                   {/* Source & Status */}
                   <div className="evt-res-form-section-label" style={{ marginTop: 4 }}>Source & Status</div>
                   <div className="horizontal-form-group">
-                    <div className="form-group" style={{ flex: 1 }}>
+                    <div className="admin-form-group" style={{ flex: 1 }}>
                       <label>Source</label>
                       <div className="evt-res-source-chips">
                         {SOURCE_OPTIONS.map(s => (
@@ -1117,7 +1117,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                         ))}
                       </div>
                     </div>
-                    <div className="form-group" style={{ flex: 1 }}>
+                    <div className="admin-form-group" style={{ flex: 1 }}>
                       <label>Status</label>
                       <div className="evt-res-source-chips">
                         {["pending", "confirmed"].map(s => (
@@ -1131,7 +1131,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                     </div>
                   </div>
 
-                  <div className="form-group" style={{ marginTop: 4 }}>
+                  <div className="admin-form-group" style={{ marginTop: 4 }}>
                     <div className="mat-area">
                       <textarea className="mat-input mat-textarea" rows={2} placeholder=" " value={form.notes} onChange={e => setF("notes", e.target.value)} />
                       <label className="mat-area-label">Notes</label>

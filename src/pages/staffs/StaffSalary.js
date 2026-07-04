@@ -166,8 +166,8 @@ export default function StaffSalary({ adminData, setAdminData }) {
         </div>
       </div>
 
-      <div className="table-wrapper" ref={containerRef}>
-        <table className="table">
+      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} ref={containerRef}>
+        <table >
           <thead>
             <tr>
               <th>Name</th>
@@ -178,7 +178,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
               <th>Bonus</th>
               <th>Overtime</th>
               <th>Remaining</th>
-              <th>Edit</th>
+              <th className="icon-width">Edit</th>
             </tr>
           </thead>
 
@@ -227,7 +227,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
                       </div>
                     </div>
                   </td>
-                  <td>
+                  <td className="icon-width">
                     <Button3D variant="cancel" iconOnly onClick={() => openModal(s)}><img src={editIcon} alt="" /></Button3D>
                   </td>
                 </tr>
@@ -243,16 +243,16 @@ export default function StaffSalary({ adminData, setAdminData }) {
       </div>
       {selected && (
         <div className="modal-overlay">
-          <div className="modal">
+          <div className="admin-modal">
 
-            <div className="modal-header">
+            <div className="admin-modal-header">
               <h3>{selected.name}</h3>
               <Button3D variant="cancel" iconOnly onClick={closeModal}><img src={closeIcon} /></Button3D>
             </div>
 
-            <div className="modal-body">
+            <div className="admin-modal-body">
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className="mat">
                   <input
                     className="mat-input"
@@ -266,7 +266,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className="mat">
                   <input
                     className="mat-input"
@@ -280,7 +280,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className="mat">
                   <input
                     className="mat-input"
@@ -294,7 +294,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className="mat">
                   <input
                     className="mat-input"
@@ -308,7 +308,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className="mat">
                   <input
                     className="mat-input"
@@ -323,7 +323,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <Button3D variant="cancel" onClick={closeModal}>Cancel</Button3D>
               <Button3D onClick={handleSave}>Save</Button3D>
             </div>

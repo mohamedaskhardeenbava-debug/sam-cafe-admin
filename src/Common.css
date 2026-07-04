@@ -177,7 +177,7 @@ label {
   flex-shrink: 0;
 }
 
-/* optional filter bar between header and table-wrapper */
+/* optional filter row between header and table-wrapper */
 .filter-bar {
   flex-shrink: 0;
   margin-bottom: 14px;
@@ -213,6 +213,7 @@ label {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
   gap: 0;
 }
@@ -236,6 +237,7 @@ label {
 ───────────────────────────────────────────────────────────── */
 .table-wrapper {
   flex: 1;
+  min-height: 0;
   width: 100%;
   overflow: auto;
   padding: 0 10px;
@@ -244,7 +246,7 @@ label {
   box-sizing: border-box;
 }
 
-.table {
+.table-wrapper table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0 5px;
@@ -252,13 +254,13 @@ label {
   table-layout: fixed;
 }
 
-.table thead {
+.table-wrapper table thead {
   position: sticky;
   top: 0;
   z-index: 10;
 }
 
-.table th {
+.table-wrapper table th {
   padding: 16px 12px;
   font-size: 13px;
   font-weight: 600;
@@ -269,7 +271,7 @@ label {
   text-align: left;
 }
 
-.table td {
+.table-wrapper table td {
   font-size: 14px;
   text-align: left;
   white-space: nowrap;
@@ -278,28 +280,28 @@ label {
   border-bottom: 1px solid #cacaca;
 }
 
-.table tbody tr {
+.table-wrapper table tbody tr {
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
   transition: all 0.25s ease;
 }
 
-.table tbody tr:hover {
+.table-wrapper table tbody tr:hover {
   background-color: rgb(234, 234, 234);
 }
 
-.table tbody tr td {
+.table-wrapper table tbody tr td {
   padding: 10px;
   font-size: 14px;
   border: none;
   background: #ffffff;
 }
 
-.table tbody tr td:first-child {
+.table-wrapper table tbody tr td:first-child {
   border-top-left-radius: 16px;
   border-bottom-left-radius: 16px;
 }
 
-.table tbody tr td:last-child {
+.table-wrapper table tbody tr td:last-child {
   border-top-right-radius: 16px;
   border-bottom-right-radius: 16px;
 }
@@ -334,7 +336,7 @@ th.sorted .sort-arrow {
 
 /* Utility column widths */
 .icon-width {
-  width: 50px !important;
+  width: 72px !important;
 }
 
 /* Table image cell */
@@ -382,7 +384,7 @@ th.sorted .sort-arrow {
 /* ─────────────────────────────────────────────────────────────
    6. FORM HELPERS
 ───────────────────────────────────────────────────────────── */
-.form-group {
+.admin-form-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -405,7 +407,7 @@ th.sorted .sort-arrow {
 }
 
 .horizontal-form-group label,
-.form-group label,
+.admin-form-group label,
 .border label {
   display: block;
   font-size: 13px;
@@ -415,8 +417,8 @@ th.sorted .sort-arrow {
 
 .horizontal-form-group input,
 .horizontal-form-group select,
-.form-group input,
-.form-group select {
+.admin-form-group input,
+.admin-form-group select {
   width: 100%;
   box-sizing: border-box;
   padding: 8px 10px;
@@ -596,6 +598,8 @@ th.sorted .sort-arrow {
   flex-shrink: 0;
   width: fit-content;
   margin-top: 6px;
+
+  padding: 0 !important;
 }
 
 .modal-save-btn:hover,
@@ -673,6 +677,21 @@ th.sorted .sort-arrow {
   transform: translateY(-4px);
   transition: transform 600ms cubic-bezier(.3, .7, .4, 1);
   white-space: nowrap;
+
+  line-height: 1;
+  font-family: inherit;
+  font-size: 14px !important;
+}
+
+.modal-save-btn .front img,
+.modal-cancel-btn .front img,
+.modal-prev-btn .front img,
+.modal-next-btn .front img,
+.modal-confirm-btn .front img,
+.modal-danger-btn .front img {
+  vertical-align: middle;
+  width: 16px;
+  height: 16px;
 }
 
 .modal-save-btn:hover .front,
@@ -780,7 +799,7 @@ th.sorted .sort-arrow {
   width: 100%;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
   flex: 1;
-  overflow: hidden;
+  min-height: 0;
   overflow-y: auto;
   box-sizing: border-box;
   display: flex;
@@ -867,7 +886,7 @@ th.sorted .sort-arrow {
 ───────────────────────────────────────────────────────────── */
 
 /* Wrapper for inline status / staff dropdowns used in table cells.
-   Must be position:relative so .dropdown-menu (position:absolute)
+   Must be position:relative so .dishes-dropdown-menu (position:absolute)
    anchors here instead of escaping to a clipping overflow ancestor. */
 .dishes-dropdown-wrapper {
   position: relative;
@@ -876,7 +895,8 @@ th.sorted .sort-arrow {
 }
 
 .dishes-status-dropdown {
-  width: 100%;
+  width: 100% !important;
+  height: 40px !important;
   box-sizing: border-box;
   background: #f9fafb;
   border: 1px solid #d1d5db;
@@ -893,7 +913,7 @@ th.sorted .sort-arrow {
   border-color: var(--color-blue);
 }
 
-.dropdown-menu {
+.dishes-dropdown-menu {
   position: absolute !important;
   max-height: 165px;
   overflow: auto;
@@ -911,7 +931,7 @@ th.sorted .sort-arrow {
   animation: dropdownFade 0.15s ease;
 }
 
-.dropdown-menu div {
+.dishes-dropdown-menu div {
   padding: 10px 14px;
   font-size: 14px;
   border-radius: 10px;
@@ -919,7 +939,7 @@ th.sorted .sort-arrow {
   text-transform: capitalize;
 }
 
-.dropdown-menu div:hover {
+.dishes-dropdown-menu div:hover {
   background: #f3f4f6;
 }
 
@@ -1064,19 +1084,25 @@ th.sorted .sort-arrow {
 }
 
 
-/* ─────────────────────────────────────────────────────────────
-   16. DETAILS PAGE
-───────────────────────────────────────────────────────────── */
-.details-page {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
+.ae-clear-filter {
+  padding: 5px 12px !important;
+  border-radius: 999px !important;
+  border: 1.5px solid #fca5a5 !important;
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  transition: all 0.15s !important;
 }
 
+.ae-clear-filter:hover {
+  background: #fecaca !important;
+}
 
 /* ─────────────────────────────────────────────────────────────
-   17. RESPONSIVE
+   16. RESPONSIVE
 ───────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .page {
@@ -1087,11 +1113,11 @@ th.sorted .sort-arrow {
     width: 100% !important;
   }
 
-  .table th {
+  .table-wrapper tableth {
     font-size: 12px;
   }
 
-  .table td {
+  .table-wrapper tabletd {
     font-size: 12px;
   }
 

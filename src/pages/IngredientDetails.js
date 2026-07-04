@@ -148,7 +148,7 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
   };
 
   return (
-    <div className="details-page">
+    <div className="ingredient-details-page">
 
       <div className="details-container">
         {/* HEADER */}

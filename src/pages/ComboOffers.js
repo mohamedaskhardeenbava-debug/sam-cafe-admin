@@ -297,7 +297,7 @@ const ComboOffers = () => {
       </div>
 
       <div className="table-wrapper">
-        <table className="table">
+        <table >
           <thead>
             <tr>
               {[
@@ -331,7 +331,7 @@ const ComboOffers = () => {
           <tbody>
             {offers.length === 0 && (
               <tr>
-                <td colSpan={7} className="co-empty-row">No combo offers yet. Click "+ Add Combo" to create one.</td>
+                <td colSpan={8} className="co-empty-row">No combo offers yet. Click "+ Add Combo" to create one.</td>
               </tr>
             )}
             {sortedOffers.map((o, i) => (
@@ -381,16 +381,16 @@ const ComboOffers = () => {
       {/* ═══ MODAL ══════════════════════════════════════════════ */}
       {modalOpen && (
         <div className="modal-overlay">
-          <div className="modal co-modal-wide">
+          <div className="admin-modal co-modal-wide">
 
             {/* header */}
-            <div className="modal-header">
+            <div className="admin-modal-header">
               <h3>{editOffer ? "Edit Combo Offer" : "Add Combo Offer"}</h3>
               <Button3D variant="cancel" iconOnly onClick={() => setModalOpen(false)}><img src={closeIcon} /></Button3D>
             </div>
 
             {/* two-column body */}
-            <div className="modal-body co-modal-body">
+            <div className="admin-modal-body co-modal-body">
 
               {/* ── LEFT: category tabs + dish list ── */}
               <div className="co-modal-left">
@@ -491,7 +491,7 @@ const ComboOffers = () => {
                         onClick={() => setOfferType("FLAT")}
                       >₹ FLAT</button>
                     </div>
-                    <div className="form-group">
+                    <div className="admin-form-group">
                       <div className="mat" style={{ flex: 1 }}>
                         <input
                           className={`mat-input${errors.discount ? " mat-error" : ""}`}
@@ -530,7 +530,7 @@ const ComboOffers = () => {
             </div>
 
             {/* footer */}
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <Button3D variant="cancel" onClick={() => setModalOpen(false)}>Cancel</Button3D>
               <Button3D onClick={handleSave} disabled={saving}>
                 {saving ? "Saving…" : editOffer ? "Update Offer" : "Create Offer"}

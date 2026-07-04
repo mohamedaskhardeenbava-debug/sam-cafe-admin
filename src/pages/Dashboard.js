@@ -15,7 +15,7 @@ import { useToast } from "../useToast";
 
 import "./Dashboard.css";
 import {
-PieChart, Pie, Cell, Sector,
+  PieChart, Pie, Cell, Sector,
   BarChart, Bar,
   XAxis, YAxis, Tooltip,
   ResponsiveContainer, LineChart, Line,
@@ -65,6 +65,7 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
 
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("sales");
 
   const ingredients = adminData.ingredients || [];
   const staff = adminData.staff || [];
@@ -318,7 +319,20 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
         <div className="dashboard-header-left">
           <div className="justify">
             <h2 className="dashboard-title">Dashboard</h2>
-            <Button3D onClick={handleExport}>Export</Button3D>
+            <div className="ae-header-actions">
+              <div className="ae-tab-pills">
+                <button className={`ae-tab-pill ${activeTab === "sales" ? "active" : ""}`} onClick={() => setActiveTab("sales")}>
+                  Sales
+                </button>
+                <button className={`ae-tab-pill ${activeTab === "staff" ? "active" : ""}`} onClick={() => setActiveTab("staff")}>
+                  Staff
+                </button>
+                <button className={`ae-tab-pill ${activeTab === "schedules" ? "active" : ""}`} onClick={() => setActiveTab("schedules")}>
+                  Schedules
+                </button>
+              </div>
+              <Button3D onClick={handleExport}>Export</Button3D>
+            </div>
           </div>
           <div className="dashboard-filter-date">
             <div className="dash-preset-btns">
@@ -352,211 +366,229 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
         </div>
       </div>
 
-      {/* MAIN LAYOUT */}
-      <div className="dashboard-main-layout">
-        <div className="dashboard-piechart">
-          <div className="dashboard-kpis">
-            <div className="kpi-card"><p>Total Sales</p><h3>₹{totalSales}</h3></div>
-            <div className="kpi-card"><p>Total Orders</p><h3>{totalOrders}</h3></div>
-            <div className={`kpi-card ${salesChange >= 0 ? "positive" : "negative"}`}><p>Sales Change</p><h3>{salesChange}%</h3></div>
-          </div>
-          <div className="chart-card pie">
-            <h4>Category-wise Sales (%)</h4>
-            {categorySales.length === 0 ? <NoChartData message="No category sales data" /> : (
-              <ResponsiveContainer width="100%" height={260}>
-                {hasOrders ? (
-                  <PieChart>
-                    <Pie data={categorySales} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={100} isAnimationActive animationBegin={100} animationDuration={800} animationEasing="cubic-bezier(0.4,0,0.2,1)" activeIndex={activeIndex} activeShape={renderActiveShape} onMouseEnter={(_, i) => setActiveIndex(i)} onMouseLeave={() => setActiveIndex(null)}
-                      onClick={(data) => {
-                        // FIX: guard against null/undefined data before navigating
-                        if (data && data.name) {
-                          navigate("/orders", { state: { category: data.name, fromDate, toDate } });
-                        }
-                      }}>
-                      {categorySales.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                    </Pie>
-                  </PieChart>
-                ) : <p className="empty-state">No data for selected date range</p>}
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-
-        <div className="dashboard-linechart">
-          <div className="chart-card line">
-            <div className="chart-header"><h4>Revenue Trend</h4></div>
-            {revenueTrendData.length === 0 ? <NoChartData message="No revenue data for selected period" /> : (
-              <ResponsiveContainer width="100%" height={260}>
-                <LineChart data={revenueTrendData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                  <CartesianGrid vertical={false} stroke="#e3e3e3" />
-                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#777" }} tickFormatter={(d) => format(new Date(d), "dd MMM")} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#777" }} tickFormatter={(v) => `₹${v}`} />
-                  <Tooltip content={<TrendTooltip />} />
-                  <defs><linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#54a0ff" stopOpacity={0.25} /><stop offset="100%" stopColor="#54a0ff" stopOpacity={0} /></linearGradient></defs>
-                  <Area type="monotone" dataKey="dailyRevenue" stroke="none" fill="url(#trendGradient)" isAnimationActive />
-                  <Line type="monotone" dataKey="dailyRevenue" stroke="#54a0ff" strokeWidth={3} dot={false} activeDot={{ r: 6, fill: "#54a0ff", stroke: "#fff", strokeWidth: 2 }} isAnimationActive />
-                  <Line type="monotone" dataKey="monthlyRevenue" stroke="#ff9f43" strokeWidth={3} dot={false} name="Monthly Revenue" />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-
-        {/* BAR CHART – INGREDIENT STOCK */}
-        <div className="dashboard-barchart">
-          <div className="chart-card bar">
-            <h4>Ingredient Stock</h4>
-            <div className="stock-chart-wrapper">
-              {stockData.length === 0 ? (
-                <NoChartData message="No stock data available" />
-              ) : (
-                <ResponsiveContainer
-                  width="100%"
-                  height={Math.max(stockData.length * 20, 100)}
-                >
-                  <BarChart
-                    data={stockData}
-                    layout="vertical"
-                    barCategoryGap={4}
-                  >
-                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#aaa" }} />
-                    <YAxis
-                      dataKey="name"
-                      type="category"
-                      width={120}
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 10, fill: "#111" }}
-                    />
-                    <Tooltip content={<StockTooltip />} />
-                    <Bar dataKey="stock" barSize={4} radius={[0, 3, 3, 0]}>
-                      {stockData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={getStockColor(entry.percent)}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* STAFF OVERVIEW */}
-      <div className="staff-section-title">
-        <h3>Staff Overview</h3>
-        <span className="staff-section-sub">Month-to-date analytics</span>
-      </div>
-
-      {/* STAFF KPIs */}
-      <div className="staff-kpi-row">
-        {[
-          { label: "Total Staff", value: staffSummary.total, bg: "#e8f4fd", nav: "/staffs", state: {} },
-          { label: "Full-Time", value: staffSummary.fullTime, bg: "#e8fdf4", nav: "/staffs", state: { workType: "full-time" } },
-          { label: "Part-Time", value: staffSummary.partTime, bg: "#fff8e8", nav: "/staffs", state: { workType: "part-time" } },
-          { label: "Salary Bill", value: `₹${staffSummary.totalSalaryBill.toLocaleString("en-IN")}`, bg: "#fde8e8", nav: "/staffs", state: {} },
-          { label: "Avg Attendance", value: `${staffSummary.avgAttendance}%`, bg: "#f3e8fd", nav: "/staff-attendance", state: {} },
-          { label: "Total Advance", value: `₹${staffSummary.totalAdvance.toLocaleString("en-IN")}`, bg: "#e8f4fd", nav: "/staffs", state: {} },
-        ].map((k, i) => (
-          <div key={i} className="staff-kpi-card" style={{ cursor: "pointer" }} onClick={() => navigate(k.nav, { state: k.state })}>
-            <div><p>{k.label}</p><h3>{k.value}</h3></div>
-          </div>
-        ))}
-      </div>
-
-      {/* STAFF CHARTS */}
-      <div className="staff-charts-grid">
-        <div className="chart-card sc-card">
-          <div className="sc-card-head">
-            <h4>Attendance This Month</h4>
-            <div className="sc-legend-pills">
-              <span className="sc-pill" style={{ "--c": "#1dd1a1" }}>Present</span>
-              <span className="sc-pill" style={{ "--c": "#ee5253" }}>Leave</span>
-              <span className="sc-pill" style={{ "--c": "#d1d5db" }}>Absent</span>
-            </div>
-          </div>
-          {attendanceBarData.length === 0 ? <NoChartData /> : (
-            <div className="sc-att-rows">
-              {attendanceBarData.map((s, i) => (
-                <div key={i} className="sc-att-row">
-                  <div className="sc-att-dot" style={{ background: STAFF_PALETTE[i % STAFF_PALETTE.length] }}>{s.name.charAt(0)}</div>
-                  <span className="sc-att-name">{s.name}</span>
-                  <div className="sc-att-track">
-                    <div className="sc-att-fill" style={{ width: `${s.pct}%`, background: s.pct >= 75 ? "#1dd1a1" : s.pct >= 50 ? "#ff9f43" : "#ee5253" }} />
-                  </div>
-                  <span className="sc-att-pct" style={{ color: s.pct >= 75 ? "#1dd1a1" : s.pct >= 50 ? "#ff9f43" : "#ee5253" }}>{s.pct}%</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="chart-card sc-card">
-          <div className="sc-card-head">
-            <h4>Salary Distribution</h4>
-            <span className="sc-total-badge">₹{staffSummary.totalSalaryBill.toLocaleString("en-IN")}</span>
-          </div>
-          {salaryPieData.length === 0 ? <NoChartData /> : (
-            <div className="sc-salary-wrap">
-              <ResponsiveContainer width="50%" height={200}>
-                <PieChart>
-                  <Pie data={salaryPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={52} outerRadius={82} isAnimationActive animationDuration={700} activeIndex={activeSalIdx} activeShape={<SalaryActiveShape />} onMouseEnter={(_, i) => setActiveSalIdx(i)} onMouseLeave={() => setActiveSalIdx(null)}>
-                    {salaryPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
-                  </Pie>
-                  <Tooltip content={<SalaryTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="sc-salary-legend">
-                <div className="sc-sal-header">
-                  <span>Staff</span><span>Salary</span><span>Share</span>
-                </div>
-                {salaryPieData.map((s, i) => (
-                  <div key={i} className={`sc-sal-row ${activeSalIdx === i ? "sc-sal-active" : ""}`} onMouseEnter={() => setActiveSalIdx(i)} onMouseLeave={() => setActiveSalIdx(null)}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                      <span className="sc-sal-dot" style={{ background: s.color }} />
-                      <span className="sc-sal-name">{s.name}</span>
-                    </div>
-                    <span className="sc-sal-amount">₹{Number(s.value).toLocaleString("en-IN")}</span>
-                    <span className="sc-sal-pct-val">{staffSummary.totalSalaryBill > 0 ? Math.round((s.value / staffSummary.totalSalaryBill) * 100) : 0}%</span>
-                  </div>
-                ))}
+      {/* SALES TAB */}
+      {activeTab === "sales" && (
+        <div className="dashboard-scroll">
+          <div className="dashboard-main-layout">
+            <div className="dashboard-piechart">
+              <div className="dashboard-kpis">
+                <div className="kpi-card"><p>Total Sales</p><h3>₹{totalSales}</h3></div>
+                <div className="kpi-card"><p>Total Orders</p><h3>{totalOrders}</h3></div>
+                <div className={`kpi-card ${salesChange >= 0 ? "positive" : "negative"}`}><p>Sales Change</p><h3>{salesChange}%</h3></div>
+              </div>
+              <div className="chart-card pie">
+                <h4>Category-wise Sales (%)</h4>
+                {categorySales.length === 0 ? <NoChartData message="No category sales data" /> : (
+                  <ResponsiveContainer width="100%" height={260}>
+                    {hasOrders ? (
+                      <PieChart>
+                        <Pie data={categorySales} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={100} isAnimationActive animationBegin={100} animationDuration={800} animationEasing="cubic-bezier(0.4,0,0.2,1)" activeIndex={activeIndex} activeShape={renderActiveShape} onMouseEnter={(_, i) => setActiveIndex(i)} onMouseLeave={() => setActiveIndex(null)}
+                          onClick={(data) => {
+                            // FIX: guard against null/undefined data before navigating
+                            if (data && data.name) {
+                              navigate("/orders", { state: { category: data.name, fromDate, toDate } });
+                            }
+                          }}>
+                          {categorySales.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                        </Pie>
+                      </PieChart>
+                    ) : <p className="empty-state">No data for selected date range</p>}
+                  </ResponsiveContainer>
+                )}
               </div>
             </div>
-          )}
-        </div>
 
-        <div className="chart-card sc-card">
-          <div className="sc-card-head">
-            <h4>Grooming Compliance</h4>
-            <span className="sc-week-badge">7-day avg</span>
+            <div className="dashboard-linechart">
+              <div className="chart-card line">
+                <div className="chart-header"><h4>Revenue Trend</h4></div>
+                {revenueTrendData.length === 0 ? <NoChartData message="No revenue data for selected period" /> : (
+                  <ResponsiveContainer width="100%" height={260}>
+                    <LineChart data={revenueTrendData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                      <CartesianGrid vertical={false} stroke="#e3e3e3" />
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#777" }} tickFormatter={(d) => format(new Date(d), "dd MMM")} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#777" }} tickFormatter={(v) => `₹${v}`} />
+                      <Tooltip content={<TrendTooltip />} />
+                      <defs><linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#54a0ff" stopOpacity={0.25} /><stop offset="100%" stopColor="#54a0ff" stopOpacity={0} /></linearGradient></defs>
+                      <Area type="monotone" dataKey="dailyRevenue" stroke="none" fill="url(#trendGradient)" isAnimationActive />
+                      <Line type="monotone" dataKey="dailyRevenue" stroke="#54a0ff" strokeWidth={3} dot={false} activeDot={{ r: 6, fill: "#54a0ff", stroke: "#fff", strokeWidth: 2 }} isAnimationActive />
+                      <Line type="monotone" dataKey="monthlyRevenue" stroke="#ff9f43" strokeWidth={3} dot={false} name="Monthly Revenue" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
+
+            {/* BAR CHART – INGREDIENT STOCK */}
+            <div className="dashboard-barchart">
+              <div className="chart-card bar">
+                <h4>Ingredient Stock</h4>
+                <div className="stock-chart-wrapper">
+                  {stockData.length === 0 ? (
+                    <NoChartData message="No stock data available" />
+                  ) : (
+                    <ResponsiveContainer
+                      width="100%"
+                      height={Math.max(stockData.length * 20, 100)}
+                    >
+                      <BarChart
+                        data={stockData}
+                        layout="vertical"
+                        barCategoryGap={4}
+                      >
+                        <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#aaa" }} />
+                        <YAxis
+                          dataKey="name"
+                          type="category"
+                          width={120}
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 10, fill: "#111" }}
+                        />
+                        <Tooltip content={<StockTooltip />} />
+                        <Bar dataKey="stock" barSize={4} radius={[0, 3, 3, 0]}>
+                          {stockData.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={getStockColor(entry.percent)}
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-          {groomBarData.length === 0 ? <NoChartData /> : (
-            <div className="sc-groom-list">
-              {groomBarData.map((g, i) => (
-                <div key={i} className="sc-groom-row">
-                  <div className="sc-groom-avatar" style={{ background: g.color }}>{g.name.charAt(0)}</div>
-                  <span className="sc-groom-name">{g.name}</span>
-                  <div className="sc-groom-track">
-                    <div className="sc-groom-fill" style={{ width: `${g.value}%`, background: g.value >= 80 ? "#1dd1a1" : g.value >= 50 ? "#ff9f43" : "#ee5253" }} />
-                  </div>
-                  <div className="sc-groom-badge" style={{ background: g.value >= 80 ? "#dcfce7" : g.value >= 50 ? "#fff7e0" : "#fee2e2", color: g.value >= 80 ? "#16a34a" : g.value >= 50 ? "#d97706" : "#dc2626" }}>
-                    {g.value}%
-                  </div>
+        </div>
+      )}
+
+      {/* STAFF TAB */}
+      {activeTab === "staff" && (
+        <div className="dashboard-scroll">
+          <>
+            <div className="staff-section-title">
+              <h3>Staff Overview</h3>
+              <span className="staff-section-sub">Month-to-date analytics</span>
+            </div>
+
+            {/* STAFF KPIs */}
+            <div className="staff-kpi-row">
+              {[
+                { label: "Total Staff", value: staffSummary.total, bg: "#e8f4fd", nav: "/staffs", state: {} },
+                { label: "Full-Time", value: staffSummary.fullTime, bg: "#e8fdf4", nav: "/staffs", state: { workType: "full-time" } },
+                { label: "Part-Time", value: staffSummary.partTime, bg: "#fff8e8", nav: "/staffs", state: { workType: "part-time" } },
+                { label: "Salary Bill", value: `₹${staffSummary.totalSalaryBill.toLocaleString("en-IN")}`, bg: "#fde8e8", nav: "/staffs", state: {} },
+                { label: "Avg Attendance", value: `${staffSummary.avgAttendance}%`, bg: "#f3e8fd", nav: "/staff-attendance", state: {} },
+                { label: "Total Advance", value: `₹${staffSummary.totalAdvance.toLocaleString("en-IN")}`, bg: "#e8f4fd", nav: "/staffs", state: {} },
+              ].map((k, i) => (
+                <div key={i} className="staff-kpi-card" style={{ cursor: "pointer" }} onClick={() => navigate(k.nav, { state: k.state })}>
+                  <div><p>{k.label}</p><h3>{k.value}</h3></div>
                 </div>
               ))}
             </div>
-          )}
+
+            {/* STAFF CHARTS */}
+            <div className="staff-charts-grid">
+              <div className="chart-card sc-card">
+                <div className="sc-card-head">
+                  <h4>Attendance This Month</h4>
+                  <div className="sc-legend-pills">
+                    <span className="sc-pill" style={{ "--c": "#1dd1a1" }}>Present</span>
+                    <span className="sc-pill" style={{ "--c": "#ee5253" }}>Leave</span>
+                    <span className="sc-pill" style={{ "--c": "#d1d5db" }}>Absent</span>
+                  </div>
+                </div>
+                {attendanceBarData.length === 0 ? <NoChartData /> : (
+                  <div className="sc-att-rows">
+                    {attendanceBarData.map((s, i) => (
+                      <div key={i} className="sc-att-row">
+                        <div className="sc-att-dot" style={{ background: STAFF_PALETTE[i % STAFF_PALETTE.length] }}>{s.name.charAt(0)}</div>
+                        <span className="sc-att-name">{s.name}</span>
+                        <div className="sc-att-track">
+                          <div className="sc-att-fill" style={{ width: `${s.pct}%`, background: s.pct >= 75 ? "#1dd1a1" : s.pct >= 50 ? "#ff9f43" : "#ee5253" }} />
+                        </div>
+                        <span className="sc-att-pct" style={{ color: s.pct >= 75 ? "#1dd1a1" : s.pct >= 50 ? "#ff9f43" : "#ee5253" }}>{s.pct}%</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="chart-card sc-card">
+                <div className="sc-card-head">
+                  <h4>Salary Distribution</h4>
+                  <span className="sc-total-badge">₹{staffSummary.totalSalaryBill.toLocaleString("en-IN")}</span>
+                </div>
+                {salaryPieData.length === 0 ? <NoChartData /> : (
+                  <div className="sc-salary-wrap">
+                    <ResponsiveContainer width="50%" height={200}>
+                      <PieChart>
+                        <Pie data={salaryPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={52} outerRadius={82} isAnimationActive animationDuration={700} activeIndex={activeSalIdx} activeShape={<SalaryActiveShape />} onMouseEnter={(_, i) => setActiveSalIdx(i)} onMouseLeave={() => setActiveSalIdx(null)}>
+                          {salaryPieData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                        </Pie>
+                        <Tooltip content={<SalaryTooltip />} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="sc-salary-legend">
+                      <div className="sc-sal-header">
+                        <span>Staff</span><span>Salary</span><span>Share</span>
+                      </div>
+                      {salaryPieData.map((s, i) => (
+                        <div key={i} className={`sc-sal-row ${activeSalIdx === i ? "sc-sal-active" : ""}`} onMouseEnter={() => setActiveSalIdx(i)} onMouseLeave={() => setActiveSalIdx(null)}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                            <span className="sc-sal-dot" style={{ background: s.color }} />
+                            <span className="sc-sal-name">{s.name}</span>
+                          </div>
+                          <span className="sc-sal-amount">₹{Number(s.value).toLocaleString("en-IN")}</span>
+                          <span className="sc-sal-pct-val">{staffSummary.totalSalaryBill > 0 ? Math.round((s.value / staffSummary.totalSalaryBill) * 100) : 0}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="chart-card sc-card">
+                <div className="sc-card-head">
+                  <h4>Grooming Compliance</h4>
+                  <span className="sc-week-badge">7-day avg</span>
+                </div>
+                {groomBarData.length === 0 ? <NoChartData /> : (
+                  <div className="sc-groom-list">
+                    {groomBarData.map((g, i) => (
+                      <div key={i} className="sc-groom-row">
+                        <div className="sc-groom-avatar" style={{ background: g.color }}>{g.name.charAt(0)}</div>
+                        <span className="sc-groom-name">{g.name}</span>
+                        <div className="sc-groom-track">
+                          <div className="sc-groom-fill" style={{ width: `${g.value}%`, background: g.value >= 80 ? "#1dd1a1" : g.value >= 50 ? "#ff9f43" : "#ee5253" }} />
+                        </div>
+                        <div className="sc-groom-badge" style={{ background: g.value >= 80 ? "#dcfce7" : g.value >= 50 ? "#fff7e0" : "#fee2e2", color: g.value >= 80 ? "#16a34a" : g.value >= 50 ? "#d97706" : "#dc2626" }}>
+                          {g.value}%
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
         </div>
-        <div className="chart-card sc-card sc-schedules-card">
-          <div className="sc-card-head">
-            <h4>Schedules Overview</h4>
+      )}
+
+      {/* SCHEDULES TAB */}
+      {activeTab === "schedules" && (
+        <div className="dashboard-scroll">
+          <div className="schedule-charts-grid">
+            <div className="chart-card sc-card sc-schedules-card">
+              <div className="sc-card-head">
+                <h4>Schedules Overview</h4>
+              </div>
+              <ScheduleSection adminData={adminData} navigate={navigate} />
+            </div>
           </div>
-          <ScheduleSection adminData={adminData} navigate={navigate} />
         </div>
-      </div>
+      )}
     </div>
   );
 };

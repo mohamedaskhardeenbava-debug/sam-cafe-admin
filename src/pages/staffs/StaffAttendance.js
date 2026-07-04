@@ -571,14 +571,14 @@ export default function StaffAttendance({ adminData, setAdminData }) {
       {/* HOLIDAY MODAL */}
       {showHolidayModal && (
         <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
+          <div className="admin-modal">
+            <div className="admin-modal-header">
               <h3>Add Holiday</h3>
               <Button3D variant="cancel" iconOnly onClick={() => { setShowHolidayModal(false); setHolidayErrors({}); setHolidayForm({ date: "", reason: "" }); }}><img src={closeIcon} /></Button3D>
             </div>
 
-            <div className="modal-body">
-              <div className="form-group">
+            <div className="admin-modal-body">
+              <div className="admin-form-group">
                 <label className={holidayErrors.date ? "mat-label-error" : ""} style={{ fontSize: 13, marginBottom: 4, display: "block" }}>Date<span style={{ color: "red" }}>*</span></label>
                 <CustomDatePicker value={holidayForm.date} max={maxDateStr}
                   onChange={val => { setHolidayForm(prev => ({ ...prev, date: val })); setHolidayErrors(p => ({ ...p, date: false })); }}
@@ -586,7 +586,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                   hasError={!!holidayErrors.date} />
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className="mat">
                   <input
                     className={`mat-input${holidayErrors.reason ? " mat-error" : ""}`}
@@ -600,7 +600,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <Button3D variant="cancel" onClick={() => { setShowHolidayModal(false); setHolidayErrors({}); setHolidayForm({ date: "", reason: "" }); }}>Cancel</Button3D>
               <Button3D onClick={addHoliday}>Save Holiday</Button3D>
             </div>

@@ -3,7 +3,7 @@
  * Reservations management page
  */
 
-import React, { useMemo, useState, useRef, useEffect } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 
@@ -25,8 +25,7 @@ import "../ModalCSS.css";
 import "./PreviewModal.css";
 import PageLoader from "../../components/PageLoader";
 
-/* admin panel */
-
+/* ─── Helpers ─── */
 const pad = (n) => String(n).padStart(2, "0");
 const todayStr = () => new Date().toISOString().split("T")[0];
 const getWeekRange = () => {
@@ -42,7 +41,7 @@ const getMonthRange = () => {
   return [first.toISOString().split("T")[0], last.toISOString().split("T")[0]];
 };
 
-/* ─── All 5 slot groups (matches ReservationForm.js) ─── */
+/* ─── All 5 slot groups ─── */
 const SLOT_GROUPS = [
   { label: "Breakfast", key: "BF", short: "BF", start: "07:00", end: "10:00" },
   { label: "Brunch", key: "BR", short: "Br", start: "10:00", end: "12:00" },
@@ -159,19 +158,7 @@ const EMPTY_FORM = {
   reservedDate: todayStr(),
 };
 
-/* ══════════════════════════════════════════════
-   Sort config
-══════════════════════════════════════════════ */
-const SORT_FIELDS = [
-  { key: "date", label: "Date" },
-  { key: "name", label: "Name" },
-  { key: "guests", label: "Guests" },
-  { key: "status", label: "Status" },
-];
-
-/* ══════════════════════════════════════════════
-   Image Upload helper (returns base64 data-URL)
-══════════════════════════════════════════════ */
+/* ─── Image Upload helper (returns base64 data-URL) ─── */
 const readFileAsDataURL = (file) =>
   new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -184,11 +171,12 @@ const readFileAsDataURL = (file) =>
    Main Component
 ══════════════════════════════════════════════ */
 const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetFilters }) => {
-  // ── State & Setup
 
-  const { filterDate, fromDate: filterFromDate, toDate: filterToDate, preset: filterDatePreset, slots: filterSlots, statuses: filterStatuses, sources: filterSources, search } = filters;
-
-  // ── Helpers
+  const {
+    filterDate, fromDate: filterFromDate, toDate: filterToDate,
+    preset: filterDatePreset, slots: filterSlots,
+    statuses: filterStatuses, sources: filterSources, search,
+  } = filters;
 
   const setFilterDate = (v) => patchFilters({ filterDate: v });
   const setFilterFromDate = (v) => patchFilters({ fromDate: v });
@@ -198,35 +186,40 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
   const setFilterStatuses = (v) => patchFilters({ statuses: typeof v === "function" ? v(filterStatuses) : v });
   const setFilterSources = (v) => patchFilters({ sources: typeof v === "function" ? v(filterSources) : v });
   const setSearch = (v) => patchFilters({ search: v });
+
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // ── Call history ──
+  /* ── Call history tooltip ── */
   const [callTooltipId, setCallTooltipId] = useState(null);
   const [callTooltipPos, setCallTooltipPos] = useState({ top: 0, left: 0 });
   const callWrapRefs = useRef({});
 
-  // ── Live clock — updates every minute so past-slot highlighting stays current ──
-  const [nowMinutes, setNowMinutes] = useState(() => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); });
+  /* ── Live clock — updates every minute so past-slot highlighting stays current ── */
+  const [nowMinutes, setNowMinutes] = useState(() => {
+    const n = new Date(); return n.getHours() * 60 + n.getMinutes();
+  });
   useEffect(() => {
-    const id = setInterval(() => { const n = new Date(); setNowMinutes(n.getHours() * 60 + n.getMinutes()); }, 60_000);
+    const id = setInterval(() => {
+      const n = new Date(); setNowMinutes(n.getHours() * 60 + n.getMinutes());
+    }, 60_000);
     return () => clearInterval(id);
   }, []);
 
-  // ── Table preference management ──
+  /* ── Table preference management ── */
   const [showPrefModal, setShowPrefModal] = useState(false);
   const [prefList, setPrefList] = useState(DEFAULT_PREF_OPTIONS.map(p => p.label));
-  const [prefImages, setPrefImages] = useState({}); // { label: base64DataURL }
-  const [prefDescs, setPrefDescs] = useState({}); // { label: description string }
-  const [prefDbRecords, setPrefDbRecords] = useState([]); // raw records from /tablePreferences
+  const [prefImages, setPrefImages] = useState({});
+  const [prefDescs, setPrefDescs] = useState({});
+  const [prefDbRecords, setPrefDbRecords] = useState([]);
   const [newPrefInput, setNewPrefInput] = useState("");
   const [newPrefDesc, setNewPrefDesc] = useState("");
-  const [newPrefImage, setNewPrefImage] = useState(null); // base64 for the new pref
+  const [newPrefImage, setNewPrefImage] = useState(null);
   const [prefSaving, setPrefSaving] = useState(false);
   const newPrefImgRef = useRef(null);
-  const editImgRefs = useRef({});       // refs for existing pref image inputs
+  const editImgRefs = useRef({});
 
-  /* ── Fetch tablePreferences from db.json on mount ── */
+  /* ── Fetch tablePreferences on mount ── */
   useEffect(() => {
     const loadPrefs = async () => {
       try {
@@ -236,8 +229,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
           const sorted = [...records].sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
           setPrefDbRecords(sorted);
           setPrefList(sorted.map(r => r.label));
-          const imgs = {};
-          const descs = {};
+          const imgs = {}; const descs = {};
           sorted.forEach(r => {
             if (r.image) imgs[r.label] = r.image;
             if (r.desc) descs[r.label] = r.desc;
@@ -245,26 +237,22 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
           setPrefImages(imgs);
           setPrefDescs(descs);
         }
-      } catch {
-        // Fallback to defaults if endpoint not available
-      }
+      } catch { /* fallback to defaults */ }
     };
     loadPrefs();
   }, []);
 
-  // ── Create modal ──
+  /* ── Create modal ── */
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [formErrors, setFormErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [createTab, setCreateTab] = useState(0);
-
   const CREATE_TABS = ["All Details", "Preview"];
 
-  // ── Table pref image upload inside create form ──
-  const [tablePrefImageFile, setTablePrefImageFile] = useState(null); // { label, dataURL }
+  /* ── Table pref image upload inside create form ── */
+  const [tablePrefImageFile, setTablePrefImageFile] = useState(null);
   const createImgRef = useRef(null);
-
 
   const data = adminData?.reservations || [];
   const tables = (adminData?.tables?.[0]?.list || []).map(Number).sort((a, b) => a - b);
@@ -277,12 +265,11 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
     const desc = prefDescs[label] || found?.desc || "";
     if (img) {
       return {
-        label,
-        desc,
+        label, desc,
         svg: <img src={img} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 6 }} />,
       };
     }
-    return found ? { ...found, desc } : { label, desc, svg: <span style={{ fontSize: 22 }}></span> };
+    return found ? { ...found, desc } : { label, desc, svg: <span style={{ fontSize: 22 }}>🪑</span> };
   });
 
   const toggleSet = (setter, val) =>
@@ -300,7 +287,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
     return new Set(data.filter(r => r.date === targetDate && r.tableNo).map(r => String(r.tableNo)));
   }, [data, form.date]);
 
-  /* ── Filter data (all 5 slots) ── */
+  /* ── Filter data ── */
   const filteredData = useMemo(() => {
     let d = [...data];
     if (filterDate) {
@@ -310,10 +297,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       if (filterToDate) d = d.filter(r => (r.date || "") <= filterToDate);
     }
     if (filterSlots.size > 0) {
-      d = d.filter(r => {
-        const key = resolveSlotKey(r);
-        return key && filterSlots.has(key);
-      });
+      d = d.filter(r => { const key = resolveSlotKey(r); return key && filterSlots.has(key); });
     }
     if (filterStatuses.size > 0) d = d.filter(r => filterStatuses.has(r.status || "pending"));
     if (filterSources.size > 0) d = d.filter(r => filterSources.has(r.source));
@@ -348,6 +332,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
   const { displayLimit, sentinelRef, containerRef, hasMore } =
     useInfiniteScroll(sortedData.length, 30);
+
   if (!adminData?.reservations?.length) return <PageLoader label="Loading reservations…" />;
 
   const today = todayStr();
@@ -356,7 +341,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
   const completedCount = filteredData.filter(r => r.status === "completed").length;
   const cancelledCount = filteredData.filter(r => r.status === "cancelled").length;
 
-  /* ── Status / table update ── */
+  /* ── Status update ── */
   const updateStatus = async (e, id, status) => {
     e.stopPropagation();
     const prev = (adminData.reservations || []).find(r => r.id === id);
@@ -372,6 +357,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
     }
   };
 
+  /* ── Table assign ── */
   const updateTable = async (e, id, tableNo) => {
     if (e) e.stopPropagation();
     const prev = (adminData.reservations || []).find(r => r.id === id);
@@ -387,20 +373,17 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
     }
   };
 
-  /* call logging — persisted to JSON */
+  /* ── Call logging ── */
   const handleCall = async (e, id) => {
     e.stopPropagation();
     const prev = (adminData?.reservations || []).find(r => r.id === id);
     if (!prev) return;
     const newEntry = new Date().toISOString();
     const updatedHistory = [...(prev.callHistory || []), newEntry];
-    /* optimistic update */
     if (typeof setAdminData === "function") {
       setAdminData(p => ({
         ...p,
-        reservations: (p.reservations || []).map(r =>
-          r.id === id ? { ...r, callHistory: updatedHistory } : r
-        ),
+        reservations: (p.reservations || []).map(r => r.id === id ? { ...r, callHistory: updatedHistory } : r),
       }));
     }
     try {
@@ -431,10 +414,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
     return Object.keys(e).length === 0;
   };
 
-  const handleResNext = () => {
-    if (!validateResTab()) return;
-    setCreateTab(1);
-  };
+  const handleResNext = () => { if (!validateResTab()) return; setCreateTab(1); };
 
   const validateForm = () => {
     const e = {};
@@ -447,18 +427,16 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
     return Object.keys(e).length === 0;
   };
 
-  /* ── Create reservation (includes tablePrefImage in payload) ── */
+  /* ── Create reservation ── */
   const handleCreate = async () => {
     if (!validateForm()) return;
     setSaving(true);
     try {
       const id = `res_${Date.now()}`;
       const payload = {
-        id,
-        ...form,
+        id, ...form,
         status: form.status || "pending",
         createdAt: new Date().toISOString(),
-        // store uploaded image (base64) so it persists in db.json
         tablePrefImage: tablePrefImageFile || null,
       };
       await api.post("/reservations", payload);
@@ -479,12 +457,9 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
     try {
       const dataURL = await readFileAsDataURL(file);
       setPrefImages(p => ({ ...p, [label]: dataURL }));
-      // Also update in-memory db record so Save will persist it
       setPrefDbRecords(prev => prev.map(r => r.label === label ? { ...r, image: dataURL } : r));
       toast.success(`Image updated for "${label}" — click Save to persist`);
-    } catch {
-      toast.error("Failed to read image");
-    }
+    } catch { toast.error("Failed to read image"); }
   };
 
   const handleAddPref = async () => {
@@ -492,19 +467,14 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
     if (!v || prefList.includes(v)) return;
     const newRecord = {
       id: `pref_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      label: v,
-      desc: newPrefDesc.trim(),
-      order: prefList.length,
-      image: newPrefImage || null,
-      isDefault: false,
+      label: v, desc: newPrefDesc.trim(),
+      order: prefList.length, image: newPrefImage || null, isDefault: false,
     };
     if (newPrefImage) setPrefImages(p => ({ ...p, [v]: newPrefImage }));
     if (newPrefDesc.trim()) setPrefDescs(p => ({ ...p, [v]: newPrefDesc.trim() }));
     setPrefList(p => [...p, v]);
     setPrefDbRecords(p => [...p, newRecord]);
-    setNewPrefInput("");
-    setNewPrefDesc("");
-    setNewPrefImage(null);
+    setNewPrefInput(""); setNewPrefDesc(""); setNewPrefImage(null);
   };
 
   const handleRemovePref = (label) => {
@@ -515,11 +485,9 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
     setPrefDbRecords(p => p.filter(r => r.label !== label));
   };
 
-  /* ── Save all preferences to /tablePreferences in db.json ── */
   const handleSavePrefs = async () => {
     setPrefSaving(true);
     try {
-      // Build the final records list (merge UI state into records)
       const finalRecords = prefList.map((label, idx) => {
         const existing = prefDbRecords.find(r => r.label === label);
         return {
@@ -531,52 +499,34 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
           isDefault: existing?.isDefault ?? false,
         };
       });
-
-      // Fetch current records to know which exist vs which are new
       let existingIds = new Set();
-      try {
-        const cur = await api.get("/tablePreferences");
-        (cur.data || []).forEach(r => existingIds.add(r.id));
-      } catch { }
-
+      try { const cur = await api.get("/tablePreferences"); (cur.data || []).forEach(r => existingIds.add(r.id)); } catch { }
       for (const rec of finalRecords) {
-        if (existingIds.has(rec.id)) {
-          try { await api.put(`/tablePreferences/${rec.id}`, rec); } catch { }
-        } else {
-          try { await api.post("/tablePreferences", rec); } catch { }
-        }
+        if (existingIds.has(rec.id)) { try { await api.put(`/tablePreferences/${rec.id}`, rec); } catch { } }
+        else { try { await api.post("/tablePreferences", rec); } catch { } }
       }
-
-      // Delete removed records
       for (const id of existingIds) {
-        if (!finalRecords.find(r => r.id === id)) {
-          try { await api.delete(`/tablePreferences/${id}`); } catch { }
-        }
+        if (!finalRecords.find(r => r.id === id)) { try { await api.delete(`/tablePreferences/${id}`); } catch { } }
       }
-
       setPrefDbRecords(finalRecords);
       toast.success("Table preferences saved!");
       setShowPrefModal(false);
-    } catch {
-      toast.error("Failed to save preferences");
-    } finally {
-      setPrefSaving(false);
-    }
+    } catch { toast.error("Failed to save preferences"); }
+    finally { setPrefSaving(false); }
   };
 
-  /* ── Create form table pref image ── */
   const handleCreateTablePrefImage = async (file) => {
     if (!file) return;
     try {
       const dataURL = await readFileAsDataURL(file);
       setTablePrefImageFile(dataURL);
       toast.success("Image ready to upload with reservation");
-    } catch {
-      toast.error("Failed to read image");
-    }
+    } catch { toast.error("Failed to read image"); }
   };
 
-  const isDefaultFilter = !filterDate && filterFromDate === todayStr() && filterToDate === todayStr() && filterDatePreset === "today" && filterSlots.size === 0 && filterStatuses.size === 0 && filterSources.size === 0 && !search.trim();
+  const isDefaultFilter = !filterDate && filterFromDate === todayStr() && filterToDate === todayStr()
+    && filterDatePreset === "today" && filterSlots.size === 0
+    && filterStatuses.size === 0 && filterSources.size === 0 && !search.trim();
   const activeFilters = !isDefaultFilter;
 
   const handleExport = () => {
@@ -615,12 +565,13 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
   return (
     <div className="inner-page">
 
-      {/* HEADER */}
+      {/* ── HEADER ── */}
       <div className="evt-header">
         <div>
           <h2 className="evt-title">Reservations</h2>
           <p className="evt-subtitle">Manage table bookings</p>
         </div>
+
         {/* KPI strip */}
         <div className="evt-kpi-row">
           {[
@@ -630,22 +581,21 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
             { label: "Completed", val: completedCount, color: "#2980b9" },
             { label: "Cancelled", val: cancelledCount, color: "#dc2626" },
           ].map((k, i) => (
-            <div key={i} className="evt-kpi">
+            <div key={i} className="evt-kpi" style={{ borderTopColor: k.color }}>
               <div className="evt-kpi-val" style={{ color: k.color }}>{k.val}</div>
               <div className="evt-kpi-label">{k.label}</div>
             </div>
           ))}
         </div>
+
         <div className="header-btn-container">
           <Button3D variant="cancel" onClick={() => setShowPrefModal(true)}>Table Preferences</Button3D>
-
           <Button3D onClick={handleExport}>Export</Button3D>
-
           <Button3D onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setTablePrefImageFile(null); setCreateTab(0); }}>+ Add Reservation</Button3D>
         </div>
       </div>
 
-      {/* ── Filter bar ── */}
+      {/* ── FILTER BAR ── */}
       <div className="filter-bar">
         <div className="filter-groups">
           <input className="search-input" placeholder="Search name / mobile / ID..."
@@ -653,10 +603,9 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
           <div className="filter-group">
             <span className="filter-group-label">period</span>
-            {/* Quick date presets */}
             {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
               <button key={preset}
-                className={`filter-pill ${filterDatePreset === preset ? " active" : ""}`}
+                className={`filter-pill${filterDatePreset === preset ? " active" : ""}`}
                 onClick={() => {
                   if (filterDatePreset === preset) {
                     setFilterDatePreset(""); setFilterDate(""); setFilterFromDate(""); setFilterToDate("");
@@ -672,37 +621,39 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
             ))}
           </div>
 
-          {/* From / To date pickers */}
           <div className="filter-group">
             <span className="filter-group-label">From</span>
             <div style={{ minWidth: 148 }}>
-              <CustomDatePicker value={filterFromDate} onChange={v => { setFilterFromDate(v); setFilterDate(""); setFilterDatePreset(""); if (filterToDate && v > filterToDate) setFilterToDate(v); }} placeholder="Start date" />
+              <CustomDatePicker value={filterFromDate}
+                onChange={v => { setFilterFromDate(v); setFilterDate(""); setFilterDatePreset(""); if (filterToDate && v > filterToDate) setFilterToDate(v); }}
+                placeholder="Start date" />
             </div>
             <span className="filter-group-label">To</span>
             <div style={{ minWidth: 148 }}>
-              <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={v => { setFilterToDate(v); setFilterDate(""); setFilterDatePreset(""); }} placeholder="End date" />
+              <CustomDatePicker value={filterToDate} min={filterFromDate}
+                onChange={v => { setFilterToDate(v); setFilterDate(""); setFilterDatePreset(""); }}
+                placeholder="End date" />
             </div>
             {(filterFromDate || filterToDate) && (
-              <button className="filter-pill" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); setFilterDate(""); }} title="Clear dates">✕</button>
+              <button className="filter-pill"
+                onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); setFilterDate(""); }}
+                title="Clear dates">✕</button>
             )}
           </div>
         </div>
 
         <div className="filter-groups">
-
-          {/* ── All 5 Slots ── */}
           <div className="filter-group">
             <span className="filter-group-label">Slot</span>
             {SLOT_GROUPS.map(sg => (
               <button key={sg.key} title={`${sg.label} (${sg.start}–${sg.end})`}
-                className={`filter-pill ${filterSlots.has(sg.key) ? "active" : ""}`}
+                className={`filter-pill${filterSlots.has(sg.key) ? " active" : ""}`}
                 onClick={() => toggleSet(setFilterSlots, sg.key)}>
                 {sg.short}
               </button>
             ))}
           </div>
 
-          {/* Status */}
           <div className="filter-group">
             <span className="filter-group-label">Status</span>
             {[
@@ -712,17 +663,16 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
               ["cancelled", "X", "status-cancelled", "Cancelled"],
             ].map(([key, short, cls, title]) => (
               <button key={key} title={title}
-                className={`filter-pill ${filterStatuses.has(key) ? "active " + cls : ""}`}
+                className={`filter-pill${filterStatuses.has(key) ? " active " + cls : ""}`}
                 onClick={() => toggleSet(setFilterStatuses, key)}>{short}</button>
             ))}
           </div>
 
-          {/* Source */}
           <div className="filter-group">
             <span className="filter-group-label">Source</span>
             {SOURCE_OPTIONS.map(s => (
               <button key={s.label} title={s.label}
-                className={`filter-pill ${filterSources.has(s.label) ? "active" : ""}`}
+                className={`filter-pill${filterSources.has(s.label) ? " active" : ""}`}
                 onClick={() => toggleSet(setFilterSources, s.label)}>{s.icon}</button>
             ))}
           </div>
@@ -733,9 +683,9 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
         </div>
       </div>
 
-      {/* ── TABLE ── */}
+      {/* ══ TABLE — same pattern as Celebrations ══ */}
       <div className="table-wrapper" ref={containerRef}>
-        <table className="table">
+        <table >
           <thead>
             <tr>
               <th onClick={() => handleSort("name")} className={sortField === "name" ? "sorted" : ""}>
@@ -774,13 +724,14 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
           </thead>
           <tbody>
             {sortedData.length === 0 ? (
-              <tr><td colSpan="13" className="evt-res-empty">No reservations found</td></tr>
+              <tr><td colSpan="12" className="evt-res-empty">No reservations found</td></tr>
             ) : (
               sortedData.slice(0, displayLimit).map(item => {
                 const status = item.status || "pending";
                 const rowDate = item.date || todayStr();
                 const slotKey = resolveSlotKey(item);
                 const slotLabel = SLOT_GROUPS.find(s => s.key === slotKey)?.label || "—";
+                const history = item.callHistory || [];
 
                 const assignedForDate = new Set(
                   data.filter(r => r.date === rowDate && r.tableNo && r.id !== item.id).map(r => String(r.tableNo))
@@ -790,24 +741,24 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                   if (item.tableNo && String(item.tableNo) === tStr) return true;
                   return !assignedForDate.has(tStr);
                 });
-                const history = item.callHistory || [];
 
                 return (
-                  <tr
-                    className="evt-res-row"
-                    key={item.id}
-                  >
-                    {/* Guest name */}
+                  <tr key={item.id} className="evt-res-row">
+
+                    {/* Guest Name */}
                     <td>
-                      <span
-                      >
-                        <span className="evt-res-name clickable"
-                          onClick={() => navigate(`/reservations/${item.id}`, { state: { fromDetail: true } })}
-                        >
-                          {item.name || "—"}
+                      <div className="evt-res-name-cell">
+                        <div className="evt-res-avatar">
+                          {(item.name || "?").charAt(0).toUpperCase()}
+                        </div>
+                        <span>
+                          <span className="evt-res-name clickable"
+                            onClick={() => navigate(`/reservations/${item.id}`, { state: { fromDetail: true } })}>
+                            {item.name || "—"}
+                          </span>
+                          <div className="evt-res-id-small">#{(item.id || "").slice(-6)}</div>
                         </span>
-                        <div className="evt-res-id-small">#{(item.id || "").slice(-6)}</div>
-                      </span>
+                      </div>
                     </td>
 
                     {/* Contact */}
@@ -818,10 +769,10 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                       </div>
                     </td>
 
-                    {/* Reserved date */}
+                    {/* Reserved Date */}
                     <td style={{ fontWeight: 600 }}>{item.reservedDate || item.date || "—"}</td>
 
-                    {/* Booked on */}
+                    {/* Booked On */}
                     <td style={{ fontSize: 12, color: "#666" }}>{item.bookedDate || "—"}</td>
 
                     {/* Slot */}
@@ -837,7 +788,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     {/* Guests */}
                     <td style={{ textAlign: "center", fontWeight: 700 }}>{item.guests || 1}</td>
 
-                    {/* Table Preference (with image thumbnail if set) */}
+                    {/* Table Preference */}
                     <td>
                       <div className="evt-res-tpref-cell">
                         {item.tablePrefImage
@@ -849,7 +800,11 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
                     {/* Table assign */}
                     <td onClick={e => e.stopPropagation()}>
-                      <CustomDropdown value={item.tableNo || ""} onChange={v => updateTable(null, item.id, v)} options={rowAvailTables.map(t => ({ value: t, label: `T-${t}` }))} placeholder="Select" />
+                      <CustomDropdown
+                        value={item.tableNo || ""}
+                        onChange={v => updateTable(null, item.id, v)}
+                        options={rowAvailTables.map(t => ({ value: t, label: `T-${t}` }))}
+                        placeholder="Select" />
                     </td>
 
                     {/* Incharge */}
@@ -859,9 +814,8 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     <td onClick={e => e.stopPropagation()}>
                       <div className="evt-res-inline-status">
                         {["pending", "confirmed", "completed", "cancelled"].map(s => (
-                          <button key={s}
+                          <button key={s} title={s}
                             className={`evt-res-istatus-btn evt-res-istatus-${s}${status === s ? " active" : ""}`}
-                            title={s}
                             onClick={e => updateStatus(e, item.id, s)}>
                             {s === "pending" ? "P" : s === "confirmed" ? "C" : s === "completed" ? "D" : "X"}
                           </button>
@@ -869,7 +823,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                       </div>
                     </td>
 
-                    {/* Actions */}
+                    {/* Actions — Call + tooltip */}
                     <td onClick={e => e.stopPropagation()}>
                       <div className="evt-res-call-wrap"
                         ref={el => { callWrapRefs.current[item.id] = el; }}
@@ -884,31 +838,29 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                           }
                         }}
                         onMouseLeave={() => setCallTooltipId(null)}>
-                        <Button3D variant="cancel" iconOnly onClick={e => handleCall(e, item.id)} title="Log a call">📞 Call{history.length > 0 ? ` (${history.length})` : ""}</Button3D>
+                        <Button3D variant="cancel" iconOnly onClick={e => handleCall(e, item.id)} title="Log a call">
+                          📞 Call{history.length > 0 ? ` (${history.length})` : ""}
+                        </Button3D>
                       </div>
                     </td>
+
                   </tr>
                 );
               })
             )}
-            <InfiniteScrollLoader
-              sentinelRef={sentinelRef}
-              hasMore={hasMore}
-              colSpan={13}
-            />
+            <InfiniteScrollLoader sentinelRef={sentinelRef} hasMore={hasMore} colSpan={12} />
           </tbody>
         </table>
       </div>
 
-      {/* ══ Call History Tooltip — rendered via portal to escape overflow clipping ══ */}
+      {/* ══ Call History Portal Tooltip ══ */}
       {callTooltipId && createPortal(
         (() => {
           const histItem = (adminData?.reservations || []).find(x => x.id === callTooltipId);
           const hist = histItem?.callHistory || [];
           if (!hist.length) return null;
           return (
-            <div
-              className="evt-res-call-tooltip evt-res-call-tooltip--portal"
+            <div className="evt-res-call-tooltip"
               style={{
                 position: "fixed",
                 top: callTooltipPos.top,
@@ -916,8 +868,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                 transform: "translate(-50%, calc(-100% - 10px))",
                 zIndex: 99999,
                 pointerEvents: "none",
-              }}
-            >
+              }}>
               <div className="evt-res-call-tooltip-title">📞 Call History</div>
               {hist.map((ts, i) => (
                 <div key={i} className="evt-res-call-tooltip-row">{fmtDateTime(ts)}</div>
@@ -932,7 +883,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       {showPrefModal && (
         <div className="event-modal-overlay" onClick={() => setShowPrefModal(false)}>
           <div className="event-modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+            <div className="admin-modal-header">
               <h3>Table Preferences</h3>
               <Button3D variant="cancel" iconOnly onClick={() => setShowPrefModal(false)}><img src={closeIcon} /></Button3D>
             </div>
@@ -941,11 +892,9 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                 Manage seating preference options shown in the reservation form. Changes are saved to the database when you click <strong>Save &amp; Close</strong>.
               </p>
 
-              {/* Existing preferences */}
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {prefList.map(label => (
                   <div key={label} className="evt-res-pref-manage-row" style={{ flexWrap: "wrap", gap: 8 }}>
-                    {/* Preview thumbnail */}
                     <div className="evt-res-pref-manage-preview">
                       {prefImages[label]
                         ? <img src={prefImages[label]} alt={label} className="evt-res-pref-thumb-sm" />
@@ -954,8 +903,6 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                         </div>
                       }
                     </div>
-
-                    {/* Label + editable description */}
                     <div style={{ flex: 1, minWidth: 120 }}>
                       <div style={{ fontWeight: 600, fontSize: 13 }}>{label}</div>
                       <input
@@ -970,10 +917,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                         }}
                       />
                     </div>
-
-                    {/* Upload image button */}
-                    <input
-                      type="file" accept="image/*"
+                    <input type="file" accept="image/*"
                       ref={el => editImgRefs.current[label] = el}
                       style={{ display: "none" }}
                       onChange={async e => {
@@ -981,8 +925,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                         if (f) await handlePrefImageUpload(label, f);
                       }}
                     />
-                    <button className="evt-res-upload-img-btn"
-                      onClick={() => editImgRefs.current[label]?.click()}>
+                    <button className="evt-res-upload-img-btn" onClick={() => editImgRefs.current[label]?.click()}>
                       📷 {prefImages[label] ? "Change" : "Add Image"}
                     </button>
                     {prefImages[label] && (
@@ -993,31 +936,24 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                         }}>🗑</button>
                     )}
                     {label !== "Any" && (
-                      <button className="evt-res-pref-remove-btn" title="Remove preference" onClick={() => handleRemovePref(label)}>✕</button>
+                      <button className="evt-res-pref-remove-btn" title="Remove preference"
+                        onClick={() => handleRemovePref(label)}>✕</button>
                     )}
                   </div>
                 ))}
               </div>
 
-              {/* Add new preference */}
               <div style={{ marginTop: 18, borderTop: "1px dashed #e5e7eb", paddingTop: 14 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 8 }}>Add New Preference</div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                  <input
-                    className="evt-res-form-input" style={{ flex: 1, minWidth: 120 }}
+                  <input className="evt-res-form-input" style={{ flex: 1, minWidth: 120 }}
                     placeholder="Label e.g. Outdoor, Rooftop"
-                    value={newPrefInput}
-                    onChange={e => setNewPrefInput(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && handleAddPref()}
-                  />
-                  <input
-                    className="evt-res-form-input" style={{ flex: 1.5, minWidth: 140 }}
+                    value={newPrefInput} onChange={e => setNewPrefInput(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleAddPref()} />
+                  <input className="evt-res-form-input" style={{ flex: 1.5, minWidth: 140 }}
                     placeholder="Description (optional)"
-                    value={newPrefDesc}
-                    onChange={e => setNewPrefDesc(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && handleAddPref()}
-                  />
-                  {/* New pref image */}
+                    value={newPrefDesc} onChange={e => setNewPrefDesc(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleAddPref()} />
                   <input type="file" accept="image/*" ref={newPrefImgRef} style={{ display: "none" }}
                     onChange={async e => {
                       const f = e.target.files?.[0];
@@ -1029,25 +965,27 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                   <Button3D onClick={handleAddPref}>+ Add</Button3D>
                 </div>
                 {newPrefImage && (
-                  <img src={newPrefImage} alt="preview" style={{ marginTop: 8, height: 48, borderRadius: 6, objectFit: "cover" }} />
+                  <img src={newPrefImage} alt="preview"
+                    style={{ marginTop: 8, height: 48, borderRadius: 6, objectFit: "cover" }} />
                 )}
               </div>
             </div>
             <div className="event-modal-footer">
               <button onClick={() => setShowPrefModal(false)}>Cancel</button>
-              <button onClick={handleSavePrefs} disabled={prefSaving} style={{ background: "#1dd1a1", color: "#fff", fontWeight: 700 }}>
+              <button onClick={handleSavePrefs} disabled={prefSaving}
+                style={{ background: "#1dd1a1", color: "#fff", fontWeight: 700 }}>
                 {prefSaving ? "Saving..." : "💾 Save & Close"}
               </button>
-
             </div>
           </div>
         </div>
       )}
 
+      {/* ══ Create Reservation Modal ══ */}
       {showCreate && (
         <div className="event-modal-overlay" onClick={() => setShowCreate(false)}>
           <div className="event-modal" style={{ width: 620 }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+            <div className="admin-modal-header">
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 <h3>Add Reservation</h3>
                 <div className="ecard">
@@ -1064,25 +1002,28 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                   ))}
                 </div>
               </div>
-              <Button3D variant="cancel" iconOnly onClick={() => { setShowCreate(false); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => { setShowCreate(false); setFormErrors({}); }}>
+                <img src={closeIcon} />
+              </Button3D>
             </div>
 
             <div className="event-modal-body" style={{ padding: "8px 0" }}>
 
-              {/* ── TAB 0: Guest Information ── */}
+              {/* ── TAB 0: All Details ── */}
               {createTab === 0 && (
                 <>
                   <div className="evt-res-form-section-label">Guest Information</div>
                   <div className="horizontal-form-group">
-                    <div className="form-group" style={{ flex: 1.4 }}>
+                    <div className="admin-form-group" style={{ flex: 1.4 }}>
                       <div className="mat">
                         <input className={`mat-input${formErrors.name ? " mat-error" : ""}`} placeholder=" "
-                          value={form.name} onChange={e => { setF("name", e.target.value); setFormErrors(p => ({ ...p, name: false })); }} />
+                          value={form.name}
+                          onChange={e => { setF("name", e.target.value); setFormErrors(p => ({ ...p, name: false })); }} />
                         <label className={`mat-label${formErrors.name ? " mat-label-error" : ""}`}>Name <span className="evt-res-req">*</span></label>
                         <span className={`mat-bar${formErrors.name ? " mat-bar-error" : ""}`} />
                       </div>
                     </div>
-                    <div className="form-group" style={{ flex: 1 }}>
+                    <div className="admin-form-group" style={{ flex: 1 }}>
                       <label>Guests</label>
                       <div className="evt-stepper">
                         <button type="button" onClick={() => setF("guests", Math.max(1, form.guests - 1))}>−</button>
@@ -1093,15 +1034,16 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                   </div>
 
                   <div className="horizontal-form-group">
-                    <div className="form-group" style={{ flex: 1 }}>
+                    <div className="admin-form-group" style={{ flex: 1 }}>
                       <div className="mat">
                         <input className={`mat-input${formErrors.mobile ? " mat-error" : ""}`} placeholder=" " type="tel"
-                          value={form.mobile} onChange={e => { setF("mobile", e.target.value.replace(/\D/g, "").slice(0, 10)); setFormErrors(p => ({ ...p, mobile: false })); }} />
+                          value={form.mobile}
+                          onChange={e => { setF("mobile", e.target.value.replace(/\D/g, "").slice(0, 10)); setFormErrors(p => ({ ...p, mobile: false })); }} />
                         <label className={`mat-label${formErrors.mobile ? " mat-label-error" : ""}`}>Mobile <span className="evt-res-req">*</span></label>
                         <span className={`mat-bar${formErrors.mobile ? " mat-bar-error" : ""}`} />
                       </div>
                     </div>
-                    <div className="form-group" style={{ flex: 1 }}>
+                    <div className="admin-form-group" style={{ flex: 1 }}>
                       <div className="mat">
                         <input className="mat-input" placeholder=" "
                           value={form.email} onChange={e => setF("email", e.target.value)} />
@@ -1113,24 +1055,24 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
                   <div className="evt-res-form-section-label">Staff & Source</div>
                   <div className="horizontal-form-group">
-                    <div className="form-group" style={{ flex: 1 }}>
+                    <div className="admin-form-group" style={{ flex: 1 }}>
                       <label>Source</label>
                       <div className="evt-res-source-chips">
                         {SOURCE_OPTIONS.map(s => (
                           <button key={s.label} type="button"
-                            className={`evt-res-source-chip ${form.source === s.label ? "active" : ""}`}
+                            className={`evt-res-source-chip${form.source === s.label ? " active" : ""}`}
                             onClick={() => setF("source", s.label)}>
                             {s.label}
                           </button>
                         ))}
                       </div>
                     </div>
-                    <div className="form-group" style={{ flex: 1 }}>
+                    <div className="admin-form-group" style={{ flex: 1 }}>
                       <label>Status</label>
                       <div className="evt-res-source-chips">
                         {["pending", "confirmed"].map(s => (
                           <button key={s} type="button"
-                            className={`evt-res-source-chip ${form.status === s ? "active status-" + s : ""}`}
+                            className={`evt-res-source-chip${form.status === s ? " active status-" + s : ""}`}
                             onClick={() => setF("status", s)}>
                             {s.charAt(0).toUpperCase() + s.slice(1)}
                           </button>
@@ -1139,10 +1081,12 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     </div>
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label>Staff Incharge</label>
                     {staff.length > 0 ? (
-                      <CustomDropdown value={form.inchargePerson} onChange={v => setF("inchargePerson", v)} options={staff.map(s => ({ value: s.name, label: s.name + (s.role ? ` (${s.role})` : "") }))} placeholder="— Assign staff —" />
+                      <CustomDropdown value={form.inchargePerson} onChange={v => setF("inchargePerson", v)}
+                        options={staff.map(s => ({ value: s.name, label: s.name + (s.role ? ` (${s.role})` : "") }))}
+                        placeholder="— Assign staff —" />
                     ) : (
                       <div className="mat">
                         <input className="mat-input" placeholder=" " value={form.inchargePerson}
@@ -1153,7 +1097,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     )}
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <div className="mat-area">
                       <textarea className="mat-input mat-textarea" rows={2} placeholder=" "
                         value={form.notes} onChange={e => setF("notes", e.target.value)} />
@@ -1164,30 +1108,35 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
                   <div className="evt-res-form-section-label">Booking Dates</div>
                   <div className="horizontal-form-group">
-                    <div className="form-group" style={{ flex: 1 }}>
+                    <div className="admin-form-group" style={{ flex: 1 }}>
                       <label>Booked On <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(date reservation was made)</span></label>
                       <CustomDatePicker value={form.bookedDate} onChange={v => setF("bookedDate", v)} placeholder="Booking date" />
                     </div>
-                    <div className="form-group" style={{ flex: 1 }}>
-                      <label className={formErrors.date ? "mat-label-error" : ""}>Reserved For <span className="evt-res-req">*</span> <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(table reservation date)</span></label>
-                      <CustomDatePicker value={form.reservedDate} min={todayStr()} hasError={!!formErrors.date} onChange={v => {
-                        setF("reservedDate", v);
-                        setF("date", v);
-                        setFormErrors(p => ({ ...p, date: false }));
-                        if (v === todayStr() && form.slotGroup) {
-                          const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup);
-                          if (sg) {
-                            const slotEndH = parseInt(sg.end.split(":")[0], 10);
-                            const slotEndM = parseInt(sg.end.split(":")[1], 10);
-                            if (nowMinutes >= slotEndH * 60 + slotEndM) { setF("slotGroup", ""); setF("time", ""); }
+                    <div className="admin-form-group" style={{ flex: 1 }}>
+                      <label className={formErrors.date ? "mat-label-error" : ""}>
+                        Reserved For <span className="evt-res-req">*</span>
+                        <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(table reservation date)</span>
+                      </label>
+                      <CustomDatePicker value={form.reservedDate} min={todayStr()} hasError={!!formErrors.date}
+                        onChange={v => {
+                          setF("reservedDate", v);
+                          setF("date", v);
+                          setFormErrors(p => ({ ...p, date: false }));
+                          if (v === todayStr() && form.slotGroup) {
+                            const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup);
+                            if (sg) {
+                              const slotEndH = parseInt(sg.end.split(":")[0], 10);
+                              const slotEndM = parseInt(sg.end.split(":")[1], 10);
+                              if (nowMinutes >= slotEndH * 60 + slotEndM) { setF("slotGroup", ""); setF("time", ""); }
+                            }
                           }
-                        }
-                      }} placeholder="Reserved date" />
+                        }}
+                        placeholder="Reserved date" />
                     </div>
                   </div>
 
                   <div className="evt-res-form-section-label">Booking Details</div>
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label>Dining Slot <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400 }}>(select to restrict time picker)</span></label>
                     <div className="evt-res-pref-grid">
                       {SLOT_GROUPS.map(sg => {
@@ -1196,13 +1145,9 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                         const slotEndM = parseInt(sg.end.split(":")[1], 10);
                         const isPast = isReservedToday && nowMinutes >= slotEndH * 60 + slotEndM;
                         return (
-                          <button key={sg.key} type="button"
-                            disabled={isPast}
-                            className={`evt-res-pref-card  ${form.slotGroup === sg.key ? "active" : ""}`}
-                            style={isPast ? {
-                              opacity: 0.38, cursor: "not-allowed", pointerEvents: "none",
-                              background: "#f3f4f6", borderColor: "#e5e7eb", color: "#9ca3af",
-                            } : {}}
+                          <button key={sg.key} type="button" disabled={isPast}
+                            className={`evt-res-pref-card${form.slotGroup === sg.key ? " active" : ""}`}
+                            style={isPast ? { opacity: 0.38, cursor: "not-allowed", pointerEvents: "none", background: "#f3f4f6", borderColor: "#e5e7eb", color: "#9ca3af" } : {}}
                             onClick={() => {
                               if (isPast) return;
                               const next = form.slotGroup === sg.key ? "" : sg.key;
@@ -1219,32 +1164,36 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                   </div>
 
                   <div className="horizontal-form-group">
-                    <div className="form-group" style={{ flex: 1 }}>
-                      <label className={formErrors.time ? "mat-label-error" : ""}>Time <span className="evt-res-req">*</span>
+                    <div className="admin-form-group" style={{ flex: 1 }}>
+                      <label className={formErrors.time ? "mat-label-error" : ""}>
+                        Time <span className="evt-res-req">*</span>
                         {!form.slotGroup
                           ? <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(select slot first)</span>
                           : (() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()
                         }
                       </label>
-                      <CustomTimePicker value={form.time} onChange={v => { setF("time", v); setFormErrors(p => ({ ...p, time: false })); }}
+                      <CustomTimePicker value={form.time}
+                        onChange={v => { setF("time", v); setFormErrors(p => ({ ...p, time: false })); }}
                         slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
                         slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
                         disabled={!form.slotGroup}
                         hasError={!!formErrors.time}
                         isToday={form.reservedDate === todayStr()} />
                     </div>
-                    <div className="form-group" style={{ flex: 1 }}>
+                    <div className="admin-form-group" style={{ flex: 1 }}>
                       <label>Table No. <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(available)</span></label>
-                      <CustomDropdown value={form.tableNo} onChange={v => setF("tableNo", v)} options={availableTablesForForm.map(t => ({ value: t, label: `Table ${t}` }))} placeholder="— No table —" />
+                      <CustomDropdown value={form.tableNo} onChange={v => setF("tableNo", v)}
+                        options={availableTablesForForm.map(t => ({ value: t, label: `Table ${t}` }))}
+                        placeholder="— No table —" />
                     </div>
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label>Table Preference</label>
                     <div className="evt-res-pref-grid">
                       {PREF_OPTIONS.map(p => (
                         <button key={p.label} type="button"
-                          className={`evt-res-pref-card ${form.tablePref === p.label ? "active" : ""}`}
+                          className={`evt-res-pref-card${form.tablePref === p.label ? " active" : ""}`}
                           onClick={() => setF("tablePref", p.label)}>
                           <div className="evt-res-pref-visual">{p.svg}</div>
                           <span className="evt-res-pref-label">{p.label}</span>
@@ -1261,7 +1210,6 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                 const slotLabel = SLOT_GROUPS.find(s => s.key === slotKey)?.label || "—";
                 return (
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    {/* Summary header */}
                     <div style={{ background: "linear-gradient(135deg,#f8fafc,#eef2ff)", borderRadius: 12, padding: "12px 16px", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", gap: 12 }}>
                       {tablePrefImageFile
                         ? <img src={tablePrefImageFile} alt="pref" style={{ width: 42, height: 42, borderRadius: "50%", objectFit: "cover" }} />
@@ -1293,7 +1241,10 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                           ["Incharge", form.inchargePerson || "—"],
                           ["Source", form.source || "—"],
                         ].map(([l, v]) => (
-                          <div key={l} className="prv-cell"><div className="prv-cell-label">{l}</div><div className="prv-cell-val">{v}</div></div>
+                          <div key={l} className="prv-cell">
+                            <div className="prv-cell-label">{l}</div>
+                            <div className="prv-cell-val">{v}</div>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -1322,9 +1273,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
             <div className="event-modal-footer">
               <Button3D variant="cancel" onClick={() => { setShowCreate(false); setFormErrors({}); }}>Cancel</Button3D>
               {createTab === 0 ? (
-                <button type="button" className="modal-next-btn" onClick={() => {
-                  if (validateResTab()) handleResNext();
-                }}>
+                <button type="button" className="modal-next-btn" onClick={() => { if (validateResTab()) handleResNext(); }}>
                   <span className="shadow"></span><span className="edge"></span>
                   <span className="front">Preview →</span>
                 </button>
@@ -1341,6 +1290,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
           </div>
         </div>
       )}
+
     </div>
   );
 };

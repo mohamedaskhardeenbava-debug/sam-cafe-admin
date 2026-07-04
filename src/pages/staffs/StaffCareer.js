@@ -168,14 +168,14 @@ export default function StaffCareer() {
       {/* ADD MODAL */}
       {showForm && (
         <div className="modal-overlay">
-          <form className="modal" onSubmit={addJob}>
-            <div className="modal-header">
+          <form className="admin-modal" onSubmit={addJob}>
+            <div className="admin-modal-header">
               <h3>Add Job Vacancy</h3>
               <Button3D variant="cancel" iconOnly onClick={() => { setShowForm(false); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
 
-            <div className="modal-body">
-              <div className={`form-group${formErrors.role ? " mat-select-error" : ""}`}>
+            <div className="admin-modal-body">
+              <div className={`admin-form-group${formErrors.role ? " mat-select-error" : ""}`}>
                 <CustomDropdown
                   label="Role"
                   value={form.role}
@@ -186,7 +186,7 @@ export default function StaffCareer() {
                 />
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className="mat">
                   <textarea
                     className={`mat-input mat-textarea${formErrors.description ? " mat-error" : ""}`}
@@ -199,7 +199,7 @@ export default function StaffCareer() {
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className="mat">
                   <input
                     className="mat-input"
@@ -215,7 +215,7 @@ export default function StaffCareer() {
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <Button3D variant="cancel" onClick={() => { setShowForm(false); setFormErrors({}); }}>Cancel</Button3D>
               <Button3D type="submit">Save Vacancy</Button3D>
             </div>
@@ -226,8 +226,8 @@ export default function StaffCareer() {
       {/* DETAIL MODAL */}
       {selected && (
         <div className="modal-overlay" onClick={() => setSelected(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+            <div className="admin-modal-header">
               <div>
                 <h3>{selected.role}</h3>
                 <span className="sc-modal-sub">Job Vacancy</span>
@@ -235,7 +235,7 @@ export default function StaffCareer() {
               <Button3D variant="cancel" iconOnly onClick={() => setSelected(null)}><img src={closeIcon} /></Button3D>
             </div>
 
-            <div className="modal-body">
+            <div className="admin-modal-body">
               <table className="staff-training-table">
                 <tbody>
                   <tr><td>Role</td><td>{selected.role}</td></tr>
@@ -245,7 +245,7 @@ export default function StaffCareer() {
               </table>
             </div>
 
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <Button3D variant="cancel" onClick={() => setSelected(null)}>Close</Button3D>
             </div>
           </div>

@@ -27,7 +27,7 @@ const UserDetails = ({ users }) => {
     ) || 0;
 
   return (
-    <div className="details-page">
+    <div className="user-details-page">
       <div className="details-container ">
 
         <div className="details-header">

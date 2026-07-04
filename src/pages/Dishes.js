@@ -500,11 +500,8 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
         <Button3D onClick={() => setShowForm(true)}>+ Add Dish</Button3D>
 
       </div>
-
-
-
-      <div className="table-wrapper" ref={containerRef}>
-        <table className="table">
+      <div className="table-wrapper dish-page-table" ref={containerRef}>
+        <table >
           <thead>
             <tr>
               <th className="icon-width">Image</th>
@@ -572,7 +569,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
             ))}
 
             {sortedDishes.length === 0 && (
-              <EmptyRow colSpan={5} message="No dishes available" />
+              <EmptyRow colSpan={6} message="No dishes available" />
             )}
             <InfiniteScrollLoader
               sentinelRef={sentinelRef}
@@ -586,13 +583,13 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       {showForm && (
         <div className="modal-overlay">
           <form
-            className="modal"
+            className="admin-modal"
             onSubmit={(e) => {
               e.preventDefault();
               handleSaveDish();
             }}>
 
-            <div className="modal-header">
+            <div className="admin-modal-header">
               <h3>
                 Add New Dish
                 {selectedCategoryIds.length === 1 && (
@@ -618,8 +615,8 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               <Button3D variant="cancel" iconOnly aria-label="Close"
                 onClick={resetDishForm}><img src={closeIcon} /></Button3D>
             </div>
-            <div className="modal-body">
-              <div className="form-group">
+            <div className="admin-modal-body">
+              <div className="admin-form-group">
                 <div className="mat">
                   <input
                     className={`mat-input${formErrors.name ? " mat-error" : ""}`}
@@ -639,7 +636,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className={`file-wrap${formErrors.image ? " file-error" : ""}`}>
                   <input
                     type="file"
@@ -666,7 +663,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 )}
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className="mat">
                   <input
                     className={`mat-input${formErrors.basePrice ? " mat-error" : ""}`}
@@ -682,7 +679,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className="mat">
                   <textarea
                     className={`mat-input mat-textarea${formErrors.description ? " mat-error" : ""}`}
@@ -695,7 +692,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Type</label>
                 <div className="veg-toggle-group">
                   <button
@@ -715,7 +712,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Event Food</label>
                 <div className="veg-toggle-group">
                   <button
@@ -734,11 +731,11 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                   </button>
                 </div>
               </div>
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label htmlFor="">Nutrition</label>
                 <div className="benefits-grid border">
                   {["calories", "protein", "fibre", "fat"].map(key => (
-                    <div className="form-group" key={key}>
+                    <div className="admin-form-group" key={key}>
                       <div className="mat">
                         <input
                           className={`mat-input${formErrors[key] ? " mat-error" : ""}`}
@@ -762,10 +759,10 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
               {/* INGREDIENT INPUT */}
 
-              <div className="ingredient-form form-group">
+              <div className="admin-form-group">
                 <label htmlFor="">Ingredients</label>
                 <div className="border form-group">
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <CustomDropdown
                       label="Select Ingredient"
                       value={ingredientForm.name}
@@ -775,7 +772,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                     />
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <div className="mat">
                       <input
                         className={`mat-input${ingErrors.quantity ? " mat-error" : ""}`}
@@ -822,7 +819,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               </div>
 
             </div>
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <Button3D variant="cancel" onClick={resetDishForm}>Cancel</Button3D>
               <Button3D type="submit">Add Dish</Button3D>
             </div>

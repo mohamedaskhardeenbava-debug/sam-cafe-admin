@@ -147,7 +147,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                 <span>Full Name</span>
               </div>
               {isEditing ? (
-                <div className="form-group">
+                <div className="admin-form-group">
                   <input
                     value={localStaff.name}
                     onChange={(e) =>
@@ -166,7 +166,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                 <span>Role</span>
               </div>
               {isEditing ? (
-                <div className="form-group">
+                <div className="admin-form-group">
                   <input
                     value={localStaff.role}
                     onChange={(e) =>
@@ -185,7 +185,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                 <span>Work Type</span>
               </div>
               {isEditing ? (
-                <div className="form-group">
+                <div className="admin-form-group">
                   <div className="radio-group">
                     {["part-time", "full-time", "double-shift"].map((type) => (
                       <label key={type} className="radio-btn">
@@ -213,7 +213,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                 <span>Employment Type</span>
               </div>
               {isEditing ? (
-                <div className="form-group">
+                <div className="admin-form-group">
                   <div className="radio-group">
                     {["permanent", "trainee", "intern"].map((type) => (
                       <label key={type} className="radio-btn">
@@ -241,7 +241,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                 <span>Date of Joining</span>
               </div>
               {isEditing ? (
-                <div className="form-group">
+                <div className="admin-form-group">
                   <CustomDatePicker
                     value={localStaff.joiningDate || ""}
                     onChange={(v) => setLocalStaff({ ...localStaff, joiningDate: v })}
@@ -261,8 +261,8 @@ const StaffDetails = ({ adminData, setAdminData }) => {
             <span>Personal Details</span>
           </div>
           {isEditing ? (
-            <div className="form-group">
-              <div className="form-group">
+            <div className="admin-form-group">
+              <div className="admin-form-group">
                 <label>DOB</label>
                 <CustomDatePicker
                   value={localStaff.dob || ""}
@@ -271,14 +271,14 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                   max={new Date().toISOString().split("T")[0]}
                 />
               </div>
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Educational Qualification</label>
                 <input
                   value={localStaff.education}
                   onChange={(e) => setLocalStaff({ ...localStaff, education: e.target.value })}
                 />
               </div>
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Experience</label>
                 <input
                   type="number"
@@ -286,7 +286,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                   onChange={(e) => setLocalStaff({ ...localStaff, experience: e.target.value })}
                 />
               </div>
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Salary</label>
                 <input
                   type="number"
@@ -315,7 +315,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
           </div>
           {isEditing ? (
             <>
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Contact Number</label>
                 <input
                   type="number"
@@ -323,7 +323,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                   onChange={(e) => setLocalStaff({ ...localStaff, contact: e.target.value })}
                 />
               </div>
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Alternate Contact Number</label>
                 <input
                   type="number"
@@ -349,7 +349,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
           </div>
           {isEditing ? (
             <>
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Residential Address</label>
                 <textarea
                   value={localStaff.residentialAddress}
@@ -364,7 +364,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                 />
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>
                   <input
                     type="checkbox"
@@ -384,7 +384,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                 </label>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Permanent Address</label>
                 <textarea
                   value={localStaff.permanentAddress}
@@ -411,14 +411,14 @@ const StaffDetails = ({ adminData, setAdminData }) => {
           </div>
           {isEditing ? (
             <>
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Bank Name</label>
                 <input
                   value={localStaff.bank.name}
                   onChange={(e) => setLocalStaff({ ...localStaff, bank: { ...localStaff.bank, name: e.target.value } })}
                 />
               </div>
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Account Number</label>
                 <input
                   type="number"
@@ -426,7 +426,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                   onChange={(e) => setLocalStaff({ ...localStaff, bank: { ...localStaff.bank, account: e.target.value } })}
                 />
               </div>
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>IFSC Code</label>
                 <input
                   value={localStaff.bank.ifsc}

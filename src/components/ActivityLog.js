@@ -168,7 +168,7 @@ const ActivityLog = ({ title, items = [], exportFilePrefix }) => {
         </div>
       </div>
 
-      <div className="table-wrapper">
+      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} >
         <table className="table">
           <thead>
             <tr>

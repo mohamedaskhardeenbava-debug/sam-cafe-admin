@@ -5,9 +5,6 @@
 
 /* ── PAGE ───────────────────────────────────── */
 .s-page {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
     box-sizing: border-box;
     background: transparent;
 }
@@ -776,24 +773,6 @@
     text-transform: uppercase;
     letter-spacing: 0.07em;
     white-space: nowrap;
-}
-
-/* ── Shared clear + count ── */
-.ae-clear-filter {
-    padding: 5px 12px;
-    border-radius: 999px;
-    border: 1.5px solid #fca5a5;
-    background: #fee2e2;
-    color: #dc2626;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.15s;
-}
-
-.ae-clear-filter:hover {
-    background: #fecaca;
 }
 
 .ae-result-count {

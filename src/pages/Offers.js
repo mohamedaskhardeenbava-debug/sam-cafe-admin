@@ -193,8 +193,8 @@ const Offers = ({ adminData, setAdminData }) => {
         </div>
       </div>
 
-      <div className="table-wrapper" ref={containerRef}>
-        <table className="table">
+      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} ref={containerRef}>
+        <table >
           <thead>
             <tr>
               <th>Dish</th>
@@ -246,7 +246,7 @@ const Offers = ({ adminData, setAdminData }) => {
       {showModal && (
         <div className="modal-overlay">
           <form
-            className="modal"
+            className="admin-modal"
             onSubmit={(e) => {
               e.preventDefault();
               handleSave();
@@ -254,16 +254,16 @@ const Offers = ({ adminData, setAdminData }) => {
           >
 
             {/* HEADER */}
-            <div className="modal-header">
+            <div className="admin-modal-header">
               <h3>Add Offer</h3>
               <Button3D variant="cancel" iconOnly onClick={() => { setShowModal(false); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
 
             {/* BODY */}
-            <div className="modal-body">
+            <div className="admin-modal-body">
               <div className="horizontal-form-group">
                 {/* DISH */}
-                <div className={`form-group${formErrors.dishId ? " mat-select-error" : ""}`}>
+                <div className={`admin-form-group${formErrors.dishId ? " mat-select-error" : ""}`}>
                   <CustomDropdown
                     label="Select Dish"
                     value={newOffer.dishId}
@@ -278,7 +278,7 @@ const Offers = ({ adminData, setAdminData }) => {
                 </div>
 
                 {/* OFFER % */}
-                <div className="form-group">
+                <div className="admin-form-group">
                   <div className="mat">
                     <input
                       className={`mat-input${formErrors.percentage ? " mat-error" : ""}`}
@@ -299,7 +299,7 @@ const Offers = ({ adminData, setAdminData }) => {
               </div>
 
               {/* PRICE PREVIEW */}
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Price Breakdown</label>
 
                 <div className="offers-price-preview">
@@ -322,7 +322,7 @@ const Offers = ({ adminData, setAdminData }) => {
 
               <div className="horizontal-form-group">
                 {/* DATE RANGE */}
-                <div className="form-group">
+                <div className="admin-form-group">
                   <label className={`mat-label${formErrors.startDate ? " mat-label-error" : ""}`} style={{ position: "static", transform: "none", fontSize: 13, display: "block", marginBottom: 4 }}>Start Date<span className="rf-req">*</span></label>
                   <CustomDatePicker
                     value={newOffer.startDate}
@@ -333,7 +333,7 @@ const Offers = ({ adminData, setAdminData }) => {
                   />
                 </div>
 
-                <div className="form-group">
+                <div className="admin-form-group">
                   <label className={`mat-label${formErrors.endDate ? " mat-label-error" : ""}`} style={{ position: "static", transform: "none", fontSize: 13, display: "block", marginBottom: 4 }}>End Date<span className="rf-req">*</span></label>
                   <CustomDatePicker
                     value={newOffer.endDate}
@@ -346,7 +346,7 @@ const Offers = ({ adminData, setAdminData }) => {
               </div>
 
               {/* STATUS */}
-              <div className={`form-group${formErrors.active ? " mat-select-error" : ""}`}>
+              <div className={`admin-form-group${formErrors.active ? " mat-select-error" : ""}`}>
                 <CustomDropdown
                   label="Status"
                   value={newOffer.active}
@@ -361,7 +361,7 @@ const Offers = ({ adminData, setAdminData }) => {
             </div>
 
             {/* FOOTER */}
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <Button3D variant="cancel" onClick={() => { setShowModal(false); setFormErrors({}); }}>Cancel</Button3D>
               <Button3D type="submit">Save</Button3D>
             </div>

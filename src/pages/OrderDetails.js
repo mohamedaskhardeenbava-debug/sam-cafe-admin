@@ -76,7 +76,7 @@ const OrderDetails = ({ orders, menu }) => {
     status.toLowerCase().trim();
 
   return (
-    <div className="details-page">
+    <div className="order-details-page">
       <div className="details-container">
 
         {/* HEADER */}

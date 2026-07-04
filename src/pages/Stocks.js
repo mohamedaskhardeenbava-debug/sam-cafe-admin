@@ -316,8 +316,8 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       </div>
 
       {/* TABLE */}
-      <div className="table-wrapper" ref={containerRef}>
-        <table className="table">
+      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }}  ref={containerRef}>
+        <table >
           <thead>
             <tr>
               <th
@@ -410,7 +410,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
           <tbody>
             {filteredIngredients.length === 0 ? (
-              <EmptyRow colSpan={6} message="No stock data available" />
+              <EmptyRow colSpan={9} message="No stock data available" />
             ) : (
               filteredIngredients.slice(0, displayLimit).map((ing) => (
                 <tr key={ing.id}>
@@ -487,14 +487,14 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       </div>
       {showEditModal && selectedIngredient && (
         <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
+          <div className="admin-modal">
+            <div className="admin-modal-header">
               <h3>Edit Stock & Price for {selectedIngredient.name}</h3>
               <Button3D variant="cancel" iconOnly onClick={closeModal}><img src={closeIcon} /></Button3D>
             </div>
 
-            <div className="modal-body">
-              <div className="form-group">
+            <div className="admin-modal-body">
+              <div className="admin-form-group">
                 <div className="mat">
                   <input
                     className="mat-input"
@@ -511,7 +511,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className="mat">
                   <input
                     className="mat-input"
@@ -527,7 +527,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className="mat">
                   <input
                     className="mat-input"
@@ -557,7 +557,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 </p>
               )}
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Expiry Date</label>
 
                 <CustomDatePicker
@@ -568,11 +568,11 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
               </div>
 
-              <div className="form-group border">
-                <h4>Visibility Controls</h4>
+              <div className="admin-form-group border">
+                <label>Visibility Controls</label>
 
                 {/* GLOBAL DISABLE */}
-                <div className="form-group">
+                <div className="admin-form-group">
                   <label>
                     <input
                       className="stock-all-input"
@@ -585,8 +585,8 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                 </div>
 
                 {/* DISABLE FOR SPECIFIC DISH */}
-                <div className="form-group">
-                  <div className="form-group">
+                <div className="admin-form-group">
+                  <div className="admin-form-group">
                     <CustomDropdown
                       label="Disable For Dish"
                       value={selectedDishToDisable}
@@ -657,7 +657,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <Button3D variant="cancel" onClick={closeModal}>Cancel</Button3D>
               <Button3D onClick={handleSave}>Save</Button3D>
             </div>

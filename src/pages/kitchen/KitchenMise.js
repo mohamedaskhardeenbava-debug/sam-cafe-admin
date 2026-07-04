@@ -165,8 +165,8 @@ export default function KitchenMise({ adminData, setAdminData }) {
       </div>
 
       {/* UNIFIED TABLE */}
-      <div className="table-wrapper">
-        <table className="table">
+      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 265px)" }} >
+        <table >
           <thead>
             <tr>
               <th>Task</th>

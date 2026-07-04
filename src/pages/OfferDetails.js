@@ -86,7 +86,7 @@ const OfferDetails = ({ adminData, setAdminData }) => {
   };
 
   return (
-    <div className="details-page">
+    <div className="offer-details-page">
       <div className="details-container">
 
         {/* HEADER */}

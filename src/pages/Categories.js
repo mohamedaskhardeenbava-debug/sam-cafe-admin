@@ -517,7 +517,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
       </div>
 
       <div className="table-wrapper" ref={containerRef}>
-        <table className="table">
+        <table>
           <thead>
             <tr>
               <th className="icon-width">Image</th>
@@ -605,11 +605,11 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                               <table className="subcategory-table">
                                 <thead>
                                   <tr>
-                                    <th>Image</th>
+                                    <th className="icon-width">Image</th>
                                     <th>Name</th>
                                     <th>No. of Dishes</th>
-                                    <th>Edit</th>
-                                    <th>Delete</th>
+                                    <th className="icon-width">Edit</th>
+                                    <th className="icon-width">Delete</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -617,7 +617,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                                   {category.subCategories.map((sub, i) => (
 
                                     <tr key={sub.id || i}>
-                                      <td>
+                                      <td className="icon-width">
                                         <div className="subcategory-image">
                                           <img src={sub.image} alt="" />
                                         </div>
@@ -635,7 +635,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
                                       <td>{(sub.dishes || []).length}</td>
 
-                                      <td>
+                                      <td className="icon-width">
 
                                         <Button3D variant="cancel" iconOnly onClick={(e) => {
                                           e.stopPropagation();
@@ -653,7 +653,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
                                       </td>
 
-                                      <td>
+                                      <td className="icon-width">
 
                                         <Button3D variant="cancel" iconOnly onClick={(e) => {
                                           e.stopPropagation();
@@ -694,15 +694,15 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
             <form onSubmit={(e) => {
               e.preventDefault();
               handleAddCategory();
-            }} className="modal">
-              <div className="modal-header">
+            }} className="admin-modal">
+              <div className="admin-modal-header">
                 <h3>Add New Category</h3>
                 <Button3D variant="cancel" iconOnly aria-label="Close"
                   onClick={resetAddCategoryForm}><img src={closeIcon} /></Button3D>
               </div>
 
-              <div className="modal-body">
-                <div className="form-group">
+              <div className="admin-modal-body">
+                <div className="admin-form-group">
                   <div className="mat">
                     <input
                       className={`mat-input${formErrors.name ? " mat-error" : ""}`}
@@ -729,7 +729,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                   </div>
                 </div>
 
-                <div className="form-group">
+                <div className="admin-form-group">
                   <div className={`file-wrap${formErrors.image ? " file-error" : ""}`}>
                     <input
                       type="file"
@@ -750,7 +750,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                   <div className="border">
                     <label>Size Selector</label>
 
-                    <div className="form-group">
+                    <div className="admin-form-group">
                       <div className="mat">
                         <input
                           className="mat-input"
@@ -764,7 +764,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                       </div>
                     </div>
 
-                    <div className="form-group">
+                    <div className="admin-form-group">
                       <div className="mat">
                         <input
                           className="mat-input"
@@ -779,7 +779,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                       </div>
                     </div>
 
-                    <div className="form-group">
+                    <div className="admin-form-group">
                       <div className="mat">
                         <input
                           className="mat-input"
@@ -833,7 +833,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
                 )}
 
-                <div className="form-group">
+                <div className="admin-form-group">
                   <div style={{ display: "flex", gap: "8px" }}>
                     <Button3D onClick={() => setShowSubCategoryForm(true)}>Add Subcategory</Button3D>
                   </div>
@@ -846,7 +846,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                       {editingSubIndex !== null ? "Edit Subcategory" : "Add Subcategory"}
                     </label>
 
-                    <div className="form-group">
+                    <div className="admin-form-group">
                       <div className="mat">
                         <input
                           className="mat-input"
@@ -897,7 +897,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
                     <div className="subcategory-size-row">
 
-                      <div className="form-group">
+                      <div className="admin-form-group">
                         <div className="mat">
                           <input
                             className="mat-input"
@@ -911,7 +911,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                         </div>
                       </div>
 
-                      <div className="form-group">
+                      <div className="admin-form-group">
                         <div className="mat">
                           <input
                             className="mat-input"
@@ -925,7 +925,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                         </div>
                       </div>
 
-                      <div className="form-group">
+                      <div className="admin-form-group">
                         <div className="mat">
                           <input
                             className="mat-input"
@@ -1087,7 +1087,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                 )}
               </div>
 
-              <div className="modal-footer">
+              <div className="admin-modal-footer">
                 <Button3D variant="cancel" onClick={resetAddCategoryForm}>cancel</Button3D>
                 <Button3D type="submit">Add</Button3D>
               </div>
@@ -1099,15 +1099,15 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
       {
         showEditModal && (
           <div className="modal-overlay">
-            <div className="modal">
-              <div className="modal-header">
+            <div className="admin-modal">
+              <div className="admin-modal-header">
                 <h3>{isEditingSubCategory ? "Edit Subcategory" : "Edit Category"}</h3>
                 <Button3D variant="cancel" iconOnly aria-label="Close"
                   onClick={resetEditCategoryForm}><img src={closeIcon} /></Button3D>
               </div>
 
-              <div className="modal-body">
-                <div className="form-group">
+              <div className="admin-modal-body">
+                <div className="admin-form-group">
                   <div className="mat">
                     <input
                       className={`mat-input${editFormErrors.name ? " mat-error" : ""}`}
@@ -1125,7 +1125,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                   </div>
                 </div>
 
-                <div className="form-group">
+                <div className="admin-form-group">
                   <div className="file-wrap">
                     <input
                       type="file"
@@ -1251,7 +1251,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                     (adminData.categories.find(c => c.id === editCategoryId)?.subCategories || []).length === 0)
                 ) && (
                     <div className="category-size-row">
-                      <div className="form-group">
+                      <div className="admin-form-group">
                         <div className="mat">
                           <input
                             className="mat-input"
@@ -1265,7 +1265,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                         </div>
                       </div>
 
-                      <div className="form-group">
+                      <div className="admin-form-group">
                         <div className="mat">
                           <input
                             className="mat-input"
@@ -1279,7 +1279,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                         </div>
                       </div>
 
-                      <div className="form-group">
+                      <div className="admin-form-group">
                         <div className="mat">
                           <input
                             className="mat-input"
@@ -1323,7 +1323,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                   )}
               </div>
 
-              <div className="modal-footer">
+              <div className="admin-modal-footer">
                 <Button3D variant="cancel" onClick={resetEditCategoryForm}>Cancel</Button3D>
 
                 <Button3D onClick={handleSaveEdit}>Save</Button3D>

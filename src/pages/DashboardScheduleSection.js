@@ -163,17 +163,10 @@ export default function ScheduleSection({ adminData, navigate }) {
 
   return (
     <>
-      {/* Section heading */}
-      <div className="staff-section-title" style={{ marginTop: 32 }}>
-        <h3>📋 Schedule Overview</h3>
-        <span className="staff-section-sub">Click any slice to view filtered schedules</span>
-      </div>
-
       {/* Two-column pie grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14, marginBottom: 20 }}>
         <SchedulePieCard
           title="Kitchen Schedules"
-          icon="🍳"
           data={kitchenData}
           total={kitchenTotal}
           route="/kitchen-schedules"
@@ -181,7 +174,6 @@ export default function ScheduleSection({ adminData, navigate }) {
         />
         <SchedulePieCard
           title="Service Schedules"
-          icon="🛎️"
           data={serviceData}
           total={serviceTotal}
           route="/service-schedules"

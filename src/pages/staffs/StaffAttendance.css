@@ -762,7 +762,7 @@ thead .att-sticky-col {
   padding: 0 10px 10px;
 
   width: 100%;
-  height: calc(100vh - 240px);
+  height: calc(100vh - 260px);
   overflow-y: auto;
   padding: 0 10px;
   background: #e9e9e9;

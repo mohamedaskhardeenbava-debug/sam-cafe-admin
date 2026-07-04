@@ -206,20 +206,20 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
       {showForm && (
         <div className="modal-overlay">
           <form
-            className="modal"
+            className="admin-modal"
             onSubmit={(e) => {
               e.preventDefault();
               handleSave();
             }}>
 
-            <div className="modal-header">
+            <div className="admin-modal-header">
               <h3>{isEditMode ? "Edit Ingredient" : "Add New Ingredient"}</h3>
               <Button3D variant="cancel" iconOnly aria-label="Close"
                 onClick={resetIngredientForm}><img src={closeIcon} /></Button3D>
             </div>
 
-            <div className="modal-body">
-              <div className="form-group">
+            <div className="admin-modal-body">
+              <div className="admin-form-group">
                 <div className="mat">
                   <input
                     className={`mat-input ${formErrors.name ? " mat-error" : ""}`}
@@ -250,7 +250,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className={`file-wrap${formErrors.image ? " file-error" : ""}`}>
                   <input
                     type="file"
@@ -276,7 +276,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                 )}
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Used For</label>
                 <div className="checkbox-grid">
                   {adminData.categories.flatMap(cat => {
@@ -343,11 +343,11 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Nutrition per 100g</label>
                 <div className="nutrition-grid border">
                   {["kcal", "protein", "fat", "fibre"].map((key) => (
-                    <div className="form-group" key={key}>
+                    <div className="admin-form-group" key={key}>
                       <div className="mat">
                         <input
                           className={`mat-input${formErrors[key] ? " mat-error" : ""}`}
@@ -371,7 +371,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
               </div>
 
               <div className="horizontal-form-group">
-                <div className="form-group">
+                <div className="admin-form-group">
                   <div className="mat">
                     <input
                       className={`mat-input${formErrors.pricePer100g ? " mat-error" : ""}`}
@@ -386,7 +386,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                     <span className={`mat-bar${formErrors.pricePer100g ? " mat-bar-error" : ""}`} />
                   </div>
                 </div>
-                <div className="form-group">
+                <div className="admin-form-group">
                   <div className="mat">
                     <input
                       className={`mat-input${formErrors.stockRemaining ? " mat-error" : ""}`}
@@ -403,7 +403,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className="mat">
                   <textarea
                     className={`mat-input mat-textarea${formErrors.description ? " mat-error" : ""}`}
@@ -417,7 +417,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className="mat">
                   <textarea
                     className={`mat-input mat-textarea${formErrors.history ? " mat-error" : ""}`}
@@ -431,7 +431,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Brands</label>
 
                 {!showBrandInput && (
@@ -439,7 +439,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                 )}
 
                 {showBrandInput && (
-                  <div className="form-group">
+                  <div className="admin-form-group">
 
                     <div className="mat">
                       <input
@@ -527,7 +527,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <Button3D variant="cancel" onClick={resetIngredientForm}>Cancel</Button3D>
               <Button3D type="submit">{isEditMode ? "Save Changes" : "Add Ingredient"}</Button3D>
             </div>
@@ -535,8 +535,8 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
         </div>
       )}
 
-      <div className="table-wrapper" ref={containerRef}>
-        <table className="table">
+      <div className="table-wrapper" style={{maxHeight:"calc(100vh - 260px)"}} ref={containerRef}>
+        <table >
           <thead>
             <tr>
               <th className="icon-width">Image</th>
@@ -562,7 +562,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
 
           <tbody>
             {filteredIngredients.length === 0 ? (
-              <EmptyRow colSpan={7} message="No ingredients found" />
+              <EmptyRow colSpan={8} message="No ingredients found" />
             ) : (
               filteredIngredients.slice(0, displayLimit).map((ingredient) => (
                 <tr key={ingredient.id}>
