@@ -3,6 +3,22 @@
    Depends on Common.css + EvtCommon.css + ModalCSS.css
 ═══════════════════════════════════════════════════════ */
 
+/* bookings tab wrapper */
+.admin-events-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* events tab: scroll wrapper for the grid */
+.ae-events-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 10px;
+}
+
 .ae-header-actions {
   display: flex;
   align-items: center;
@@ -2529,8 +2545,8 @@
 ══════════════════════════════════════════════════════ */
 
 /* Do NOT apply the old underline override to mat-wrapped inputs */
-.modal-body .form-group input.mat-input,
-.modal-body .form-group textarea.mat-input,
+.admin-modal-body .form-group input.mat-input,
+.admin-modal-body .form-group textarea.mat-input,
 .event-modal-body .form-group input.mat-input,
 .event-modal-body .form-group textarea.mat-input {
   display: block !important;
@@ -2553,23 +2569,23 @@
 }
 
 .event-modal-body .form-group textarea.mat-input,
-.modal-body .form-group textarea.mat-input {
+.admin-modal-body .form-group textarea.mat-input {
   height: auto !important;
   resize: vertical !important;
   min-height: 60px !important;
 }
 
-.modal-body .form-group input.mat-input::placeholder,
+.admin-modal-body .form-group input.mat-input::placeholder,
 .event-modal-body .form-group input.mat-input::placeholder,
 .event-modal-body .form-group textarea.mat-input::placeholder,
-.modal-body .form-group textarea.mat-input::placeholder {
+.admin-modal-body .form-group textarea.mat-input::placeholder {
   color: transparent !important;
 }
 
 .event-modal-body .form-group input.mat-input:hover,
-.modal-body .form-group input.mat-input:hover,
+.admin-modal-body .form-group input.mat-input:hover,
 .event-modal-body .form-group textarea.mat-input:hover,
-.modal-body .form-group textarea.mat-input:hover {
+.admin-modal-body .form-group textarea.mat-input:hover {
   border: none !important;
   border-bottom: 1px solid #9ca3af !important;
   box-shadow: none !important;
@@ -2577,9 +2593,9 @@
 }
 
 .event-modal-body .form-group input.mat-input:focus,
-.modal-body .form-group input.mat-input:focus,
+.admin-modal-body .form-group input.mat-input:focus,
 .event-modal-body .form-group textarea.mat-input:focus,
-.modal-body .form-group textarea.mat-input:focus {
+.admin-modal-body .form-group textarea.mat-input:focus {
   border-bottom-color: transparent !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -2587,7 +2603,7 @@
 
 /* mat container */
 .event-modal-body .mat,
-.modal-body .mat {
+.admin-modal-body .mat {
   position: relative;
   width: 100%;
   padding-top: 10px;
@@ -2595,7 +2611,7 @@
 
 /* mat-area container */
 .event-modal-body .mat-area,
-.modal-body .mat-area {
+.admin-modal-body .mat-area {
   position: relative;
   width: 100%;
   padding-top: 20px;
@@ -2603,7 +2619,7 @@
 
 /* Floating label — idle state */
 .event-modal-body .mat-label,
-.modal-body .mat-label {
+.admin-modal-body .mat-label {
   position: absolute;
   top: 24px;
   left: 0;
@@ -2626,8 +2642,8 @@
 /* Floating label — floated (focus or filled) */
 .event-modal-body .mat-input:focus~.mat-label,
 .event-modal-body .mat-input:not(:placeholder-shown)~.mat-label,
-.modal-body .mat-input:focus~.mat-label,
-.modal-body .mat-input:not(:placeholder-shown)~.mat-label {
+.admin-modal-body .mat-input:focus~.mat-label,
+.admin-modal-body .mat-input:not(:placeholder-shown)~.mat-label {
   top: 2px !important;
   font-size: 10px !important;
   font-weight: 700 !important;
@@ -2638,7 +2654,7 @@
 
 /* mat-area label — idle */
 .event-modal-body .mat-area-label,
-.modal-body .mat-area-label {
+.admin-modal-body .mat-area-label {
   position: absolute;
   top: 28px;
   left: 0;
@@ -2655,8 +2671,8 @@
 /* mat-area label — floated */
 .event-modal-body .mat-input:focus~.mat-area-label,
 .event-modal-body .mat-input:not(:placeholder-shown)~.mat-area-label,
-.modal-body .mat-input:focus~.mat-area-label,
-.modal-body .mat-input:not(:placeholder-shown)~.mat-area-label {
+.admin-modal-body .mat-input:focus~.mat-area-label,
+.admin-modal-body .mat-input:not(:placeholder-shown)~.mat-area-label {
   top: 2px !important;
   font-size: 10px !important;
   font-weight: 700 !important;
@@ -2668,8 +2684,8 @@
 /* Highlight bar — draws left→right on focus */
 .event-modal-body .mat-bar,
 .event-modal-body .mat-area-bar,
-.modal-body .mat-bar,
-.modal-body .mat-area-bar {
+.admin-modal-body .mat-bar,
+.admin-modal-body .mat-area-bar {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -2685,16 +2701,16 @@
 .event-modal-body .mat-input:focus~.mat-bar,
 .event-modal-body .mat-input:focus~.mat-area-label~.mat-area-bar,
 .event-modal-body .mat-input:focus~.mat-area-bar,
-.modal-body .mat-input:focus~.mat-label~.mat-bar,
-.modal-body .mat-input:focus~.mat-bar,
-.modal-body .mat-input:focus~.mat-area-label~.mat-area-bar,
-.modal-body .mat-input:focus~.mat-area-bar {
+.admin-modal-body .mat-input:focus~.mat-label~.mat-bar,
+.admin-modal-body .mat-input:focus~.mat-bar,
+.admin-modal-body .mat-input:focus~.mat-area-label~.mat-area-bar,
+.admin-modal-body .mat-input:focus~.mat-area-bar {
   width: 100% !important;
 }
 
 /* rf-req star inside admin mat labels */
 .event-modal-body .rf-req,
-.modal-body .rf-req {
+.admin-modal-body .rf-req {
   color: var(--color-red) !important;
 }
 

@@ -468,7 +468,7 @@
 }
 
 /* Dropdown menu — must escape the relative wrapper via high z-index */
-.mat-select .dropdown-menu {
+.mat-select .dishes-dropdown-menu {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;

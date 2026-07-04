@@ -60,7 +60,7 @@
 
 
 /* ── Modal card ── */
-.modal {
+.admin-modal {
     position: relative;
     background: var(--color-white);
     width: 560px;
@@ -79,14 +79,14 @@
     width: 480px;
 }
 
-.modal textarea {
+.admin-modal textarea {
     resize: none;
     min-height: 70px;
 }
 
 
 /* ── Header ── */
-.modal-header {
+.admin-modal-header {
     position: sticky;
     top: 0;
     z-index: 2;
@@ -96,13 +96,18 @@
     justify-content: space-between;
 }
 
-.modal-header h3 {
+.admin-modal-header h1,
+.admin-modal-header h2,
+.admin-modal-header h3,
+.admin-modal-header h4,
+.admin-modal-header h5{
+    font-size: 22px !important;
     margin: 0 !important;
 }
 
 
 /* ── Body ── */
-.modal-body {
+.admin-modal-body {
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -113,18 +118,23 @@
     min-height: 0;
 }
 
-.modal-body input {
+.admin-modal-body input,
+.admin-modal-body textarea,
+.mat-input,
+.mat-input {
     box-sizing: border-box;
+    border: none !important;
+    border-bottom: 1px solid #f0f0f0 !important;
 }
 
-.modal-body a {
+.admin-modal-body a {
     color: var(--color-blue) !important;
     font-weight: 600 !important;
 }
 
 
 /* ── Footer ── */
-.modal-footer {
+.admin-modal-footer {
     position: sticky;
     bottom: 0;
     z-index: 2;

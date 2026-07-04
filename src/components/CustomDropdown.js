@@ -102,7 +102,7 @@ const CustomDropdown = ({
         </button>
 
         {open && (
-          <div className="dropdown-menu">
+          <div className="dishes-dropdown-menu">
             {/* Clear / placeholder row */}
             {placeholder !== null && (
               <div

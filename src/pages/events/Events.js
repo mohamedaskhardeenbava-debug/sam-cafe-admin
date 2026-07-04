@@ -882,90 +882,92 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
             </div>
           </div>
 
-          {filteredEvents.length === 0 ? (
-            <div className="ae-empty-state">
-              <p>{events.length === 0 ? "No events yet. Create your first event!" : "No events match the current filters."}</p>
-            </div>
-          ) : (
-            <div className="ae-events-grid">
-              {filteredEvents.map((evt) => {
-                const stats = statsForEvent(evt.id);
-                const pct = evt.maxCapacity
-                  ? Math.min(100, Math.round((stats.confirmed / evt.maxCapacity) * 100))
-                  : 0;
-                const images = evt.images?.length ? evt.images : (evt.image ? [evt.image] : []);
-                return (
-                  <div className="ae-event-card" key={evt.id}>
-                    <div className="ae-event-card-image">
-                      {images.length > 0 ? (
-                        <div className="ae-card-carousel">
-                          {images.map((img, i) => (
-                            <img key={i} src={img} alt={evt.title} className={i === 0 ? "active" : ""} />
-                          ))}
-                          {images.length > 1 && <span className="ae-img-count">+{images.length - 1}</span>}
-                        </div>
-                      ) : (
-                        <div className="ae-event-card-placeholder">Event</div>
-                      )}
-                      <span className="ae-status-badge" style={{ background: STATUS_COLORS[evt.status] }}>
-                        {evt.status}
-                      </span>
-                      <span className={`ae-publish-dot ${evt.isPublished ? "published" : "draft"}`}>
-                        {evt.isPublished ? "Live" : "Draft"}
-                      </span>
-                      {evt.isSpecialized && <span className="ae-spec-badge">Specialized</span>}
-                    </div>
-
-                    <div className="ae-event-card-body">
-                      <div className="ae-event-type-tag">{evt.categoryLabel || evt.eventType}</div>
-                      <h3 className="ae-event-title">{evt.title}</h3>
-                      <p className="ae-event-desc">{evt.description}</p>
-
-                      <div className="ae-event-meta">
-                        <span>{formatDate(evt.date)}</span>
-                        {evt.time && <span>{evt.time}</span>}
-                        {evt.venue && <span>{evt.venue}</span>}
-                        <span>{evt.price === 0 || !evt.price ? "Free" : `₹${Number(evt.price).toLocaleString("en-IN")}`}</span>
+          <div className="ae-events-scroll">
+            {filteredEvents.length === 0 ? (
+              <div className="ae-empty-state">
+                <p>{events.length === 0 ? "No events yet. Create your first event!" : "No events match the current filters."}</p>
+              </div>
+            ) : (
+              <div className="ae-events-grid">
+                {filteredEvents.map((evt) => {
+                  const stats = statsForEvent(evt.id);
+                  const pct = evt.maxCapacity
+                    ? Math.min(100, Math.round((stats.confirmed / evt.maxCapacity) * 100))
+                    : 0;
+                  const images = evt.images?.length ? evt.images : (evt.image ? [evt.image] : []);
+                  return (
+                    <div className="ae-event-card" key={evt.id}>
+                      <div className="ae-event-card-image">
+                        {images.length > 0 ? (
+                          <div className="ae-card-carousel">
+                            {images.map((img, i) => (
+                              <img key={i} src={img} alt={evt.title} className={i === 0 ? "active" : ""} />
+                            ))}
+                            {images.length > 1 && <span className="ae-img-count">+{images.length - 1}</span>}
+                          </div>
+                        ) : (
+                          <div className="ae-event-card-placeholder">Event</div>
+                        )}
+                        <span className="ae-status-badge" style={{ background: STATUS_COLORS[evt.status] }}>
+                          {evt.status}
+                        </span>
+                        <span className={`ae-publish-dot ${evt.isPublished ? "published" : "draft"}`}>
+                          {evt.isPublished ? "Live" : "Draft"}
+                        </span>
+                        {evt.isSpecialized && <span className="ae-spec-badge">Specialized</span>}
                       </div>
 
-                      {evt.dishes?.length > 0 && (
-                        <div className="ae-event-dishes-preview">
-                          {evt.dishes.length} dish(es) on menu
-                        </div>
-                      )}
+                      <div className="ae-event-card-body">
+                        <div className="ae-event-type-tag">{evt.categoryLabel || evt.eventType}</div>
+                        <h3 className="ae-event-title">{evt.title}</h3>
+                        <p className="ae-event-desc">{evt.description}</p>
 
-                      {evt.maxCapacity > 0 && (
-                        <div className="ae-capacity-bar">
-                          <div className="ae-capacity-label">
-                            <span>Capacity</span>
-                            <span>{stats.confirmed}/{evt.maxCapacity} confirmed</span>
-                          </div>
-                          <div className="ae-progress-track">
-                            <div className="ae-progress-fill" style={{ width: `${pct}%`, background: pct >= 90 ? "#dc2626" : pct >= 60 ? "#f59e0b" : "#16a34a" }} />
-                          </div>
+                        <div className="ae-event-meta">
+                          <span>{formatDate(evt.date)}</span>
+                          {evt.time && <span>{evt.time}</span>}
+                          {evt.venue && <span>{evt.venue}</span>}
+                          <span>{evt.price === 0 || !evt.price ? "Free" : `₹${Number(evt.price).toLocaleString("en-IN")}`}</span>
                         </div>
-                      )}
 
-                      <div className="ae-mini-stats">
-                        <div className="ae-mini-stat"><span className="ae-mini-val">{stats.total}</span><span className="ae-mini-label">Total</span></div>
-                        <div className="ae-mini-stat"><span className="ae-mini-val" style={{ color: "#16a34a" }}>{stats.confirmed}</span><span className="ae-mini-label">Confirmed</span></div>
-                        <div className="ae-mini-stat"><span className="ae-mini-val" style={{ color: "#f59e0b" }}>{stats.pending}</span><span className="ae-mini-label">Pending</span></div>
+                        {evt.dishes?.length > 0 && (
+                          <div className="ae-event-dishes-preview">
+                            {evt.dishes.length} dish(es) on menu
+                          </div>
+                        )}
+
+                        {evt.maxCapacity > 0 && (
+                          <div className="ae-capacity-bar">
+                            <div className="ae-capacity-label">
+                              <span>Capacity</span>
+                              <span>{stats.confirmed}/{evt.maxCapacity} confirmed</span>
+                            </div>
+                            <div className="ae-progress-track">
+                              <div className="ae-progress-fill" style={{ width: `${pct}%`, background: pct >= 90 ? "#dc2626" : pct >= 60 ? "#f59e0b" : "#16a34a" }} />
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="ae-mini-stats">
+                          <div className="ae-mini-stat"><span className="ae-mini-val">{stats.total}</span><span className="ae-mini-label">Total</span></div>
+                          <div className="ae-mini-stat"><span className="ae-mini-val" style={{ color: "#16a34a" }}>{stats.confirmed}</span><span className="ae-mini-label">Confirmed</span></div>
+                          <div className="ae-mini-stat"><span className="ae-mini-val" style={{ color: "#f59e0b" }}>{stats.pending}</span><span className="ae-mini-label">Pending</span></div>
+                        </div>
+                      </div>
+
+                      <div className="ae-event-card-footer">
+                        <button className="ae-card-btn ae-view-btn" onClick={() => { setFilterEventId(evt.id); setActiveTab("bookings"); }}>View Bookings</button>
+                        <button className="ae-card-btn ae-edit-btn" onClick={() => evt.isSpecialized ? openSpecEdit(evt) : openEdit(evt)}>Edit</button>
+                        <button className={`ae-card-btn ae-publish-btn ${evt.isPublished ? "unpublish" : "publish"}`} onClick={() => handleTogglePublish(evt)}>
+                          {evt.isPublished ? "Unpublish" : "Publish"}
+                        </button>
+                        <button className="ae-card-btn ae-delete-btn" onClick={() => setConfirmDeleteId(evt.id)}>Delete</button>
                       </div>
                     </div>
-
-                    <div className="ae-event-card-footer">
-                      <button className="ae-card-btn ae-view-btn" onClick={() => { setFilterEventId(evt.id); setActiveTab("bookings"); }}>View Bookings</button>
-                      <button className="ae-card-btn ae-edit-btn" onClick={() => evt.isSpecialized ? openSpecEdit(evt) : openEdit(evt)}>Edit</button>
-                      <button className={`ae-card-btn ae-publish-btn ${evt.isPublished ? "unpublish" : "publish"}`} onClick={() => handleTogglePublish(evt)}>
-                        {evt.isPublished ? "Unpublish" : "Publish"}
-                      </button>
-                      <button className="ae-card-btn ae-delete-btn" onClick={() => setConfirmDeleteId(evt.id)}>Delete</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </>
       )}
 
@@ -1064,7 +1066,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
             {filteredBookings.length === 0 ? (
               <div className="ae-empty-state"><p>No bookings found.</p></div>
             ) : (
-              <table className="table">
+              <table >
                 <thead>
                   <tr>
                     <th>#</th>
@@ -1151,8 +1153,8 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
       {showForm && (
         <div className="event-modal-overlay">
           <div className="event-modal ae-event-modal">
-            <div className="modal-header">
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div className="admin-modal-header">
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", justifyContent: "flex-start" }}>
                 <h3>{isEditMode ? "Edit Event" : "Create New Event"}</h3>
                 <div className="ecard">
                   {["Details", "Venue & Capacity", "Content", "Dishes & Preview"].map((s, i) => (
@@ -1178,7 +1180,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               {/* STEP 1 — Details */}
               {editFormStep === 1 && (
                 <>
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <div className="mat">
                       <input className={`mat-input${formErrors.title ? " mat-error" : ""}`} type="text" value={formData.title} onChange={(e) => { setFormData((p) => ({ ...p, title: e.target.value })); setFormErrors(p => ({ ...p, title: false })); }} placeholder=" " />
                       <label className={`mat-label${formErrors.title ? " mat-label-error" : ""}`}>Event Title <span className="rf-req">*</span></label>
@@ -1187,7 +1189,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                   </div>
 
                   <div className="ae-form-row">
-                    <div className="form-group">
+                    <div className="admin-form-group">
                       <label>Event Type</label>
                       <CustomDropdown
                         value={formData.eventType}
@@ -1202,7 +1204,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                         ]}
                       />
                     </div>
-                    <div className="form-group">
+                    <div className="admin-form-group">
                       <label>Status</label>
                       <CustomDropdown
                         value={formData.status}
@@ -1218,28 +1220,28 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                   </div>
 
                   <div className="ae-form-row">
-                    <div className="form-group">
+                    <div className="admin-form-group">
                       <label className={formErrors.date ? "mat-label-error" : ""}>Date <span className="rf-req">*</span></label>
                       <CustomDatePicker value={formData.date} onChange={(v) => { setFormData((p) => ({ ...p, date: v })); setFormErrors(p => ({ ...p, date: false })); }} hasError={!!formErrors.date} />
                     </div>
-                    <div className="form-group">
+                    <div className="admin-form-group">
                       <label>Time</label>
                       <CustomTimePicker value={formData.time} onChange={(v) => setFormData((p) => ({ ...p, time: v }))} />
                     </div>
                   </div>
 
                   <div className="ae-form-row">
-                    <div className="form-group">
+                    <div className="admin-form-group">
                       <label>Last Date to Enroll <span style={{ fontSize: 11, color: "#888", fontWeight: 400 }}>(defaults to 2 days before event)</span></label>
                       <CustomDatePicker value={formData.bookingCloseDate || ""} max={formData.date || undefined} onChange={(v) => setFormData((p) => ({ ...p, bookingCloseDate: v }))} label="Select close date" />
                     </div>
-                    <div className="form-group">
+                    <div className="admin-form-group">
                       <label>Last Date to Apply <span style={{ fontSize: 11, color: "#888", fontWeight: 400 }}>(registration deadline)</span></label>
                       <CustomDatePicker value={formData.lastApplyDate || ""} max={formData.date || undefined} onChange={(v) => setFormData((p) => ({ ...p, lastApplyDate: v }))} label="Select deadline" />
                     </div>
                   </div>
 
-                  <div className="form-group ae-publish-toggle">
+                  <div className="admin-form-group ae-publish-toggle">
                     <label className="ae-toggle-label">
                       <span>Publish Event (visible to users)</span>
                       <div className={`ae-toggle ${formData.isPublished ? "on" : "off"}`} onClick={() => setFormData((p) => ({ ...p, isPublished: !p.isPublished }))}>
@@ -1253,7 +1255,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               {/* STEP 2 — Venue & Capacity */}
               {editFormStep === 2 && (
                 <>
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label>Venue / Location</label>
                     <div className="ae-venue-radio-row">
                       <label className={`ae-venue-radio ${formData.venueMode === "restaurant" ? "active" : ""}`}>
@@ -1269,14 +1271,14 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                   </div>
 
                   <div className="ae-form-row">
-                    <div className="form-group">
+                    <div className="admin-form-group">
                       <div className="mat">
                         <input className={`mat-input${formErrors.maxCapacity ? " mat-error" : ""}`} type="number" min="0" value={formData.maxCapacity} onChange={(e) => { setFormData((p) => ({ ...p, maxCapacity: e.target.value })); setFormErrors(p => ({ ...p, maxCapacity: false })); }} placeholder=" " />
                         <label className={`mat-label${formErrors.maxCapacity ? " mat-label-error" : ""}`}>Max Capacity <span className="rf-req">*</span></label>
                         <span className={`mat-bar${formErrors.maxCapacity ? " mat-bar-error" : ""}`} />
                       </div>
                     </div>
-                    <div className="form-group">
+                    <div className="admin-form-group">
                       <div className="mat">
                         <input className="mat-input" type="number" min="0" value={formData.price} onChange={(e) => setFormData((p) => ({ ...p, price: e.target.value }))} placeholder=" " />
                         <label className="mat-label">Price per Person (₹)</label>
@@ -1290,7 +1292,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               {/* STEP 3 — Content */}
               {editFormStep === 3 && (
                 <>
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <div className="mat-area">
                       <textarea className={`mat-input${formErrors.description ? " mat-error" : ""}`} value={formData.description} rows={3} onChange={(e) => { setFormData((p) => ({ ...p, description: e.target.value })); setFormErrors(p => ({ ...p, description: false })); }} placeholder=" " style={{ height: "auto", paddingTop: 4 }} />
                       <label className={`mat-area-label${formErrors.description ? " mat-label-error" : ""}`}>Description <span className="rf-req">*</span></label>
@@ -1298,12 +1300,12 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                     </div>
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label>Event Images (multiple)</label>
                     <ImageUploadBlock images={formData.images} onUpload={(e) => handleImagesUpload(e, false)} onRemove={(i) => removeImage(i, false)} inputRef={fileInputRef} isSpec={false} />
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label>Tags</label>
                     <div className="ae-tag-input-row">
                       <div className="mat" style={{ flex: 1 }}>
@@ -1324,7 +1326,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                     </div>
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label>Event Highlights</label>
                     <div className="ae-tag-input-row">
                       <div className="mat" style={{ flex: 1 }}>
@@ -1350,7 +1352,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               {/* STEP 4 — Dishes & Preview */}
               {editFormStep === 4 && (
                 <>
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label>Menu Dishes for this Event</label>
                     <DishSelector selectedDishes={formData.dishes} onToggle={(id) => toggleDish(id, false)} activeCat={formData.selectedCategory || ""} onCatChange={(id) => setFormData(p => ({ ...p, selectedCategory: id }))} isSpec={false} dishQty={formData.dishQty || {}} guests={Number(formData.maxCapacity) || 1} />
                   </div>
@@ -1405,7 +1407,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
       {showSpecForm && (
         <div className="event-modal-overlay">
           <div className="event-modal">
-            <div className="modal-header">
+            <div className="admin-modal-header">
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 <h3>{isSpecEditMode ? "Edit Specialized Event" : "Create Event"}</h3>
                 <div className="ecard">
@@ -1431,7 +1433,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               {/* STEP 1 */}
               {specFormStep === 1 && (
                 <>
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <div className="mat">
                       <input className={`mat-input${specFormErrors.title ? " mat-error" : ""}`} type="text" value={specFormData.title} onChange={(e) => { setSpecFormData(p => ({ ...p, title: e.target.value })); setSpecFormErrors(p => ({ ...p, title: false })); }} placeholder=" " />
                       <label className={`mat-label${specFormErrors.title ? " mat-label-error" : ""}`}>Event Title <span className="rf-req">*</span></label>
@@ -1439,7 +1441,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                     </div>
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label>Event Category</label>
                     <div className="ae-category-grid">
                       {EVENT_CATEGORIES.map(cat => (
@@ -1458,17 +1460,17 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                   </div>
 
                   <div className="ae-form-row">
-                    <div className="form-group">
+                    <div className="admin-form-group">
                       <label className={specFormErrors.date ? "mat-label-error" : ""}>Date <span className="rf-req">*</span></label>
                       <CustomDatePicker value={specFormData.date} onChange={(v) => { setSpecFormData(p => ({ ...p, date: v })); setSpecFormErrors(p => ({ ...p, date: false })); }} hasError={!!specFormErrors.date} />
                     </div>
-                    <div className="form-group">
+                    <div className="admin-form-group">
                       <label>Time</label>
                       <CustomTimePicker value={specFormData.time} onChange={(v) => setSpecFormData(p => ({ ...p, time: v }))} />
                     </div>
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
                       <span>Venue / Address</span>
                       <button
@@ -1508,7 +1510,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                         { key: "addrState", label: "State", placeholder: "State", req: true },
                         { key: "addrPincode", label: "Pincode", placeholder: "6-digit pincode", req: true },
                       ].map(field => (
-                        <div key={field.key} className="form-group">
+                        <div key={field.key} className="admin-form-group">
                           <div className="mat">
                             <input
                               className={`mat-input${specFormErrors[field.key] ? " mat-error" : ""}`}
@@ -1538,14 +1540,14 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                   </div>
 
                   <div className="ae-form-row">
-                    <div className="form-group">
+                    <div className="admin-form-group">
                       <div className="mat">
                         <input className={`mat-input${specFormErrors.guests ? " mat-error" : ""}`} type="number" min="1" value={specFormData.guests} onChange={(e) => { setSpecFormData(p => ({ ...p, guests: Number(e.target.value) })); setSpecFormErrors(p => ({ ...p, guests: false })); }} placeholder=" " />
                         <label className={`mat-label${specFormErrors.guests ? " mat-label-error" : ""}`}>Number of Guests <span className="rf-req">*</span></label>
                         <span className={`mat-bar${specFormErrors.guests ? " mat-bar-error" : ""}`} />
                       </div>
                     </div>
-                    <div className="form-group">
+                    <div className="admin-form-group">
                       <label>Status</label>
                       <CustomDropdown
                         value={specFormData.status}
@@ -1560,7 +1562,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                     </div>
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <div className="mat-area">
                       <textarea className="mat-input" value={specFormData.description} rows={3} onChange={(e) => setSpecFormData(p => ({ ...p, description: e.target.value }))} placeholder=" " style={{ height: "auto", paddingTop: 4 }} />
                       <label className="mat-area-label">Description</label>
@@ -1568,12 +1570,12 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                     </div>
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label>Event Images</label>
                     <ImageUploadBlock images={specFormData.images} onUpload={(e) => handleImagesUpload(e, true)} onRemove={(i) => removeImage(i, true)} inputRef={specFileInputRef} isSpec={true} />
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label>Tags</label>
                     <div className="ae-tag-input-row">
                       <div className="mat" style={{ flex: 1 }}>
@@ -1594,7 +1596,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                     </div>
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label>Event Highlights</label>
                     <div className="ae-tag-input-row">
                       <div className="mat" style={{ flex: 1 }}>
@@ -1615,7 +1617,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                     </div>
                   </div>
 
-                  <div className="form-group ae-publish-toggle">
+                  <div className="admin-form-group ae-publish-toggle">
                     <label className="ae-toggle-label">
                       <span>Publish Event (visible to users)</span>
                       <div className={`ae-toggle ${specFormData.isPublished ? "on" : "off"}`} onClick={() => setSpecFormData(p => ({ ...p, isPublished: !p.isPublished }))}>
@@ -1630,7 +1632,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               {specFormStep === 2 && (
                 <div className="event-package-body">
                   <div className="event-package-body-div1">
-                    <div className="form-group">
+                    <div className="admin-form-group">
                       <label className="ae-section-label">Choose Package</label>
                       <div className="ae-packages-grid">
                         {SPECIALIZED_PACKAGES.map(pkg => (
@@ -1643,7 +1645,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                       </div>
                     </div>
 
-                    <div className="form-group event-package-body-div2">
+                    <div className="admin-form-group event-package-body-div2">
                       <label className="ae-section-label">Add-ons</label>
                       <div className="ae-addons-list">
                         {SPECIALIZED_ADDONS.map(addon => {
@@ -1695,7 +1697,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                 <div className="ae-dishes-split">
                   {/* LEFT: category + dish picker */}
                   <div className="ae-dishes-split-left">
-                    <div className="form-group" style={{ marginBottom: 0 }}>
+                    <div className="admin-form-group" style={{ marginBottom: 0 }}>
                       <label style={{ fontWeight: 600, fontSize: 13, marginBottom: 8, display: "block" }}>Select Menu Dishes</label>
                       <DishSelector
                         selectedDishes={specFormData.dishes}
@@ -1808,7 +1810,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
       {viewBooking && (
         <div className="event-modal-overlay">
           <div className="event-modal ae-booking-detail-modal">
-            <div className="modal-header">
+            <div className="admin-modal-header">
               <h3>Booking Details</h3>
               <Button3D variant="cancel" iconOnly onClick={() => setViewBooking(null)} aria-label="Close"><img src={closeIcon} alt="" /></Button3D>
             </div>
@@ -1900,7 +1902,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
       {confirmDeleteId && (
         <div className="event-modal-overlay">
           <div className="event-modal ae-confirm-modal">
-            <div className="modal-header">
+            <div className="admin-modal-header">
               <h3>Delete Event</h3>
               <Button3D variant="cancel" iconOnly onClick={() => setConfirmDeleteId(null)} aria-label="Close"><img src={closeIcon} alt="" /></Button3D>
             </div>

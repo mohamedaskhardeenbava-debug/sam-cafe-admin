@@ -41,14 +41,12 @@
   cursor: pointer;
 }
 
-.table-wrapper {
-  width: 100%;
-  overflow-x: hidden;
-}
-
-.table-wrapper {
-  width: 100%;
-  overflow-x: hidden;
+/* fills .page and passes flex context down to details-container */
+.dish-details-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .table-wrapper .data-table input {

@@ -301,7 +301,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="event-modal" onClick={e => e.stopPropagation()}>
 
-        <div className="modal-header">
+        <div className="admin-modal-header">
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <h3>Add PreBooking</h3>
             <div className="ecard">
@@ -335,7 +335,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
             <>
               <div className="evt-res-form-section-label">Guest Information</div>
               <div className="evt-pre-modal-row">
-                <div className="form-group">
+                <div className="admin-form-group">
                   <div className="mat">
                     <input className={`mat-input${errors.name ? " mat-error" : ""}`} placeholder=" "
                       value={form.name} onChange={e => { setF("name", e.target.value); setErrors(p => ({ ...p, name: false })); }} />
@@ -343,7 +343,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                     <span className={`mat-bar${errors.name ? " mat-bar-error" : ""}`} />
                   </div>
                 </div>
-                <div className="form-group" style={{ flex: "0 0 130px" }}>
+                <div className="admin-form-group" style={{ flex: "0 0 130px" }}>
                   <label>Guests <span className="evt-pre-req">*</span></label>
                   <div className={`evt-pre-modal-stepper${errors.guests ? " error" : ""}`}>
                     <button type="button" onClick={() => setF("guests", Math.max(1, form.guests - 1))}>−</button>
@@ -355,7 +355,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
               </div>
 
               <div className="evt-pre-modal-row">
-                <div className="form-group">
+                <div className="admin-form-group">
                   <div className="mat">
                     <input className={`mat-input${errors.mobile ? " mat-error" : ""}`} placeholder=" " type="tel"
                       value={form.mobile} onChange={e => { setF("mobile", e.target.value.replace(/\D/g, "").slice(0, 10)); setErrors(p => ({ ...p, mobile: false })); }} />
@@ -363,7 +363,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                     <span className={`mat-bar${errors.mobile ? " mat-bar-error" : ""}`} />
                   </div>
                 </div>
-                <div className="form-group">
+                <div className="admin-form-group">
                   <div className="mat">
                     <input className={`mat-input${errors.email ? " mat-error" : ""}`} placeholder=" " type="email"
                       value={form.email} onChange={e => { setF("email", e.target.value); setErrors(p => ({ ...p, email: false })); }} />
@@ -375,12 +375,12 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
 
               <div className="evt-res-form-section-label">Booking Details</div>
               <div className="evt-pre-modal-row">
-                <div className="form-group">
+                <div className="admin-form-group">
                   <label className={errors.date ? "mat-label-error" : ""}>Date <span className="evt-pre-req">*</span></label>
                   <CustomDatePicker value={form.date} min={todayStr()} onChange={v => { setF("date", v); setErrors(p => ({ ...p, date: false })); }} hasError={!!errors.date} />
                 </div>
 
-                <div className="form-group">
+                <div className="admin-form-group">
                   <label>Dining Slot <span className="evt-pre-opt">(optional)</span></label>
                   <div className="evt-res-pref-grid">
                     {SLOT_GROUPS.map(sg => {
@@ -406,7 +406,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                   </div>
                 </div>
 
-                <div className="form-group">
+                <div className="admin-form-group">
                   <label className={errors.time ? "mat-label-error" : ""}>Time <span className="evt-pre-req">*</span>{!form.slotGroup && <span className="evt-pre-opt"> (select slot first)</span>}</label>
                   <CustomTimePicker value={form.time} onChange={v => { setF("time", v); setErrors(p => ({ ...p, time: false })); }}
                     slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
@@ -418,7 +418,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
               </div>
 
               <div className="evt-res-form-section-label">Source & Notes</div>
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Source</label>
                 <div className="evt-res-source-chips">
                   {["pending", "confirmed"].map(s => (
@@ -434,7 +434,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className="mat-area">
                   <textarea className="mat-input mat-textarea" rows={2} placeholder=" "
                     value={form.notes} onChange={e => setF("notes", e.target.value)} />
@@ -491,9 +491,9 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                   <div className="prv-section-title">Pre-ordered Dishes ({selectedItems.length})</div>
                   <table className="prv-table">
                     <thead><tr><th>#</th><th>Dish</th><th>Unit Price</th><th>Guests</th><th>Total</th></tr></thead>
-                    <tbody>
+                    <tbody key={idx}>
                       {selectedItems.map((dish, idx) => (
-                        <tr key={idx}>
+                        <tr >
                           <td style={{ color: "#aaa", fontSize: 12 }}>{idx + 1}</td>
                           <td style={{ fontWeight: 600 }}>{dish.name}</td>
                           <td>₹{dish.unitPrice || dish.price || 0}</td>
@@ -542,7 +542,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
 
         </div>
 
-        <div className="modal-footer">
+        <div className="admin-modal-footer">
           <Button3D variant="cancel" onClick={() => { onClose(); setErrors({}); }}>Cancel</Button3D>
           {tab > 0 && (
             <button type="button" className="modal-prev-btn" onClick={() => setTab(t => t - 1)}>
@@ -836,7 +836,7 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
 
       {/* TABLE */}
       <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 300px)" }} ref={containerRef}>
-        <table className="table">
+        <table >
           <thead>
             <tr>
               <th onClick={() => handleSort("name")} className={sortField === "name" ? "sorted" : ""}>

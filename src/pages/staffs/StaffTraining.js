@@ -208,15 +208,15 @@ export default function StaffTraining({ adminData, setAdminData }) {
       {/* ADD MODAL */}
       {showForm && (
         <div className="modal-overlay">
-          <form className="modal" onSubmit={addTraining}>
-            <div className="modal-header">
+          <form className="admin-modal" onSubmit={addTraining}>
+            <div className="admin-modal-header">
               <h3>Add Training Record</h3>
               <Button3D variant="cancel" iconOnly onClick={() => { setShowForm(false); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
 
-            <div className="modal-body">
+            <div className="admin-modal-body">
               <div className="horizontal-form-group">
-                <div className={`form-group${formErrors.staffId ? " mat-select-error" : ""}`}>
+                <div className={`admin-form-group${formErrors.staffId ? " mat-select-error" : ""}`}>
                   <CustomDropdown
                     label="Staff Member"
                     value={form.staffId || ""}
@@ -227,7 +227,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
                   />
                 </div>
 
-                <div className={`form-group${formErrors.role ? " mat-select-error" : ""}`}>
+                <div className={`admin-form-group${formErrors.role ? " mat-select-error" : ""}`}>
                   <CustomDropdown
                     label="Role"
                     value={form.role}
@@ -240,7 +240,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
               </div>
 
               <div className="horizontal-form-group">
-                <div className="form-group">
+                <div className="admin-form-group">
                   <div className="mat">
                     <input
                       className={`mat-input${formErrors.duration ? " mat-error" : ""}`}
@@ -255,7 +255,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
                   </div>
                 </div>
 
-                <div className={`form-group${formErrors.type ? " mat-select-error" : ""}`}>
+                <div className={`admin-form-group${formErrors.type ? " mat-select-error" : ""}`}>
                   <CustomDropdown
                     label="Type"
                     value={form.type}
@@ -267,7 +267,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Certificate (optional)</label>
                 <div className="file-wrap">
                   <input type="file" onChange={handleFile} className="file-input" />
@@ -281,7 +281,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <Button3D variant="cancel" onClick={() => { setShowForm(false); setFormErrors({}); }}>Cancel</Button3D>
               <Button3D type="submit">Save Training</Button3D>
             </div>
@@ -292,8 +292,8 @@ export default function StaffTraining({ adminData, setAdminData }) {
       {/* DETAIL MODAL */}
       {selected && (
         <div className="modal-overlay" onClick={() => setSelected(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+            <div className="admin-modal-header">
               <div>
                 <h3>{selected.role}</h3>
                 <span className="sc-modal-sub">Training Record</span>
@@ -301,7 +301,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
               <Button3D variant="cancel" iconOnly onClick={() => setSelected(null)}><img src={closeIcon} /></Button3D>
             </div>
 
-            <div className="modal-body">
+            <div className="admin-modal-body">
               <table className="staff-training-table">
                 <tbody>
                   <tr><td>Staff</td><td>{selected.staffName}</td></tr>
@@ -328,7 +328,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
               </table>
             </div>
 
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <Button3D variant="cancel" onClick={() => setSelected(null)}>Close</Button3D>
             </div>
           </div>

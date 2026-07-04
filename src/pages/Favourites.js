@@ -52,7 +52,7 @@ const Favourites = ({ adminData, handleSort, sortConfig }) => {
       </div>
 
       <div className="table-wrapper" ref={containerRef}>
-        <table className="table">
+        <table >
           <thead>
             <tr>
               <th className="icon-width">Image</th>

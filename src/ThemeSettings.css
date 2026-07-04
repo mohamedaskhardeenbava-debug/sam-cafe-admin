@@ -5,11 +5,16 @@
 
 /* ── Page ── */
 .ts-page {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     width: 100%;
     max-width: 100%;
     display: flex;
     flex-direction: column;
     gap: 24px;
+    padding-bottom: 16px;
+    box-sizing: border-box;
 }
 
 /* ── Loading ── */
@@ -44,6 +49,7 @@
     align-items: flex-start;
     flex-wrap: wrap;
     gap: 16px;
+    flex-shrink: 0;
 }
 
 .ts-title {

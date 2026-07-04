@@ -71,6 +71,8 @@ export default function PageLoader({ label = "Loading…", inline = false }) {
         </div>
       </div>
 
+      <p className="pl-label">{label}</p>
+
     </div>
   );
 }

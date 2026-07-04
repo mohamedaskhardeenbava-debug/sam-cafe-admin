@@ -199,7 +199,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
       </div>
 
       <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 290px)" }} >
-        <table className="table">
+        <table >
           <thead>
             <tr>
               <th>Work</th><th>Staff</th><th>Date</th>
@@ -238,13 +238,13 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
 
       {show && (
         <div className="modal-overlay">
-          <form className="modal" onSubmit={e => { e.preventDefault(); add(); }}>
-            <div className="modal-header">
+          <form className="admin-modal" onSubmit={e => { e.preventDefault(); add(); }}>
+            <div className="admin-modal-header">
               <h3>Add Schedule</h3>
               <Button3D variant="cancel" iconOnly onClick={cancel}><img src={closeIcon} /></Button3D>
             </div>
-            <div className="modal-body">
-              <div className={`form-group${formErrors.department ? " mat-select-error" : ""}`}>
+            <div className="admin-modal-body">
+              <div className={`admin-form-group${formErrors.department ? " mat-select-error" : ""}`}>
                 <CustomDropdown
                   label="Department"
                   value={form.department}
@@ -253,7 +253,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                   placeholder="Select Department"
                 />
               </div>
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className="mat">
                   <input
                     className={`mat-input${formErrors.work ? " mat-error" : ""}`}
@@ -265,7 +265,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                   <span className={`mat-bar${formErrors.work ? " mat-bar-error" : ""}`} />
                 </div>
               </div>
-              <div className={`form-group${formErrors.staff ? " mat-select-error" : ""}`}>
+              <div className={`admin-form-group${formErrors.staff ? " mat-select-error" : ""}`}>
                 <CustomDropdown
                   label="Staff"
                   value={form.staff}
@@ -274,7 +274,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                   placeholder="Select Staff"
                 />
               </div>
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label className={`mat-label${formErrors.date ? " mat-label-error" : ""}`} style={{ position: "static", transform: "none", fontSize: 13, display: "block", marginBottom: 4 }}>Date<span className="rf-req">*</span></label>
                 <CustomDatePicker
                   value={form.date}
@@ -283,7 +283,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                   hasError={!!formErrors.date}
                 />
               </div>
-              <div className={`form-group${formErrors.status ? " mat-select-error" : ""}`}>
+              <div className={`admin-form-group${formErrors.status ? " mat-select-error" : ""}`}>
                 <CustomDropdown
                   label="Status"
                   value={form.status}
@@ -292,7 +292,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                   placeholder="Select Status"
                 />
               </div>
-              <div className={`form-group${formErrors.lastRate ? " mat-select-error" : ""}`}>
+              <div className={`admin-form-group${formErrors.lastRate ? " mat-select-error" : ""}`}>
                 <CustomDropdown
                   label="Response (Days)"
                   value={form.lastRate}
@@ -302,7 +302,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                 />
               </div>
             </div>
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <Button3D variant="cancel" onClick={cancel}>Cancel</Button3D>
               <Button3D type="submit">Save Schedule</Button3D>
             </div>

@@ -121,7 +121,7 @@ const Users = ({ handleSort, sortConfig, users }) => {
       </div>
 
       <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} ref={containerRef}>
-        <table className="table">
+        <table >
           <thead>
             <tr>
               <th className="icon-width">#</th>

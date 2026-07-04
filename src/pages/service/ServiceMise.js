@@ -157,7 +157,7 @@ export default function ServiceMise({ adminData, setAdminData }) {
 
       {/* UNIFIED TABLE */}
       <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 265px)" }} >
-        <table className="table">
+        <table >
           <thead>
             <tr>
               <th>Task</th>

@@ -1450,7 +1450,7 @@ const Orders = ({ adminData, setAdminData }) => {
 
       {editBillOrder && (
         <div className="overlay">
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
             <BillLayout
               onClose={closeAllBillOverlays}
               order={editableBill}
@@ -1488,10 +1488,10 @@ const Orders = ({ adminData, setAdminData }) => {
               }}
             />
 
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <Button3D variant="cancel" onClick={() => setEditBillOrder(null)}>Cancel</Button3D>
-              <button
-                className="modal-prev-btn"
+              <Button3D
+                className="modal-save-btn"
                 onClick={() => {
                   const previewData = recalcOrderTotals(editableBill);
 
@@ -1499,11 +1499,9 @@ const Orders = ({ adminData, setAdminData }) => {
                   setPreviewBillOrder(previewData);
                 }}
               >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Preview</span>
-              </button>
-              <Button3D onClick={async () => {
+                Preview
+              </Button3D>
+              <Button3D className="modal-save-btn" onClick={async () => {
                 try {
                   const updatedOrder = recalcOrderTotals(
                     JSON.parse(JSON.stringify(editableBill))
@@ -1531,14 +1529,14 @@ const Orders = ({ adminData, setAdminData }) => {
 
       {previewBillOrder && (
         <div className="overlay">
-          <div className="modal">
+          <div className="admin-modal">
             <BillLayout
               onClose={closeAllBillOverlays}
               order={previewBillOrder}
               buildUpiUrl={buildUpiUrl}
             />
 
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <button
                 className="modal-confirm-btn"
                 onClick={() => {

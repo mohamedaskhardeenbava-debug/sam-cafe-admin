@@ -93,7 +93,7 @@ function StaffDropdown({ task, entry, adminData, handleChange, dropKey, openStaf
       </button>
 
       {openStaffDropdown === dropKey && createPortal(
-        <div className="dropdown-menu" style={menuStyle}>
+        <div className="dishes-dropdown-menu" style={menuStyle}>
           <div onClick={e => { e.stopPropagation(); handleChange(task, ""); setOpenStaffDropdown(null); }}>
             {placeholder}
           </div>
@@ -319,15 +319,15 @@ export default function KitchenAssign({ adminData, setAdminData }) {
       {/* ADD TASK MODAL */}
       {showTaskModal && (
         <div className="modal-overlay">
-          <form className="modal" onSubmit={e => {
+          <form className="admin-modal" onSubmit={e => {
             e.preventDefault(); handleAddTask().then(() => { if (!taskErrors.newTask && !taskErrors.section) setShowTaskModal(false); });
           }}>
-            <div className="modal-header">
+            <div className="admin-modal-header">
               <h3>Add Task</h3>
               <Button3D variant="cancel" iconOnly onClick={() => { setShowTaskModal(false); setNewTask(""); setTaskErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
-            <div className="modal-body">
-              <div className="form-group">
+            <div className="admin-modal-body">
+              <div className="admin-form-group">
                 <div className="mat">
                   <input
                     className={`mat-input${taskErrors.newTask ? " mat-error" : ""}`}
@@ -339,7 +339,7 @@ export default function KitchenAssign({ adminData, setAdminData }) {
                   <span className={`mat-bar${taskErrors.newTask ? " mat-bar-error" : ""}`} />
                 </div>
               </div>
-              <div className={`form-group${taskErrors.section ? " mat-select-error" : ""}`}>
+              <div className={`admin-form-group${taskErrors.section ? " mat-select-error" : ""}`}>
                 <CustomDropdown
                   value={section}
                   onChange={(val) => { if (val) { setSection(val); setTaskErrors(p => ({ ...p, section: false })); } }}
@@ -348,7 +348,7 @@ export default function KitchenAssign({ adminData, setAdminData }) {
                 />
               </div>
             </div>
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <Button3D variant="cancel" onClick={() => { setShowTaskModal(false); setNewTask(""); setTaskErrors({}); }}>Cancel</Button3D>
               <Button3D type="submit">Add Task</Button3D>
             </div>
@@ -371,7 +371,7 @@ function TableLayout({ filteredTasks, assignedDay, adminData, handleChange, hand
 
   return (
     <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} >
-      <table className="table">
+      <table >
         <thead>
           <tr>
             <th>Task</th>

@@ -101,6 +101,7 @@ function App() {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [isAppLoading, setIsAppLoading] = useState(false);
+  const [connectionError, setConnectionError] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [sortConfig, setSortConfig] = useState({
     key: "id",
@@ -161,109 +162,120 @@ function App() {
   };
 
   /* ---------------- FETCH DATA ---------------- */
+  const fetchAllData = async () => {
+    try {
+      const [
+        catRes,
+        ingRes,
+        ordersRes,
+        usersRes,
+        favRes,
+        staffRes,
+        groomRes,
+        miseRes,
+        kitchenAssignRes,
+        recipeRes,
+        offerRes,
+        activityRes,
+        schedulesRes,
+        serviceAssignRes,
+        serviceGroomRes,
+        serviceMiseRes,
+        serviceActivityRes,
+        serviceSchedulesRes,
+        tablesRes,
+        reservationsRes,
+        celebrationsRes,
+        preBookingsRes,
+        cateringRes,
+        eventsRes,
+        bookingsRes,
+        tasksRes,
+      ] = await Promise.all([
+        api.get("/categories"),
+        api.get("/ingredients"),
+        api.get("/orders"),
+        api.get("/users"),
+        api.get("/favourites"),
+        api.get("/staff"),
+        api.get("/grooming"),
+        api.get("/mise"),
+        api.get("/kitchenAssign"),
+        api.get("/recipes"),
+        api.get("/offers"),
+        api.get("/kitchenActivity"),
+        api.get("/kitchenSchedules"),
+        api.get("/serviceAssign"),
+        api.get("/serviceGrooming"),
+        api.get("/serviceMise"),
+        api.get("/serviceActivity"),
+        api.get("/serviceSchedules"),
+        api.get("/tables"),
+        api.get("/reservations"),
+        api.get("/celebrations"),
+        api.get("/preBookings"),
+        api.get("/cateringOrders"),
+        api.get("/events"),
+        api.get("/eventBookings"),
+        api.get("/tasks"),
+      ]);
+
+      setAdminData({
+        categories: catRes.data || [],
+        ingredients: ingRes.data || [],
+        orders: ordersRes.data || [],
+        users: usersRes.data || [],
+        favourites: favRes.data || [],
+        staff: staffRes.data || [],
+        grooming: groomRes.data || {},
+        mise: miseRes.data || {},
+        kitchenAssign: kitchenAssignRes.data || {},
+        recipes: recipeRes.data || [],
+        kitchenActivity: activityRes.data || [],
+        kitchenSchedules: schedulesRes.data || [],
+        offers: offerRes.data || [],
+        serviceAssign: serviceAssignRes.data || {},
+        serviceActivity: serviceActivityRes.data || [],
+        serviceGrooming: serviceGroomRes.data || {},
+        serviceMise: serviceMiseRes.data || {},
+        serviceSchedules: serviceSchedulesRes.data || [],
+        tables: tablesRes.data || [],
+        reservations: reservationsRes.data || [],
+        celebrations: celebrationsRes.data || [],
+        preBookings: preBookingsRes.data || [],
+        cateringOrders: cateringRes.data || [],
+        events: eventsRes.data || [],
+        eventBookings: bookingsRes.data || [],
+        tasks: tasksRes.data?.[0] || {
+          kitchen: { mise: [], cleaning: [] },
+          service: { mise: [], cleaning: [] }
+        },
+      });
+
+      setConnectionError(false);
+      setIsAppLoading(false);
+    } catch (err) {
+      console.error("Failed to fetch admin data", err);
+      setConnectionError(true);
+      // isAppLoading stays true here on purpose — the loader keeps showing
+      // (with a "reconnecting" message) instead of falling through to a
+      // blank/broken admin shell when the initial fetch fails.
+    }
+  };
+
   useEffect(() => {
     if (!isAuthenticated) return;
-
-    const fetchAllData = async () => {
-      setIsAppLoading(true);
-      try {
-        const [
-          catRes,
-          ingRes,
-          ordersRes,
-          usersRes,
-          favRes,
-          staffRes,
-          groomRes,
-          miseRes,
-          kitchenAssignRes,
-          recipeRes,
-          offerRes,
-          activityRes,
-          schedulesRes,
-          serviceAssignRes,
-          serviceGroomRes,
-          serviceMiseRes,
-          serviceActivityRes,
-          serviceSchedulesRes,
-          tablesRes,
-          reservationsRes,
-          celebrationsRes,
-          preBookingsRes,
-          cateringRes,
-          eventsRes,
-          bookingsRes,
-          tasksRes,
-        ] = await Promise.all([
-          api.get("/categories"),
-          api.get("/ingredients"),
-          api.get("/orders"),
-          api.get("/users"),
-          api.get("/favourites"),
-          api.get("/staff"),
-          api.get("/grooming"),
-          api.get("/mise"),
-          api.get("/kitchenAssign"),
-          api.get("/recipes"),
-          api.get("/offers"),
-          api.get("/kitchenActivity"),
-          api.get("/kitchenSchedules"),
-          api.get("/serviceAssign"),
-          api.get("/serviceGrooming"),
-          api.get("/serviceMise"),
-          api.get("/serviceActivity"),
-          api.get("/serviceSchedules"),
-          api.get("/tables"),
-          api.get("/reservations"),
-          api.get("/celebrations"),
-          api.get("/preBookings"),
-          api.get("/cateringOrders"),
-          api.get("/events"),
-          api.get("/eventBookings"),
-          api.get("/tasks"),
-        ]);
-
-        setAdminData({
-          categories: catRes.data || [],
-          ingredients: ingRes.data || [],
-          orders: ordersRes.data || [],
-          users: usersRes.data || [],
-          favourites: favRes.data || [],
-          staff: staffRes.data || [],
-          grooming: groomRes.data || {},
-          mise: miseRes.data || {},
-          kitchenAssign: kitchenAssignRes.data || {},
-          recipes: recipeRes.data || [],
-          kitchenActivity: activityRes.data || [],
-          kitchenSchedules: schedulesRes.data || [],
-          offers: offerRes.data || [],
-          serviceAssign: serviceAssignRes.data || {},
-          serviceActivity: serviceActivityRes.data || [],
-          serviceGrooming: serviceGroomRes.data || {},
-          serviceMise: serviceMiseRes.data || {},
-          serviceSchedules: serviceSchedulesRes.data || [],
-          tables: tablesRes.data || [],
-          reservations: reservationsRes.data || [],
-          celebrations: celebrationsRes.data || [],
-          preBookings: preBookingsRes.data || [],
-          cateringOrders: cateringRes.data || [],
-          events: eventsRes.data || [],
-          eventBookings: bookingsRes.data || [],
-          tasks: tasksRes.data?.[0] || {
-            kitchen: { mise: [], cleaning: [] },
-            service: { mise: [], cleaning: [] }
-          },
-        });
-
-      } catch (err) {
-        console.error("Failed to fetch admin data", err);
-      } finally {
-        setIsAppLoading(false);
-      }
-    };
-
+    setIsAppLoading(true);
     fetchAllData();
   }, [isAuthenticated]);
+
+  // Auto-retry the initial connection if it failed, so the admin isn't
+  // stuck on a loading/blank screen forever without another attempt.
+  useEffect(() => {
+    if (!isAuthenticated || !isAppLoading || !connectionError) return;
+    const retryTimer = setTimeout(() => { fetchAllData(); }, 3000);
+    return () => clearTimeout(retryTimer);
+  }, [isAuthenticated, isAppLoading, connectionError]);
 
   /* ---------------- SOCKET: real-time data-change listener ---------------- */
   useEffect(() => {
@@ -535,7 +547,13 @@ function App() {
       .replace(/\s+/g, "_");
 
   /* ---------------- ADMIN LAYOUT ---------------- */
-  if (isAppLoading) return <PageLoader label="Loading Sam Cafe…" />;
+  if (isAppLoading) {
+    return (
+      <PageLoader
+        label={connectionError ? "Reconnecting to the server…" : "Connecting to the server…"}
+      />
+    );
+  }
 
   return (
     <div className="app">

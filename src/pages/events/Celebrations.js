@@ -544,7 +544,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
       {/* TABLE */}
       <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 300px)" }} ref={containerRef}>
-        <table className="table">
+        <table >
           <thead>
             <tr>
               <th onClick={() => handleSort("name")} className={sortField === "name" ? "sorted" : ""}>
@@ -736,7 +736,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       {showCreate && (
         <div className="event-modal-overlay" onClick={() => setShowCreate(false)}>
           <div className="event-modal" style={{ width: 640 }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+            <div className="admin-modal-header">
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 <h3>Add Celebration</h3>
                 <div className="ecard">
@@ -762,7 +762,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
               {createTab === 0 && (
                 <>
                   <div className="evt-res-form-section-label">Event Type <span className="evt-res-req">*</span></div>
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <div className="evt-res-source-chips">
                       {CELEBRATION_TYPES.map(t => (
                         <button key={t.value} type="button"
@@ -776,7 +776,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                   </div>
 
                   <div className="evt-res-form-section-label">Add-ons</div>
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <div className="evt-res-source-chips">
                       {(EVENT_ADDONS[form.type] || []).map(ex => (
                         <button key={ex.k} type="button"
@@ -799,7 +799,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
                   <div className="evt-res-form-section-label">Source & Status</div>
                   <div className="horizontal-form-group">
-                    <div className="form-group" style={{ flex: 1 }}>
+                    <div className="admin-form-group" style={{ flex: 1 }}>
                       <label>Source</label>
                       <div className="evt-res-source-chips">
                         {SOURCE_OPTIONS.map(s => (
@@ -809,7 +809,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                         ))}
                       </div>
                     </div>
-                    <div className="form-group" style={{ flex: 1 }}>
+                    <div className="admin-form-group" style={{ flex: 1 }}>
                       <label>Status</label>
                       <div className="evt-res-source-chips">
                         {["pending", "confirmed"].map(s => (
@@ -825,7 +825,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
                   <div className="evt-res-form-section-label">Guest Information</div>
                   <div className="horizontal-form-group">
-                    <div className="form-group" style={{ flex: 1.4 }}>
+                    <div className="admin-form-group" style={{ flex: 1.4 }}>
                       <div className="mat">
                         <input className={`mat-input${formErrors.name ? " mat-error" : ""}`} placeholder=" "
                           value={form.name} onChange={e => { setF("name", e.target.value); setFormErrors(p => ({ ...p, name: false })); }} />
@@ -833,7 +833,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                         <span className={`mat-bar${formErrors.name ? " mat-bar-error" : ""}`} />
                       </div>
                     </div>
-                    <div className="form-group" style={{ flex: 1 }}>
+                    <div className="admin-form-group" style={{ flex: 1 }}>
                       <label className={formErrors.guests ? "mat-label-error" : ""}>Guests <span style={{ fontSize: 10, color: "#aaa" }}>(max 20)</span></label>
                       <div className={`evt-stepper${formErrors.guests ? " error" : ""}`}>
                         <button type="button" onClick={() => { setF("guests", Math.max(1, form.guests - 1)); setFormErrors(p => ({ ...p, guests: false })); }}>−</button>
@@ -845,7 +845,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                   </div>
 
                   <div className="horizontal-form-group">
-                    <div className="form-group" style={{ flex: 1 }}>
+                    <div className="admin-form-group" style={{ flex: 1 }}>
                       <div className="mat">
                         <input className={`mat-input${formErrors.mobile ? " mat-error" : ""}`} placeholder=" " type="tel"
                           value={form.mobile} onChange={e => { setF("mobile", e.target.value.replace(/\D/g, "").slice(0, 10)); setFormErrors(p => ({ ...p, mobile: false })); }} />
@@ -853,7 +853,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                         <span className={`mat-bar${formErrors.mobile ? " mat-bar-error" : ""}`} />
                       </div>
                     </div>
-                    <div className="form-group" style={{ flex: 1 }}>
+                    <div className="admin-form-group" style={{ flex: 1 }}>
                       <div className="mat">
                         <input className="mat-input" placeholder=" "
                           value={form.email} onChange={e => setF("email", e.target.value)} />
@@ -867,7 +867,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     <>
                       <div className="evt-res-form-section-label">Birthday Details</div>
                       <div className="horizontal-form-group">
-                        <div className="form-group" style={{ flex: 1.5 }}>
+                        <div className="admin-form-group" style={{ flex: 1.5 }}>
                           <div className="mat">
                             <input className={`mat-input${formErrors.birthdayPersonName ? " mat-error" : ""}`} placeholder=" " value={form.birthdayPersonName}
                               onChange={e => { setF("birthdayPersonName", e.target.value); setFormErrors(p => ({ ...p, birthdayPersonName: false })); }} />
@@ -875,7 +875,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                             <span className={`mat-bar${formErrors.birthdayPersonName ? " mat-bar-error" : ""}`} />
                           </div>
                         </div>
-                        <div className="form-group" style={{ flex: 1 }}>
+                        <div className="admin-form-group" style={{ flex: 1 }}>
                           <div className="mat">
                             <input className="mat-input" type="number" min="1" max="120" placeholder=" "
                               value={form.birthdayPersonAge} onChange={e => setF("birthdayPersonAge", e.target.value)} />
@@ -887,7 +887,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     </>
                   )}
 
-                  <div className="form-group" style={{ marginTop: 4 }}>
+                  <div className="admin-form-group" style={{ marginTop: 4 }}>
                     <div className="mat-area">
                       <textarea className="mat-input mat-textarea" rows={2} placeholder=" "
                         value={form.specialNote} onChange={e => setF("specialNote", e.target.value)} />
@@ -897,12 +897,12 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                   </div>
 
                   <div className="evt-res-form-section-label">Date & Time</div>
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label className={formErrors.date ? "mat-label-error" : ""}>Event Date <span className="evt-res-req">*</span></label>
                     <CustomDatePicker value={form.date} min={tomorrowStr()} onChange={v => { setF("date", v); setF("time", ""); setF("slotGroup", ""); setFormErrors(p => ({ ...p, date: false })); }} placeholder="Select date" hasError={!!formErrors.date} />
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label>Dining Slot <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400 }}>(select to restrict time picker)</span></label>
                     <div className="evt-res-pref-grid">
                       {SLOT_GROUPS.map(sg => (
@@ -920,7 +920,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     </div>
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <label className={formErrors.time ? "mat-label-error" : ""}>
                       Time <span className="evt-res-req">*</span>
                       {form.slotGroup && (() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()}
@@ -938,7 +938,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                   </div>
 
                   <div className="evt-res-form-section-label">Decoration</div>
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <div className="evt-res-source-chips">
                       <button type="button"
                         className={`evt-res-source-chip${!form.decoration ? " active" : ""}`}

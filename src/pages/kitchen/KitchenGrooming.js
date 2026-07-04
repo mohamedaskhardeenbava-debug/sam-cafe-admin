@@ -376,12 +376,12 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
       {/* DETAIL MODAL */}
       {selected && (
         <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
+          <div className="admin-modal">
+            <div className="admin-modal-header">
               <h3>Grooming Details</h3>
               <Button3D variant="cancel" iconOnly onClick={() => setSelected(null)}><img src={closeIcon} /></Button3D>
             </div>
-            <div className="modal-body">
+            <div className="admin-modal-body">
               <div className="kgroom-detail-info">
                 <div className="kgroom-detail-name">{selected.staff}</div>
                 <div className="kgroom-detail-date">
@@ -405,13 +405,13 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
       {/* MEMO MODAL */}
       {showMemo && (
         <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
+          <div className="admin-modal">
+            <div className="admin-modal-header">
               <h3>Add Memo</h3>
               <Button3D variant="cancel" iconOnly onClick={() => { setShowMemo(false); setMemoErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
-            <div className="modal-body">
-              <div className={`form-group${memoErrors.staffId ? " mat-select-error" : ""}`}>
+            <div className="admin-modal-body">
+              <div className={`admin-form-group${memoErrors.staffId ? " mat-select-error" : ""}`}>
                 <CustomDropdown
                   label="Staff Member"
                   value={memo.staffId}
@@ -420,7 +420,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
                   placeholder="Select staff…"
                 />
               </div>
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className="mat">
                   <textarea
                     className={`mat-input mat-textarea${memoErrors.text ? " mat-error" : ""}`}
@@ -434,7 +434,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
                 </div>
               </div>
             </div>
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <Button3D variant="cancel" onClick={() => { setShowMemo(false); setMemoErrors({}); }}>Cancel</Button3D>
               <Button3D onClick={saveMemo}>Save Memo</Button3D>
             </div>

@@ -500,101 +500,96 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
         <Button3D onClick={() => setShowForm(true)}>+ Add Dish</Button3D>
 
       </div>
-
-      <div className="dish-block">
-        {/* <div className="dish-title">{selectedCategory?.name}</div> */}
-
-        <div className="table-wrapper dish-page-table" ref={containerRef}>
-          <table className="table">
-            <thead>
-              <tr>
-                <th className="icon-width">Image</th>
-                <th
-                  onClick={() => handleSort("name")}
-                  className={sortConfig.key === "name" ? "sorted" : ""}
-                >
-                  <span className="th-content sort-th">
-                    <span>Name</span>
-                    <span className="sort-arrow">
-                      {sortConfig.direction === "asc" ? "▲" : "▼"}
-                    </span>
+      <div className="table-wrapper dish-page-table" ref={containerRef}>
+        <table >
+          <thead>
+            <tr>
+              <th className="icon-width">Image</th>
+              <th
+                onClick={() => handleSort("name")}
+                className={sortConfig.key === "name" ? "sorted" : ""}
+              >
+                <span className="th-content sort-th">
+                  <span>Name</span>
+                  <span className="sort-arrow">
+                    {sortConfig.direction === "asc" ? "▲" : "▼"}
                   </span>
-                </th>
-                <th>Type</th>
-                <th>Event Food</th>
-                <th>Base Price</th>
-                <th className="icon-width">Delete</th>
-              </tr>
-            </thead>
+                </span>
+              </th>
+              <th>Type</th>
+              <th>Event Food</th>
+              <th>Base Price</th>
+              <th className="icon-width">Delete</th>
+            </tr>
+          </thead>
 
-            <tbody>
-              {sortedDishes.slice(0, displayLimit).map((dish) => (
-                <tr key={dish.id}>
-                  <td
-                    className="clickable icon-width"
+          <tbody>
+            {sortedDishes.slice(0, displayLimit).map((dish) => (
+              <tr key={dish.id}>
+                <td
+                  className="clickable icon-width"
+                  onClick={() => navigate(`/dishes/${dish.categoryId}/${dish.id}`)}
+                >
+                  <div
+                    className="table-image"
                     onClick={() => navigate(`/dishes/${dish.categoryId}/${dish.id}`)}
                   >
-                    <div
-                      className="table-image"
-                      onClick={() => navigate(`/dishes/${dish.categoryId}/${dish.id}`)}
-                    >
-                      <img src={dish.image || ""} alt="" />
-                    </div>
-                  </td>
+                    <img src={dish.image || ""} alt="" />
+                  </div>
+                </td>
 
-                  <td>
-                    <span
-                      className="dish-name clickable"
-                      onClick={() => navigate(`/dishes/${dish.categoryId}/${dish.id}`)}
-                    >{dish.name}</span>
-                  </td>
+                <td>
+                  <span
+                    className="dish-name clickable"
+                    onClick={() => navigate(`/dishes/${dish.categoryId}/${dish.id}`)}
+                  >{dish.name}</span>
+                </td>
 
-                  <td>
-                    <span className={`veg-badge ${dish.isVeg === false ? "non-veg" : "veg"}`}>
-                      {dish.isVeg === false ? "Non-Veg" : "Veg"}
-                    </span>
-                  </td>
+                <td>
+                  <span className={`veg-badge ${dish.isVeg === false ? "non-veg" : "veg"}`}>
+                    {dish.isVeg === false ? "Non-Veg" : "Veg"}
+                  </span>
+                </td>
 
-                  <td>
-                    <span className={`veg-badge ${dish.isEventFood ? "veg" : "non-veg"}`}>
-                      {dish.isEventFood ? "Yes" : "No"}
-                    </span>
-                  </td>
+                <td>
+                  <span className={`veg-badge ${dish.isEventFood ? "veg" : "non-veg"}`}>
+                    {dish.isEventFood ? "Yes" : "No"}
+                  </span>
+                </td>
 
-                  <td>{dish.basePrice}
-                  </td>
+                <td>{dish.basePrice}
+                </td>
 
-                  <td className="icon-width">
-                    <Button3D variant="cancel" iconOnly disabled={showForm}
-                      onClick={() => handleDelete(dish.id, dish.name)}><img src={deleteIcon} alt="" /></Button3D>
+                <td className="icon-width">
+                  <Button3D variant="cancel" iconOnly disabled={showForm}
+                    onClick={() => handleDelete(dish.id, dish.name)}><img src={deleteIcon} alt="" /></Button3D>
 
-                  </td>
-                </tr>
-              ))}
+                </td>
+              </tr>
+            ))}
 
-              {sortedDishes.length === 0 && (
-                <EmptyRow colSpan={6} message="No dishes available" />
-              )}
-              <InfiniteScrollLoader
-                sentinelRef={sentinelRef}
-                hasMore={hasMore}
-                colSpan={6}
-              />
-            </tbody>
-          </table>
-        </div>
+            {sortedDishes.length === 0 && (
+              <EmptyRow colSpan={6} message="No dishes available" />
+            )}
+            <InfiniteScrollLoader
+              sentinelRef={sentinelRef}
+              hasMore={hasMore}
+              colSpan={6}
+            />
+          </tbody>
+        </table>
       </div>
 
       {showForm && (
         <div className="modal-overlay">
           <form
-            className="modal"
+            className="admin-modal"
             onSubmit={(e) => {
               e.preventDefault();
               handleSaveDish();
             }}>
 
-            <div className="modal-header">
+            <div className="admin-modal-header">
               <h3>
                 Add New Dish
                 {selectedCategoryIds.length === 1 && (
@@ -620,8 +615,8 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               <Button3D variant="cancel" iconOnly aria-label="Close"
                 onClick={resetDishForm}><img src={closeIcon} /></Button3D>
             </div>
-            <div className="modal-body">
-              <div className="form-group">
+            <div className="admin-modal-body">
+              <div className="admin-form-group">
                 <div className="mat">
                   <input
                     className={`mat-input${formErrors.name ? " mat-error" : ""}`}
@@ -641,7 +636,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className={`file-wrap${formErrors.image ? " file-error" : ""}`}>
                   <input
                     type="file"
@@ -668,7 +663,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 )}
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className="mat">
                   <input
                     className={`mat-input${formErrors.basePrice ? " mat-error" : ""}`}
@@ -684,7 +679,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <div className="mat">
                   <textarea
                     className={`mat-input mat-textarea${formErrors.description ? " mat-error" : ""}`}
@@ -697,7 +692,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Type</label>
                 <div className="veg-toggle-group">
                   <button
@@ -717,7 +712,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label>Event Food</label>
                 <div className="veg-toggle-group">
                   <button
@@ -736,11 +731,11 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                   </button>
                 </div>
               </div>
-              <div className="form-group">
+              <div className="admin-form-group">
                 <label htmlFor="">Nutrition</label>
                 <div className="benefits-grid border">
                   {["calories", "protein", "fibre", "fat"].map(key => (
-                    <div className="form-group" key={key}>
+                    <div className="admin-form-group" key={key}>
                       <div className="mat">
                         <input
                           className={`mat-input${formErrors[key] ? " mat-error" : ""}`}
@@ -764,10 +759,10 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
               {/* INGREDIENT INPUT */}
 
-              <div className="ingredient-form form-group">
+              <div className="admin-form-group">
                 <label htmlFor="">Ingredients</label>
                 <div className="border form-group">
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <CustomDropdown
                       label="Select Ingredient"
                       value={ingredientForm.name}
@@ -777,7 +772,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                     />
                   </div>
 
-                  <div className="form-group">
+                  <div className="admin-form-group">
                     <div className="mat">
                       <input
                         className={`mat-input${ingErrors.quantity ? " mat-error" : ""}`}
@@ -824,7 +819,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               </div>
 
             </div>
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <Button3D variant="cancel" onClick={resetDishForm}>Cancel</Button3D>
               <Button3D type="submit">Add Dish</Button3D>
             </div>

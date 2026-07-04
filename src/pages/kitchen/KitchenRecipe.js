@@ -156,14 +156,14 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
       {/* ADD MODAL */}
       {showForm && (
         <div className="modal-overlay">
-          <form className="modal" onSubmit={addRecipe}>
-            <div className="modal-header">
+          <form className="admin-modal" onSubmit={addRecipe}>
+            <div className="admin-modal-header">
               <h3>Add Recipe</h3>
               <Button3D variant="cancel" iconOnly onClick={() => { resetForm(); setShowForm(false); }}><img src={closeIcon} /></Button3D>
             </div>
 
-            <div className="modal-body">
-              <div className="form-group">
+            <div className="admin-modal-body">
+              <div className="admin-form-group">
                 <div className="mat">
                   <input
                     className={`mat-input${formErrors.name ? " mat-error" : ""}`}
@@ -177,7 +177,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
                 </div>
               </div>
 
-              <div className="form-group" style={{ flex: 1 }}>
+              <div className="admin-form-group" style={{ flex: 1 }}>
                 <div className="mat">
                   <textarea
                     className={`mat-input mat-textarea${formErrors.description ? " mat-error" : ""}`}
@@ -192,7 +192,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
               </div>
             </div>
 
-            <div className="modal-footer ">
+            <div className="admin-modal-footer">
               <Button3D variant="cancel" onClick={() => { resetForm(); setShowForm(false); }}>Cancel</Button3D>
               <Button3D type="submit">Save Recipe</Button3D>
             </div>
@@ -203,8 +203,8 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
       {/* DETAIL MODAL */}
       {selected && (
         <div className="modal-overlay" onClick={() => setSelected(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+            <div className="admin-modal-header">
               <div>
                 <h3>{selected.name}</h3>
                 <span style={{ fontSize: 12, color: "#a3a3a3", display: "block", marginTop: 2 }}>
@@ -214,7 +214,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
               <Button3D variant="cancel" iconOnly onClick={() => setSelected(null)}><img src={closeIcon} /></Button3D>
             </div>
 
-            <div className="modal-body">
+            <div className="admin-modal-body">
               <ul>
                 {selected.description
                   ?.split("\n")
@@ -225,7 +225,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
               </ul>
             </div>
 
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <Button3D variant="cancel" onClick={() => setSelected(null)}>Close</Button3D>
             </div>
           </div>
