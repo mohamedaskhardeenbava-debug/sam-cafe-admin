@@ -491,9 +491,9 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                   <div className="prv-section-title">Pre-ordered Dishes ({selectedItems.length})</div>
                   <table className="prv-table">
                     <thead><tr><th>#</th><th>Dish</th><th>Unit Price</th><th>Guests</th><th>Total</th></tr></thead>
-                    <tbody key={idx}>
+                    <tbody >
                       {selectedItems.map((dish, idx) => (
-                        <tr >
+                        <tr key={idx}>
                           <td style={{ color: "#aaa", fontSize: 12 }}>{idx + 1}</td>
                           <td style={{ fontWeight: 600 }}>{dish.name}</td>
                           <td>₹{dish.unitPrice || dish.price || 0}</td>
