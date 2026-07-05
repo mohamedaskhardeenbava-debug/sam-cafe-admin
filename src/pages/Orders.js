@@ -1,30 +1,20 @@
-/**
- * Orders.js  —  Sam Cafe Admin Panel
- * Orders management page
- */
-
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { createPortal } from "react-dom";
-
-import { QRCodeCanvas } from "qrcode.react";
-
 import { exportToExcel } from "../utils/excelUtils";
+import { useNavigate, useLocation } from "react-router-dom";
 import api from "../api";
-import socket from "../socket";
-import { CustomDatePicker } from "../components/CustomDatePicker";
-
+import "./Orders.css";
 import closeIcon from "../icon/close-icon.png";
 import { EmptyRow } from "../App";
+import { QRCodeCanvas } from "qrcode.react";
+import { createPortal } from "react-dom";
 import { formatDisplayDate } from "../App";
 import { formatIndianTime } from "../App";
+import socket from "../socket";
+import { printBill as sendBillToPrinter } from "../printUtils";
+import { CustomDatePicker } from "../components/CustomDatePicker";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
-import Button3D from "../components/Button3D";
-
-import "./Orders.css";
-import PageLoader from "../components/PageLoader";
 
 const SEVEN_MIN = 7 * 60 * 1000;
 const ONE_MIN = 60 * 1000;
@@ -49,12 +39,7 @@ const persistOrder = async (order, refresh) => {
 
 const persistOrderEverywhere = async (updatedOrder) => {
   // Update global orders (always valid)
-  try {
-    await api.put(`/orders/${updatedOrder.id}`, updatedOrder);
-  } catch (err) {
-    console.error("persistOrderEverywhere: failed to save order", err);
-    throw err;
-  }
+  await api.put(`/orders/${updatedOrder.id}`, updatedOrder);
 
   // If no userId → STOP (TAKE AWAY / guest orders)
   if (!updatedOrder.userId) {
@@ -82,14 +67,7 @@ const persistOrderEverywhere = async (updatedOrder) => {
     )
   };
 
-  try {
-    await api.put(`/users/${user.id}`, updatedUser);
-  } catch (err) {
-    // The order itself already saved successfully above — this is just
-    // the denormalized copy embedded in the user record falling out of
-    // sync, which is non-fatal, so we log but don't re-throw.
-    console.warn("persistOrderEverywhere: order saved, but user-record sync failed", err);
-  }
+  await api.put(`/users/${user.id}`, updatedUser);
 };
 
 const getCreatedTime = (order) => {
@@ -115,11 +93,6 @@ const STATUS_ORDER = {
   "service pickup": 3,
   completed: 4
 };
-
-// Any status not in STATUS_ORDER (e.g. "cancelled") falls back to this rank
-// instead of undefined, which previously made the sort comparator return
-// NaN and break sort stability/order.
-const statusRank = (status) => STATUS_ORDER[normalizeStatus(status)] ?? 99;
 
 const resolveQty = (item) =>
   Number(item.qty ?? item.quantity ?? 0);
@@ -185,11 +158,18 @@ const BillLayout = React.memo(({
   return (
     <div className="bill-receipt">
       <div className="bill-header">
-        <Button3D variant="cancel" iconOnly style={{ position: "absolute", right: 0 }}
+        <button
+          className="modal-cancel-btn"
+          style={{ position: "absolute", right: 0 }}
           onClick={(e) => {
             e.stopPropagation();
             onClose();
-          }}><img src={closeIcon} alt="" /></Button3D>
+          }}
+        >
+          <span class="shadow"></span>
+          <span class="edge"></span>
+          <span class="front close-padding"><img src={closeIcon} alt="" /></span>
+        </button>
         <h3>Sam Cafe</h3>
         <p>Contact: +91-9080179608</p>
         <hr />
@@ -288,7 +268,14 @@ const BillLayout = React.memo(({
               value={splitPeople}
               onChange={(e) => setSplitPeople(e.target.value)}
             />
-            <Button3D iconOnly onClick={applySplitAmount}>Split Amount</Button3D>
+            <button
+              className="modal-save-btn"
+              onClick={applySplitAmount}
+            >
+              <span class="shadow"></span>
+              <span class="edge"></span>
+              <span class="front close-padding">Split Amount</span>
+            </button>
           </div>
 
           {/* SPLIT BY BILL */}
@@ -299,7 +286,14 @@ const BillLayout = React.memo(({
               value={splitBills}
               onChange={(e) => setSplitBills(e.target.value)}
             />
-            <Button3D iconOnly onClick={applySplitBill}>Split Bill</Button3D>
+            <button
+              className="modal-save-btn"
+              onClick={applySplitBill}
+            >
+              <span class="shadow"></span>
+              <span class="edge"></span>
+              <span class="front close-padding">Split Bill</span>
+            </button>
           </div>
 
         </div>
@@ -314,7 +308,6 @@ const BillLayout = React.memo(({
 });
 
 const ItemTimer = React.memo(({ item, order }) => {
-
   const [, setTick] = useState(0);
 
   const isDone =
@@ -365,6 +358,8 @@ const OrderRow = React.memo(({
   setAdminData,
   toast
 }) => {
+  const allItemsCompleted = order.items.every(i => i.status === "completed");
+
   return (
     <React.Fragment>
       <tr
@@ -391,7 +386,6 @@ const OrderRow = React.memo(({
               type="checkbox"
               checked={order.priority || false}
               onChange={async (e) => {
-                const previousOrder = order;
                 const updatedOrder = {
                   ...order,
                   priority: e.target.checked
@@ -411,16 +405,6 @@ const OrderRow = React.memo(({
                 } catch (err) {
                   toast.error("Failed to update priority");
                   console.error("Failed to update priority", err);
-                  // Roll back the optimistic flip — without this the
-                  // checkbox stayed showing the new value even though the
-                  // server never actually saved it, silently disagreeing
-                  // with the backend until the next reload/socket sync.
-                  setAdminData(prev => ({
-                    ...prev,
-                    orders: prev.orders.map(o =>
-                      o.id === order.id ? previousOrder : o
-                    )
-                  }));
                 }
               }}
             />
@@ -504,11 +488,15 @@ const OrderRow = React.memo(({
                     {order.status === "preparing" && (
                       <td>
                         {item.status === "preparing" && (
-                          <Button3D style={{ boxSizing: "border-box" }}
+                          <button
+                            className="pickup-btn"
                             onClick={(e) => {
                               e.stopPropagation();
                               onPickup({ orderId: order.id, itemIndex: idx, item });
-                            }}>Order Pickup</Button3D>
+                            }}
+                          >
+                            Order Pickup
+                          </button>
                         )}
                       </td>
                     )}
@@ -523,25 +511,9 @@ const OrderRow = React.memo(({
   );
 });
 
-const Orders = ({ adminData, setAdminData }) => {
-  // Orders owns its own sort state instead of sharing App.js's global
-  // sortConfig. The shared sortConfig was also written to by Categories,
-  // Dishes, Stocks, Favourites, and Users — so navigating here after
-  // sorting Users by "mobile" left sortConfig.key = "mobile", which falls
-  // through to this page's `default: return 0` case and silently skips
-  // sorting entirely. A page-local sort key avoids that cross-page leak.
 
-  // ── Hooks
 
-  const [sortConfig, setSortConfig] = useState({ key: "id", direction: "desc" });
-  const handleSort = useCallback((key) => {
-    setSortConfig(prev => {
-      if (prev.key === key) {
-        return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
-      }
-      return { key, direction: "asc" };
-    });
-  }, []);
+const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const orders = adminData.orders || [];
@@ -635,6 +607,8 @@ const Orders = ({ adminData, setAdminData }) => {
   const [editableBill, setEditableBill] = useState(null);
   const [menuPos, setMenuPos] = useState(null);
   const tableWrapperRef = useRef(null);
+
+
 
   useEffect(() => {
     const id = location.state?.scrollToOrderId;
@@ -737,13 +711,10 @@ const Orders = ({ adminData, setAdminData }) => {
 
       // NORMAL SORTING
       switch (sortKey) {
-        case "id": {
-          const idA = a.id || "";
-          const idB = b.id || "";
+        case "id":
           return sortDir === "asc"
-            ? idA.localeCompare(idB)
-            : idB.localeCompare(idA);
-        }
+            ? a.id.localeCompare(b.id)
+            : b.id.localeCompare(a.id);
 
         case "date":
           return sortDir === "asc"
@@ -757,8 +728,10 @@ const Orders = ({ adminData, setAdminData }) => {
 
         case "status":
           return sortDir === "asc"
-            ? statusRank(a.status) - statusRank(b.status)
-            : statusRank(b.status) - statusRank(a.status);
+            ? STATUS_ORDER[normalizeStatus(a.status)] -
+            STATUS_ORDER[normalizeStatus(b.status)]
+            : STATUS_ORDER[normalizeStatus(b.status)] -
+            STATUS_ORDER[normalizeStatus(a.status)];
 
         default:
           return 0;
@@ -871,17 +844,15 @@ const Orders = ({ adminData, setAdminData }) => {
             status: newStatus
           };
 
-          // persistOrder() does PUT /orders/:id, and the server itself
-          // broadcasts the resulting "data-change" event to other tabs
-          // (this tab is excluded via the X-Socket-Id header in api.js).
-          // We do NOT also call socket.emit("data-change", ...) here —
-          // the server has no listener for an incoming client-side
-          // "data-change" event, so that call was a no-op, and removing
-          // it also removes one of the two redundant code paths that
-          // were racing against this same optimistic update.
           if (orderChanged || newStatus !== order.status) {
-            persistOrder(updatedOrder);
+            persistOrder(updatedOrder, null, toast);
           }
+
+          socket.emit("data-change", {
+            resource: "orders",
+            action: "updated",
+            payload: updatedOrder
+          });
 
           return updatedOrder;
         });
@@ -960,29 +931,39 @@ const Orders = ({ adminData, setAdminData }) => {
   };
 
   const printBill = async (order) => {
-    try {
-      const billData = {
-        orderId: order.id,
-        date: order.date,
-        time: order.time,
-        customer: order.userName || "Guest",
-        items: order.items.map(item => ({
-          name: item.dishName,
-          qty: item.quantity,
-          price: item.totalPrice
-        })),
-        subtotal: order.resolvedTotal,
-        cgst: +(order.resolvedTotal * 0.025).toFixed(2),
-        sgst: +(order.resolvedTotal * 0.025).toFixed(2),
-        total: +(order.resolvedTotal * 1.05).toFixed(2),
-        upiUrl: buildUpiUrl((order.resolvedTotal * 1.05).toFixed(2))
-      };
+    const cgst = +(order.resolvedTotal * 0.025).toFixed(2);
+    const sgst = +(order.resolvedTotal * 0.025).toFixed(2);
+    const total = +(order.resolvedTotal * 1.05).toFixed(2);
 
-      const printServerUrl = process.env.REACT_APP_PRINT_SERVER_URL || "http://localhost:9001";
-      await api.post(`${printServerUrl}/print/bill`, billData);
-    } catch (err) {
-      toast.error("Failed to print bill");
-      console.error(err);
+    // Shape must match what bridge.js's printBill() expects:
+    // order.items[].{dishName, quantity, totalPrice} + order.totalWithGST
+    const printerOrder = {
+      id: order.id,
+      date: order.date,
+      time: order.time,
+      tableNo: order.tableNo,
+      staffName: order.staffName,
+      userName: order.userName || "Guest",
+      items: order.items.map(item => ({
+        dishName: item.dishName,
+        quantity: item.quantity,
+        totalPrice: item.totalPrice,
+        selectedSize: item.selectedSize,
+        spiciness: item.spiciness
+      })),
+      totalWithGST: {
+        subTotal: order.resolvedTotal,
+        cgst,
+        sgst,
+        total
+      },
+      upiUrl: buildUpiUrl(total)
+    };
+
+    const result = await sendBillToPrinter(socket, printerOrder);
+    if (!result.success) {
+      toast.error(result.error || "Failed to print bill");
+      console.error("Bill print failed:", result.error);
     }
   };
 
@@ -1010,8 +991,6 @@ const Orders = ({ adminData, setAdminData }) => {
     document.addEventListener("mousedown", handleOutsideClick);
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [openMenuOrderId, closeOptionsMenu]);
-
-  if (!adminData?.orders?.length) return <PageLoader label="Loading orders…" />;
 
   const recalcOrderTotals = (order) => {
     const items = order.items.map(item => {
@@ -1096,64 +1075,117 @@ const Orders = ({ adminData, setAdminData }) => {
     }));
   };
 
+  const handleSplitAmount = (order) => {
+    const customers = prompt("Enter number of people:");
+    if (!customers || isNaN(customers)) return;
+
+    const total = order.items.reduce(
+      (sum, i) => sum + Number(i.totalPrice || 0),
+      0
+    );
+
+    const perHead = (total / Number(customers)).toFixed(2);
+
+    const updatedOrder = {
+      ...order,
+      splitType: "amount",
+      splitDetails: {
+        customers: Number(customers),
+        perHead
+      }
+    };
+    setEditableBill(updatedOrder);
+  };
+
+  const handleSplitBill = (order) => {
+    const bills = prompt("Enter number of bills:");
+    if (!bills || isNaN(bills)) return;
+
+    const total = order.items.reduce(
+      (sum, i) => sum + Number(i.totalPrice || 0),
+      0
+    );
+
+    const perBill = (total / Number(bills)).toFixed(2);
+
+    const splitDetails = Array.from({ length: Number(bills) }, () => ({
+      total: perBill
+    }));
+
+    const updatedOrder = {
+      ...order,
+      splitType: "bill",
+      splitDetails
+    };
+    setEditableBill(updatedOrder);
+  };
+
+
   return (
     <div className="orders-page">
+
       <div className="orders-header">
-        <h2 className="orders-title">Orders</h2>
-
-        <div className="orders-search-wrapper">
-          <input
-            className="search-input"
-            placeholder=" Search by order ID, customer, dish…"
-            value={orderSearch}
-            onChange={e => setOrderSearch(e.target.value)}
-          />
-          {orderSearch && (
-            <button className="orders-search-clear" onClick={() => setOrderSearch("")}>✕</button>
-          )}
-        </div>
-
         <div className="orders-header-div">
+          <h2 className="orders-title">Orders</h2>
+
+          <div className="orders-search-wrapper">
+            <input
+              className="search-input"
+              placeholder=" Search by order ID, customer, dish…"
+              value={orderSearch}
+              onChange={e => setOrderSearch(e.target.value)}
+            />
+            {orderSearch && (
+              <button className="orders-search-clear" onClick={() => setOrderSearch("")}>✕</button>
+            )}
+          </div>
+
+          <div className="orders-filter">
+            <button
+              type="button"
+              className={`filter-pill${datePreset === "today" ? " active" : ""}`}
+              onClick={() => applyPreset("today")}
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              className={`filter-pill${datePreset === "week" ? " active" : ""}`}
+              onClick={() => applyPreset("week")}
+            >
+              This Week
+            </button>
+            <button
+              type="button"
+              className={`filter-pill${datePreset === "month" ? " active" : ""}`}
+              onClick={() => applyPreset("month")}
+            >
+              This Month
+            </button>
+            <CustomDatePicker
+              label="From"
+              value={fromDate}
+              max={toDate}
+              onChange={(s) => { setFromDate(s); setDatePreset("custom"); if (s > toDate) setToDate(s); }}
+            />
+            <CustomDatePicker
+              label="To"
+              value={toDate}
+              min={fromDate}
+              max={todayISO}
+              onChange={(s) => { setToDate(s); setDatePreset("custom"); }}
+            />
+          </div>
+
           <button
-            type="button"
-            className={`filter-pill${datePreset === "today" ? " active" : ""}`}
-            onClick={() => applyPreset("today")}
+            className="modal-save-btn"
+            onClick={() => exportOrders(filteredOrders, fromDate, toDate)}
           >
-            Today
-          </button>
-          <button
-            type="button"
-            className={`filter-pill${datePreset === "week" ? " active" : ""}`}
-            onClick={() => applyPreset("week")}
-          >
-            This Week
-          </button>
-          <button
-            type="button"
-            className={`filter-pill${datePreset === "month" ? " active" : ""}`}
-            onClick={() => applyPreset("month")}
-          >
-            This Month
+            <span className="shadow"></span>
+            <span className="edge"></span>
+            <span className="front">Export</span>
           </button>
         </div>
-
-        <div className="orders-header-div">
-          <CustomDatePicker
-            label="From"
-            value={fromDate}
-            max={toDate}
-            onChange={(s) => { setFromDate(s); setDatePreset("custom"); if (s > toDate) setToDate(s); }}
-          />
-          <CustomDatePicker
-            label="To"
-            value={toDate}
-            min={fromDate}
-            max={todayISO}
-            onChange={(s) => { setToDate(s); setDatePreset("custom"); }}
-          />
-        </div>
-
-        <Button3D onClick={() => exportOrders(filteredOrders, fromDate, toDate)}>Export</Button3D>
 
         <div className="orders-header-div">
           <div className="orders-dropdown-wrapper">
@@ -1239,9 +1271,7 @@ const Orders = ({ adminData, setAdminData }) => {
                 <span className="th-content sort-th">
                   <span>Order ID</span>
                   <span className="sort-arrow">
-                    {sortConfig.key === "id"
-                      ? sortConfig.direction === "asc" ? "▲" : "▼"
-                      : ""}
+                    {sortConfig.direction === "asc" ? "▲" : "▼"}
                   </span>
                 </span>
               </th>
@@ -1252,9 +1282,7 @@ const Orders = ({ adminData, setAdminData }) => {
                 <span className="th-content sort-th">
                   <span>Date</span>
                   <span className="sort-arrow">
-                    {sortConfig.key === "date"
-                      ? sortConfig.direction === "asc" ? "▲" : "▼"
-                      : ""}
+                    {sortConfig.direction === "asc" ? "▲" : "▼"}
                   </span>
                 </span>
               </th>
@@ -1345,50 +1373,65 @@ const Orders = ({ adminData, setAdminData }) => {
             )}
 
             <div className="pickup-actions">
-              <Button3D variant="cancel" onClick={() => setPickupConfirm(null)}>Cancel</Button3D>
+              <button
+                className="btn-cancel"
+                onClick={() => setPickupConfirm(null)}
+              >
+                Cancel
+              </button>
 
-              <Button3D onClick={() => {
-                const { orderId, itemIndex } = pickupConfirm;
+              <button
+                className="btn-confirm"
+                onClick={() => {
+                  const { orderId, itemIndex } = pickupConfirm;
 
-                setAdminData(prev => ({
-                  ...prev,
-                  orders: prev.orders.map(o => {
-                    if (o.id !== orderId) return o;
+                  setAdminData(prev => ({
+                    ...prev,
+                    orders: prev.orders.map(o => {
+                      if (o.id !== orderId) return o;
 
-                    const items = o.items.map((i, index) => {
-                      if (index !== itemIndex) return i;
+                      const items = o.items.map((i, index) => {
+                        if (index !== itemIndex) return i;
 
-                      const now = Date.now();
-                      const start = i.createdAt
-                        ? new Date(i.createdAt).getTime()
-                        : getCreatedTime(o);
+                        const now = Date.now();
+                        const start = i.createdAt
+                          ? new Date(i.createdAt).getTime()
+                          : getCreatedTime(o);
 
-                      const pickupStatus =
-                        now - start <= SEVEN_MIN ? "on_time" : "late";
+                        const pickupStatus =
+                          now - start <= SEVEN_MIN ? "on_time" : "late";
 
-                      return {
-                        ...i,
-                        status: "service pickup",
-                        pickupAt: new Date().toISOString(),
-                        pickupStatus
+                        return {
+                          ...i,
+                          status: "service pickup",
+                          pickupAt: new Date().toISOString(),
+                          pickupStatus
+                        };
+                      });
+
+                      const newStatus = deriveOrderStatusFromItems(items);
+
+                      const updated = {
+                        ...o,
+                        items,
+                        status: newStatus
                       };
-                    });
+                      persistOrder(updated, null, toast); socket.emit("data-change", {
+                        resource: "orders",
+                        action: "updated",
+                        payload: updated
+                      });
 
-                    const newStatus = deriveOrderStatusFromItems(items);
 
-                    const updated = {
-                      ...o,
-                      items,
-                      status: newStatus
-                    };
-                    persistOrder(updated);
+                      return updated;
+                    })
+                  }));
 
-                    return updated;
-                  })
-                }));
-
-                setPickupConfirm(null);
-              }}>Confirm</Button3D>
+                  setPickupConfirm(null);
+                }}
+              >
+                Confirm
+              </button>
             </div>
           </div>
         </div>
@@ -1450,7 +1493,7 @@ const Orders = ({ adminData, setAdminData }) => {
 
       {editBillOrder && (
         <div className="overlay">
-          <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
             <BillLayout
               onClose={closeAllBillOverlays}
               order={editableBill}
@@ -1488,10 +1531,14 @@ const Orders = ({ adminData, setAdminData }) => {
               }}
             />
 
-            <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => setEditBillOrder(null)}>Cancel</Button3D>
-              <Button3D
-                className="modal-save-btn"
+            <div className="modal-footer">
+              <button className="modal-cancel-btn" onClick={() => setEditBillOrder(null)}>
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front">Cancel</span>
+              </button>
+              <button
+                className="modal-prev-btn"
                 onClick={() => {
                   const previewData = recalcOrderTotals(editableBill);
 
@@ -1499,29 +1546,38 @@ const Orders = ({ adminData, setAdminData }) => {
                   setPreviewBillOrder(previewData);
                 }}
               >
-                Preview
-              </Button3D>
-              <Button3D className="modal-save-btn" onClick={async () => {
-                try {
-                  const updatedOrder = recalcOrderTotals(
-                    JSON.parse(JSON.stringify(editableBill))
-                  );
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front">Preview</span>
+              </button>
+              <button
+                className="modal-save-btn"
+                onClick={async () => {
+                  try {
+                    const updatedOrder = recalcOrderTotals(
+                      JSON.parse(JSON.stringify(editableBill))
+                    );
 
-                  await persistOrderEverywhere(updatedOrder);
+                    await persistOrderEverywhere(updatedOrder);
 
-                  setAdminData(prev => ({
-                    ...prev,
-                    orders: prev.orders.map(o =>
-                      o.id === updatedOrder.id ? updatedOrder : o
-                    )
-                  }));
+                    setAdminData(prev => ({
+                      ...prev,
+                      orders: prev.orders.map(o =>
+                        o.id === updatedOrder.id ? updatedOrder : o
+                      )
+                    }));
 
-                  setEditBillOrder(null);
-                } catch (err) {
-                  toast.error("Failed to save bill");
-                  console.error("Save failed", err);
-                }
-              }}>Save</Button3D>
+                    setEditBillOrder(null);
+                  } catch (err) {
+                    toast.error("Failed to save bill");
+                    console.error("Save failed", err);
+                  }
+                }}
+              >
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front">Save</span>
+              </button>
             </div>
           </div>
         </div>
@@ -1529,14 +1585,14 @@ const Orders = ({ adminData, setAdminData }) => {
 
       {previewBillOrder && (
         <div className="overlay">
-          <div className="admin-modal">
+          <div className="modal">
             <BillLayout
               onClose={closeAllBillOverlays}
               order={previewBillOrder}
               buildUpiUrl={buildUpiUrl}
             />
 
-            <div className="admin-modal-footer">
+            <div className="modal-footer">
               <button
                 className="modal-confirm-btn"
                 onClick={() => {
@@ -1544,9 +1600,9 @@ const Orders = ({ adminData, setAdminData }) => {
                   setPreviewBillOrder(null);
                 }}
               >
-                <span className="shadow"></span>
-                <span className="edge"></span>
-                <span className="front">Print</span>
+                <span class="shadow"></span>
+                <span class="edge"></span>
+                <span class="front">Print</span>
               </button>
             </div>
           </div>
