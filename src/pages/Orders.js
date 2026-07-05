@@ -22,6 +22,7 @@ import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 import Button3D from "../components/Button3D";
+import { printBill as sendBillToPrinter } from "../printUtils";
 
 import "./Orders.css";
 import PageLoader from "../components/PageLoader";
@@ -960,29 +961,39 @@ const Orders = ({ adminData, setAdminData }) => {
   };
 
   const printBill = async (order) => {
-    try {
-      const billData = {
-        orderId: order.id,
-        date: order.date,
-        time: order.time,
-        customer: order.userName || "Guest",
-        items: order.items.map(item => ({
-          name: item.dishName,
-          qty: item.quantity,
-          price: item.totalPrice
-        })),
-        subtotal: order.resolvedTotal,
-        cgst: +(order.resolvedTotal * 0.025).toFixed(2),
-        sgst: +(order.resolvedTotal * 0.025).toFixed(2),
-        total: +(order.resolvedTotal * 1.05).toFixed(2),
-        upiUrl: buildUpiUrl((order.resolvedTotal * 1.05).toFixed(2))
-      };
+    const cgst = +(order.resolvedTotal * 0.025).toFixed(2);
+    const sgst = +(order.resolvedTotal * 0.025).toFixed(2);
+    const total = +(order.resolvedTotal * 1.05).toFixed(2);
 
-      const printServerUrl = process.env.REACT_APP_PRINT_SERVER_URL || "http://localhost:9001";
-      await api.post(`${printServerUrl}/print/bill`, billData);
-    } catch (err) {
-      toast.error("Failed to print bill");
-      console.error(err);
+    // Shape must match what bridge.js's printBill() expects:
+    // order.items[].{dishName, quantity, totalPrice} + order.totalWithGST
+    const printerOrder = {
+      id: order.id,
+      date: order.date,
+      time: order.time,
+      tableNo: order.tableNo,
+      staffName: order.staffName,
+      userName: order.userName || "Guest",
+      items: order.items.map(item => ({
+        dishName: item.dishName,
+        quantity: item.quantity,
+        totalPrice: item.totalPrice,
+        selectedSize: item.selectedSize,
+        spiciness: item.spiciness
+      })),
+      totalWithGST: {
+        subTotal: order.resolvedTotal,
+        cgst,
+        sgst,
+        total
+      },
+      upiUrl: buildUpiUrl(total)
+    };
+
+    const result = await sendBillToPrinter(socket, printerOrder);
+    if (!result.success) {
+      toast.error(result.error || "Failed to print bill");
+      console.error("Bill print failed:", result.error);
     }
   };
 
