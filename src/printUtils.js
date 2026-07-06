@@ -26,7 +26,7 @@ const DEFAULT_TIMEOUT_MS = 20000;
  * resolves with { success, message?, error? } once the backend
  * relays the bridge's result (or a client-side timeout occurs).
  */
-export function sendPrintJob(socket, jobType, order, timeoutMs = DEFAULT_TIMEOUT_MS) {
+function sendPrintJobOnce(socket, jobType, order, timeoutMs) {
   return new Promise((resolve) => {
     if (!socket || !socket.connected) {
       resolve({ success: false, error: "Not connected to server" });
@@ -55,6 +55,20 @@ export function sendPrintJob(socket, jobType, order, timeoutMs = DEFAULT_TIMEOUT
     socket.on("printer:result", onResult);
     socket.emit("printer:print", { jobId, jobType, order });
   });
+}
+
+/**
+ * Same as sendPrintJobOnce, but if the bridge is reported offline, waits
+ * briefly and retries once. The bridge can momentarily drop and reconnect
+ * (wifi blip, Render cold start, etc.) — a single silent retry covers that
+ * window instead of surfacing a failure the user has to manually retry.
+ */
+export async function sendPrintJob(socket, jobType, order, timeoutMs = DEFAULT_TIMEOUT_MS) {
+  const result = await sendPrintJobOnce(socket, jobType, order, timeoutMs);
+  if (result.success || !/offline/i.test(result.error || "")) return result;
+
+  await new Promise((r) => setTimeout(r, 3000));
+  return sendPrintJobOnce(socket, jobType, order, timeoutMs);
 }
 
 /** Convenience wrappers */
@@ -95,7 +109,7 @@ export function checkPrinterStatus(socket, timeoutMs = 3000) {
  *   useEffect(() => subscribePrinterStatus(socket, setPrinterOnline), [socket]);
  */
 export function subscribePrinterStatus(socket, onChange) {
-  if (!socket) return () => {};
+  if (!socket) return () => { };
   const handler = (payload) => onChange(payload.online);
   socket.on("printer:status", handler);
   return () => socket.off("printer:status", handler);
