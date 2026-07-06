@@ -513,7 +513,7 @@ const OrderRow = React.memo(({
 
 
 
-const Orders = ({ adminData, setAdminData, handleSort, sortConfig }) => {
+const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const orders = adminData.orders || [];

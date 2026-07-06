@@ -684,6 +684,8 @@ function App() {
                 <Orders
                   adminData={adminData}
                   setAdminData={setAdminData}
+                  handleSort={handleSort} 
+                  sortConfig={sortConfig}
                 />
               }
             />
