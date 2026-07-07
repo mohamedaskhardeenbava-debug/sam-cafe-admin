@@ -36,8 +36,13 @@ const getWeekRange = () => {
 };
 const getMonthRange = () => {
   const now = new Date();
-  const first = new Date(now.getFullYear(), now.getMonth(), 1);
-  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const first = new Date(now.getFullYear(), now.getMonth(), 2);
+  return [first.toISOString().split("T")[0], now.toISOString().split("T")[0]];
+};
+const getLastMonthRange = () => {
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth() - 1, 2);
+  const last = new Date(now.getFullYear(), now.getMonth(), 1);
   return [first.toISOString().split("T")[0], last.toISOString().split("T")[0]];
 };
 
@@ -589,7 +594,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
         </div>
 
         <div className="header-btn-container">
-          <Button3D variant="cancel" onClick={() => setShowPrefModal(true)}>Table Preferences</Button3D>
+          <Button3D variant="save" onClick={() => setShowPrefModal(true)}>Table Preferences</Button3D>
           <Button3D onClick={handleExport}>Export</Button3D>
           <Button3D onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setTablePrefImageFile(null); setCreateTab(0); }}>+ Add Reservation</Button3D>
         </div>
@@ -603,7 +608,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
           <div className="filter-group">
             <span className="filter-group-label">period</span>
-            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
+            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]].map(([preset, label]) => (
               <button key={preset}
                 className={`filter-pill${filterDatePreset === preset ? " active" : ""}`}
                 onClick={() => {
@@ -613,7 +618,8 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     setFilterDatePreset(preset); setFilterDate("");
                     if (preset === "today") { const t = todayStr(); setFilterFromDate(t); setFilterToDate(t); }
                     else if (preset === "week") { const [f, t] = getWeekRange(); setFilterFromDate(f); setFilterToDate(t); }
-                    else { const [f, t] = getMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
+                    else if (preset === "month") { const [f, t] = getMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
+                    else { const [f, t] = getLastMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
                   }
                 }}>
                 {label}
@@ -960,7 +966,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                       if (f) { const d = await readFileAsDataURL(f); setNewPrefImage(d); }
                     }} />
                   <button className="evt-res-upload-img-btn" onClick={() => newPrefImgRef.current?.click()}>
-                    📷 {newPrefImage ? "✓ Image" : "Image"}
+                    {newPrefImage ? "✓ Image" : "Image"}
                   </button>
                   <Button3D onClick={handleAddPref}>+ Add</Button3D>
                 </div>
@@ -971,11 +977,10 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
               </div>
             </div>
             <div className="event-modal-footer">
-              <button onClick={() => setShowPrefModal(false)}>Cancel</button>
-              <button onClick={handleSavePrefs} disabled={prefSaving}
-                style={{ background: "#1dd1a1", color: "#fff", fontWeight: 700 }}>
-                {prefSaving ? "Saving..." : "💾 Save & Close"}
-              </button>
+              <Button3D variant="cancel" onClick={() => setShowPrefModal(false)}>Cancel</Button3D>
+              <Button3D variant="save" onClick={handleSavePrefs} disabled={prefSaving}>
+                {prefSaving ? "Saving..." : "Save & Close"}
+              </Button3D>
             </div>
           </div>
         </div>

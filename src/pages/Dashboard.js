@@ -103,9 +103,13 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
       saturday.setDate(sunday.getDate() + 6);
       setFromDate(fmtDate(sunday)); setToDate(fmtDate(saturday));
     } else if (preset === "monthly") {
-      // 1st to last day of current month
+      // 1st of current month to today
       const first = new Date(now.getFullYear(), now.getMonth(), 1);
-      const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      setFromDate(fmtDate(first)); setToDate(fmtDate(now));
+    } else if (preset === "lastMonth") {
+      // 1st to last day of the previous calendar month
+      const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const last = new Date(now.getFullYear(), now.getMonth(), 0);
       setFromDate(fmtDate(first)); setToDate(fmtDate(last));
     }
     setDatePreset(preset);
@@ -336,7 +340,7 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
           </div>
           <div className="dashboard-filter-date">
             <div className="dash-preset-btns">
-              {[["today", "Today"], ["weekly", "This Week"], ["monthly", "This Month"]].map(([k, lbl]) => (
+              {[["today", "Today"], ["weekly", "This Week"], ["monthly", "This Month"], ["lastMonth", "Last Month"]].map(([k, lbl]) => (
                 <button key={k} className={`filter-pill${datePreset === k ? " active" : ""}`} onClick={() => applyPreset(k)}>{lbl}</button>
               ))}
             </div>

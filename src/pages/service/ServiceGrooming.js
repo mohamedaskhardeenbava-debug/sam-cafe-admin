@@ -50,6 +50,14 @@ function getMonthStart() {
   const d = new Date();
   return toLocalISO(new Date(d.getFullYear(), d.getMonth(), 1));
 }
+function getLastMonthStart() {
+  const d = new Date();
+  return toLocalISO(new Date(d.getFullYear(), d.getMonth() - 1, 1));
+}
+function getLastMonthEnd() {
+  const d = new Date();
+  return toLocalISO(new Date(d.getFullYear(), d.getMonth(), 0));
+}
 
 export default function ServiceGrooming({ adminData, setAdminData }) {
   // ── Hooks
@@ -94,6 +102,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
     if (preset === "today") { setSgroomFrom(today); setSgroomTo(today); }
     if (preset === "week") { setSgroomFrom(getWeekStart()); setSgroomTo(today); }
     if (preset === "month") { setSgroomFrom(getMonthStart()); setSgroomTo(today); }
+    if (preset === "lastMonth") { setSgroomFrom(getLastMonthStart()); setSgroomTo(getLastMonthEnd()); }
   };
 
   const visibleDates = useMemo(() =>
@@ -259,7 +268,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
           </div>
           <div className="filter-group">
             <span className="filter-group-label">period</span>
-            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([k, lbl]) => (
+            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]].map(([k, lbl]) => (
               <button key={k} className={`filter-pill${sgroomPreset === k ? " active" : ""}`}
                 onClick={() => applyPreset(k)}>{lbl}</button>
             ))}

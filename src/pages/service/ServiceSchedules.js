@@ -50,7 +50,15 @@ const PRESETS = [
     fn: () => {
       const now = new Date();
       const first = new Date(now.getFullYear(), now.getMonth(), 1);
-      const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      return [fmt(first), fmt(now)];
+    }
+  },
+  {
+    label: "Last Month",
+    fn: () => {
+      const now = new Date();
+      const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const last = new Date(now.getFullYear(), now.getMonth(), 0);
       return [fmt(first), fmt(last)];
     }
   },

@@ -135,8 +135,13 @@ const getWeekRange = () => {
 };
 const getMonthRange = () => {
   const now = new Date();
-  const first = new Date(now.getFullYear(), now.getMonth(), 1);
-  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const first = new Date(now.getFullYear(), now.getMonth(), 2);
+  return [first.toISOString().split("T")[0], now.toISOString().split("T")[0]];
+};
+const getLastMonthRange = () => {
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth() -1, 2);
+  const last = new Date(now.getFullYear(), now.getMonth(), 1);
   return [first.toISOString().split("T")[0], last.toISOString().split("T")[0]];
 };
 
@@ -812,7 +817,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               {/* Date quick presets */}
               <div className="filter-group">
                 <span className="ae-filter-group-label">Period</span>
-                {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
+                {[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]].map(([preset, label]) => (
                   <button key={preset}
                     className={`filter-pill${evtDatePreset === preset ? " active" : ""}`}
                     onClick={() => {
@@ -822,7 +827,8 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                         setEvtDatePreset(preset);
                         if (preset === "today") { const t = todayStr(); setEvtFromDate(t); setEvtToDate(t); }
                         else if (preset === "week") { const [f, t] = getWeekRange(); setEvtFromDate(f); setEvtToDate(t); }
-                        else { const [f, t] = getMonthRange(); setEvtFromDate(f); setEvtToDate(t); }
+                        else if (preset === "month") { const [f, t] = getMonthRange(); setEvtFromDate(f); setEvtToDate(t); }
+                        else { const [f, t] = getLastMonthRange(); setEvtFromDate(f); setEvtToDate(t); }
                       }
                     }}>
                     {label}
@@ -983,11 +989,12 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               <div className="filter-group">
                 {/* Quick date presets */}
                 <span className="filter-group-label">period</span>
-                {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => {
+                {[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]].map(([preset, label]) => {
                   const isActive = (() => {
                     if (preset === "today") { const t = todayStr(); return filterFromDate === t && filterToDate === t; }
                     if (preset === "week") { const [f, t] = getWeekRange(); return filterFromDate === f && filterToDate === t; }
-                    const [f, t] = getMonthRange(); return filterFromDate === f && filterToDate === t;
+                    if (preset === "month") { const [f, t] = getMonthRange(); return filterFromDate === f && filterToDate === t; }
+                    const [f, t] = getLastMonthRange(); return filterFromDate === f && filterToDate === t;
                   })();
                   return (
                     <button key={preset}
@@ -996,7 +1003,8 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                         if (isActive) { setFilterFromDate(""); setFilterToDate(""); return; }
                         if (preset === "today") { const t = todayStr(); setFilterFromDate(t); setFilterToDate(t); }
                         else if (preset === "week") { const [f, t] = getWeekRange(); setFilterFromDate(f); setFilterToDate(t); }
-                        else { const [f, t] = getMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
+                        else if (preset === "month") { const [f, t] = getMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
+                        else { const [f, t] = getLastMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
                       }}>
                       {label}
                     </button>

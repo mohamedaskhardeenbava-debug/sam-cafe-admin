@@ -3,7 +3,7 @@
  * Kitchen shift schedules page
  */
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation } from "react-router-dom";
 
 import { format } from "date-fns";
@@ -25,6 +25,7 @@ const PRESETS = [
   { label: "All", fn: () => ["2000-01-01", "2099-12-31"] },
   { label: "Today", fn: () => { const t = format(new Date(), "yyyy-MM-dd"); return [t, t]; } },
   { label: "This Month", fn: () => { const d = new Date(); return [format(new Date(d.getFullYear(), d.getMonth(), 1), "yyyy-MM-dd"), format(d, "yyyy-MM-dd")]; } },
+  { label: "Last Month", fn: () => { const d = new Date(); const first = new Date(d.getFullYear(), d.getMonth() - 1, 1); const last = new Date(d.getFullYear(), d.getMonth(), 0); return [format(first, "yyyy-MM-dd"), format(last, "yyyy-MM-dd")]; } },
 ];
 
 const EMPTY_FORM = { work: "", staff: "", date: "", department: "", status: "", lastRate: "" };
@@ -92,14 +93,18 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
     const activity = adminData?.kitchenActivity || [];
     const deletedIds = [];
 
-    // correct
     for (const item of expired) {
       try {
         await api.delete(`/kitchenSchedules/${item.id}`);
         deletedIds.push(item.id);
       } catch (err) {
-        toast.error(`Failed to delete schedule ${item.id}.`);
-        deletedIds.push(item.id);
+        // 404 means it's already gone server-side (e.g. deleted in a
+        // previous run) — treat that as success rather than an error.
+        if (err?.response?.status === 404) {
+          deletedIds.push(item.id);
+        } else {
+          toast.error(`Failed to delete schedule ${item.id}.`);
+        }
       }
     }
 
@@ -119,9 +124,21 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
     }));
   };
 
+  const moveExpiredSchedulesRan = useRef(false);
+
   // ── Effects
 
-  useEffect(() => { moveExpiredSchedules(); }, []);
+  useEffect(() => {
+    // React 18 Strict Mode intentionally mounts effects twice in dev
+    // (mount → cleanup → mount) to surface non-idempotent effects.
+    // Without this guard, the second invocation re-reads the same
+    // "expired" items from state (captured before the first run's
+    // setAdminData update lands) and tries to delete them again,
+    // producing a harmless-but-noisy 404 in the console.
+    if (moveExpiredSchedulesRan.current) return;
+    moveExpiredSchedulesRan.current = true;
+    moveExpiredSchedules();
+  }, []);
 
   const markCompleted = async (item) => {
     if (item.status === "Completed") return;

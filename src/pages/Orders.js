@@ -579,6 +579,15 @@ const Orders = ({ adminData, setAdminData }) => {
     return { from: toLocalISO(first), to: todayISO };
   };
 
+  // Full previous calendar month (1st through last day) — distinct from
+  // "This Month", which runs from the 1st of the current month to today.
+  const getLastMonthRange = () => {
+    const today = new Date();
+    const firstOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const lastOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+    return { from: toLocalISO(firstOfLastMonth), to: toLocalISO(lastOfLastMonth) };
+  };
+
   const [datePreset, setDatePreset] = useState(() => {
     const saved = JSON.parse(localStorage.getItem(DATE_STORAGE_KEY) || "null");
     return saved?.preset || "today";
@@ -589,6 +598,7 @@ const Orders = ({ adminData, setAdminData }) => {
     if (preset === "today") { setFromDate(todayISO); setToDate(todayISO); }
     else if (preset === "week") { const r = getWeekRange(); setFromDate(r.from); setToDate(r.to); }
     else if (preset === "month") { const r = getMonthRange(); setFromDate(r.from); setToDate(r.to); }
+    else if (preset === "lastMonth") { const r = getLastMonthRange(); setFromDate(r.from); setToDate(r.to); }
   }, [todayISO]);
 
   const toggleOrder = useCallback((orderId) => {
@@ -615,6 +625,11 @@ const Orders = ({ adminData, setAdminData }) => {
       mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
       return `${mon.getFullYear()}-${String(mon.getMonth() + 1).padStart(2, "0")}-${String(mon.getDate()).padStart(2, "0")}`;
     }
+    if (preset === "lastMonth") {
+      const d = new Date(); const first = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+      const y = first.getFullYear(), m = String(first.getMonth() + 1).padStart(2, "0"), day = String(first.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
     return saved?.fromDate || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}-${String(new Date().getDate()).padStart(2, "0")}`;
   });
 
@@ -625,6 +640,10 @@ const Orders = ({ adminData, setAdminData }) => {
     const n = new Date();
     const todayLocal = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
     if (preset === "month" || preset === "week") return todayLocal;
+    if (preset === "lastMonth") {
+      const lastOfLastMonth = new Date(n.getFullYear(), n.getMonth(), 0);
+      return `${lastOfLastMonth.getFullYear()}-${String(lastOfLastMonth.getMonth() + 1).padStart(2, "0")}-${String(lastOfLastMonth.getDate()).padStart(2, "0")}`;
+    }
     return saved?.toDate || todayLocal;
   });
   const location = useLocation();
@@ -1145,6 +1164,13 @@ const Orders = ({ adminData, setAdminData }) => {
             onClick={() => applyPreset("month")}
           >
             This Month
+          </button>
+          <button
+            type="button"
+            className={`filter-pill${datePreset === "lastMonth" ? " active" : ""}`}
+            onClick={() => applyPreset("lastMonth")}
+          >
+            Last Month
           </button>
         </div>
 

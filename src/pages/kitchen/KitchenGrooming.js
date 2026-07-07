@@ -52,6 +52,14 @@ function getMonthStart() {
   const d = new Date();
   return toLocalISO(new Date(d.getFullYear(), d.getMonth(), 1));
 }
+function getLastMonthStart() {
+  const d = new Date();
+  return toLocalISO(new Date(d.getFullYear(), d.getMonth() - 1, 1));
+}
+function getLastMonthEnd() {
+  const d = new Date();
+  return toLocalISO(new Date(d.getFullYear(), d.getMonth(), 0));
+}
 
 export default function KitchenGrooming({ adminData, setAdminData }) {
   // ── Hooks
@@ -98,6 +106,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
     if (preset === "today") { setGroomFrom(today); setGroomTo(today); }
     if (preset === "week") { setGroomFrom(getWeekStart()); setGroomTo(today); }
     if (preset === "month") { setGroomFrom(getMonthStart()); setGroomTo(today); }
+    if (preset === "lastMonth") { setGroomFrom(getLastMonthStart()); setGroomTo(getLastMonthEnd()); }
   };
 
   const visibleDates = useMemo(() =>
@@ -268,7 +277,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
           </div>
           <div className="filter-group">
             <span className="filter-group-label">period</span>
-            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([k, lbl]) => (
+            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]].map(([k, lbl]) => (
               <button key={k} className={`filter-pill${groomPreset === k ? " active" : ""}`}
                 onClick={() => applyPreset(k)}>{lbl}</button>
             ))}

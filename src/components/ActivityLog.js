@@ -61,6 +61,15 @@ const PRESETS = [
       ];
     },
   },
+  {
+    label: "Last Month",
+    getRange: () => {
+      const d = new Date();
+      const first = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+      const last = new Date(d.getFullYear(), d.getMonth(), 0);
+      return [format(first, "yyyy-MM-dd"), format(last, "yyyy-MM-dd")];
+    },
+  },
 ];
 
 const ActivityLog = ({ title, items = [], exportFilePrefix }) => {

@@ -458,48 +458,44 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     <div className="inner-page">
       <div className="header" style={{ alignItems: "flex-start" }}>
         <h2 className="title">Dishes</h2>
+        <Button3D onClick={() => setShowForm(true)}>+ Add Dish</Button3D>
+      </div>
 
-        <div className="dish-category-buttons">
+      <div className="dish-category-buttons">
 
-          {adminData.categories.flatMap(cat => {
+        {adminData.categories.flatMap(cat => {
 
-            if ((cat.subCategories || []).length > 0) {
+          if ((cat.subCategories || []).length > 0) {
 
-              return cat.subCategories.map(sub => (
-
-                <button
-                  key={sub.id}
-                  className={`filter-pill ${selectedCategoryIds.includes(sub.id) ? "active" : ""
-                    }`}
-                  onClick={() => setSelectedCategoryIds([sub.id])}
-                >
-                  {sub.name}
-                </button>
-
-              ));
-
-            }
-
-            return (
+            return cat.subCategories.map(sub => (
 
               <button
-                key={cat.id}
-                className={`filter-pill ${selectedCategoryIds.includes(cat.id) ? "active" : ""
+                key={sub.id}
+                className={`filter-pill ${selectedCategoryIds.includes(sub.id) ? "active" : ""
                   }`}
-                onClick={() => setSelectedCategoryIds([cat.id])}
+                onClick={() => setSelectedCategoryIds([sub.id])}
               >
-                {cat.name}
+                {sub.name}
               </button>
 
-            );
+            ));
 
-          })}
+          }
 
-        </div>
+          return (
 
-        <Button3D onClick={() => setShowForm(true)}>+ Add Dish</Button3D>
-
+            <button
+              key={cat.id}
+              className={`filter-pill ${selectedCategoryIds.includes(cat.id) ? "active" : ""
+                }`}
+              onClick={() => setSelectedCategoryIds([cat.id])}
+            >
+              {cat.name}
+            </button>
+          );
+        })}
       </div>
+
       <div className="table-wrapper dish-page-table" ref={containerRef}>
         <table >
           <thead>

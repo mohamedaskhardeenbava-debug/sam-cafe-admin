@@ -109,11 +109,27 @@ export default function StaffAttendance({ adminData, setAdminData }) {
     else if (preset === "month") {
       setAttFromDate(firstOfMonth); setAttToDate(todayStr);
     }
+    else if (preset === "lastMonth") {
+      const now = new Date();
+      const first = normalizeDate(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+      const last = normalizeDate(new Date(now.getFullYear(), now.getMonth(), 0));
+      setAttFromDate(first); setAttToDate(last);
+    }
   };
 
-  const visibleDates = useMemo(() =>
-    monthDates.filter(d => d >= attFromDate && d <= attToDate),
-    [monthDates, attFromDate, attToDate]);
+  const visibleDates = useMemo(() => {
+    // Build dates directly from the selected range rather than
+    // monthDates, since monthDates is scoped to "current month, up to
+    // today" for the auto-absent effect and must not be widened —
+    // this lets filters like "Last Month" show days outside that pool.
+    const start = new Date(attFromDate);
+    const end = new Date(attToDate);
+    const out = [];
+    for (let d = new Date(start); normalizeDate(d) <= normalizeDate(end); d.setDate(d.getDate() + 1)) {
+      out.push(normalizeDate(d));
+    }
+    return out;
+  }, [attFromDate, attToDate]);
 
   const visibleStaff = useMemo(() => {
     const q = attSearch.toLowerCase();
@@ -352,7 +368,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
           </div>
           <div className="filter-group">
             <span className="filter-group-label">Range</span>
-            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([k, lbl]) => (
+            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]].map(([k, lbl]) => (
               <button key={k} className={`filter-pill${attPreset === k ? " active" : ""}`}
                 onClick={() => applyAttPreset(k)}>{lbl}</button>
             ))}

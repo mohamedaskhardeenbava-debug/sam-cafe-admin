@@ -21,6 +21,24 @@ import Button3D from "../components/Button3D";
 import "./Offers.css";
 import PageLoader from "../components/PageLoader";
 
+const getWeekRange = () => {
+  const now = new Date(); const day = now.getDay();
+  const mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  return [mon.toISOString().split("T")[0], sun.toISOString().split("T")[0]];
+};
+const getMonthRange = () => {
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth(), 2);
+  return [first.toISOString().split("T")[0], now.toISOString().split("T")[0]];
+};
+const getLastMonthRange = () => {
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth() - 1, 2);
+  const last = new Date(now.getFullYear(), now.getMonth(), 1);
+  return [first.toISOString().split("T")[0], last.toISOString().split("T")[0]];
+};
+
 const Offers = ({ adminData, setAdminData }) => {
   // ── Hooks
 
@@ -32,6 +50,7 @@ const Offers = ({ adminData, setAdminData }) => {
   // Filter states
   const [offerSearch, setOfferSearch] = useState("");
   const [offerStatusFilter, setOfferStatusFilter] = useState("all"); // "all" | "yes" | "no"
+  const [offerDatePreset, setOfferDatePreset] = useState("today");
   const [offerFromDate, setOfferFromDate] = useState(todayStr());
   const [offerToDate, setOfferToDate] = useState(todayStr());
 
@@ -60,6 +79,15 @@ const Offers = ({ adminData, setAdminData }) => {
   const offerPrice = Math.floor(originalPrice - offerAmount);
 
   const EMPTY_OFFER = { dishId: "", categoryId: "", percentage: "", startDate: "", endDate: "", active: "yes" };
+
+  const applyOfferPreset = (preset) => {
+    setOfferDatePreset(preset);
+    if (preset === "all") { setOfferFromDate(""); setOfferToDate(""); }
+    else if (preset === "today") { const t = todayStr(); setOfferFromDate(t); setOfferToDate(t); }
+    else if (preset === "week") { const [f, t] = getWeekRange(); setOfferFromDate(f); setOfferToDate(t); }
+    else if (preset === "month") { const [f, t] = getMonthRange(); setOfferFromDate(f); setOfferToDate(t); }
+    else if (preset === "lastMonth") { const [f, t] = getLastMonthRange(); setOfferFromDate(f); setOfferToDate(t); }
+  };
 
   const handleSave = async () => {
     const errs = {};
@@ -151,12 +179,23 @@ const Offers = ({ adminData, setAdminData }) => {
             value={offerSearch}
             onChange={e => setOfferSearch(e.target.value)}
           />
+          {/* Period presets */}
+          <div className="filter-group">
+            <span className="filter-group-label">Period</span>
+            {[["all", "All"], ["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]].map(([val, lbl]) => (
+              <button
+                key={val}
+                className={`filter-pill${offerDatePreset === val ? " active" : ""}`}
+                onClick={() => applyOfferPreset(val)}
+              >{lbl}</button>
+            ))}
+          </div>
           {/* Date range */}
           <div className="filter-group">
             <span className="filter-group-label">From</span>
             <CustomDatePicker
               value={offerFromDate}
-              onChange={v => { setOfferFromDate(v); if (offerToDate && v > offerToDate) setOfferToDate(v); }}
+              onChange={v => { setOfferFromDate(v); setOfferDatePreset("custom"); if (offerToDate && v > offerToDate) setOfferToDate(v); }}
               placeholder="Start date"
             />
 
@@ -164,7 +203,7 @@ const Offers = ({ adminData, setAdminData }) => {
             <CustomDatePicker
               value={offerToDate}
               min={offerFromDate}
-              onChange={setOfferToDate}
+              onChange={v => { setOfferToDate(v); setOfferDatePreset("custom"); }}
               placeholder="End date"
             />
           </div>
@@ -179,12 +218,11 @@ const Offers = ({ adminData, setAdminData }) => {
               >{lbl}</button>
             ))}
 
-            {(offerSearch || offerStatusFilter !== "all" || offerFromDate || offerToDate) && (
+            {(offerSearch || offerStatusFilter !== "all" || offerDatePreset !== "today") && (
               <button className="ae-clear-filter" onClick={() => {
                 setOfferSearch("");
                 setOfferStatusFilter("all");
-                setOfferFromDate(todayStr());
-                setOfferToDate(todayStr());
+                applyOfferPreset("today");
               }}>Clear</button>
             )}
           </div>

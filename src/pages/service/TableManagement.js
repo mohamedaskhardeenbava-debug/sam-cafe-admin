@@ -181,9 +181,6 @@ const TableManagement = ({ adminData, setAdminData }) => {
       <div className="header">
         <div className="filter-group">
           <h2 className="title">Table Management</h2>
-          <span className="subtitle">
-            {tables.length} table{tables.length !== 1 ? "s" : ""}
-          </span>
           <div className="table-mgmt-add">
             <input
               type="number"
@@ -194,8 +191,11 @@ const TableManagement = ({ adminData, setAdminData }) => {
               onKeyDown={e => e.key === "Enter" && addTable()}
               min="1"
             />
-            <Button3D style={{ marginTop: "0px" }} onClick={addTable}>Add Table</Button3D>
+            <Button3D onClick={addTable}>Add Table</Button3D>
           </div>
+          <span className="subtitle">
+            {tables.length} table{tables.length !== 1 ? "s" : ""}
+          </span>
         </div>
 
         <Button3D onClick={exportTables}>Export</Button3D>
