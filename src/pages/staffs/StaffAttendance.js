@@ -8,6 +8,7 @@ import React, { useEffect, useState, useMemo, useCallback, useRef } from "react"
 import { exportToExcel } from "../../utils/excelUtils";
 import api from "../../api";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
+import { toLocalISO, getWeekRange as sharedWeekRange, getMonthRange as sharedMonthRange, getLastMonthRange as sharedLastMonthRange } from "../../utils/dateRangeUtils";
 
 import editIcon from "../../icon/edit-icon.png";
 import closeIcon from "../../icon/close-icon.png";
@@ -37,10 +38,7 @@ import PageLoader from "../../components/PageLoader";
   holidays collection: [{ id, date, reason }]
 */
 
-const normalizeDate = (d) => {
-  const date = new Date(d);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-};
+const normalizeDate = (d) => toLocalISO(new Date(d));
 
 const WEEKDAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -48,18 +46,18 @@ export default function StaffAttendance({ adminData, setAdminData }) {
   // ── Hooks
 
   const { toast } = useToast();
-  const todayStr = normalizeDate(new Date());
+  const todayISO = normalizeDate(new Date());
   const firstOfMonth = normalizeDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
 
   // All dates this month up to today
   const monthDates = useMemo(() => {
     const start = new Date(firstOfMonth);
     const dates = [];
-    for (let d = new Date(start); normalizeDate(d) <= todayStr; d.setDate(d.getDate() + 1)) {
+    for (let d = new Date(start); normalizeDate(d) <= todayISO; d.setDate(d.getDate() + 1)) {
       dates.push(normalizeDate(d));
     }
     return dates;
-  }, [firstOfMonth, todayStr]);
+  }, [firstOfMonth, todayISO]);
 
   // State
 
@@ -74,7 +72,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
   const [statsOpen, setStatsOpen] = useState(false);
   const [columnEdit, setColumnEdit] = useState({});
   const [attFromDate, setAttFromDate] = useState(firstOfMonth);
-  const [attToDate, setAttToDate] = useState(todayStr);
+  const [attToDate, setAttToDate] = useState(todayISO);
   const [attPreset, setAttPreset] = useState("month");
   const [attSearch, setAttSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -82,7 +80,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
 
   const autoAbsentRan = useRef(false);
   const autoTodayRan = useRef(false);
-  const maxDateStr = todayStr;
+  const maxDateStr = todayISO;
 
   // Close search dropdown on outside click
   useEffect(() => {
@@ -94,26 +92,18 @@ export default function StaffAttendance({ adminData, setAdminData }) {
   }, []);
 
   // ── Date range helpers ────────────────────────────────────────
-  const getWeekRange = () => {
-    const today = new Date(); const day = today.getDay();
-    const mon = new Date(today); mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
-    return { from: normalizeDate(mon), to: todayStr };
-  };
-
+  // Sourced from the shared dateRangeUtils module (single source of truth).
   const applyAttPreset = (preset) => {
     setAttPreset(preset);
-    if (preset === "today") { setAttFromDate(todayStr); setAttToDate(todayStr); }
+    if (preset === "today") { setAttFromDate(todayISO); setAttToDate(todayISO); }
     else if (preset === "week") {
-      const r = getWeekRange(); setAttFromDate(r.from); setAttToDate(r.to);
+      const [f, t] = sharedWeekRange(); setAttFromDate(f); setAttToDate(t);
     }
     else if (preset === "month") {
-      setAttFromDate(firstOfMonth); setAttToDate(todayStr);
+      const [f, t] = sharedMonthRange(); setAttFromDate(f); setAttToDate(t);
     }
     else if (preset === "lastMonth") {
-      const now = new Date();
-      const first = normalizeDate(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-      const last = normalizeDate(new Date(now.getFullYear(), now.getMonth(), 0));
-      setAttFromDate(first); setAttToDate(last);
+      const [f, t] = sharedLastMonthRange(); setAttFromDate(f); setAttToDate(t);
     }
   };
 
@@ -156,7 +146,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
     autoAbsentRan.current = true;
 
     (async () => {
-      const pastDates = monthDates.filter(d => d < todayStr);
+      const pastDates = monthDates.filter(d => d < todayISO);
       for (const staff of adminData.staff) {
         const existingDates = new Set((staff.attendance || []).map(a => a.date));
         const missing = pastDates.filter(d => !existingDates.has(d) && !holidays[d]);
@@ -179,10 +169,10 @@ export default function StaffAttendance({ adminData, setAdminData }) {
 
     (async () => {
       for (const staff of adminData.staff) {
-        const hasTodayEntry = (staff.attendance || []).some(a => a.date === todayStr);
+        const hasTodayEntry = (staff.attendance || []).some(a => a.date === todayISO);
         if (hasTodayEntry) continue;
         // Add unmarked entry for today so the UI renders a checkbox
-        const updatedAtt = [...(staff.attendance || []), { date: todayStr, status: "unmarked", reason: "" }];
+        const updatedAtt = [...(staff.attendance || []), { date: todayISO, status: "unmarked", reason: "" }];
         try {
           const res = await api.put(`/staff/${staff.id}`, { ...staff, attendance: updatedAtt });
           setAdminData(prev => ({ ...prev, staff: prev.staff.map(s => s.id === staff.id ? res.data : s) }));
@@ -407,7 +397,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                 <th className="att-name-th">Staff</th>
                 {visibleDates.map(d => {
                   const dObj = new Date(d);
-                  const isToday = d === todayStr;
+                  const isToday = d === todayISO;
                   const isHol = !!holidays[d];
                   return (
                     <th key={d} className={`att-date-th${isToday ? " att-today-th" : ""}${isHol ? " att-holiday-th" : ""}`}>
@@ -449,7 +439,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
 
                     {visibleDates.map(date => {
                       const isSaving = savingCells[`${staff.id}_${date}`];
-                      const isToday = date === todayStr;
+                      const isToday = date === todayISO;
                       const isHol = !!holidays[date];
                       const isColEditing = !!columnEdit[date];
                       const isRowEditing = !!editMode[staff.id]?.[date];

@@ -10,6 +10,8 @@ import { useNavigate } from "react-router-dom";
 import { exportToExcel } from "../../utils/excelUtils";
 import api from "../../api";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
+import { DateRangeGroup, MultiPillGroup } from "../../components/FilterBar";
+import { todayStr, tomorrowStr } from "../../utils/dateRangeUtils";
 
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
@@ -27,26 +29,7 @@ import PageLoader from "../../components/PageLoader";
 
 /* ─── helpers ─── */
 const pad = (n) => String(n).padStart(2, "0");
-const todayStr = () => new Date().toISOString().split("T")[0];
-const tomorrowStr = () => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split("T")[0]; };
 const fmtTime = (t) => { if (!t) return "—"; const [h, m] = t.split(":").map(Number); return `${h % 12 || 12}:${pad(m)} ${h >= 12 ? "PM" : "AM"}`; };
-const getWeekRange = () => {
-  const now = new Date(); const day = now.getDay();
-  const mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-  return [mon.toISOString().split("T")[0], sun.toISOString().split("T")[0]];
-};
-const getMonthRange = () => {
-  const now = new Date();
-  const first = new Date(now.getFullYear(), now.getMonth(), 2);
-  return [first.toISOString().split("T")[0], now.toISOString().split("T")[0]];
-};
-const getLastMonthRange = () => {
-  const now = new Date();
-  const first = new Date(now.getFullYear(), now.getMonth() - 1, 2);
-  const last = new Date(now.getFullYear(), now.getMonth(), 1);
-  return [first.toISOString().split("T")[0], last.toISOString().split("T")[0]];
-};
 
 const SOURCE_OPTIONS = ["User App", "WhatsApp", "Phone", "In Person"];
 
@@ -235,14 +218,16 @@ const EMPTY_FORM = {
 const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilters }) => {
   // ── State & Setup
 
-  const { fromDate: filterFromDate, toDate: filterToDate, preset: filterDatePreset, status: filterStatus, search } = filters;
+  const { fromDate: filterFromDate, toDate: filterToDate, preset: filterDatePreset, statuses: filterStatuses, search } = filters;
 
   // ── Helpers
 
   const setFilterFromDate = (v) => patchFilters({ fromDate: v });
   const setFilterToDate = (v) => patchFilters({ toDate: v });
   const setFilterDatePreset = (v) => patchFilters({ preset: v });
-  const setFilterStatus = (v) => patchFilters({ status: v });
+  const setFilterStatuses = (v) => patchFilters({ statuses: typeof v === "function" ? v(filterStatuses) : v });
+  const toggleSet = (setter, val) =>
+    setter(prev => { const next = new Set(prev); next.has(val) ? next.delete(val) : next.add(val); return next; });
   const setSearch = (v) => patchFilters({ search: v });
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -286,7 +271,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
     let d = [...data];
     if (filterFromDate) d = d.filter(i => (i.date || i.eventDate || "") >= filterFromDate);
     if (filterToDate) d = d.filter(i => (i.date || i.eventDate || "") <= filterToDate);
-    if (filterStatus) d = d.filter(i => (i.status || "pending") === filterStatus);
+    if (filterStatuses.size > 0) d = d.filter(i => filterStatuses.has(i.status || "pending"));
     if (search.trim()) {
       const q = search.toLowerCase();
       d = d.filter(i =>
@@ -296,7 +281,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
       );
     }
     return d;
-  }, [data, filterFromDate, filterToDate, filterStatus, search]);
+  }, [data, filterFromDate, filterToDate, filterStatuses, search]);
 
   const pendingCount = filteredData.filter(r => (r.status || "pending") === "pending").length;
   const confirmedCount = filteredData.filter(r => r.status === "confirmed").length;
@@ -477,7 +462,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
     setShowCreate(true); setForm({ ...EMPTY_FORM }); setSelectedItems([]);
     setTab(0); setFormErrors({}); setUseRestaurantAddr(false);
   };
-  const isDefaultFilter = filterFromDate === todayStr() && filterToDate === todayStr() && filterDatePreset === "today" && !filterStatus && !search.trim();
+  const isDefaultFilter = filterFromDate === todayStr() && filterToDate === todayStr() && filterDatePreset === "today" && filterStatuses.size === 0 && !search.trim();
   const activeFilters = !isDefaultFilter;
 
   const handleExport = () => {
@@ -527,58 +512,35 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
       <div className="filter-bar">
         <div className="filter-groups">
           <input className="search-input" placeholder="Search name / mobile / ID..." value={search} onChange={e => setSearch(e.target.value)} />
-          <div className="filter-group">
-            <span className="filter-group-label">Period</span>
-            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]].map(([preset, label]) => (
-              <button key={preset}
-                className={`filter-pill${filterDatePreset === preset ? " active evt-status-confirmed" : ""}`}
-                onClick={() => {
-                  if (filterDatePreset === preset) {
-                    setFilterDatePreset(""); setFilterFromDate(""); setFilterToDate("");
-                  } else {
-                    setFilterDatePreset(preset);
-                    if (preset === "today") { const t = todayStr(); setFilterFromDate(t); setFilterToDate(t); }
-                    else if (preset === "week") { const [f, t] = getWeekRange(); setFilterFromDate(f); setFilterToDate(t); }
-                    else if (preset === "month") { const [f, t] = getMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
-                    else { const [f, t] = getLastMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
-                  }
-                }}>
-                {label}
-              </button>
-            ))}
-          </div>
-          {/* From / To date pickers */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="filter-group-label">From</span>
-            <div style={{ minWidth: 148 }}>
-              <CustomDatePicker value={filterFromDate} onChange={v => { setFilterFromDate(v); setFilterDatePreset(""); if (filterToDate && v > filterToDate) setFilterToDate(v); }} placeholder="Start date" />
-            </div>
-            <span className="filter-group-label" style={{ marginLeft: 2 }}>To</span>
-            <div style={{ minWidth: 148 }}>
-              <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={v => { setFilterToDate(v); setFilterDatePreset(""); }} placeholder="End date" />
-            </div>
-            {(filterFromDate || filterToDate) && (
-              <button className="filter-pill" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
-            )}
-          </div>
+          <DateRangeGroup
+            from={filterFromDate}
+            to={filterToDate}
+            onChangeFrom={setFilterFromDate}
+            onChangeTo={setFilterToDate}
+            preset={filterDatePreset}
+            onChangePreset={setFilterDatePreset}
+            presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
+            activeClass="evt-status-confirmed"
+            noMax
+            showPresets
+          />
+          {(filterFromDate || filterToDate) && (
+            <button className="filter-pill" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
+          )}
         </div>
         <div className="filter-groups">
 
-          <div className="filter-group">
-            <span className="filter-group-label">Status</span>
-            {[
+          <MultiPillGroup
+            label="Status"
+            options={[
               ["pending", "P", "clb-status-pending", "Pending"],
               ["confirmed", "C", "clb-status-confirmed", "Confirmed"],
               ["completed", "D", "clb-status-completed", "Done"],
               ["cancelled", "X", "clb-status-cancelled", "Cancelled"],
-            ].map(([key, short, cls, title]) => (
-              <button key={key} title={title}
-                className={`filter-pill${filterStatus === key ? " active " + cls : ""}`}
-                onClick={() => setFilterStatus(p => p === key ? "" : key)}>
-                {short}
-              </button>
-            ))}
-          </div>
+            ]}
+            value={filterStatuses}
+            onToggle={(key) => toggleSet(setFilterStatuses, key)}
+          />
           {activeFilters && (
             <button className="evt-clb-clear-btn" onClick={onResetFilters}>Clear</button>
           )}

@@ -1129,18 +1129,22 @@ const Orders = ({ adminData, setAdminData }) => {
   return (
     <div className="orders-page">
       <div className="orders-header">
-        <h2 className="orders-title">Orders</h2>
+        <div className="orders-header-div">
+          <h2 className="orders-title">Orders</h2>
 
-        <div className="orders-search-wrapper">
-          <input
-            className="search-input"
-            placeholder=" Search by order ID, customer, dish…"
-            value={orderSearch}
-            onChange={e => setOrderSearch(e.target.value)}
-          />
-          {orderSearch && (
-            <button className="orders-search-clear" onClick={() => setOrderSearch("")}>✕</button>
-          )}
+          <div className="orders-search-wrapper">
+            <input
+              className="search-input"
+              placeholder=" Search by order ID, customer, dish…"
+              value={orderSearch}
+              onChange={e => setOrderSearch(e.target.value)}
+            />
+            {orderSearch && (
+              <button className="orders-search-clear" onClick={() => setOrderSearch("")}>✕</button>
+            )}
+          </div>
+
+          <Button3D onClick={() => exportOrders(filteredOrders, fromDate, toDate)}>Export</Button3D>
         </div>
 
         <div className="orders-header-div">
@@ -1172,9 +1176,7 @@ const Orders = ({ adminData, setAdminData }) => {
           >
             Last Month
           </button>
-        </div>
 
-        <div className="orders-header-div">
           <CustomDatePicker
             label="From"
             value={fromDate}
@@ -1188,11 +1190,7 @@ const Orders = ({ adminData, setAdminData }) => {
             max={todayISO}
             onChange={(s) => { setToDate(s); setDatePreset("custom"); }}
           />
-        </div>
 
-        <Button3D onClick={() => exportOrders(filteredOrders, fromDate, toDate)}>Export</Button3D>
-
-        <div className="orders-header-div">
           <div className="orders-dropdown-wrapper">
             <button
               className="orders-status-dropdown"

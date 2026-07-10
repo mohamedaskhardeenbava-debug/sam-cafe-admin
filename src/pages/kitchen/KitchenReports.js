@@ -6,7 +6,8 @@
 import React, { useMemo, useState } from "react";
 
 import { exportMultiSheet } from "../../utils/excelUtils";
-import { CustomDatePicker } from "../../components/CustomDatePicker";
+import { DateRangeGroup } from "../../components/FilterBar";
+import { todayStr } from "../../utils/dateRangeUtils";
 
 import Button3D from "../../components/Button3D";
 
@@ -23,25 +24,6 @@ const K = {
   red: "#ee5253", blue: "#54a0ff", purple: "#9b59b6",
   teal: "#1abc9c", navy: "#2d3436", slate: "#636e72",
   text: "#111", muted: "#777", border: "#e8ecf0",
-};
-
-/* ─── Period preset helpers ───────────────────────────── */
-const getWeekRange = () => {
-  const now = new Date(); const day = now.getDay();
-  const mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-  return [mon.toISOString().split("T")[0], sun.toISOString().split("T")[0]];
-};
-const getMonthRange = () => {
-  const now = new Date();
-  const first = new Date(now.getFullYear(), now.getMonth(), 1);
-  return [first.toISOString().split("T")[0], now.toISOString().split("T")[0]];
-};
-const getLastMonthRange = () => {
-  const now = new Date();
-  const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const last = new Date(now.getFullYear(), now.getMonth(), 0);
-  return [first.toISOString().split("T")[0], last.toISOString().split("T")[0]];
 };
 
 /* ─── Helpers ─────────────────────────────────────────── */
@@ -64,7 +46,7 @@ const parseGroomingData = (grooming = {}, staff = [], fromDate = "", toDate = ""
 
 /* ─── Parse mise: picks only today's entry ─── */
 const parseMiseData = (mise = {}) => {
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayStr();
 
   // Only show today's data
   if (!(today in mise)) return [];
@@ -111,7 +93,7 @@ const parseOrderCategoryData = (orders = [], fromDate = "", toDate = "") => {
 
 /* ─── Parse kitchen assign: today only ─── */
 const parseKitchenAssign = (kitchenAssign = {}) => {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayStr();
   if (!(today in kitchenAssign)) return [];
   return Object.entries(kitchenAssign[today])
     .filter(([, d]) => d.staff)
@@ -175,16 +157,7 @@ const KitchenReports = ({ adminData = {} }) => {
   const [reportTo, setReportTo] = useState("");
   const [reportPreset, setReportPreset] = useState("all");
 
-  const today = new Date().toISOString().slice(0, 10);
-
-  const applyReportPreset = (preset) => {
-    setReportPreset(preset);
-    if (preset === "all") { setReportFrom(""); setReportTo(""); }
-    else if (preset === "today") { setReportFrom(today); setReportTo(today); }
-    else if (preset === "week") { const [f, t] = getWeekRange(); setReportFrom(f); setReportTo(t); }
-    else if (preset === "month") { const [f, t] = getMonthRange(); setReportFrom(f); setReportTo(t); }
-    else if (preset === "lastMonth") { const [f, t] = getLastMonthRange(); setReportFrom(f); setReportTo(t); }
-  };
+  const today = todayStr();
 
   /* filtered orders */
   const filteredOrders = useMemo(() => orders.filter(o => {
@@ -274,34 +247,31 @@ const KitchenReports = ({ adminData = {} }) => {
 
       {/* HEADER */}
       <div className="k-header">
-        <div>
-          <h2 className="k-title">Kitchen Management</h2>
-          <p className="k-subtitle">Operations &amp; Performance Report</p>
+        <div className="k-header-row">
+          <div>
+            <h2 className="k-title">Kitchen Management</h2>
+            <p className="k-subtitle">Operations &amp; Performance Report</p>
+          </div>
+          <div className="k-header-filters">
+            <DateRangeGroup
+              from={reportFrom}
+              to={reportTo}
+              onChangeFrom={setReportFrom}
+              onChangeTo={setReportTo}
+              preset={reportPreset}
+              onChangePreset={setReportPreset}
+              max={today}
+              labelClass="kgroom-filter-label"
+              groupClass="k-filter-item"
+              separateItems
+            />
+            {(reportFrom || reportTo) && (
+              <button className="ae-clear-filter" onClick={() => { setReportPreset("all"); setReportFrom(""); setReportTo(""); }}>Clear</button>
+            )}
+          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="kgroom-filter-label">Period</span>
-            {[["all", "All"], ["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]].map(([val, lbl]) => (
-              <button
-                key={val}
-                className={`filter-pill${reportPreset === val ? " active" : ""}`}
-                onClick={() => applyReportPreset(val)}
-              >{lbl}</button>
-            ))}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="kgroom-filter-label">From</span>
-            <CustomDatePicker value={reportFrom} onChange={v => { setReportFrom(v); setReportPreset("custom"); if (reportTo && v > reportTo) setReportTo(v); }} placeholder="Start date" />
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="kgroom-filter-label">To</span>
-            <CustomDatePicker value={reportTo} min={reportFrom} max={today} onChange={v => { setReportTo(v); setReportPreset("custom"); }} placeholder="End date" />
-          </div>
-          {(reportFrom || reportTo) && (
-            <button className="ae-clear-filter" onClick={() => applyReportPreset("all")}>Clear</button>
-          )}
-          <Button3D onClick={exportReport} style={{ marginLeft: "auto" }}>Export</Button3D>
-        </div>
+
+        <Button3D onClick={exportReport}>Export</Button3D>
       </div>
 
       {/* KPI ROW */}
@@ -334,7 +304,7 @@ const KitchenReports = ({ adminData = {} }) => {
       <div className="k-grid-3">
 
         <div className="k-card rpt-fixed-card">
-          <SectionTitle accent={K.teal}>Mise en Place <span style={{ fontSize: 11, fontWeight: 400, color: K.muted, marginLeft: 4 }}>— Today</span></SectionTitle>
+          <SectionTitle accent={K.teal}>Mise en Place <span className="k-section-note">— Today</span></SectionTitle>
           {miseData.length === 0 ? <p className="k-empty">No mise data for today</p> : (
             <div className="rpt-mise-grid rpt-inner-scroll">
               {miseData.map((m, i) => (
@@ -352,7 +322,7 @@ const KitchenReports = ({ adminData = {} }) => {
         </div>
 
         <div className="k-card rpt-fixed-card">
-          <SectionTitle accent={K.blue}>Staff Assignment <span style={{ fontSize: 11, fontWeight: 400, color: K.muted, marginLeft: 4 }}>— Today</span></SectionTitle>
+          <SectionTitle accent={K.blue}>Staff Assignment <span className="k-section-note">— Today</span></SectionTitle>
           {assignData.length === 0 ? <p className="k-empty">No assignments for today</p> : (
             <div className="rpt-assign-list rpt-inner-scroll">
               {assignData.map((a, i) => (
@@ -426,7 +396,7 @@ const KitchenReports = ({ adminData = {} }) => {
       <div className="k-grid-2">
         {/* STOCK */}
         <div className="k-card k-card-split">
-          <div style={{ display: "flex", flexDirection: "column", gap: "70px" }}>
+          <div className="k-card-split-inner">
             <SectionTitle accent={K.red}>Stock Health Overview</SectionTitle>
             {stockPie.length === 0 ? <p className="k-empty">No stock data</p> : (
               <ResponsiveContainer width="100%" height={180}>

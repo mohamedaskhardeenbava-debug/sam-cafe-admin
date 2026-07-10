@@ -4,12 +4,13 @@
 .cdp-wrap {
     position: relative;
     display: inline-block;
+    min-width: 160px;
 }
 
 .cdp-trigger {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    justify-content: space-between;
     height: 40px;
     padding: 0 16px;
     border: 1.5px solid #e0e0e0;
@@ -35,6 +36,20 @@
     border-color: var(--color-blue);
     box-shadow: 0 0 0 3px rgba(77, 60, 231, 0.1);
     background: #fff;
+}
+
+.cdp-trigger-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.cdp-arrow {
+    flex-shrink: 0;
+    margin-left: 10px;
+    font-size: 11px;
+    color: #999;
 }
 
 .cdp-icon {

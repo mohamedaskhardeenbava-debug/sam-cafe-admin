@@ -8,6 +8,8 @@ import React, { useState, useMemo, useRef } from "react";
 import { exportToExcel } from "../../utils/excelUtils";
 import api from "../../api";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
+import { DateRangeGroup, MultiPillGroup } from "../../components/FilterBar";
+import { todayStr } from "../../utils/dateRangeUtils";
 
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
@@ -124,26 +126,6 @@ const EVENT_CATEGORIES = [
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-const todayStr = () => new Date().toISOString().split("T")[0];
-
-const getWeekRange = () => {
-  const now = new Date();
-  const day = now.getDay();
-  const mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-  return [mon.toISOString().split("T")[0], sun.toISOString().split("T")[0]];
-};
-const getMonthRange = () => {
-  const now = new Date();
-  const first = new Date(now.getFullYear(), now.getMonth(), 2);
-  return [first.toISOString().split("T")[0], now.toISOString().split("T")[0]];
-};
-const getLastMonthRange = () => {
-  const now = new Date();
-  const first = new Date(now.getFullYear(), now.getMonth() -1, 2);
-  const last = new Date(now.getFullYear(), now.getMonth(), 1);
-  return [first.toISOString().split("T")[0], last.toISOString().split("T")[0]];
-};
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
@@ -173,21 +155,26 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
   }, [adminData]);
 
   // Destructure persisted filter state from App
-  const { activeTab, filterEventId, filterStatus, filterFromDate, filterToDate, searchQuery,
-    evtSearch, evtFilterStatus, evtFilterType, evtFilterPublish, evtFromDate, evtToDate, evtDatePreset } = filters;
+  const { activeTab, filterEventId, filterStatuses, filterFromDate, filterToDate, searchQuery,
+    bookingsDatePreset,
+    evtSearch, evtFilterStatuses, evtFilterTypes, evtFilterPublish, evtFromDate, evtToDate, evtDatePreset } = filters;
 
   // ── Helpers
 
+  const toggleSet = (setter, val) =>
+    setter(prev => { const next = new Set(prev); next.has(val) ? next.delete(val) : next.add(val); return next; });
+
   const setActiveTab = (v) => patchFilters({ activeTab: v });
   const setFilterEventId = (v) => patchFilters({ filterEventId: v });
-  const setFilterStatus = (v) => patchFilters({ filterStatus: v });
+  const setFilterStatuses = (v) => patchFilters({ filterStatuses: typeof v === "function" ? v(filterStatuses) : v });
   const setFilterFromDate = (v) => patchFilters({ filterFromDate: v });
   const setFilterToDate = (v) => patchFilters({ filterToDate: v });
+  const setBookingsDatePreset = (v) => patchFilters({ bookingsDatePreset: v });
   const setSearchQuery = (v) => patchFilters({ searchQuery: v });
   const setEvtSearch = (v) => patchFilters({ evtSearch: v });
-  const setEvtFilterStatus = (v) => patchFilters({ evtFilterStatus: v });
-  const setEvtFilterType = (v) => patchFilters({ evtFilterType: v });
-  const setEvtFilterPublish = (v) => patchFilters({ evtFilterPublish: v });
+  const setEvtFilterStatuses = (v) => patchFilters({ evtFilterStatuses: typeof v === "function" ? v(evtFilterStatuses) : v });
+  const setEvtFilterTypes = (v) => patchFilters({ evtFilterTypes: typeof v === "function" ? v(evtFilterTypes) : v });
+  const setEvtFilterPublish = (v) => patchFilters({ evtFilterPublish: typeof v === "function" ? v(evtFilterPublish) : v });
   const setEvtFromDate = (v) => patchFilters({ evtFromDate: v });
   const setEvtToDate = (v) => patchFilters({ evtToDate: v });
   const setEvtDatePreset = (v) => patchFilters({ evtDatePreset: v });
@@ -222,7 +209,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
   const filteredBookings = useMemo(() => {
     let list = bookings;
     if (filterEventId !== "all") list = list.filter((b) => b.eventId === filterEventId);
-    if (filterStatus !== "all") list = list.filter((b) => b.status === filterStatus);
+    if (filterStatuses.size > 0) list = list.filter((b) => filterStatuses.has(b.status || "pending"));
     if (filterFromDate) list = list.filter((b) => {
       const d = (b.bookedAt || b.date || "").slice(0, 10);
       return d >= filterFromDate;
@@ -244,7 +231,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
       const bVal = String(b[bookSortKey] ?? "").toLowerCase();
       return bookSortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     });
-  }, [bookings, filterEventId, filterStatus, filterFromDate, filterToDate, searchQuery, bookSortKey, bookSortDir]);
+  }, [bookings, filterEventId, filterStatuses, filterFromDate, filterToDate, searchQuery, bookSortKey, bookSortDir]);
 
   const toggleBookSort = (key) => {
     if (bookSortKey === key) setBookSortDir(d => d === "asc" ? "desc" : "asc");
@@ -261,17 +248,18 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
         (e.categoryLabel || e.eventType || "").toLowerCase().includes(q)
       );
     }
-    if (evtFilterStatus && evtFilterStatus !== "all") {
-      const statuses = evtFilterStatus.split(",");
-      list = list.filter(e => statuses.includes(e.status));
+    if (evtFilterStatuses.size > 0) {
+      list = list.filter(e => evtFilterStatuses.has(e.status));
     }
-    if (evtFilterType !== "all") list = list.filter(e => (e.eventType || "") === evtFilterType || (e.categoryLabel || "").toLowerCase() === evtFilterType);
-    if (evtFilterPublish === "live") list = list.filter(e => e.isPublished);
-    if (evtFilterPublish === "draft") list = list.filter(e => !e.isPublished);
+    if (evtFilterTypes.size > 0) list = list.filter(e => evtFilterTypes.has(e.eventType || "") || evtFilterTypes.has((e.categoryLabel || "").toLowerCase()));
+    if (evtFilterPublish.size > 0 && !(evtFilterPublish.has("live") && evtFilterPublish.has("draft"))) {
+      if (evtFilterPublish.has("live")) list = list.filter(e => e.isPublished);
+      else if (evtFilterPublish.has("draft")) list = list.filter(e => !e.isPublished);
+    }
     if (evtFromDate) list = list.filter(e => (e.date || "") >= evtFromDate);
     if (evtToDate) list = list.filter(e => (e.date || "") <= evtToDate);
     return list;
-  }, [events, evtSearch, evtFilterStatus, evtFilterType, evtFilterPublish, evtFromDate, evtToDate]);
+  }, [events, evtSearch, evtFilterStatuses, evtFilterTypes, evtFilterPublish, evtFromDate, evtToDate]);
 
   const exportEvents = () => {
     if (!filteredEvents.length) { toast.warning("No events to export"); return; }
@@ -796,91 +784,58 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
             </div>
             <div className="filter-groups">
               {/* Status */}
-              <div className="filter-group">
-                <span className="ae-filter-group-label">Status</span>
-                {[
-                  ["all", "All"],
-                  ["upcoming,ongoing", "Active"],
+              <MultiPillGroup
+                label="Status"
+                labelClass="ae-filter-group-label"
+                options={[
                   ["upcoming", "Upcoming"],
                   ["ongoing", "Ongoing"],
                   ["completed", "Completed"],
                   ["cancelled", "Cancelled"],
-                ].map(([val, label]) => (
-                  <button key={val}
-                    className={`filter-pill${evtFilterStatus === val ? " active" : ""}`}
-                    //style={evtFilterStatus === val && !["all", "upcoming,ongoing"].includes(val) ? { background: STATUS_COLORS[val], borderColor: STATUS_COLORS[val], color: "#fff" } : {}}
-                    onClick={() => setEvtFilterStatus(val)}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-              {/* Date quick presets */}
-              <div className="filter-group">
-                <span className="ae-filter-group-label">Period</span>
-                {[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]].map(([preset, label]) => (
-                  <button key={preset}
-                    className={`filter-pill${evtDatePreset === preset ? " active" : ""}`}
-                    onClick={() => {
-                      if (evtDatePreset === preset) {
-                        setEvtDatePreset(""); setEvtFromDate(""); setEvtToDate("");
-                      } else {
-                        setEvtDatePreset(preset);
-                        if (preset === "today") { const t = todayStr(); setEvtFromDate(t); setEvtToDate(t); }
-                        else if (preset === "week") { const [f, t] = getWeekRange(); setEvtFromDate(f); setEvtToDate(t); }
-                        else if (preset === "month") { const [f, t] = getMonthRange(); setEvtFromDate(f); setEvtToDate(t); }
-                        else { const [f, t] = getLastMonthRange(); setEvtFromDate(f); setEvtToDate(t); }
-                      }
-                    }}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-              {/* Date range pickers */}
-              <div className="filter-group">
-                <span className="ae-filter-group-label">From</span>
-                <div style={{ minWidth: 140 }}>
-                  <CustomDatePicker value={evtFromDate} onChange={v => { setEvtFromDate(v); setEvtDatePreset(""); if (evtToDate && v > evtToDate) setEvtToDate(v); }} placeholder="Start date" />
-                </div>
-                <span className="ae-filter-group-label" style={{ marginLeft: 4 }}>To</span>
-                <div style={{ minWidth: 140 }}>
-                  <CustomDatePicker value={evtToDate} min={evtFromDate} onChange={v => { setEvtToDate(v); setEvtDatePreset(""); }} placeholder="End date" />
-                </div>
-              </div>
+                ]}
+                value={evtFilterStatuses}
+                onToggle={(key) => toggleSet(setEvtFilterStatuses, key)}
+              />
+              {/* Date quick presets + range */}
+              <DateRangeGroup
+                from={evtFromDate}
+                to={evtToDate}
+                onChangeFrom={setEvtFromDate}
+                onChangeTo={setEvtToDate}
+                preset={evtDatePreset}
+                onChangePreset={setEvtDatePreset}
+                presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
+                labelClass="ae-filter-group-label"
+                noMax
+              />
               {/* Type */}
-              <div className="filter-group">
-                <span className="ae-filter-group-label">Type</span>
-                {[
-                  ["all", "All"],
+              <MultiPillGroup
+                label="Type"
+                labelClass="ae-filter-group-label"
+                options={[
                   ["dining", "Dining"],
                   ["special", "Special"],
                   ["private", "Private"],
                   ["seasonal", "Seasonal"],
                   ["live", "Live"],
                   ["workshop", "Workshop"],
-                ].map(([val, label]) => (
-                  <button key={val}
-                    className={`filter-pill${evtFilterType === val ? " active" : ""}`}
-                    onClick={() => setEvtFilterType(val)}>
-                    {label}
-                  </button>
-                ))}
-              </div>
+                ]}
+                value={evtFilterTypes}
+                onToggle={(key) => toggleSet(setEvtFilterTypes, key)}
+              />
               {/* Publish */}
-              <div className="filter-group">
-                <span className="ae-filter-group-label">Publish</span>
-                {[["all", "All"], ["live", "Live"], ["draft", "Draft"]].map(([val, label]) => (
-                  <button key={val}
-                    className={`filter-pill${evtFilterPublish === val ? " active" : ""}`}
-                    onClick={() => setEvtFilterPublish(val)}>
-                    {label}
-                  </button>
-                ))}
-              </div>
+              <MultiPillGroup
+                label="Publish"
+                labelClass="ae-filter-group-label"
+                options={[["live", "Live"], ["draft", "Draft"]]}
+                value={evtFilterPublish}
+                onToggle={(key) => toggleSet(setEvtFilterPublish, key)}
+              />
               {/* Clear + count */}
-              {(evtSearch || evtFilterStatus !== "upcoming,ongoing" || evtFilterType !== "all" || evtFilterPublish !== "all" || evtFromDate || evtToDate) && (
+              {(evtSearch || evtFilterStatuses.size > 0 || evtFilterTypes.size > 0 || evtFilterPublish.size > 0 || evtFromDate || evtToDate) && (
                 <button className="ae-clear-filter" onClick={() => {
-                  setEvtSearch(""); setEvtFilterStatus("upcoming,ongoing");
-                  setEvtFilterType("all"); setEvtFilterPublish("all");
+                  setEvtSearch(""); setEvtFilterStatuses(new Set());
+                  setEvtFilterTypes(new Set()); setEvtFilterPublish(new Set());
                   setEvtFromDate(""); setEvtToDate(""); setEvtDatePreset("");
                 }}>Clear</button>
               )}
@@ -986,50 +941,21 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
 
               <Button3D onClick={exportBookings} style={{ marginLeft: "auto" }}>Export</Button3D>
 
-              <div className="filter-group">
-                {/* Quick date presets */}
-                <span className="filter-group-label">period</span>
-                {[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]].map(([preset, label]) => {
-                  const isActive = (() => {
-                    if (preset === "today") { const t = todayStr(); return filterFromDate === t && filterToDate === t; }
-                    if (preset === "week") { const [f, t] = getWeekRange(); return filterFromDate === f && filterToDate === t; }
-                    if (preset === "month") { const [f, t] = getMonthRange(); return filterFromDate === f && filterToDate === t; }
-                    const [f, t] = getLastMonthRange(); return filterFromDate === f && filterToDate === t;
-                  })();
-                  return (
-                    <button key={preset}
-                      className={`filter-pill${isActive ? " active" : ""}`}
-                      onClick={() => {
-                        if (isActive) { setFilterFromDate(""); setFilterToDate(""); return; }
-                        if (preset === "today") { const t = todayStr(); setFilterFromDate(t); setFilterToDate(t); }
-                        else if (preset === "week") { const [f, t] = getWeekRange(); setFilterFromDate(f); setFilterToDate(t); }
-                        else if (preset === "month") { const [f, t] = getMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
-                        else { const [f, t] = getLastMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
-                      }}>
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
+              <DateRangeGroup
+                from={filterFromDate}
+                to={filterToDate}
+                onChangeFrom={setFilterFromDate}
+                onChangeTo={setFilterToDate}
+                preset={bookingsDatePreset}
+                onChangePreset={setBookingsDatePreset}
+                presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
+                periodLabel="period"
+                showPresets
+                noMax
+              />
             </div>
 
             <div className="filter-groups">
-              {/* Date range */}
-              <div className="filter-group">
-                <span className="ae-filter-group-label">From</span>
-                <div style={{ minWidth: 150 }}>
-                  <CustomDatePicker value={filterFromDate} onChange={(v) => { setFilterFromDate(v); if (filterToDate && v > filterToDate) setFilterToDate(v); }} placeholder="Start date" />
-                </div>
-                <span className="ae-filter-group-label">To</span>
-                <div style={{ minWidth: 150 }}>
-                  <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={setFilterToDate} placeholder="End date" />
-                </div>
-                {(filterFromDate || filterToDate) && (
-                  <button className="filter-pill" title="Clear dates" onClick={() => { setFilterFromDate(""); setFilterToDate(""); }}>✕</button>
-                )}
-              </div>
-
-              {/* Event filter */}
               <div className="filter-group">
                 <span className="filter-group-label">Event</span>
                 <CustomDropdown
@@ -1043,25 +969,20 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               </div>
 
               {/* Status pills */}
-              <div className="filter-group">
-                <span className="filter-group-label">Status</span>
-                {[
-                  ["all", "All", "", "All"],
+              <MultiPillGroup
+                label="Status"
+                options={[
                   ["pending", "P", "clb-status-pending", "Pending"],
                   ["confirmed", "C", "clb-status-confirmed", "Confirmed"],
                   ["cancelled", "X", "clb-status-cancelled", "Cancelled"],
-                ].map(([val, short, cls, title]) => (
-                  <button key={val} title={title}
-                    className={`filter-pill${filterStatus === val ? " active" + (cls ? " " + cls : "") : ""}`}
-                    onClick={() => setFilterStatus(val)}>
-                    {short}
-                  </button>
-                ))}
-              </div>
+                ]}
+                value={filterStatuses}
+                onToggle={(key) => toggleSet(setFilterStatuses, key)}
+              />
 
-              {(filterEventId !== "all" || filterStatus !== "all" || searchQuery || filterFromDate || filterToDate) && (
+              {(filterEventId !== "all" || filterStatuses.size > 0 || searchQuery || filterFromDate || filterToDate) && (
                 <button className="evt-clb-clear-btn" onClick={() => {
-                  setFilterEventId("all"); setFilterStatus("all");
+                  setFilterEventId("all"); setFilterStatuses(new Set());
                   setSearchQuery(""); setFilterFromDate(""); setFilterToDate("");
                 }}>Clear</button>
               )}

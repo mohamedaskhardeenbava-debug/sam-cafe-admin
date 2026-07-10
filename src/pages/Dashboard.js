@@ -23,6 +23,7 @@ import {
 } from "recharts";
 import { format } from "date-fns";
 import { CustomDatePicker } from "../components/CustomDatePicker";
+import { todayStr, getWeekRange as sharedWeekRange, getMonthRange as sharedMonthRange, getLastMonthRange as sharedLastMonthRange } from "../utils/dateRangeUtils";
 import Button3D from "../components/Button3D";
 import PageLoader from "../components/PageLoader";
 
@@ -71,7 +72,7 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
   const staff = adminData.staff || [];
   const [activeIndex, setActiveIndex] = useState(null);
   const [activeSalIdx, setActiveSalIdx] = useState(null);
-  const today = format(new Date(), "yyyy-MM-dd");
+  const today = todayStr();
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
   const [modeFilters, setModeFilters] = useState(new Set());
@@ -86,31 +87,20 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
   const [staffSortKey, setStaffSortKey] = useState("name");
   const [staffSortDir, setStaffSortDir] = useState("asc");
 
-  const fmtDate = (d) => {
-    const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-  };
-
   const applyPreset = React.useCallback((preset) => {
-    const now = new Date();
     if (preset === "today") {
       setFromDate(today); setToDate(today);
     } else if (preset === "weekly") {
-      // Sunday to Saturday of the current week
-      const sunday = new Date(now);
-      sunday.setDate(now.getDate() - now.getDay());
-      const saturday = new Date(sunday);
-      saturday.setDate(sunday.getDate() + 6);
-      setFromDate(fmtDate(sunday)); setToDate(fmtDate(saturday));
+      // Monday of the current week → today, via the shared dateRangeUtils
+      // convention (matches every other page's "This Week" filter).
+      const [mon, sun] = sharedWeekRange();
+      setFromDate(mon); setToDate(sun);
     } else if (preset === "monthly") {
-      // 1st of current month to today
-      const first = new Date(now.getFullYear(), now.getMonth(), 1);
-      setFromDate(fmtDate(first)); setToDate(fmtDate(now));
+      const [first] = sharedMonthRange();
+      setFromDate(first); setToDate(today);
     } else if (preset === "lastMonth") {
-      // 1st to last day of the previous calendar month
-      const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const last = new Date(now.getFullYear(), now.getMonth(), 0);
-      setFromDate(fmtDate(first)); setToDate(fmtDate(last));
+      const [first, last] = sharedLastMonthRange();
+      setFromDate(first); setToDate(last);
     }
     setDatePreset(preset);
   }, [today]);
@@ -250,7 +240,7 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
     const allOrders = orders; // not filtered by date
     if (!allOrders.length && !staff.length) { toast.warning("No data available to export"); return; }
 
-    const exportDate = format(new Date(), "yyyy-MM-dd");
+    const exportDate = todayStr();
 
     // ── Sheet 1: All Orders ──────────────────────────────────────────
     const orderRows = [];
@@ -322,21 +312,22 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
       <div className="dashboard-header">
         <div className="dashboard-header-left">
           <div className="justify">
-            <h2 className="dashboard-title">Dashboard</h2>
             <div className="ae-header-actions">
-              <div className="ae-tab-pills">
-                <button className={`ae-tab-pill ${activeTab === "sales" ? "active" : ""}`} onClick={() => setActiveTab("sales")}>
+              <h2 className="dashboard-title">Dashboard</h2>
+
+              <div className="db-tab-pills">
+                <button className={`db-tab-pill ${activeTab === "sales" ? "active" : ""}`} onClick={() => setActiveTab("sales")}>
                   Sales
                 </button>
-                <button className={`ae-tab-pill ${activeTab === "staff" ? "active" : ""}`} onClick={() => setActiveTab("staff")}>
+                <button className={`db-tab-pill ${activeTab === "staff" ? "active" : ""}`} onClick={() => setActiveTab("staff")}>
                   Staff
                 </button>
-                <button className={`ae-tab-pill ${activeTab === "schedules" ? "active" : ""}`} onClick={() => setActiveTab("schedules")}>
+                <button className={`db-tab-pill ${activeTab === "schedules" ? "active" : ""}`} onClick={() => setActiveTab("schedules")}>
                   Schedules
                 </button>
               </div>
-              <Button3D onClick={handleExport}>Export</Button3D>
             </div>
+            <Button3D onClick={handleExport}>Export</Button3D>
           </div>
           <div className="dashboard-filter-date">
             <div className="dash-preset-btns">

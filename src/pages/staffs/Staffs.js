@@ -20,6 +20,7 @@ import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 import { useToast } from "../../useToast";
 import Button3D from "../../components/Button3D";
 import CustomDropdown from "../../components/CustomDropdown";
+import { MultiPillGroup } from "../../components/FilterBar";
 
 import "./Staffs.css";
 import "../ModalCSS.css";
@@ -81,14 +82,18 @@ export default function Staffs({
   const [formErrors, setFormErrors] = useState({});
   const navigate = useNavigate();
   const location = useLocation();
-  const [workTypeFilter, setWorkTypeFilter] = useState(location.state?.workType || "");
+  const [workTypeFilters, setWorkTypeFilters] = useState(() =>
+    location.state?.workType ? new Set([location.state.workType]) : new Set()
+  );
+  const toggleSet = (setter, val) =>
+    setter(prev => { const next = new Set(prev); next.has(val) ? next.delete(val) : next.add(val); return next; });
   const [staffSearch, setStaffSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
+  const [roleFilters, setRoleFilters] = useState(new Set());
 
   const staffs = useMemo(() => {
     let sorted = sortArray(adminData.staff || [], sortConfig);
-    if (workTypeFilter) sorted = sorted.filter(s => (s.workType || "full-time") === workTypeFilter);
-    if (roleFilter) sorted = sorted.filter(s => s.role === roleFilter);
+    if (workTypeFilters.size > 0) sorted = sorted.filter(s => workTypeFilters.has(s.workType || "full-time"));
+    if (roleFilters.size > 0) sorted = sorted.filter(s => roleFilters.has(s.role));
     if (staffSearch.trim()) {
       const q = staffSearch.toLowerCase();
       sorted = sorted.filter(s =>
@@ -98,7 +103,7 @@ export default function Staffs({
       );
     }
     return sorted;
-  }, [adminData.staff, sortConfig, workTypeFilter, roleFilter, staffSearch]);
+  }, [adminData.staff, sortConfig, workTypeFilters, roleFilters, staffSearch]);
 
   const { displayLimit, sentinelRef, containerRef, hasMore } =
     useInfiniteScroll(staffs.length, 30);
@@ -203,20 +208,20 @@ export default function Staffs({
             onChange={e => setStaffSearch(e.target.value)}
           />
 
-          <div className="filter-group">
-            <span className="filter-group-label">Work Type</span>
-            {[["", "All"], ["full-time", "Full-Time"], ["part-time", "Part-Time"], ["double-shift", "Double Shift"]].map(([k, lbl]) => (
-              <button key={k} className={`filter-pill${workTypeFilter === k ? " active" : ""}`} onClick={() => setWorkTypeFilter(k)}>{lbl}</button>
-            ))}
-          </div>
-          <div className="filter-group">
-            <span className="filter-group-label">Role</span>
-            {[["", "All"], ...roles.map(r => [r, r])].map(([k, lbl]) => (
-              <button key={k} className={`filter-pill${roleFilter === k ? " active" : ""}`} onClick={() => setRoleFilter(k)}>{lbl}</button>
-            ))}
-          </div>
-          {(staffSearch || workTypeFilter || roleFilter) && (
-            <button className="ae-clear-filter" onClick={() => { setStaffSearch(""); setWorkTypeFilter(""); setRoleFilter(""); }}>Clear</button>
+          <MultiPillGroup
+            label="Work Type"
+            options={[["full-time", "Full-Time"], ["part-time", "Part-Time"], ["double-shift", "Double Shift"]]}
+            value={workTypeFilters}
+            onToggle={(key) => toggleSet(setWorkTypeFilters, key)}
+          />
+          <MultiPillGroup
+            label="Role"
+            options={roles.map(r => [r, r])}
+            value={roleFilters}
+            onToggle={(key) => toggleSet(setRoleFilters, key)}
+          />
+          {(staffSearch || workTypeFilters.size > 0 || roleFilters.size > 0) && (
+            <button className="ae-clear-filter" onClick={() => { setStaffSearch(""); setWorkTypeFilters(new Set()); setRoleFilters(new Set()); }}>Clear</button>
           )}
         </div>
       </div>

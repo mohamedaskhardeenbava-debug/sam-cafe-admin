@@ -7,7 +7,8 @@ import React, { useMemo, useState } from "react";
 
 import { exportMultiSheet } from "../../utils/excelUtils";
 import api from "../../api";
-import { CustomDatePicker } from "../../components/CustomDatePicker";
+import { DateRangeGroup } from "../../components/FilterBar";
+import { todayStr } from "../../utils/dateRangeUtils";
 
 import Button3D from "../../components/Button3D";
 
@@ -25,28 +26,9 @@ const S = {
   card: "#ffffff", text: "#111", muted: "#777", border: "#e8ecf0",
 };
 
-/* ─── Period preset helpers ───────────────────────────── */
-const getWeekRange = () => {
-  const now = new Date(); const day = now.getDay();
-  const mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-  return [mon.toISOString().split("T")[0], sun.toISOString().split("T")[0]];
-};
-const getMonthRange = () => {
-  const now = new Date();
-  const first = new Date(now.getFullYear(), now.getMonth(), 1);
-  return [first.toISOString().split("T")[0], now.toISOString().split("T")[0]];
-};
-const getLastMonthRange = () => {
-  const now = new Date();
-  const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const last = new Date(now.getFullYear(), now.getMonth(), 0);
-  return [first.toISOString().split("T")[0], last.toISOString().split("T")[0]];
-};
-
 /* ─── Helpers ─────────────────────────────────────────── */
 const parseServiceMise = (serviceMise = {}) => {
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayStr();
 
   // Only show today's data
   if (!(today in serviceMise)) return [];
@@ -61,7 +43,7 @@ const parseServiceMise = (serviceMise = {}) => {
 };
 
 const parseServiceAssign = (serviceAssign = {}) => {
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayStr();
 
   // Only show today's data
   if (!(today in serviceAssign)) return [];
@@ -213,16 +195,7 @@ const ServiceReports = ({ adminData = {} }) => {
   const [reportFrom, setReportFrom] = useState("");
   const [reportTo, setReportTo] = useState("");
   const [reportPreset, setReportPreset] = useState("all");
-  const today = new Date().toISOString().slice(0, 10);
-
-  const applyReportPreset = (preset) => {
-    setReportPreset(preset);
-    if (preset === "all") { setReportFrom(""); setReportTo(""); }
-    else if (preset === "today") { setReportFrom(today); setReportTo(today); }
-    else if (preset === "week") { const [f, t] = getWeekRange(); setReportFrom(f); setReportTo(t); }
-    else if (preset === "month") { const [f, t] = getMonthRange(); setReportFrom(f); setReportTo(t); }
-    else if (preset === "lastMonth") { const [f, t] = getLastMonthRange(); setReportFrom(f); setReportTo(t); }
-  };
+  const today = todayStr();
 
   /* filtered orders by date range */
   const filteredOrders = useMemo(() => orders.filter(o => {
@@ -279,31 +252,27 @@ const ServiceReports = ({ adminData = {} }) => {
       <div className="s-header">
         <div>
           <h2 className="s-title">Service Management</h2>
-          <p className="s-subtitle">Floor Operations &amp; Guest Experience Report</p>
+          <p className="s-subtitle">Operations &amp; Guest Experience Report</p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="sgroom-filter-label">Period</span>
-            {[["all", "All"], ["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]].map(([val, lbl]) => (
-              <button
-                key={val}
-                className={`filter-pill${reportPreset === val ? " active" : ""}`}
-                onClick={() => applyReportPreset(val)}
-              >{lbl}</button>
-            ))}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="sgroom-filter-label">From</span>
-            <CustomDatePicker value={reportFrom} onChange={v => { setReportFrom(v); setReportPreset("custom"); if (reportTo && v > reportTo) setReportTo(v); }} placeholder="Start date" />
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="sgroom-filter-label">To</span>
-            <CustomDatePicker value={reportTo} min={reportFrom} max={today} onChange={v => { setReportTo(v); setReportPreset("custom"); }} placeholder="End date" />
-          </div>
+        <div className="s-header-filters">
+          <DateRangeGroup
+            from={reportFrom}
+            to={reportTo}
+            onChangeFrom={setReportFrom}
+            onChangeTo={setReportTo}
+            preset={reportPreset}
+            onChangePreset={setReportPreset}
+            max={today}
+            labelClass="sgroom-filter-label"
+            groupClass="s-filter-item"
+            separateItems
+          />
           {(reportFrom || reportTo) && (
-            <button className="ae-clear-filter" onClick={() => applyReportPreset("all")}>Clear</button>
+            <button className="ae-clear-filter" onClick={() => { setReportPreset("all"); setReportFrom(""); setReportTo(""); }}>Clear</button>
           )}
-          <Button3D style={{ marginLeft: "auto" }} onClick={exportReport}>Export</Button3D>
+          <span className="s-export-btn">
+            <Button3D onClick={exportReport}>Export</Button3D>
+          </span>
         </div>
       </div>
 
@@ -419,7 +388,7 @@ const ServiceReports = ({ adminData = {} }) => {
       <div className="s-grid-3">
 
         <div className="s-card rpt-fixed-card">
-          <SectionTitle accent={S.amber}>Table Mise Status <span style={{ fontSize: 11, fontWeight: 400, color: S.muted, marginLeft: 4 }}>— Today</span></SectionTitle>
+          <SectionTitle accent={S.amber}>Table Mise Status <span className="s-section-note">— Today</span></SectionTitle>
           {miseData.length === 0 ? <p className="s-empty">No mise data for today</p> : (
             <div className="rpt-mise-grid rpt-inner-scroll">
               {miseData.map((m, i) => (
@@ -437,7 +406,7 @@ const ServiceReports = ({ adminData = {} }) => {
         </div>
 
         <div className="s-card rpt-fixed-card">
-          <SectionTitle accent={S.cyan}>Staff Assignment <span style={{ fontSize: 11, fontWeight: 400, color: S.muted, marginLeft: 4 }}>— Today</span></SectionTitle>
+          <SectionTitle accent={S.cyan}>Staff Assignment <span className="s-section-note">— Today</span></SectionTitle>
           {assignData.length === 0 ? <p className="s-empty">No assignments for today</p> : (
             <div className="rpt-assign-list rpt-inner-scroll">
               {assignData.map((a, i) => (

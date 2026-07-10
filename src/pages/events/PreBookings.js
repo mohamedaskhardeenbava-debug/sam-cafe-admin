@@ -10,6 +10,8 @@ import { useNavigate } from "react-router-dom";
 import { exportToExcel } from "../../utils/excelUtils";
 import api from "../../api";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
+import { DateRangeGroup, MultiPillGroup } from "../../components/FilterBar";
+import { todayStr } from "../../utils/dateRangeUtils";
 
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
@@ -26,24 +28,6 @@ import "./PreviewModal.css";
 import PageLoader from "../../components/PageLoader";
 
 const pad = (n) => String(n).padStart(2, "0");
-const todayStr = () => new Date().toISOString().split("T")[0];
-const getWeekRange = () => {
-  const now = new Date(); const day = now.getDay();
-  const mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-  return [mon.toISOString().split("T")[0], sun.toISOString().split("T")[0]];
-};
-const getMonthRange = () => {
-  const now = new Date();
-  const first = new Date(now.getFullYear(), now.getMonth(), 2);
-  return [first.toISOString().split("T")[0], now.toISOString().split("T")[0]];
-};
-const getLastMonthRange = () => {
-  const now = new Date();
-  const first = new Date(now.getFullYear(), now.getMonth() - 1, 2);
-  const last = new Date(now.getFullYear(), now.getMonth(), 1);
-  return [first.toISOString().split("T")[0], last.toISOString().split("T")[0]];
-};
 
 const SLOT_GROUPS = [
   { label: "Breakfast", key: "BF", short: "BF", start: "07:00", end: "10:00" },
@@ -765,72 +749,43 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
           <input className="search-input" placeholder="Search name / mobile / ID..."
             value={search} onChange={(e) => setSearch(e.target.value)} />
 
-          <div className="filter-group">
-            <span className="filter-group-label">period</span>
-            {/* Quick date presets */}
-            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]].map(([preset, label]) => (
-              <button key={preset}
-                className={`filter-pill${filterDatePreset === preset ? " active" : ""}`}
-                onClick={() => {
-                  if (filterDatePreset === preset) {
-                    setFilterDatePreset(""); setFilterFromDate(""); setFilterToDate("");
-                  } else {
-                    setFilterDatePreset(preset);
-                    if (preset === "today") { const t = todayStr(); setFilterFromDate(t); setFilterToDate(t); }
-                    else if (preset === "week") { const [f, t] = getWeekRange(); setFilterFromDate(f); setFilterToDate(t); }
-                    else if (preset === "month") { const [f, t] = getMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
-                    else { const [f, t] = getLastMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
-                  }
-                }}>
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* From / To date pickers */}
-          <div className="filter-group">
-            <span className="filter-group-label">From</span>
-            <div style={{ minWidth: 148 }}>
-              <CustomDatePicker value={filterFromDate} onChange={v => { setFilterFromDate(v); setFilterDatePreset(""); if (filterToDate && v > filterToDate) setFilterToDate(v); }} placeholder="Start date" />
-            </div>
-
-            <span className="filter-group-label">To</span>
-            <div style={{ minWidth: 148 }}>
-              <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={v => { setFilterToDate(v); setFilterDatePreset(""); }} placeholder="End date" />
-            </div>
-            {(filterFromDate || filterToDate) && (
-              <button className="filter-pill" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
-            )}
-          </div>
+          <DateRangeGroup
+            from={filterFromDate}
+            to={filterToDate}
+            onChangeFrom={setFilterFromDate}
+            onChangeTo={setFilterToDate}
+            preset={filterDatePreset}
+            onChangePreset={setFilterDatePreset}
+            presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
+            fromLabel="From"
+            toLabel="To"
+            periodLabel="period"
+            noMax
+          />
+          {(filterFromDate || filterToDate) && (
+            <button className="filter-pill" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
+          )}
         </div>
 
         <div className="filter-groups">
-          <div className="filter-group">
-            <span className="filter-group-label">Slot</span>
-            {SLOT_GROUPS.map(sg => (
-              <button key={sg.key} title={`${sg.label} (${sg.start}–${sg.end})`}
-                className={`filter-pill${filterSlots.has(sg.key) ? " active" : ""}`}
-                onClick={() => toggleSet(setFilterSlots, sg.key)}>
-                {sg.short}
-              </button>
-            ))}
-          </div>
+          <MultiPillGroup
+            label="Slot"
+            options={SLOT_GROUPS.map(sg => [sg.key, sg.short, "", `${sg.label} (${sg.start}–${sg.end})`])}
+            value={filterSlots}
+            onToggle={(key) => toggleSet(setFilterSlots, key)}
+          />
 
-          <div className="filter-group">
-            <span className="filter-group-label">Status</span>
-            {[
+          <MultiPillGroup
+            label="Status"
+            options={[
               ["pending", "P", "clb-status-pending", "Pending"],
               ["confirmed", "C", "clb-status-confirmed", "Confirmed"],
               ["completed", "D", "clb-status-completed", "Done"],
               ["cancelled", "X", "clb-status-cancelled", "Cancelled"],
-            ].map(([key, short, cls, title]) => (
-              <button key={key} title={title}
-                className={`filter-pill${filterStatuses.has(key) ? " active " + cls : ""}`}
-                onClick={() => toggleSet(setFilterStatuses, key)}>
-                {short}
-              </button>
-            ))}
-          </div>
+            ]}
+            value={filterStatuses}
+            onToggle={(key) => toggleSet(setFilterStatuses, key)}
+          />
 
           {activeFilters && (
             <button className="evt-clb-clear-btn" onClick={onResetFilters}>

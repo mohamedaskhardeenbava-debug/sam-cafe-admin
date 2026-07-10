@@ -21,6 +21,7 @@ import { useToast } from "../useToast";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 import Button3D from "../components/Button3D";
+import { FilterBar } from "../components/FilterBar";
 
 import "./Users.css";
 
@@ -103,22 +104,14 @@ const Users = ({ handleSort, sortConfig, users }) => {
       </div>
 
       {/* FILTER BAR */}
-      <div className="filter-bar">
-        <div className="justify">
-          <input
-            className="search-input"
-            placeholder=" Search name or mobile…"
-            value={userSearch}
-            onChange={(e) => setUserSearch(e.target.value)}
-          />
-          {userSearch && (
-            <button className="ae-clear-filter" onClick={() => setUserSearch("")}>
-              Clear
-            </button>
-          )}
-          <span className="ae-result-count">{filteredUsers.length} user(s)</span>
-        </div>
-      </div>
+      <FilterBar
+        search={userSearch}
+        onSearchChange={setUserSearch}
+        searchPlaceholder=" Search name or mobile…"
+        onClear={() => setUserSearch("")}
+        active={!!userSearch}
+        rightContent={<span className="ae-result-count">{filteredUsers.length} user(s)</span>}
+      />
 
       <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} ref={containerRef}>
         <table >

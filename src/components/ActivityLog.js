@@ -34,51 +34,36 @@
 
 import React, { useState, useMemo } from "react";
 
-import { format } from "date-fns";
-
 import { CustomDatePicker } from "./CustomDatePicker";
+import { DateRangeGroup, PillGroup } from "./FilterBar";
+import { resolveDateRange, todayStr } from "../utils/dateRangeUtils";
 import { exportToExcel } from "../utils/excelUtils";
 
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
 
-const PRESETS = [
-  { label: "All", getRange: () => ["2000-01-01", "2099-12-31"] },
-  {
-    label: "Today",
-    getRange: () => {
-      const t = format(new Date(), "yyyy-MM-dd");
-      return [t, t];
-    },
-  },
-  {
-    label: "This Month",
-    getRange: () => {
-      const d = new Date();
-      return [
-        format(new Date(d.getFullYear(), d.getMonth(), 1), "yyyy-MM-dd"),
-        format(new Date(), "yyyy-MM-dd"),
-      ];
-    },
-  },
-  {
-    label: "Last Month",
-    getRange: () => {
-      const d = new Date();
-      const first = new Date(d.getFullYear(), d.getMonth() - 1, 1);
-      const last = new Date(d.getFullYear(), d.getMonth(), 0);
-      return [format(first, "yyyy-MM-dd"), format(last, "yyyy-MM-dd")];
-    },
-  },
+/* Period presets: [key, label]. "all" resolves to a wide-open range
+   (rather than empty strings) because this page's filter uses
+   d >= fromDate && d <= toDate directly. */
+const PERIOD_PRESETS = [
+  ["all", "All"],
+  ["today", "Today"],
+  ["week", "This Week"],
+  ["month", "This Month"],
+  ["lastMonth", "Last Month"],
 ];
+const resolveActivityLogRange = (key) => {
+  if (key === "all") return ["2000-01-01", "2099-12-31"];
+  return resolveDateRange(key);
+};
 
 const ActivityLog = ({ title, items = [], exportFilePrefix }) => {
   const { toast } = useToast();
-  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const today = todayStr();
 
   const [fromDate, setFromDate] = useState("2000-01-01");
   const [toDate, setToDate] = useState("2099-12-31");
-  const [activePreset, setActivePreset] = useState("All");
+  const [activePreset, setActivePreset] = useState("all");
   const [searchText, setSearchText] = useState("");
 
   const filtered = useMemo(
@@ -96,11 +81,11 @@ const ActivityLog = ({ title, items = [], exportFilePrefix }) => {
     [items, fromDate, toDate, searchText]
   );
 
-  const applyPreset = (preset) => {
-    const [f, t] = preset.getRange();
+  const applyPreset = (key) => {
+    const [f, t] = resolveActivityLogRange(key);
     setFromDate(f);
     setToDate(t);
-    setActivePreset(preset.label);
+    setActivePreset(key);
   };
 
   const handleExport = () => {
@@ -138,42 +123,31 @@ const ActivityLog = ({ title, items = [], exportFilePrefix }) => {
           />
 
           <div className="filter-group">
-            <span className="filter-group-label">from</span>
-            <CustomDatePicker
-              label="From"
-              value={fromDate}
-              max={toDate}
-              onChange={(s) => {
-                setFromDate(s);
-                if (s > toDate) setToDate(s);
-                setActivePreset("custom");
-              }}
-            />
-            <span className="filter-group-label">to</span>
-            <CustomDatePicker
-              label="To"
-              value={toDate}
-              min={fromDate}
-              max={todayStr}
-              onChange={(s) => {
-                setToDate(s);
-                setActivePreset("custom");
-              }}
+            <DateRangeGroup
+              from={fromDate}
+              to={toDate}
+              onChangeFrom={setFromDate}
+              onChangeTo={setToDate}
+              preset={activePreset}
+              onChangePreset={setActivePreset}
+              presets={PERIOD_PRESETS}
+              fromLabel="from"
+              toLabel="to"
+              pickerFromLabel="From"
+              pickerToLabel="To"
+              max={today}
+              showPresets={false}
+              pickerLabels
             />
           </div>
 
-          <div className="filter-group">
-            <span className="filter-group-label">period</span>
-            {PRESETS.map((p) => (
-              <button
-                key={p.label}
-                className={`filter-pill${activePreset === p.label ? " active" : ""}`}
-                onClick={() => applyPreset(p)}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
+          <PillGroup
+            label="period"
+            options={PERIOD_PRESETS}
+            value={activePreset}
+            onChange={applyPreset}
+            toggle={false}
+          />
         </div>
       </div>
 

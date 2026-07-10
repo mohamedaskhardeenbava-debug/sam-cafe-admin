@@ -7,7 +7,8 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 
 import { exportToExcel } from "../../utils/excelUtils";
 import api from "../../api";
-import { CustomDatePicker } from "../../components/CustomDatePicker";
+import { DateRangeGroup } from "../../components/FilterBar";
+import { todayStr, getWeekRange, getMonthRange, getLastMonthRange } from "../../utils/dateRangeUtils";
 
 import { useToast } from "../../useToast";
 import closeIcon from "../../icon/close-icon.png";
@@ -41,29 +42,12 @@ const WEEKDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 function toLocalISO(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
-function getWeekStart() {
-  const d = new Date(); const day = d.getDay();
-  const mon = new Date(d); mon.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
-  return toLocalISO(mon);
-}
-function getMonthStart() {
-  const d = new Date();
-  return toLocalISO(new Date(d.getFullYear(), d.getMonth(), 1));
-}
-function getLastMonthStart() {
-  const d = new Date();
-  return toLocalISO(new Date(d.getFullYear(), d.getMonth() - 1, 1));
-}
-function getLastMonthEnd() {
-  const d = new Date();
-  return toLocalISO(new Date(d.getFullYear(), d.getMonth(), 0));
-}
 
 export default function ServiceGrooming({ adminData, setAdminData }) {
   // ── Hooks
 
   const { toast } = useToast();
-  const today = toLocalISO(new Date());
+  const today = todayStr();
 
   const dates = useMemo(() => {
     const arr = [];
@@ -83,7 +67,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
 
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef(null);
-  const [sgroomFrom, setSgroomFrom] = useState(getWeekStart);
+  const [sgroomFrom, setSgroomFrom] = useState(() => getWeekRange()[0]);
   const [sgroomTo, setSgroomTo] = useState(today);
   const [sgroomPreset, setSgroomPreset] = useState("week");
 
@@ -100,9 +84,9 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
   const applyPreset = (preset) => {
     setSgroomPreset(preset);
     if (preset === "today") { setSgroomFrom(today); setSgroomTo(today); }
-    if (preset === "week") { setSgroomFrom(getWeekStart()); setSgroomTo(today); }
-    if (preset === "month") { setSgroomFrom(getMonthStart()); setSgroomTo(today); }
-    if (preset === "lastMonth") { setSgroomFrom(getLastMonthStart()); setSgroomTo(getLastMonthEnd()); }
+    if (preset === "week") { const [f, t] = getWeekRange(); setSgroomFrom(f); setSgroomTo(t); }
+    if (preset === "month") { const [f] = getMonthRange(); setSgroomFrom(f); setSgroomTo(today); }
+    if (preset === "lastMonth") { const [f, t] = getLastMonthRange(); setSgroomFrom(f); setSgroomTo(t); }
   };
 
   const visibleDates = useMemo(() =>
@@ -266,22 +250,18 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
               </div>
             )}
           </div>
-          <div className="filter-group">
-            <span className="filter-group-label">period</span>
-            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]].map(([k, lbl]) => (
-              <button key={k} className={`filter-pill${sgroomPreset === k ? " active" : ""}`}
-                onClick={() => applyPreset(k)}>{lbl}</button>
-            ))}
-          </div>
-          <div className="filter-group">
-            <span className="filter-group-label">From</span>
-            <CustomDatePicker value={sgroomFrom} max={sgroomTo || today}
-              onChange={v => { setSgroomFrom(v); setSgroomPreset("custom"); }} placeholder="Start date" />
-
-            <span className="filter-group-label">To</span>
-            <CustomDatePicker value={sgroomTo} min={sgroomFrom} max={today}
-              onChange={v => { setSgroomTo(v); setSgroomPreset("custom"); }} placeholder="End date" />
-          </div>
+          <DateRangeGroup
+            from={sgroomFrom}
+            to={sgroomTo}
+            onChangeFrom={setSgroomFrom}
+            onChangeTo={setSgroomTo}
+            preset={sgroomPreset}
+            onChangePreset={applyPreset}
+            presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
+            periodLabel="period"
+            max={today}
+            toggle={false}
+          />
           {(sgroomSearch || sgroomPreset === "custom") && (
             <button className="ae-clear-filter" onClick={() => { setSgroomSearch(""); applyPreset("week"); }}>Clear</button>
           )}
