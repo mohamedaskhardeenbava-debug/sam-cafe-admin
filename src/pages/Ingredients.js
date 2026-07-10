@@ -18,6 +18,7 @@ import useInfiniteScroll from "../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
+import { FilterBar } from "../components/FilterBar";
 
 import "./Ingredients.css";
 import "./ModalCSS.css";
@@ -188,20 +189,14 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
       </div>
 
       {/* FILTER BAR */}
-      <div className="filter-bar">
-        <div className="justify">
-          <input
-            className="search-input"
-            placeholder=" Search name or brand…"
-            value={ingredientSearch}
-            onChange={e => setIngredientSearch(e.target.value)}
-          />
-          {ingredientSearch && (
-            <button className="ae-clear-filter" onClick={() => setIngredientSearch("")}>Clear</button>
-          )}
-          <span className="result-count">{filteredIngredients.length} ingredient(s)</span>
-        </div>
-      </div>
+      <FilterBar
+        search={ingredientSearch}
+        onSearchChange={setIngredientSearch}
+        searchPlaceholder=" Search name or brand…"
+        onClear={() => setIngredientSearch("")}
+        active={!!ingredientSearch}
+        rightContent={<span className="result-count">{filteredIngredients.length} ingredient(s)</span>}
+      />
 
       {showForm && (
         <div className="modal-overlay">
@@ -535,7 +530,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
         </div>
       )}
 
-      <div className="table-wrapper" style={{maxHeight:"calc(100vh - 260px)"}} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>

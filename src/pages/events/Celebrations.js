@@ -10,6 +10,8 @@ import { useNavigate } from "react-router-dom";
 import { exportToExcel } from "../../utils/excelUtils";
 import api from "../../api";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
+import { DateRangeGroup, MultiPillGroup } from "../../components/FilterBar";
+import { todayStr, tomorrowStr } from "../../utils/dateRangeUtils";
 
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
@@ -25,20 +27,6 @@ import "./PreviewModal.css";
 import PageLoader from "../../components/PageLoader";
 
 const pad = (n) => String(n).padStart(2, "0");
-const todayStr = () => new Date().toISOString().split("T")[0];
-const tomorrowStr = () => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split("T")[0]; };
-const getWeekRange = () => {
-  const now = new Date(); const day = now.getDay();
-  const mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-  return [mon.toISOString().split("T")[0], sun.toISOString().split("T")[0]];
-};
-const getMonthRange = () => {
-  const now = new Date();
-  const first = new Date(now.getFullYear(), now.getMonth(), 1);
-  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  return [first.toISOString().split("T")[0], last.toISOString().split("T")[0]];
-};
 
 /* Get Together removed */
 const CELEBRATION_TYPES = [
@@ -154,15 +142,17 @@ const EMPTY_FORM = {
 const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetFilters }) => {
   // ── State & Setup
 
-  const { fromDate: filterFromDate, toDate: filterToDate, preset: filterDatePreset, type: filterType, status: filterStatus, search } = filters;
+  const { fromDate: filterFromDate, toDate: filterToDate, preset: filterDatePreset, types: filterTypes, statuses: filterStatuses, search } = filters;
 
   // ── Helpers
 
   const setFilterFromDate = (v) => patchFilters({ fromDate: v });
   const setFilterToDate = (v) => patchFilters({ toDate: v });
   const setFilterDatePreset = (v) => patchFilters({ preset: v });
-  const setFilterType = (v) => patchFilters({ type: v });
-  const setFilterStatus = (v) => patchFilters({ status: v });
+  const setFilterTypes = (v) => patchFilters({ types: typeof v === "function" ? v(filterTypes) : v });
+  const setFilterStatuses = (v) => patchFilters({ statuses: typeof v === "function" ? v(filterStatuses) : v });
+  const toggleSet = (setter, val) =>
+    setter(prev => { const next = new Set(prev); next.has(val) ? next.delete(val) : next.add(val); return next; });
   const setSearch = (v) => patchFilters({ search: v });
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -203,8 +193,8 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
     let d = [...data];
     if (filterFromDate) d = d.filter(item => (item.date || "") >= filterFromDate);
     if (filterToDate) d = d.filter(item => (item.date || "") <= filterToDate);
-    if (filterType) d = d.filter(item => item.type === filterType);
-    if (filterStatus) d = d.filter(item => (item.status || "pending") === filterStatus);
+    if (filterTypes.size > 0) d = d.filter(item => filterTypes.has(item.type));
+    if (filterStatuses.size > 0) d = d.filter(item => filterStatuses.has(item.status || "pending"));
     if (search.trim()) {
       const q = search.toLowerCase();
       d = d.filter(item =>
@@ -214,7 +204,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       );
     }
     return d;
-  }, [data, filterFromDate, filterToDate, filterType, filterStatus, search]);
+  }, [data, filterFromDate, filterToDate, filterTypes, filterStatuses, search]);
 
   const today = todayStr();
   const pendingCount = filteredData.filter(r => (r.status || "pending") === "pending").length;
@@ -406,7 +396,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
     }
   };
 
-  const isDefaultFilter = filterFromDate === todayStr() && filterToDate === todayStr() && filterDatePreset === "today" && !filterType && !filterStatus && !search.trim();
+  const isDefaultFilter = filterFromDate === todayStr() && filterToDate === todayStr() && filterDatePreset === "today" && filterTypes.size === 0 && filterStatuses.size === 0 && !search.trim();
   const activeFilters = !isDefaultFilter;
 
   const handleExport = () => {
@@ -472,68 +462,39 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
             onChange={e => setSearch(e.target.value)}
           />
 
-          {/* Quick date presets */}
-          <div className="filter-group">
-            <span className="filter-group-label">Period</span>
-            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([preset, label]) => (
-              <button key={preset}
-                className={`filter-pill${filterDatePreset === preset ? " active" : ""}`}
-                onClick={() => {
-                  if (filterDatePreset === preset) {
-                    setFilterDatePreset(""); setFilterFromDate(""); setFilterToDate("");
-                  } else {
-                    setFilterDatePreset(preset);
-                    if (preset === "today") { const t = todayStr(); setFilterFromDate(t); setFilterToDate(t); }
-                    else if (preset === "week") { const [f, t] = getWeekRange(); setFilterFromDate(f); setFilterToDate(t); }
-                    else { const [f, t] = getMonthRange(); setFilterFromDate(f); setFilterToDate(t); }
-                  }
-                }}>
-                {label}
-              </button>
-            ))}
-          </div>
-          {/* From / To date pickers */}
-          <div className="filter-group">
-            <span className="filter-group-label">From</span>
-            <div style={{ minWidth: 148 }}>
-              <CustomDatePicker value={filterFromDate} onChange={v => { setFilterFromDate(v); setFilterDatePreset(""); if (filterToDate && v > filterToDate) setFilterToDate(v); }} placeholder="Start date" />
-            </div>
-            <span className="filter-group-label" style={{ marginLeft: 2 }}>To</span>
-            <div style={{ minWidth: 148 }}>
-              <CustomDatePicker value={filterToDate} min={filterFromDate} onChange={v => { setFilterToDate(v); setFilterDatePreset(""); }} placeholder="End date" />
-            </div>
-            {(filterFromDate || filterToDate) && (
-              <button className="filter-pill" title="Clear dates" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }}>✕</button>
-            )}
-          </div>
+          <DateRangeGroup
+            from={filterFromDate}
+            to={filterToDate}
+            onChangeFrom={setFilterFromDate}
+            onChangeTo={setFilterToDate}
+            preset={filterDatePreset}
+            onChangePreset={setFilterDatePreset}
+            presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
+            noMax
+          />
+          {(filterFromDate || filterToDate) && (
+            <button className="filter-pill" title="Clear dates" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }}>✕</button>
+          )}
 
         </div>
         <div className="filter-groups">
-          <div className="filter-group">
-            <span className="filter-group-label">Type</span>
-            {CELEBRATION_TYPES.map(t => (
-              <button key={t.value} title={t.label}
-                className={`filter-pill${filterType === t.value ? " active" : ""}`}
-                onClick={() => setFilterType(p => p === t.value ? "" : t.value)}>
-                {t.label.slice(0, 3)}
-              </button>
-            ))}
-          </div>
-          <div className="filter-group">
-            <span className="filter-group-label">Status</span>
-            {[
+          <MultiPillGroup
+            label="Type"
+            options={CELEBRATION_TYPES.map(t => [t.value, t.label.slice(0, 3), "", t.label])}
+            value={filterTypes}
+            onToggle={(key) => toggleSet(setFilterTypes, key)}
+          />
+          <MultiPillGroup
+            label="Status"
+            options={[
               ["pending", "P", "clb-status-pending", "Pending"],
               ["confirmed", "C", "clb-status-confirmed", "Confirmed"],
               ["completed", "D", "clb-status-completed", "Done"],
               ["cancelled", "X", "clb-status-cancelled", "Cancelled"],
-            ].map(([key, short, cls, title]) => (
-              <button key={key} title={title}
-                className={`filter-pill${filterStatus === key ? " active " + cls : ""}`}
-                onClick={() => setFilterStatus(p => p === key ? "" : key)}>
-                {short}
-              </button>
-            ))}
-          </div>
+            ]}
+            value={filterStatuses}
+            onToggle={(key) => toggleSet(setFilterStatuses, key)}
+          />
           {activeFilters && (
             <button className="evt-clb-clear-btn" onClick={onResetFilters}>
               Clear

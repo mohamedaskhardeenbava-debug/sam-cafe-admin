@@ -7,13 +7,14 @@ import React, { useMemo, useState } from "react";
 
 import { exportMultiSheet } from "../../utils/excelUtils";
 import api from "../../api";
-import { CustomDatePicker } from "../../components/CustomDatePicker";
+import { DateRangeGroup } from "../../components/FilterBar";
+import { todayStr } from "../../utils/dateRangeUtils";
 
 import Button3D from "../../components/Button3D";
 
 import "./ServiceReports.css";
 import {
-BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Sector,
   AreaChart, Area, CartesianGrid,
 } from "recharts";
@@ -27,7 +28,7 @@ const S = {
 
 /* ─── Helpers ─────────────────────────────────────────── */
 const parseServiceMise = (serviceMise = {}) => {
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayStr();
 
   // Only show today's data
   if (!(today in serviceMise)) return [];
@@ -42,7 +43,7 @@ const parseServiceMise = (serviceMise = {}) => {
 };
 
 const parseServiceAssign = (serviceAssign = {}) => {
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayStr();
 
   // Only show today's data
   if (!(today in serviceAssign)) return [];
@@ -193,7 +194,8 @@ const ServiceReports = ({ adminData = {} }) => {
   const [activeEventPie, setActiveEventPie] = useState(null);
   const [reportFrom, setReportFrom] = useState("");
   const [reportTo, setReportTo] = useState("");
-  const today = new Date().toISOString().slice(0, 10);
+  const [reportPreset, setReportPreset] = useState("all");
+  const today = todayStr();
 
   /* filtered orders by date range */
   const filteredOrders = useMemo(() => orders.filter(o => {
@@ -250,21 +252,27 @@ const ServiceReports = ({ adminData = {} }) => {
       <div className="s-header">
         <div>
           <h2 className="s-title">Service Management</h2>
-          <p className="s-subtitle">Floor Operations &amp; Guest Experience Report</p>
+          <p className="s-subtitle">Operations &amp; Guest Experience Report</p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="sgroom-filter-label">From</span>
-            <CustomDatePicker value={reportFrom} onChange={v => { setReportFrom(v); if (reportTo && v > reportTo) setReportTo(v); }} placeholder="Start date" />
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="sgroom-filter-label">To</span>
-            <CustomDatePicker value={reportTo} min={reportFrom} max={today} onChange={setReportTo} placeholder="End date" />
-          </div>
+        <div className="s-header-filters">
+          <DateRangeGroup
+            from={reportFrom}
+            to={reportTo}
+            onChangeFrom={setReportFrom}
+            onChangeTo={setReportTo}
+            preset={reportPreset}
+            onChangePreset={setReportPreset}
+            max={today}
+            labelClass="sgroom-filter-label"
+            groupClass="s-filter-item"
+            separateItems
+          />
           {(reportFrom || reportTo) && (
-            <button className="ae-clear-filter" onClick={() => { setReportFrom(""); setReportTo(""); }}>Clear</button>
+            <button className="ae-clear-filter" onClick={() => { setReportPreset("all"); setReportFrom(""); setReportTo(""); }}>Clear</button>
           )}
-          <Button3D style={{ marginLeft: "auto" }} onClick={exportReport}>Export</Button3D>
+          <span className="s-export-btn">
+            <Button3D onClick={exportReport}>Export</Button3D>
+          </span>
         </div>
       </div>
 
@@ -380,7 +388,7 @@ const ServiceReports = ({ adminData = {} }) => {
       <div className="s-grid-3">
 
         <div className="s-card rpt-fixed-card">
-          <SectionTitle accent={S.amber}>Table Mise Status <span style={{ fontSize: 11, fontWeight: 400, color: S.muted, marginLeft: 4 }}>— Today</span></SectionTitle>
+          <SectionTitle accent={S.amber}>Table Mise Status <span className="s-section-note">— Today</span></SectionTitle>
           {miseData.length === 0 ? <p className="s-empty">No mise data for today</p> : (
             <div className="rpt-mise-grid rpt-inner-scroll">
               {miseData.map((m, i) => (
@@ -398,7 +406,7 @@ const ServiceReports = ({ adminData = {} }) => {
         </div>
 
         <div className="s-card rpt-fixed-card">
-          <SectionTitle accent={S.cyan}>Staff Assignment <span style={{ fontSize: 11, fontWeight: 400, color: S.muted, marginLeft: 4 }}>— Today</span></SectionTitle>
+          <SectionTitle accent={S.cyan}>Staff Assignment <span className="s-section-note">— Today</span></SectionTitle>
           {assignData.length === 0 ? <p className="s-empty">No assignments for today</p> : (
             <div className="rpt-assign-list rpt-inner-scroll">
               {assignData.map((a, i) => (

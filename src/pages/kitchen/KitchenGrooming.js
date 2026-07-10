@@ -7,7 +7,8 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 
 import { exportToExcel } from "../../utils/excelUtils";
 import api from "../../api";
-import { CustomDatePicker } from "../../components/CustomDatePicker";
+import { DateRangeGroup } from "../../components/FilterBar";
+import { todayStr, getWeekRange, getMonthRange, getLastMonthRange } from "../../utils/dateRangeUtils";
 
 import { useToast } from "../../useToast";
 import closeIcon from "../../icon/close-icon.png";
@@ -43,21 +44,12 @@ const PALETTE = ["#4361ee", "#06d6a0", "#ffd166", "#ef476f", "#7209b7", "#4cc9f0
 function toLocalISO(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
-function getWeekStart() {
-  const d = new Date(); const day = d.getDay();
-  const mon = new Date(d); mon.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
-  return toLocalISO(mon);
-}
-function getMonthStart() {
-  const d = new Date();
-  return toLocalISO(new Date(d.getFullYear(), d.getMonth(), 1));
-}
 
 export default function KitchenGrooming({ adminData, setAdminData }) {
   // ── Hooks
 
   const { toast } = useToast();
-  const today = toLocalISO(new Date());
+  const today = todayStr();
 
   // Rolling 92-day pool (3 months)
   const dates = useMemo(() => {
@@ -78,7 +70,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
 
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef(null);
-  const [groomFrom, setGroomFrom] = useState(getWeekStart);
+  const [groomFrom, setGroomFrom] = useState(() => getWeekRange()[0]);
   const [groomTo, setGroomTo] = useState(today);
   const [groomPreset, setGroomPreset] = useState("week");
 
@@ -96,8 +88,9 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
   const applyPreset = (preset) => {
     setGroomPreset(preset);
     if (preset === "today") { setGroomFrom(today); setGroomTo(today); }
-    if (preset === "week") { setGroomFrom(getWeekStart()); setGroomTo(today); }
-    if (preset === "month") { setGroomFrom(getMonthStart()); setGroomTo(today); }
+    if (preset === "week") { const [f, t] = getWeekRange(); setGroomFrom(f); setGroomTo(t); }
+    if (preset === "month") { const [f] = getMonthRange(); setGroomFrom(f); setGroomTo(today); }
+    if (preset === "lastMonth") { const [f, t] = getLastMonthRange(); setGroomFrom(f); setGroomTo(t); }
   };
 
   const visibleDates = useMemo(() =>
@@ -266,22 +259,18 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
               </div>
             )}
           </div>
-          <div className="filter-group">
-            <span className="filter-group-label">period</span>
-            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"]].map(([k, lbl]) => (
-              <button key={k} className={`filter-pill${groomPreset === k ? " active" : ""}`}
-                onClick={() => applyPreset(k)}>{lbl}</button>
-            ))}
-          </div>
-          <div className="filter-group">
-            <span className="filter-group-label">From</span>
-            <CustomDatePicker value={groomFrom} max={groomTo || today}
-              onChange={v => { setGroomFrom(v); setGroomPreset("custom"); }} placeholder="Start date" />
-
-            <span className="filter-group-label">To</span>
-            <CustomDatePicker value={groomTo} min={groomFrom} max={today}
-              onChange={v => { setGroomTo(v); setGroomPreset("custom"); }} placeholder="End date" />
-          </div>
+          <DateRangeGroup
+            from={groomFrom}
+            to={groomTo}
+            onChangeFrom={setGroomFrom}
+            onChangeTo={setGroomTo}
+            preset={groomPreset}
+            onChangePreset={applyPreset}
+            presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
+            periodLabel="period"
+            max={today}
+            toggle={false}
+          />
           {(groomSearch || groomPreset === "custom") && (
             <button className="ae-clear-filter" onClick={() => { setGroomSearch(""); applyPreset("week"); }}>Clear</button>
           )}

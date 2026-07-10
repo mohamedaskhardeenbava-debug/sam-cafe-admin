@@ -24,6 +24,7 @@
   align-items: stretch;
   height: 40px;
   gap: 12px;
+  width: 100%;
 }
 
 /* SEARCH */

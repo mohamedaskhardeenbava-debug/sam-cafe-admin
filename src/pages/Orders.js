@@ -3,6 +3,7 @@ import { exportToExcel } from "../utils/excelUtils";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../api";
 import "./Orders.css";
+import Button3D from "../components/Button3D";
 import closeIcon from "../icon/close-icon.png";
 import { EmptyRow } from "../App";
 import { QRCodeCanvas } from "qrcode.react";
@@ -12,6 +13,7 @@ import { formatIndianTime } from "../App";
 import socket from "../socket";
 import { printBill as sendBillToPrinter } from "../printUtils";
 import { CustomDatePicker } from "../components/CustomDatePicker";
+import { todayStr, getWeekRange as sharedWeekRange, getMonthRange as sharedMonthRange, getLastMonthRange as sharedLastMonthRange } from "../utils/dateRangeUtils";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
@@ -528,26 +530,25 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
   const [splitPeople, setSplitPeople] = useState("");
   const [splitBills, setSplitBills] = useState("");
 
-  // Use local date string to avoid UTC offset shifting the date (e.g. UTC+5:30)
-  const toLocalISO = (d) => {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-  };
-  const todayISO = toLocalISO(new Date());
+  // Local date string (not UTC) — sourced from the shared dateRangeUtils
+  // module. Wrapped to keep this file's existing {from, to} object shape
+  // and to cap "week"/"month" at today (orders can't exist in the future),
+  // same as the shared getWeekRange()'s generic Mon→Sun would not.
+  const todayISO = todayStr();
 
   const getWeekRange = () => {
-    const today = new Date();
-    const day = today.getDay(); // 0=Sun
-    const mon = new Date(today); mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
-    return { from: toLocalISO(mon), to: todayISO };
+    const [mon] = sharedWeekRange();
+    return { from: mon, to: todayISO };
   };
 
   const getMonthRange = () => {
-    const today = new Date();
-    const first = new Date(today.getFullYear(), today.getMonth(), 1);
-    return { from: toLocalISO(first), to: todayISO };
+    const [first] = sharedMonthRange();
+    return { from: first, to: todayISO };
+  };
+
+  const getLastMonthRange = () => {
+    const [first, last] = sharedLastMonthRange();
+    return { from: first, to: last };
   };
 
   const [datePreset, setDatePreset] = useState(() => {
@@ -560,6 +561,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
     if (preset === "today") { setFromDate(todayISO); setToDate(todayISO); }
     else if (preset === "week") { const r = getWeekRange(); setFromDate(r.from); setToDate(r.to); }
     else if (preset === "month") { const r = getMonthRange(); setFromDate(r.from); setToDate(r.to); }
+    else if (preset === "lastmonth") { const r = getLastMonthRange(); setFromDate(r.from); setToDate(r.to); }
   }, [todayISO]);
 
   const toggleOrder = useCallback((orderId) => {
@@ -586,6 +588,12 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
       mon.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
       return `${mon.getFullYear()}-${String(mon.getMonth() + 1).padStart(2, "0")}-${String(mon.getDate()).padStart(2, "0")}`;
     }
+    if (preset === "lastmonth") {
+      const d = new Date();
+      const first = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+      const y = first.getFullYear(), m = String(first.getMonth() + 1).padStart(2, "0"), day = String(first.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
     return saved?.fromDate || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}-${String(new Date().getDate()).padStart(2, "0")}`;
   });
 
@@ -596,6 +604,10 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
     const n = new Date();
     const todayLocal = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
     if (preset === "month" || preset === "week") return todayLocal;
+    if (preset === "lastmonth") {
+      const lastOfLastMonth = new Date(n.getFullYear(), n.getMonth(), 0);
+      return `${lastOfLastMonth.getFullYear()}-${String(lastOfLastMonth.getMonth() + 1).padStart(2, "0")}-${String(lastOfLastMonth.getDate()).padStart(2, "0")}`;
+    }
     return saved?.toDate || todayLocal;
   });
   const location = useLocation();
@@ -1140,6 +1152,14 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
             )}
           </div>
 
+          <Button3D
+            style={{ marginLeft: "auto" }}
+            onClick={() => exportOrders(filteredOrders, fromDate, toDate)}
+          >Export
+          </Button3D>
+        </div>
+
+        <div className="orders-header-div">
           <div className="orders-filter">
             <button
               type="button"
@@ -1162,6 +1182,13 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
             >
               This Month
             </button>
+            <button
+              type="button"
+              className={`filter-pill${datePreset === "lastmonth" ? " active" : ""}`}
+              onClick={() => applyPreset("lastmonth")}
+            >
+              Last Month
+            </button>
             <CustomDatePicker
               label="From"
               value={fromDate}
@@ -1177,17 +1204,6 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
             />
           </div>
 
-          <button
-            className="modal-save-btn"
-            onClick={() => exportOrders(filteredOrders, fromDate, toDate)}
-          >
-            <span className="shadow"></span>
-            <span className="edge"></span>
-            <span className="front">Export</span>
-          </button>
-        </div>
-
-        <div className="orders-header-div">
           <div className="orders-dropdown-wrapper">
             <button
               className="orders-status-dropdown"

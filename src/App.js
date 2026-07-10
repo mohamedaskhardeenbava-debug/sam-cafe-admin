@@ -125,10 +125,10 @@ function App() {
   const _today = () => new Date().toISOString().split("T")[0];
 
   const [resFilters, setResFilters] = useState({ filterDate: "", fromDate: _today(), toDate: _today(), preset: "today", slots: new Set(), statuses: new Set(), sources: new Set(), search: "" });
-  const [celFilters, setCelFilters] = useState({ fromDate: _today(), toDate: _today(), preset: "today", type: "", status: "", search: "" });
+  const [celFilters, setCelFilters] = useState({ fromDate: _today(), toDate: _today(), preset: "today", types: new Set(), statuses: new Set(), search: "" });
   const [preFilters, setPreFilters] = useState({ fromDate: _today(), toDate: _today(), preset: "today", slots: new Set(), statuses: new Set(), search: "" });
-  const [catFilters, setCatFilters] = useState({ fromDate: _today(), toDate: _today(), preset: "today", status: "", search: "" });
-  const [evtFilters, setEvtFilters] = useState({ activeTab: "events", filterEventId: "all", filterStatus: "all", filterFromDate: "", filterToDate: "", searchQuery: "", evtSearch: "", evtFilterStatus: "upcoming,ongoing", evtFilterType: "all", evtFilterPublish: "all", evtFromDate: "", evtToDate: "", evtDatePreset: "" });
+  const [catFilters, setCatFilters] = useState({ fromDate: _today(), toDate: _today(), preset: "today", statuses: new Set(), search: "" });
+  const [evtFilters, setEvtFilters] = useState({ activeTab: "events", filterEventId: "all", filterStatuses: new Set(), filterFromDate: "", filterToDate: "", bookingsDatePreset: "", searchQuery: "", evtSearch: "", evtFilterStatuses: new Set(["upcoming", "ongoing"]), evtFilterTypes: new Set(), evtFilterPublish: new Set(), evtFromDate: "", evtToDate: "", evtDatePreset: "" });
 
   const patchRes = (patch) => setResFilters(p => ({ ...p, ...patch }));
   const patchCel = (patch) => setCelFilters(p => ({ ...p, ...patch }));
@@ -137,9 +137,9 @@ function App() {
   const patchEvt = (patch) => setEvtFilters(p => ({ ...p, ...patch }));
 
   const resetResFilters = () => setResFilters({ filterDate: "", fromDate: _today(), toDate: _today(), preset: "today", slots: new Set(), statuses: new Set(), sources: new Set(), search: "" });
-  const resetCelFilters = () => setCelFilters({ fromDate: _today(), toDate: _today(), preset: "today", type: "", status: "", search: "" });
+  const resetCelFilters = () => setCelFilters({ fromDate: _today(), toDate: _today(), preset: "today", types: new Set(), statuses: new Set(), search: "" });
   const resetPreFilters = () => setPreFilters({ fromDate: _today(), toDate: _today(), preset: "today", slots: new Set(), statuses: new Set(), search: "" });
-  const resetCatFilters = () => setCatFilters({ fromDate: _today(), toDate: _today(), preset: "today", status: "", search: "" });
+  const resetCatFilters = () => setCatFilters({ fromDate: _today(), toDate: _today(), preset: "today", statuses: new Set(), search: "" });
 
   const [adminData, setAdminData] = useState({
     categories: [],

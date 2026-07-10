@@ -20,6 +20,7 @@ import { useToast } from "../useToast";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 import CustomDropdown from "../components/CustomDropdown";
 import Button3D from "../components/Button3D";
+import { FilterBar } from "../components/FilterBar";
 
 import "./Stocks.css";
 import PageLoader from "../components/PageLoader";
@@ -300,23 +301,17 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       </div>
 
       {/* FILTER BAR */}
-      <div className="filter-bar">
-        <div className="justify">
-          <input
-            className="search-input"
-            placeholder=" Search ingredient or brand…"
-            value={stockSearch}
-            onChange={e => setStockSearch(e.target.value)}
-          />
-          {stockSearch && (
-            <button className="ae-clear-filter" onClick={() => setStockSearch("")}>Clear</button>
-          )}
-          <span className="result-count">{filteredIngredients.length} ingredient(s)</span>
-        </div>
-      </div>
+      <FilterBar
+        search={stockSearch}
+        onSearchChange={setStockSearch}
+        searchPlaceholder=" Search ingredient or brand…"
+        onClear={() => setStockSearch("")}
+        active={!!stockSearch}
+        rightContent={<span className="result-count">{filteredIngredients.length} ingredient(s)</span>}
+      />
 
       {/* TABLE */}
-      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }}  ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>

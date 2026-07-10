@@ -6,11 +6,11 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 
-import { format } from "date-fns";
-
 import { exportToExcel } from "../../utils/excelUtils";
 import api from "../../api";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
+import { DateRangeGroup, PillGroup, MultiPillGroup } from "../../components/FilterBar";
+import { resolveDateRange, todayStr } from "../../utils/dateRangeUtils";
 
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
@@ -21,11 +21,20 @@ import "./KitchenSchedules.css";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-const PRESETS = [
-  { label: "All", fn: () => ["2000-01-01", "2099-12-31"] },
-  { label: "Today", fn: () => { const t = format(new Date(), "yyyy-MM-dd"); return [t, t]; } },
-  { label: "This Month", fn: () => { const d = new Date(); return [format(new Date(d.getFullYear(), d.getMonth(), 1), "yyyy-MM-dd"), format(d, "yyyy-MM-dd")]; } },
+/* Period presets: [key, label]. "all" resolves to a wide-open range
+   (rather than empty strings) because this page's filter uses
+   d >= fromDate && d <= toDate directly. */
+const PERIOD_PRESETS = [
+  ["all", "All"],
+  ["today", "Today"],
+  ["week", "This Week"],
+  ["month", "This Month"],
+  ["lastMonth", "Last Month"],
 ];
+const resolveKitchenSchedulesRange = (key) => {
+  if (key === "all") return ["2000-01-01", "2099-12-31"];
+  return resolveDateRange(key);
+};
 
 const EMPTY_FORM = { work: "", staff: "", date: "", department: "", status: "", lastRate: "" };
 
@@ -35,12 +44,16 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
   const { toast } = useToast();
   const location = useLocation();
 
-  const [statusFilter, setStatusFilter] = useState(location.state?.status || "");
+  const [statusFilters, setStatusFilters] = useState(() =>
+    location.state?.status ? new Set([location.state.status]) : new Set()
+  );
+  const toggleSet = (setter, val) =>
+    setter(prev => { const next = new Set(prev); next.has(val) ? next.delete(val) : next.add(val); return next; });
   const [searchText, setSearchText] = useState("");
-  const today = format(new Date(), "yyyy-MM-dd");
+  const today = todayStr();
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
-  const [activePreset, setActivePreset] = useState("Today");
+  const [activePreset, setActivePreset] = useState("today");
   const [show, setShow] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState({});
@@ -48,17 +61,22 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
   const list = adminData.kitchenSchedules || [];
 
   const filteredList = useMemo(() => list.filter(item => {
-    const matchStatus = !statusFilter || (item.status || "").toLowerCase() === statusFilter.toLowerCase();
+    const matchStatus = statusFilters.size === 0 || statusFilters.has(item.status || "");
     const q = searchText.toLowerCase();
     const matchSearch = !q || (item.work || "").toLowerCase().includes(q) || (item.staff || "").toLowerCase().includes(q);
     const d = item.date || "";
     const matchDate = d >= fromDate && d <= toDate;
     return matchStatus && matchSearch && matchDate;
-  }), [list, statusFilter, searchText, fromDate, toDate]);
+  }), [list, statusFilters, searchText, fromDate, toDate]);
 
   // ── Handlers
 
-  const applyPreset = (p) => { const [f, t] = p.fn(); setFromDate(f); setToDate(t); setActivePreset(p.label); };
+  const applyPreset = (key) => {
+    const [f, t] = resolveKitchenSchedulesRange(key);
+    setFromDate(f);
+    setToDate(t);
+    setActivePreset(key);
+  };
 
   const add = async () => {
     const errs = {};
@@ -170,31 +188,37 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
         <div className="filter-group">
           <input className="search-input" placeholder=" Search work / staff…" value={searchText} onChange={e => setSearchText(e.target.value)} />
           <div className="filter-group">
-            <span className="filter-group-label">from</span>
-            <CustomDatePicker label="From" value={fromDate} max={toDate}
-              onChange={s => { setFromDate(s); if (s > toDate) setToDate(s); setActivePreset("custom"); }} />
-            <span className="filter-group-label">to</span>
-            <CustomDatePicker label="To" value={toDate} min={fromDate}
-              onChange={s => { setToDate(s); setActivePreset("custom"); }} />
+            <DateRangeGroup
+              from={fromDate}
+              to={toDate}
+              onChangeFrom={setFromDate}
+              onChangeTo={setToDate}
+              preset={activePreset}
+              onChangePreset={setActivePreset}
+              presets={PERIOD_PRESETS}
+              fromLabel="from"
+              toLabel="to"
+              pickerFromLabel="From"
+              pickerToLabel="To"
+              showPresets={false}
+              pickerLabels
+            />
 
-            <div className="filter-group">
-              <span className="filter-group-label">period</span>
-              {PRESETS.map(p => (
-                <button key={p.label} className={`filter-pill${activePreset === p.label ? " active" : ""}`} onClick={() => applyPreset(p)}>
-                  {p.label}
-                </button>
-              ))}
-            </div>
+            <PillGroup
+              label="period"
+              options={PERIOD_PRESETS}
+              value={activePreset}
+              onChange={applyPreset}
+              toggle={false}
+            />
           </div>
 
-          <div className="filter-group">
-            <span className="filter-group-label">status</span>
-            {["", "Scheduled", "Completed", "Pending"].map(s => (
-              <button key={s} className={`filter-pill${statusFilter === s ? " active" : ""}`} onClick={() => setStatusFilter(s)}>
-                {s || "All"}
-              </button>
-            ))}
-          </div>
+          <MultiPillGroup
+            label="status"
+            options={["Scheduled", "Completed", "Pending"].map(s => [s, s])}
+            value={statusFilters}
+            onToggle={(key) => toggleSet(setStatusFilters, key)}
+          />
         </div>
       </div>
 

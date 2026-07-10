@@ -12,6 +12,7 @@ import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
+import { MultiPillGroup } from "../../components/FilterBar";
 
 import "./StaffModules.css";
 
@@ -40,7 +41,9 @@ export default function StaffCareer() {
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(null);
   const [careerSearch, setCareerSearch] = useState("");
-  const [careerRoleFilter, setCareerRoleFilter] = useState("");
+  const [careerRoleFilters, setCareerRoleFilters] = useState(new Set());
+  const toggleSet = (setter, val) =>
+    setter(prev => { const next = new Set(prev); next.has(val) ? next.delete(val) : next.add(val); return next; });
   const [form, setForm] = useState({ role: "", description: "", experience: "" });
   const [formErrors, setFormErrors] = useState({});
 
@@ -70,7 +73,7 @@ export default function StaffCareer() {
   const filteredJobs = jobs.filter(j => {
     const q = careerSearch.toLowerCase();
     const matchSearch = !q || (j.role || "").toLowerCase().includes(q) || (j.description || "").toLowerCase().includes(q);
-    const matchRole = !careerRoleFilter || j.role === careerRoleFilter;
+    const matchRole = careerRoleFilters.size === 0 || careerRoleFilters.has(j.role);
     return matchSearch && matchRole;
   });
 
@@ -105,15 +108,14 @@ export default function StaffCareer() {
             value={careerSearch}
             onChange={e => setCareerSearch(e.target.value)}
           />
-          <div className="filter-group">
-            <span className="filter-group-label">Role</span>
-            {["", ...roles].map(r => (
-              <button key={r} className={`filter-pill${careerRoleFilter === r ? " active" : ""}`}
-                onClick={() => setCareerRoleFilter(r)}>{r || "All"}</button>
-            ))}
-          </div>
-          {(careerSearch || careerRoleFilter) && (
-            <button className="ae-clear-filter" onClick={() => { setCareerSearch(""); setCareerRoleFilter(""); }}>Clear</button>
+          <MultiPillGroup
+            label="Role"
+            options={roles.map(r => [r, r])}
+            value={careerRoleFilters}
+            onToggle={(key) => toggleSet(setCareerRoleFilters, key)}
+          />
+          {(careerSearch || careerRoleFilters.size > 0) && (
+            <button className="ae-clear-filter" onClick={() => { setCareerSearch(""); setCareerRoleFilters(new Set()); }}>Clear</button>
           )}
           <span className="result-count">{filteredJobs.length} opening(s)</span>
         </div>

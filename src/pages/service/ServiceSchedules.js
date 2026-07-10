@@ -37,12 +37,12 @@ const PRESETS = [
     label: "This Week",
     fn: () => {
       const now = new Date();
-      // Sunday = 0, Saturday = 6
-      const sunday = new Date(now);
-      sunday.setDate(now.getDate() - now.getDay());
-      const saturday = new Date(sunday);
-      saturday.setDate(sunday.getDate() + 6);
-      return [fmt(sunday), fmt(saturday)];
+      // Monday of the current week → today (not out to Sunday), matching
+      // the shared dateRangeUtils.getWeekRange() convention used elsewhere.
+      const day = now.getDay(); // 0=Sun
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+      return [fmt(monday), fmt(now)];
     }
   },
   {
@@ -50,7 +50,15 @@ const PRESETS = [
     fn: () => {
       const now = new Date();
       const first = new Date(now.getFullYear(), now.getMonth(), 1);
-      const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      return [fmt(first), fmt(now)];
+    }
+  },
+  {
+    label: "Last Month",
+    fn: () => {
+      const now = new Date();
+      const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const last = new Date(now.getFullYear(), now.getMonth(), 0);
       return [fmt(first), fmt(last)];
     }
   },

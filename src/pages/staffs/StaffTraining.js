@@ -12,6 +12,7 @@ import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
+import { MultiPillGroup } from "../../components/FilterBar";
 
 import "./StaffModules.css";
 import PageLoader from "../../components/PageLoader";
@@ -32,7 +33,9 @@ export default function StaffTraining({ adminData, setAdminData }) {
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(null);
   const [trainingSearch, setTrainingSearch] = useState("");
-  const [trainingTypeFilter, setTrainingTypeFilter] = useState("");
+  const [trainingTypeFilters, setTrainingTypeFilters] = useState(new Set());
+  const toggleSet = (setter, val) =>
+    setter(prev => { const next = new Set(prev); next.has(val) ? next.delete(val) : next.add(val); return next; });
   const [form, setForm] = useState({
     staffId: "", role: "", duration: "", type: "", certificate: ""
   });
@@ -94,7 +97,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
       (t.role || "").toLowerCase().includes(q) ||
       (t.staffName || "").toLowerCase().includes(q) ||
       (t.type || "").toLowerCase().includes(q);
-    const matchType = !trainingTypeFilter || t.type === trainingTypeFilter;
+    const matchType = trainingTypeFilters.size === 0 || trainingTypeFilters.has(t.type);
     return matchSearch && matchType;
   });
 
@@ -131,15 +134,14 @@ export default function StaffTraining({ adminData, setAdminData }) {
             value={trainingSearch}
             onChange={e => setTrainingSearch(e.target.value)}
           />
-          <div className="filter-group">
-            <span className="filter-group-label">Type</span>
-            {["", "Online", "Training", "Internship", "Workshop"].map(t => (
-              <button key={t} className={`filter-pill${trainingTypeFilter === t ? " active" : ""}`}
-                onClick={() => setTrainingTypeFilter(t)}>{t || "All"}</button>
-            ))}
-          </div>
-          {(trainingSearch || trainingTypeFilter) && (
-            <button className="ae-clear-filter" onClick={() => { setTrainingSearch(""); setTrainingTypeFilter(""); }}>Clear</button>
+          <MultiPillGroup
+            label="Type"
+            options={["Online", "Training", "Internship", "Workshop"].map(t => [t, t])}
+            value={trainingTypeFilters}
+            onToggle={(key) => toggleSet(setTrainingTypeFilters, key)}
+          />
+          {(trainingSearch || trainingTypeFilters.size > 0) && (
+            <button className="ae-clear-filter" onClick={() => { setTrainingSearch(""); setTrainingTypeFilters(new Set()); }}>Clear</button>
           )}
           <span className="result-count">{filteredTrainings.length} record(s)</span>
         </div>

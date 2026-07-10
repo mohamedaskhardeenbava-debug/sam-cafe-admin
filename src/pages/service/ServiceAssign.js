@@ -15,6 +15,7 @@ import deleteIcon from "../../icon/delete-icon.png";
 import closeIcon from "../../icon/close-icon.png";
 import Button3D from "../../components/Button3D";
 import CustomDropdown from "../../components/CustomDropdown";
+import { MultiPillGroup } from "../../components/FilterBar";
 
 import "./ServiceAssign.css";
 import PageLoader from "../../components/PageLoader";
@@ -136,7 +137,9 @@ export default function ServiceAssign({ adminData, setAdminData }) {
   }, []);
 
   const [assignSearch, setAssignSearch] = useState("");
-  const [sectionFilter, setSectionFilter] = useState("all");
+  const [sectionFilters, setSectionFilters] = useState(new Set());
+  const toggleSet = (setter, val) =>
+    setter(prev => { const next = new Set(prev); next.has(val) ? next.delete(val) : next.add(val); return next; });
   const [listView, setListView] = useState(false);
 
   const assignedDay = adminData.serviceAssign?.[tomorrow] || {};
@@ -145,12 +148,12 @@ export default function ServiceAssign({ adminData, setAdminData }) {
     const q = assignSearch.toLowerCase();
     const result = {};
     Object.entries(tasks).forEach(([sec, items]) => {
-      if (sectionFilter !== "all" && sec !== sectionFilter) return;
+      if (sectionFilters.size > 0 && !sectionFilters.has(sec)) return;
       const filtered = (items || []).filter(t => !q || t.toLowerCase().includes(q));
       if (filtered.length) result[sec] = filtered;
     });
     return result;
-  }, [tasks, assignSearch, sectionFilter]);
+  }, [tasks, assignSearch, sectionFilters]);
   if (!adminData?.staff?.length) return <PageLoader label="Loading assignments…" />;
 
   const assignedCount = Object.values(assignedDay).filter(v => v?.staff).length;
@@ -290,17 +293,15 @@ export default function ServiceAssign({ adminData, setAdminData }) {
             value={assignSearch}
             onChange={e => setAssignSearch(e.target.value)}
           />
-          <div className="filter-group">
-            <span className="filter-group-label">Section</span>
-            {[["all", "All"], ...Object.keys(tasks).map(s => [s, SECTION_META[s]?.label || s])].map(([k, lbl]) => (
-              <button key={k}
-                className={`filter-pill${sectionFilter === k ? " active" : ""}`}
-                onClick={() => setSectionFilter(k)}>{lbl}</button>
-            ))}
-          </div>
-          {(assignSearch || sectionFilter !== "all") && (
+          <MultiPillGroup
+            options={Object.keys(tasks).map(s => [s, SECTION_META[s]?.label || s])}
+            value={sectionFilters}
+            onToggle={(key) => toggleSet(setSectionFilters, key)}
+            label="Section"
+          />
+          {(assignSearch || sectionFilters.size > 0) && (
             <button className="ae-clear-filter"
-              onClick={() => { setAssignSearch(""); setSectionFilter("all"); }}>Clear</button>
+              onClick={() => { setAssignSearch(""); setSectionFilters(new Set()); }}>Clear</button>
           )}
         </div>
       </div>

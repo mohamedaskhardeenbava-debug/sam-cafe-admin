@@ -11,6 +11,7 @@ import api from "../../api";
 import { getTodayKey, getTodayFormatted } from "../../App";
 import { useToast } from "../../useToast";
 import Button3D from "../../components/Button3D";
+import { MultiPillGroup } from "../../components/FilterBar";
 
 import "./ServiceMise.css";
 
@@ -39,7 +40,9 @@ export default function ServiceMise({ adminData, setAdminData }) {
   const tasks = adminData.tasks?.service || {};
 
   const [miseSearch, setMiseSearch] = useState("");
-  const [sectionFilter, setSectionFilter] = useState("all");
+  const [sectionFilters, setSectionFilters] = useState(new Set());
+  const toggleSet = (setter, val) =>
+    setter(prev => { const next = new Set(prev); next.has(val) ? next.delete(val) : next.add(val); return next; });
 
   const miseDay = adminData.serviceMise?.[today] || {};
 
@@ -47,12 +50,12 @@ export default function ServiceMise({ adminData, setAdminData }) {
     const q = miseSearch.toLowerCase();
     const result = {};
     Object.entries(tasks).forEach(([sec, items]) => {
-      if (sectionFilter !== "all" && sec !== sectionFilter) return;
+      if (sectionFilters.size > 0 && !sectionFilters.has(sec)) return;
       const filtered = (items || []).filter(t => !q || t.toLowerCase().includes(q));
       if (filtered.length) result[sec] = filtered;
     });
     return result;
-  }, [tasks, miseSearch, sectionFilter]);
+  }, [tasks, miseSearch, sectionFilters]);
 
   const allTasks = Object.values(tasks).flat();
   const verifiedCnt = allTasks.filter(t => miseDay[t]?.verified).length;
@@ -140,17 +143,15 @@ export default function ServiceMise({ adminData, setAdminData }) {
             value={miseSearch}
             onChange={e => setMiseSearch(e.target.value)}
           />
-          <div className="filter-group">
-            <span className="filter-group-label">Section</span>
-            {[["all", "All"], ...Object.keys(tasks).map(s => [s, SECTION_META[s]?.label || s])].map(([k, lbl]) => (
-              <button key={k}
-                className={`filter-pill${sectionFilter === k ? " active" : ""}`}
-                onClick={() => setSectionFilter(k)}>{lbl}</button>
-            ))}
-          </div>
-          {(miseSearch || sectionFilter !== "all") && (
+          <MultiPillGroup
+            options={Object.keys(tasks).map(s => [s, SECTION_META[s]?.label || s])}
+            value={sectionFilters}
+            onToggle={(key) => toggleSet(setSectionFilters, key)}
+            label="Section"
+          />
+          {(miseSearch || sectionFilters.size > 0) && (
             <button className="ae-clear-filter"
-              onClick={() => { setMiseSearch(""); setSectionFilter("all"); }}>Clear</button>
+              onClick={() => { setMiseSearch(""); setSectionFilters(new Set()); }}>Clear</button>
           )}
         </div>
       </div>
