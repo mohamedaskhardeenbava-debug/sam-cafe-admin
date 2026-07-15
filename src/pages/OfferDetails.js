@@ -47,14 +47,28 @@ const OfferDetails = ({ adminData, setAdminData }) => {
   if (!localOffer) return <PageLoader label="Loading offer…" />;
 
   const selectedDish = allDishes.find(d => d.id === localOffer.dishId);
-  const originalPrice = selectedDish?.basePrice || localOffer.originalPrice || 0;
-  const offerAmount = (originalPrice * (localOffer.percentage || 0)) / 100;
-  const offerPrice = originalPrice - offerAmount;
+  const originalPrice = Math.round(selectedDish?.basePrice || localOffer.originalPrice || 0);
+  const isFlat = localOffer.discountType === "flat";
+  // Flat discounts are clamped to the dish's price so a mistyped flat
+  // amount can never push the offer price below zero.
+  const offerAmount = isFlat
+    ? Math.round(Math.min(Number(localOffer.flatAmount) || 0, originalPrice))
+    : Math.round((originalPrice * (Number(localOffer.percentage) || 0)) / 100);
+  const offerPrice = Math.round(originalPrice - offerAmount);
 
   /* ---------------- SAVE ---------------- */
   const persistOffer = async () => {
+    // Every offer always carries a `percentage`, even flat ones — it's
+    // derived from the flat amount so any code reading offer.percentage
+    // downstream (e.g. the user-panel pricing helpers) keeps working.
+    const derivedPercentage = isFlat
+      ? Math.round((offerAmount / (originalPrice || 1)) * 100)
+      : Number(localOffer.percentage) || 0;
+
     const payload = {
       ...localOffer,
+      percentage: derivedPercentage,
+      ...(isFlat ? { flatAmount: Number(localOffer.flatAmount) || 0 } : {}),
       originalPrice,
       offerAmount,
       offerPrice
@@ -132,22 +146,57 @@ const OfferDetails = ({ adminData, setAdminData }) => {
             )}
           </div>
 
-          {/* PERCENTAGE */}
+          {/* DISCOUNT TYPE */}
           <div className="section">
             <div className="section-title">
-              <span>Offer %</span>
+              <span>Discount Type</span>
             </div>
 
             {isEditing ? (
-              <input
-                className="mat-input"
-                placeholder=" "
-                type="number"
-                value={localOffer.percentage}
-                onChange={(e) => setLocalOffer({ ...localOffer, percentage: Number(e.target.value) })}
+              <CustomDropdown
+                label="Discount Type"
+                value={localOffer.discountType || "percentage"}
+                onChange={(val) => setLocalOffer({ ...localOffer, discountType: val })}
+                options={[
+                  { value: "percentage", label: "Percentage (%)" },
+                  { value: "flat", label: "Flat Amount (₹)" }
+                ]}
+                placeholder="Select Discount Type"
               />
             ) : (
-              <p>{localOffer.percentage}%</p>
+              <p>{isFlat ? "Flat Amount" : "Percentage"}</p>
+            )}
+          </div>
+
+          {/* DISCOUNT VALUE */}
+          <div className="section">
+            <div className="section-title">
+              <span>{isFlat ? "Flat Discount (₹)" : "Offer %"}</span>
+            </div>
+
+            {isEditing ? (
+              isFlat ? (
+                <input
+                  className="mat-input"
+                  placeholder=" "
+                  type="number"
+                  min="1"
+                  value={localOffer.flatAmount || ""}
+                  onChange={(e) => setLocalOffer({ ...localOffer, flatAmount: Number(e.target.value) })}
+                />
+              ) : (
+                <input
+                  className="mat-input"
+                  placeholder=" "
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={localOffer.percentage}
+                  onChange={(e) => setLocalOffer({ ...localOffer, percentage: Number(e.target.value) })}
+                />
+              )
+            ) : (
+              <p>{isFlat ? `₹${localOffer.flatAmount ?? offerAmount}` : `${localOffer.percentage}%`}</p>
             )}
           </div>
 
@@ -164,7 +213,7 @@ const OfferDetails = ({ adminData, setAdminData }) => {
                   <td>₹{originalPrice}</td>
                 </tr>
                 <tr>
-                  <td>Discount</td>
+                  <td>{isFlat ? "Flat Discount" : "Discount"}</td>
                   <td>₹{offerAmount}</td>
                 </tr>
                 <tr>

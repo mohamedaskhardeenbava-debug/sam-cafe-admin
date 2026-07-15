@@ -27,6 +27,16 @@ import "../ModalCSS.css";
 import "./PreviewModal.css";
 import PageLoader from "../../components/PageLoader";
 
+const CollapseChevron = ({ collapsed }) => (
+  <svg
+    width="16" height="16" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+    style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", transition: "transform 0.25s ease" }}
+  >
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
 const pad = (n) => String(n).padStart(2, "0");
 
 const SLOT_GROUPS = [
@@ -566,7 +576,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
 ══════════════════════════════════════════════ */
 const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFilters }) => {
   // ── State & Setup
-
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const { fromDate: filterFromDate, toDate: filterToDate, preset: filterDatePreset, slots: filterSlots, statuses: filterStatuses, search } = filters;
 
   // ── Helpers
@@ -717,86 +727,105 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
     <div className="inner-page">
 
       {/* HEADER */}
-      <div className="evt-header">
+      <div className="evt-header" style={{ position: "relative" }}>
+        <button
+          type="button"
+          onClick={() => setHeaderCollapsed(prev => !prev)}
+          title={headerCollapsed ? "Expand header" : "Collapse header"}
+          style={{
+            position: "absolute", top: 6, right: 6, zIndex: 2,
+            width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center",
+            borderRadius: "50%", border: "1px solid rgba(0,0,0,0.12)", background: "rgba(255,255,255,0.9)",
+            cursor: "pointer", color: "#333"
+          }}
+        >
+          <CollapseChevron collapsed={headerCollapsed} />
+        </button>
         <div>
           <h2 className="evt-title">PreBookings</h2>
           <p className="evt-subtitle">Manage pre-orders &amp; advance bookings</p>
         </div>
-        {/* KPI STRIP */}
-        <div className="evt-kpi-row">
-          {[
-            { label: "Total", val: filteredData.length, color: "#111" },
-            { label: "Pending", val: pendingCount, color: "#ca8a04" },
-            { label: "Confirmed", val: confirmedCount, color: "#16a34a" },
-            { label: "Completed", val: completedCount, color: "#2980b9" },
-            { label: "Cancelled", val: cancelledCount, color: "#dc2626" },
-          ].map((k, i) => (
-            <div key={i} className="evt-kpi" style={{ borderTopColor: k.color }}>
-              <div className="evt-kpi-val" style={{ color: k.color }}>{k.val}</div>
-              <div className="evt-kpi-label">{k.label}</div>
+        {!headerCollapsed && (
+          <>
+            {/* KPI STRIP */}
+            <div className="evt-kpi-row">
+              {[
+                { label: "Total", val: filteredData.length, color: "#111" },
+                { label: "Pending", val: pendingCount, color: "#ca8a04" },
+                { label: "Confirmed", val: confirmedCount, color: "#16a34a" },
+                { label: "Completed", val: completedCount, color: "#2980b9" },
+                { label: "Cancelled", val: cancelledCount, color: "#dc2626" },
+              ].map((k, i) => (
+                <div key={i} className="evt-kpi" style={{ borderTopColor: k.color }}>
+                  <div className="evt-kpi-val" style={{ color: k.color }}>{k.val}</div>
+                  <div className="evt-kpi-label">{k.label}</div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <div className="header-btn-container">
-          <Button3D onClick={handleExport}>Export</Button3D>
-          <Button3D onClick={() => setShowAddModal(true)}>+ Add PreBooking</Button3D>
-        </div>
+            <div className="header-btn-container">
+              <Button3D onClick={handleExport}>Export</Button3D>
+              <Button3D onClick={() => setShowAddModal(true)}>+ Add PreBooking</Button3D>
+            </div>
+          </>
+        )}
       </div>
 
       {/* FILTER BAR */}
-      <div className="filter-bar">
-        <div className="filter-groups">
-          <input className="search-input" placeholder="Search name / mobile / ID..."
-            value={search} onChange={(e) => setSearch(e.target.value)} />
+      {!headerCollapsed && (
+        <div className="filter-bar">
+          <div className="filter-groups">
+            <input className="search-input" placeholder="Search name / mobile / ID..."
+              value={search} onChange={(e) => setSearch(e.target.value)} />
 
-          <DateRangeGroup
-            from={filterFromDate}
-            to={filterToDate}
-            onChangeFrom={setFilterFromDate}
-            onChangeTo={setFilterToDate}
-            preset={filterDatePreset}
-            onChangePreset={setFilterDatePreset}
-            presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
-            fromLabel="From"
-            toLabel="To"
-            periodLabel="period"
-            noMax
-          />
-          {(filterFromDate || filterToDate) && (
-            <button className="filter-pill" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
-          )}
+            <DateRangeGroup
+              from={filterFromDate}
+              to={filterToDate}
+              onChangeFrom={setFilterFromDate}
+              onChangeTo={setFilterToDate}
+              preset={filterDatePreset}
+              onChangePreset={setFilterDatePreset}
+              presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
+              fromLabel="From"
+              toLabel="To"
+              periodLabel="period"
+              noMax
+            />
+            {(filterFromDate || filterToDate) && (
+              <button className="filter-pill" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
+            )}
+          </div>
+
+          <div className="filter-groups">
+            <MultiPillGroup
+              label="Slot"
+              options={SLOT_GROUPS.map(sg => [sg.key, sg.short, "", `${sg.label} (${sg.start}–${sg.end})`])}
+              value={filterSlots}
+              onToggle={(key) => toggleSet(setFilterSlots, key)}
+            />
+
+            <MultiPillGroup
+              label="Status"
+              options={[
+                ["pending", "P", "clb-status-pending", "Pending"],
+                ["confirmed", "C", "clb-status-confirmed", "Confirmed"],
+                ["completed", "D", "clb-status-completed", "Done"],
+                ["cancelled", "X", "clb-status-cancelled", "Cancelled"],
+              ]}
+              value={filterStatuses}
+              onToggle={(key) => toggleSet(setFilterStatuses, key)}
+            />
+
+            {activeFilters && (
+              <button className="evt-clb-clear-btn" onClick={onResetFilters}>
+                Clear
+              </button>
+            )}
+          </div>
         </div>
-
-        <div className="filter-groups">
-          <MultiPillGroup
-            label="Slot"
-            options={SLOT_GROUPS.map(sg => [sg.key, sg.short, "", `${sg.label} (${sg.start}–${sg.end})`])}
-            value={filterSlots}
-            onToggle={(key) => toggleSet(setFilterSlots, key)}
-          />
-
-          <MultiPillGroup
-            label="Status"
-            options={[
-              ["pending", "P", "clb-status-pending", "Pending"],
-              ["confirmed", "C", "clb-status-confirmed", "Confirmed"],
-              ["completed", "D", "clb-status-completed", "Done"],
-              ["cancelled", "X", "clb-status-cancelled", "Cancelled"],
-            ]}
-            value={filterStatuses}
-            onToggle={(key) => toggleSet(setFilterStatuses, key)}
-          />
-
-          {activeFilters && (
-            <button className="evt-clb-clear-btn" onClick={onResetFilters}>
-              Clear
-            </button>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* TABLE */}
-      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 300px)" }} ref={containerRef}>
+      <div className="table-wrapper" ref={containerRef}>
         <table >
           <thead>
             <tr>

@@ -11,7 +11,7 @@ import { createPortal } from "react-dom";
 import { formatDisplayDate } from "../App";
 import { formatIndianTime } from "../App";
 import socket from "../socket";
-import { printBill as sendBillToPrinter } from "../printUtils";
+import { printBill as sendBillToPrinter, printKot as sendKotToPrinter } from "../printUtils";
 import { CustomDatePicker } from "../components/CustomDatePicker";
 import { todayStr, getWeekRange as sharedWeekRange, getMonthRange as sharedMonthRange, getLastMonthRange as sharedLastMonthRange } from "../utils/dateRangeUtils";
 import useInfiniteScroll from "../components/useInfiniteScroll";
@@ -314,7 +314,8 @@ const ItemTimer = React.memo(({ item, order }) => {
 
   const isDone =
     item.status === "completed" ||
-    item.status === "service pickup";
+    item.status === "service pickup" ||
+    item.status === "cancelled";
 
   useEffect(() => {
     if (isDone) return;
@@ -383,7 +384,7 @@ const OrderRow = React.memo(({
         <td>{order.items.length}</td>
         <td>₹{order.resolvedTotal}</td>
         <td onClick={(e) => e.stopPropagation()}>
-          {orderStatus !== "completed" ? (
+          {orderStatus !== "completed" && orderStatus !== "cancelled" ? (
             <input
               type="checkbox"
               checked={order.priority || false}
@@ -441,6 +442,22 @@ const OrderRow = React.memo(({
       <tr className={`order-sub-row ${isActive ? "open" : ""}`}>
         <td colSpan={11}>
           <div className="order-sub-content">
+            {normalizeStatus(order.status) === "cancelled" && order.cancelReason && (
+              <div
+                className="cancel-reason-banner"
+                style={{
+                  background: "#fff0ee",
+                  border: "1px solid #f5b7b1",
+                  color: "#c0392b",
+                  borderRadius: "8px",
+                  padding: "8px 12px",
+                  marginBottom: "10px",
+                  fontSize: "14px"
+                }}
+              >
+                <strong>Cancellation Reason:</strong> {order.cancelReason}
+              </div>
+            )}
             <table className="order-items-table">
               <thead>
                 <tr>
@@ -490,15 +507,14 @@ const OrderRow = React.memo(({
                     {order.status === "preparing" && (
                       <td>
                         {item.status === "preparing" && (
-                          <button
-                            className="pickup-btn"
+                          <Button3D
                             onClick={(e) => {
                               e.stopPropagation();
                               onPickup({ orderId: order.id, itemIndex: idx, item });
                             }}
                           >
                             Order Pickup
-                          </button>
+                          </Button3D>
                         )}
                       </td>
                     )}
@@ -618,6 +634,8 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
   const [previewBillOrder, setPreviewBillOrder] = useState(null);
   const [editableBill, setEditableBill] = useState(null);
   const [menuPos, setMenuPos] = useState(null);
+  const [cancelOrderConfirm, setCancelOrderConfirm] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
   const tableWrapperRef = useRef(null);
 
 
@@ -756,7 +774,8 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
   const { displayLimit, sentinelRef, hasMore } =
     useInfiniteScroll(sortedOrders.length, 50, tableWrapperRef.current);
 
-  const deriveOrderStatusFromItems = useCallback((items) => {
+  const deriveOrderStatusFromItems = useCallback((items, currentStatus) => {
+    if (normalizeStatus(currentStatus) === "cancelled") return "cancelled";
     if (items.every(i => i.status === "completed")) return "completed";
     if (items.some(i => i.status === "preparing" || i.status === "service pickup"))
       return "preparing";
@@ -822,6 +841,8 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
 
         const updatedOrders = prev.orders.map(order => {
 
+          if (normalizeStatus(order.status) === "cancelled") return order;
+
           let orderChanged = false;
           const start = new Date(order.createdAt).getTime();
 
@@ -844,7 +865,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
             return item;
           });
 
-          const newStatus = deriveOrderStatusFromItems(items);
+          const newStatus = deriveOrderStatusFromItems(items, order.status);
 
           if (!orderChanged && newStatus === order.status) return order;
 
@@ -943,9 +964,20 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
   };
 
   const printBill = async (order) => {
-    const cgst = +(order.resolvedTotal * 0.025).toFixed(2);
-    const sgst = +(order.resolvedTotal * 0.025).toFixed(2);
-    const total = +(order.resolvedTotal * 1.05).toFixed(2);
+    // previewBillOrder / editableBill (built via recalcOrderTotals) already
+    // carry a correct totalWithGST object computed from the actual line
+    // items. Orders coming straight from the table only have
+    // `resolvedTotal`. Prefer the former — recomputing from
+    // resolvedTotal when it's missing (e.g. after a bill edit) was
+    // silently producing NaN/undefined totals that never made it to the
+    // printer.
+    const totalWithGST = order.totalWithGST || (() => {
+      const subTotal = Number(order.resolvedTotal || 0);
+      const cgst = +(subTotal * 0.025).toFixed(2);
+      const sgst = +(subTotal * 0.025).toFixed(2);
+      const total = +(subTotal + cgst + sgst).toFixed(2);
+      return { subTotal, cgst, sgst, total };
+    })();
 
     // Shape must match what bridge.js's printBill() expects:
     // order.items[].{dishName, quantity, totalPrice} + order.totalWithGST
@@ -963,19 +995,70 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
         selectedSize: item.selectedSize,
         spiciness: item.spiciness
       })),
-      totalWithGST: {
-        subTotal: order.resolvedTotal,
-        cgst,
-        sgst,
-        total
-      },
-      upiUrl: buildUpiUrl(total)
+      totalWithGST,
+      upiUrl: buildUpiUrl(totalWithGST.total)
     };
 
     const result = await sendBillToPrinter(socket, printerOrder);
     if (!result.success) {
       toast.error(result.error || "Failed to print bill");
       console.error("Bill print failed:", result.error);
+    }
+  };
+
+  const printKot = async (order) => {
+    const printerOrder = {
+      id: order.id,
+      date: order.date,
+      time: order.time,
+      tableNo: order.tableNo,
+      staffName: order.staffName,
+      items: order.items.map(item => ({
+        dishName: item.dishName,
+        quantity: item.quantity,
+        selectedSize: item.selectedSize,
+        spiciness: item.spiciness,
+        notes: item.notes
+      }))
+    };
+
+    const result = await sendKotToPrinter(socket, printerOrder);
+    if (!result.success) {
+      toast.error(result.error || "Failed to print KOT");
+      console.error("KOT print failed:", result.error);
+    }
+  };
+
+  const cancelOrder = async (order, reason) => {
+    const updatedOrder = {
+      ...order,
+      status: "cancelled",
+      cancelReason: reason.trim(),
+      cancelledAt: new Date().toISOString(),
+      items: order.items.map(item => ({
+        ...item,
+        status: "cancelled"
+      }))
+    };
+
+    // 1. INSTANT UI UPDATE
+    setAdminData(prev => ({
+      ...prev,
+      orders: prev.orders.map(o => (o.id === order.id ? updatedOrder : o))
+    }));
+
+    // 2. BACKEND UPDATE
+    try {
+      await persistOrderEverywhere(updatedOrder);
+      socket.emit("data-change", {
+        resource: "orders",
+        action: "updated",
+        payload: updatedOrder
+      });
+      toast.success("Order cancelled");
+    } catch (err) {
+      toast.error("Failed to cancel order");
+      console.error("Failed to cancel order", err);
     }
   };
 
@@ -1159,36 +1242,37 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
           </Button3D>
         </div>
 
-        <div className="orders-header-div">
-          <div className="orders-filter">
-            <button
-              type="button"
-              className={`filter-pill${datePreset === "today" ? " active" : ""}`}
-              onClick={() => applyPreset("today")}
-            >
-              Today
-            </button>
-            <button
-              type="button"
-              className={`filter-pill${datePreset === "week" ? " active" : ""}`}
-              onClick={() => applyPreset("week")}
-            >
-              This Week
-            </button>
-            <button
-              type="button"
-              className={`filter-pill${datePreset === "month" ? " active" : ""}`}
-              onClick={() => applyPreset("month")}
-            >
-              This Month
-            </button>
-            <button
-              type="button"
-              className={`filter-pill${datePreset === "lastmonth" ? " active" : ""}`}
-              onClick={() => applyPreset("lastmonth")}
-            >
-              Last Month
-            </button>
+        <div className="filter-group">
+          <button
+            type="button"
+            className={`filter-pill${datePreset === "today" ? " active" : ""}`}
+            onClick={() => applyPreset("today")}
+          >
+            Today
+          </button>
+          <button
+            type="button"
+            className={`filter-pill${datePreset === "week" ? " active" : ""}`}
+            onClick={() => applyPreset("week")}
+          >
+            This Week
+          </button>
+          <button
+            type="button"
+            className={`filter-pill${datePreset === "month" ? " active" : ""}`}
+            onClick={() => applyPreset("month")}
+          >
+            This Month
+          </button>
+          <button
+            type="button"
+            className={`filter-pill${datePreset === "lastmonth" ? " active" : ""}`}
+            onClick={() => applyPreset("lastmonth")}
+          >
+            Last Month
+          </button>
+
+          <div>
             <CustomDatePicker
               label="From"
               value={fromDate}
@@ -1204,64 +1288,65 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
             />
           </div>
 
-          <div className="orders-dropdown-wrapper">
-            <button
-              className="orders-status-dropdown"
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpenModeDropdown(prev => !prev);
-              }}
-            >
-              {modeFilter === "all" ? "All Modes" : modeFilter}
-            </button>
+          <div>
+            <div className="orders-dropdown-wrapper">
+              <button
+                className="orders-status-dropdown"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenModeDropdown(prev => !prev);
+                }}
+              >
+                {modeFilter === "all" ? "All Modes" : modeFilter}
+              </button>
 
-            {openModeDropdown && (
-              <div className="dropdown-menu">
-                {["all", "dine in", "take away"].map(mode => (
-                  <div
-                    key={mode}
-                    onClick={() => {
-                      setModeFilter(mode);
-                      setOpenModeDropdown(false);
-                    }}
-                  >
-                    {mode === "all" ? "All Modes" : mode}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+              {openModeDropdown && (
+                <div className="dropdown-menu">
+                  {["all", "dine in", "take away"].map(mode => (
+                    <div
+                      key={mode}
+                      onClick={() => {
+                        setModeFilter(mode);
+                        setOpenModeDropdown(false);
+                      }}
+                    >
+                      {mode === "all" ? "All Modes" : mode}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="orders-dropdown-wrapper">
+              <button
+                className="orders-status-dropdown"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenStatusDropdown(prev => !prev);
+                }}
+              >
+                {statusFilter === "all" ? "All Status" : statusFilter}
+              </button>
 
-          <div className="orders-dropdown-wrapper">
-            <button
-              className="orders-status-dropdown"
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpenStatusDropdown(prev => !prev);
-              }}
-            >
-              {statusFilter === "all" ? "All Status" : statusFilter}
-            </button>
-
-            {openStatusDropdown && (
-              <div className="dropdown-menu">
-                {["all", "placed", "preparing", "service pickup", "completed"].map(status => (
-                  <div
-                    key={status}
-                    onClick={() => {
-                      setStatusFilter(status);
-                      setOpenStatusDropdown(false);
-                    }}
-                  >
-                    {status === "all" ? "All Status" : status}
-                  </div>
-                ))}
-              </div>
-            )}
+              {openStatusDropdown && (
+                <div className="dropdown-menu">
+                  {["all", "placed", "preparing", "service pickup", "completed", "cancelled"].map(status => (
+                    <div
+                      key={status}
+                      onClick={() => {
+                        setStatusFilter(status);
+                        setOpenStatusDropdown(false);
+                      }}
+                    >
+                      {status === "all" ? "All Status" : status}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-
       </div>
+
 
       <div className="orders-table-wrapper" ref={tableWrapperRef}>
         <table className="orders-table">
@@ -1333,7 +1418,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
               <EmptyRow colSpan={11} message="No orders for selected date range" />
             ) : (
               sortedOrders.slice(0, displayLimit).map(order => {
-                const orderStatus = deriveOrderStatusFromItems(order.items);
+                const orderStatus = deriveOrderStatusFromItems(order.items, order.status);
                 return (
                   <OrderRow
                     key={order.id}
@@ -1389,15 +1474,14 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
             )}
 
             <div className="pickup-actions">
-              <button
-                className="btn-cancel"
+              <Button3D
+                variant="cancel"
                 onClick={() => setPickupConfirm(null)}
               >
                 Cancel
-              </button>
+              </Button3D>
 
-              <button
-                className="btn-confirm"
+              <Button3D
                 onClick={() => {
                   const { orderId, itemIndex } = pickupConfirm;
 
@@ -1425,7 +1509,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
                         };
                       });
 
-                      const newStatus = deriveOrderStatusFromItems(items);
+                      const newStatus = deriveOrderStatusFromItems(items, o.status);
 
                       const updated = {
                         ...o,
@@ -1447,7 +1531,61 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
                 }}
               >
                 Confirm
-              </button>
+              </Button3D>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cancelOrderConfirm && (
+        <div
+          className="pickup-overlay"
+          onClick={() => setCancelOrderConfirm(null)}
+        >
+          <div
+            className="pickup-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>Cancel Order {cancelOrderConfirm.id}</h3>
+            <p>Are you sure you want to cancel this order? Please provide a reason.</p>
+
+            <textarea
+              className="cancel-reason-textarea"
+              placeholder="Reason for cancellation..."
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              autoFocus
+              style={{
+                width: "100%",
+                minHeight: "80px",
+                marginTop: "10px",
+                padding: "8px",
+                borderRadius: "6px",
+                border: "1px solid #d1d5db",
+                boxSizing: "border-box",
+                resize: "vertical",
+                fontFamily: "inherit"
+              }}
+            />
+
+            <div className="pickup-actions">
+              <Button3D
+                variant="cancel"
+                onClick={() => setCancelOrderConfirm(null)}
+              >
+                Back
+              </Button3D>
+
+              <Button3D
+                disabled={!cancelReason.trim()}
+                onClick={async () => {
+                  await cancelOrder(cancelOrderConfirm, cancelReason);
+                  setCancelOrderConfirm(null);
+                  setCancelReason("");
+                }}
+              >
+                Confirm Cancel
+              </Button3D>
             </div>
           </div>
         </div>
@@ -1502,6 +1640,34 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
             >
               Print
             </div>
+
+            <div
+              onClick={(e) => {
+                closeOptionsMenu();
+                e.stopPropagation();
+                printKot(orders.find(o => o.id === openMenuOrderId));
+              }}
+            >
+              Print KOT
+            </div>
+
+            {normalizeStatus(
+              orders.find(o => o.id === openMenuOrderId)?.status
+            ) !== "cancelled" && (
+                <div
+                  className="danger-option"
+                  style={{ color: "#c0392b", fontWeight: 600 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const selectedOrder = orders.find(o => o.id === openMenuOrderId);
+                    closeOptionsMenu();
+                    setCancelReason("");
+                    setCancelOrderConfirm(selectedOrder);
+                  }}
+                >
+                  Cancel Order
+                </div>
+              )}
           </div>,
           document.body
         )
@@ -1509,7 +1675,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
 
       {editBillOrder && (
         <div className="overlay">
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
             <BillLayout
               onClose={closeAllBillOverlays}
               order={editableBill}
@@ -1547,7 +1713,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
               }}
             />
 
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <button className="modal-cancel-btn" onClick={() => setEditBillOrder(null)}>
                 <span class="shadow"></span>
                 <span class="edge"></span>
@@ -1601,14 +1767,14 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
 
       {previewBillOrder && (
         <div className="overlay">
-          <div className="modal">
+          <div className="admin-modal">
             <BillLayout
               onClose={closeAllBillOverlays}
               order={previewBillOrder}
               buildUpiUrl={buildUpiUrl}
             />
 
-            <div className="modal-footer">
+            <div className="admin-modal-footer">
               <button
                 className="modal-confirm-btn"
                 onClick={() => {

@@ -61,6 +61,8 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
   const [isEditing, setIsEditing] = useState(false);
   // Temp buffer for ingredients (still needed because of add/delete row logic)
   const [editingIngredients, setEditingIngredients] = useState(null);
+  // Temp buffer for variants (same add/delete row logic as ingredients)
+  const [editingVariants, setEditingVariants] = useState(null);
 
   const disabledIngredientsForThisDish = adminData.ingredients
     .filter(ing =>
@@ -156,21 +158,33 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
     setEditingIngredients(prev => prev.filter((_, i) => i !== index));
   };
 
+  /* ---------------- VARIANT CRUD ---------------- */
+  const addVariant = () => {
+    setEditingVariants(prev => [...prev, { name: "", extraCharge: 0 }]);
+  };
+
+  const deleteVariant = (index) => {
+    setEditingVariants(prev => prev.filter((_, i) => i !== index));
+  };
+
   const startEditing = () => {
     setEditingIngredients(JSON.parse(JSON.stringify(localDish.ingredients)));
+    setEditingVariants(JSON.parse(JSON.stringify(localDish.variants || [])));
     setIsEditing(true);
   };
 
   const cancelEditing = () => {
     setIsEditing(false);
     setEditingIngredients(null);
+    setEditingVariants(null);
     if (dish) setLocalDish(JSON.parse(JSON.stringify(dish)));
   };
 
   const saveAll = async () => {
     const updatedDish = {
       ...localDish,
-      ingredients: editingIngredients
+      ingredients: editingIngredients,
+      variants: editingVariants
     };
     await persistDish(updatedDish);
   };
@@ -539,6 +553,85 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
             )
           )}
         </div>
+
+        {/* VARIANTS */}
+        {!(fromOrder && orderItem?.isCustomized) && (
+          <div className="section">
+            <div className="section-title"><span>Variants</span></div>
+
+            {isEditing ? (
+              <>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Variant Name</th>
+                      <th>Extra Charge</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {editingVariants.map((v, index) => (
+                      <tr key={index}>
+                        <td>
+                          <input
+                            type="text"
+                            value={v.name}
+                            onChange={(e) => {
+                              const updated = [...editingVariants];
+                              updated[index].name = e.target.value;
+                              setEditingVariants(updated);
+                            }}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            value={v.extraCharge}
+                            onChange={(e) => {
+                              const updated = [...editingVariants];
+                              updated[index].extraCharge = Number(e.target.value);
+                              setEditingVariants(updated);
+                            }}
+                          />
+                        </td>
+                        <td>
+                          <div
+                            className="modal-danger-btn"
+                            onClick={() => deleteVariant(index)}
+                          >
+                            <span className="shadow"></span>
+                            <span className="edge"></span>
+                            <span className="front close-padding">Remove</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <Button3D onClick={addVariant}>+ Add Variant</Button3D>
+              </>
+            ) : (
+              (localDish.variants || []).length === 0 ? (
+                <p>No variants available</p>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr><th>Variant Name</th><th>Extra Charge</th></tr>
+                  </thead>
+                  <tbody>
+                    {localDish.variants.map((v, index) => (
+                      <tr key={index}>
+                        <td>{v.name}</td>
+                        <td>₹{v.extraCharge}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )
+            )}
+          </div>
+        )}
 
         {disabledIngredientsForThisDish.length > 0 && (
           <div className="section">

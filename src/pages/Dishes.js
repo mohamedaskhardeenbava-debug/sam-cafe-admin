@@ -49,7 +49,8 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       fibre: "",
       fat: ""
     },
-    ingredients: []
+    ingredients: [],
+    variants: []
   });
 
   const availableIngredients = (adminData.ingredients || [])
@@ -82,13 +83,19 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
         fibre: "",
         fat: ""
       },
-      ingredients: []
+      ingredients: [],
+      variants: []
     });
 
     setIngredientForm({
       name: "",
       quantity: "",
       calories: ""
+    });
+
+    setVariantForm({
+      name: "",
+      extraCharge: ""
     });
 
     setDishImagePreview("");
@@ -255,7 +262,8 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
         fat: Number(newDish.benefits.fat || 0)
       },
 
-      ingredients: newDish.ingredients
+      ingredients: newDish.ingredients,
+      variants: newDish.variants
     };
 
     try {
@@ -418,6 +426,44 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     calories: ""
   });
 
+  const [variantForm, setVariantForm] = useState({
+    name: "",
+    extraCharge: ""
+  });
+
+  const handleAddVariant = () => {
+    if (!variantForm.name.trim()) return;
+
+    const exists = newDish.variants.some(
+      v => v.name.trim().toLowerCase() === variantForm.name.trim().toLowerCase()
+    );
+
+    if (exists) {
+      setFormErrors(p => ({ ...p, variantName: true }));
+      return;
+    }
+
+    setNewDish(prev => ({
+      ...prev,
+      variants: [
+        ...prev.variants,
+        {
+          name: variantForm.name.trim(),
+          extraCharge: Number(variantForm.extraCharge || 0)
+        }
+      ]
+    }));
+
+    setVariantForm({ name: "", extraCharge: "" });
+  };
+
+  const handleRemoveVariant = (index) => {
+    setNewDish(prev => ({
+      ...prev,
+      variants: prev.variants.filter((_, i) => i !== index)
+    }));
+  };
+
   const handleAddIngredient = () => {
     if (!ingredientForm.name) return;
 
@@ -473,9 +519,16 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 key={sub.id}
                 className={`filter-pill ${selectedCategoryIds.includes(sub.id) ? "active" : ""
                   }`}
-                onClick={() => setSelectedCategoryIds([sub.id])}
+                onClick={() =>
+                  setSelectedCategoryIds(prev =>
+                    prev.includes(sub.id)
+                      ? prev.filter(id => id !== sub.id)
+                      : [...prev, sub.id]
+                  )
+                }
               >
                 {sub.name}
+                <span className="filter-pill-count">{(sub.dishes || []).length}</span>
               </button>
 
             ));
@@ -488,12 +541,25 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               key={cat.id}
               className={`filter-pill ${selectedCategoryIds.includes(cat.id) ? "active" : ""
                 }`}
-              onClick={() => setSelectedCategoryIds([cat.id])}
+              onClick={() =>
+                setSelectedCategoryIds(prev =>
+                  prev.includes(cat.id)
+                    ? prev.filter(id => id !== cat.id)
+                    : [...prev, cat.id]
+                )
+              }
             >
               {cat.name}
+              <span className="filter-pill-count">{(cat.dishes || []).length}</span>
             </button>
           );
         })}
+
+        {selectedCategoryIds.length > 0 && (
+          <span className="result-count">
+            {sortedDishes.length} dish{sortedDishes.length === 1 ? "" : "es"}
+          </span>
+        )}
       </div>
 
       <div className="table-wrapper dish-page-table" ref={containerRef}>
@@ -811,6 +877,70 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                     </table>
                   )}
 
+                </div>
+              </div>
+
+              {/* VARIANT INPUT */}
+
+              <div className="admin-form-group">
+                <label htmlFor="">Variants</label>
+                <div className="border form-group">
+                  <div className="admin-form-group">
+                    <div className="mat">
+                      <input
+                        className={`mat-input${formErrors.variantName ? " mat-error" : ""}`}
+                        placeholder=" "
+                        value={variantForm.name}
+                        onChange={(e) => {
+                          setVariantForm({ ...variantForm, name: e.target.value });
+                          setFormErrors(p => ({ ...p, variantName: false }));
+                        }}
+                      />
+                      <label className={`mat-label${formErrors.variantName ? " mat-label-error" : ""}`}>Variant Name</label>
+                      <span className={`mat-bar${formErrors.variantName ? " mat-bar-error" : ""}`} />
+                    </div>
+                  </div>
+
+                  <div className="admin-form-group">
+                    <div className="mat">
+                      <input
+                        className="mat-input"
+                        placeholder=" "
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={variantForm.extraCharge}
+                        onChange={(e) => setVariantForm({ ...variantForm, extraCharge: e.target.value })}
+                      />
+                      <label className="mat-label">Extra Charge</label>
+                      <span className="mat-bar" />
+                    </div>
+                  </div>
+
+                  <Button3D onClick={handleAddVariant}>Add Variant</Button3D>
+                  {newDish.variants.length > 0 && (
+                    <table className="preview-table">
+                      <thead>
+                        <tr>
+                          <th>Variant</th>
+                          <th>Extra Charge</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {newDish.variants.map((v, index) => (
+                          <tr key={index}>
+                            <td>{v.name}</td>
+                            <td>₹{v.extraCharge}</td>
+                            <td>
+                              <Button3D variant="danger" iconOnly onClick={() => handleRemoveVariant(index)}>Remove</Button3D>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </div>
 

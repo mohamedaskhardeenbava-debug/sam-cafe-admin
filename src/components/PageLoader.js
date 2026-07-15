@@ -51,27 +51,11 @@ export default function PageLoader({ label = "Loading…", inline = false }) {
   }
 
   return (
-    <div className="pl-page" role="status" aria-label={label}>
+    <div className="pl-page">
 
-      {/* Cooking animation */}
-      <div className="pl-cooking" aria-hidden="true">
-        <div className="pl-bubble" />
-        <div className="pl-bubble" />
-        <div className="pl-bubble" />
-        <div className="pl-bubble" />
-        <div className="pl-bubble" />
-        <div className="pl-area">
-          <div className="pl-sides">
-            <div className="pl-pan" />
-            <div className="pl-handle" />
-          </div>
-          <div className="pl-pancake">
-            <div className="pl-pastry" />
-          </div>
-        </div>
-      </div>
+      <span class="loaderpan"></span>
 
-      <p className="pl-label">{label}</p>
+      {/* <span class="loaderpantop"></span> */}
 
     </div>
   );

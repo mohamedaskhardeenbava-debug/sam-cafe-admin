@@ -112,6 +112,13 @@ const OrderDetails = ({ orders, menu }) => {
                   </td>
                   <td><strong>Customer Name:</strong> {order.userName ?? "-"}</td>
                 </tr>
+                {normalizeStatus(order.status) === "cancelled" && order.cancelReason && (
+                  <tr>
+                    <td colSpan={2}>
+                      <strong>Cancellation Reason:</strong> {order.cancelReason}
+                    </td>
+                  </tr>
+                )}
                 <tr>
                   <td><strong>Mode:</strong> {order.mode}</td>
                   <td><strong>Table No:</strong> {order.tableNo ?? "-"}</td>

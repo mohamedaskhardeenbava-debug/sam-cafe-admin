@@ -231,7 +231,7 @@
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   z-index: 9999;
-  width: 100px;
+  width: 120px;
 }
 
 .options-menu.portal {
@@ -535,7 +535,7 @@
   background: #fff;
   padding: 24px;
   border-radius: 16px;
-  width: 320px;
+  width: 480px;
   text-align: center;
 }
 

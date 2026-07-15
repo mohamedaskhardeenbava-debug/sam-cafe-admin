@@ -90,6 +90,7 @@ textarea {
   outline: none;
   border-radius: 4px;
   border: 1px solid var(--color-offwhite);
+  resize: none !important;
 }
 
 input[type="number"]::-webkit-outer-spin-button,
@@ -201,6 +202,7 @@ label {
   color: #888;
   font-weight: 500;
   white-space: nowrap;
+  margin-left: auto;
 }
 
 .header-btn-container {

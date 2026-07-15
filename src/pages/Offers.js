@@ -43,7 +43,9 @@ const Offers = ({ adminData, setAdminData }) => {
   const [newOffer, setNewOffer] = useState({
     dishId: "",
     categoryId: "",
+    discountType: "percentage", // "percentage" | "flat"
     percentage: "",
+    flatAmount: "",
     startDate: "",
     endDate: "",
     active: "yes"
@@ -60,11 +62,16 @@ const Offers = ({ adminData, setAdminData }) => {
 
   const selectedDish = allDishes.find(d => d.id === newOffer.dishId);
 
-  const originalPrice = selectedDish?.basePrice || 0;
-  const offerAmount = Math.floor((originalPrice * newOffer.percentage) / 100 || 0);
-  const offerPrice = Math.floor(originalPrice - offerAmount);
+  const originalPrice = Math.round(selectedDish?.basePrice || 0);
+  const isFlat = newOffer.discountType === "flat";
+  // Flat discounts are clamped to the dish's price so a mistyped flat
+  // amount can never push the offer price below zero.
+  const offerAmount = isFlat
+    ? Math.round(Math.min(Number(newOffer.flatAmount) || 0, originalPrice))
+    : Math.round((originalPrice * (Number(newOffer.percentage) || 0)) / 100);
+  const offerPrice = Math.round(originalPrice - offerAmount);
 
-  const EMPTY_OFFER = { dishId: "", categoryId: "", percentage: "", startDate: "", endDate: "", active: "yes" };
+  const EMPTY_OFFER = { dishId: "", categoryId: "", discountType: "percentage", percentage: "", flatAmount: "", startDate: "", endDate: "", active: "yes" };
 
   const applyOfferPreset = (preset) => {
     setOfferDatePreset(preset);
@@ -75,15 +82,28 @@ const Offers = ({ adminData, setAdminData }) => {
   const handleSave = async () => {
     const errs = {};
     if (!newOffer.dishId) errs.dishId = true;
-    if (!newOffer.percentage) errs.percentage = true;
+    if (isFlat) {
+      if (!newOffer.flatAmount) errs.flatAmount = true;
+    } else {
+      if (!newOffer.percentage) errs.percentage = true;
+    }
     if (!newOffer.startDate) errs.startDate = true;
     if (!newOffer.endDate) errs.endDate = true;
     if (!newOffer.active) errs.active = true;
     if (Object.keys(errs).length) { setFormErrors(errs); return; }
 
+    // Every offer always carries a `percentage`, even flat ones — it's
+    // derived from the flat amount so any code reading offer.percentage
+    // downstream (e.g. the user-panel pricing helpers) keeps working.
+    const derivedPercentage = isFlat
+      ? Math.round((offerAmount / (originalPrice || 1)) * 100)
+      : Number(newOffer.percentage) || 0;
+
     const payload = {
       id: `offer_${Date.now()}`,
       ...newOffer,
+      percentage: derivedPercentage,
+      ...(isFlat ? { flatAmount: Number(newOffer.flatAmount) || 0 } : {}),
       originalPrice,
       offerAmount,
       offerPrice
@@ -136,7 +156,7 @@ const Offers = ({ adminData, setAdminData }) => {
     const rows = filteredOffers.map(o => ({
       Dish: o.dishId || "—",
       "Original Price (₹)": o.originalPrice ?? "—",
-      "Discount %": o.percentage ? `${o.percentage}%` : "—",
+      Discount: o.discountType === "flat" ? `₹${o.flatAmount ?? o.offerAmount ?? 0} flat` : (o.percentage ? `${o.percentage}%` : "—"),
       "Offer Amount (₹)": o.offerAmount ?? "—",
       "Offer Price (₹)": o.offerPrice ?? "—",
       "Start Date": formatDisplayDate(o.startDate) || "—",
@@ -209,7 +229,7 @@ const Offers = ({ adminData, setAdminData }) => {
             <tr>
               <th>Dish</th>
               <th>Original</th>
-              <th>%</th>
+              <th>Discount</th>
               <th>Offer Price</th>
               <th>Start Date</th>
               <th>End Date</th>
@@ -232,7 +252,7 @@ const Offers = ({ adminData, setAdminData }) => {
                   </span>
                 </td>
                 <td>{o.originalPrice}</td>
-                <td>{o.percentage}%</td>
+                <td>{o.discountType === "flat" ? `₹${o.flatAmount ?? o.offerAmount} flat` : `${o.percentage}%`}</td>
                 <td>{o.offerPrice}</td>
                 <td>{formatDisplayDate(o.startDate)}</td>
                 <td>{formatDisplayDate(o.endDate)}</td>
@@ -289,22 +309,56 @@ const Offers = ({ adminData, setAdminData }) => {
 
                 {/* OFFER % */}
                 <div className="admin-form-group">
-                  <div className="mat">
-                    <input
-                      className={`mat-input${formErrors.percentage ? " mat-error" : ""}`}
-                      placeholder=" "
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={newOffer.percentage}
-                      onChange={(e) => {
-                        setNewOffer({ ...newOffer, percentage: Number(e.target.value) });
-                        setFormErrors(p => ({ ...p, percentage: false }));
-                      }}
-                    />
-                    <label className={`mat-label${formErrors.percentage ? " mat-label-error" : ""}`}>Offer Percentage (%)<span className="rf-req">*</span></label>
-                    <span className={`mat-bar${formErrors.percentage ? " mat-bar-error" : ""}`} />
-                  </div>
+                  <CustomDropdown
+                    label="Discount Type"
+                    value={newOffer.discountType}
+                    onChange={val => {
+                      setNewOffer({ ...newOffer, discountType: val });
+                      setFormErrors(p => ({ ...p, percentage: false, flatAmount: false }));
+                    }}
+                    options={[
+                      { value: "percentage", label: "Percentage (%)" },
+                      { value: "flat", label: "Flat Amount (₹)" }
+                    ]}
+                    placeholder="Select Discount Type"
+                  />
+                </div>
+
+                <div className="admin-form-group">
+                  {isFlat ? (
+                    <div className="mat">
+                      <input
+                        className={`mat-input${formErrors.flatAmount ? " mat-error" : ""}`}
+                        placeholder=" "
+                        type="number"
+                        min="1"
+                        value={newOffer.flatAmount}
+                        onChange={(e) => {
+                          setNewOffer({ ...newOffer, flatAmount: Number(e.target.value) });
+                          setFormErrors(p => ({ ...p, flatAmount: false }));
+                        }}
+                      />
+                      <label className={`mat-label${formErrors.flatAmount ? " mat-label-error" : ""}`}>Flat Discount (₹)<span className="rf-req">*</span></label>
+                      <span className={`mat-bar${formErrors.flatAmount ? " mat-bar-error" : ""}`} />
+                    </div>
+                  ) : (
+                    <div className="mat">
+                      <input
+                        className={`mat-input${formErrors.percentage ? " mat-error" : ""}`}
+                        placeholder=" "
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={newOffer.percentage}
+                        onChange={(e) => {
+                          setNewOffer({ ...newOffer, percentage: Number(e.target.value) });
+                          setFormErrors(p => ({ ...p, percentage: false }));
+                        }}
+                      />
+                      <label className={`mat-label${formErrors.percentage ? " mat-label-error" : ""}`}>Offer Percentage (%)<span className="rf-req">*</span></label>
+                      <span className={`mat-bar${formErrors.percentage ? " mat-bar-error" : ""}`} />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -319,7 +373,7 @@ const Offers = ({ adminData, setAdminData }) => {
                   </div>
 
                   <div>
-                    <span>Discount</span>
+                    <span>{isFlat ? "Flat Discount" : "Discount"}</span>
                     <strong>₹{offerAmount}</strong>
                   </div>
 

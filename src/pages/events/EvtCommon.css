@@ -90,6 +90,7 @@
   flex-wrap: wrap;
   gap: 6px 16px;
   align-items: center;
+  width: 100%;
 }
 
 .filter-group {
