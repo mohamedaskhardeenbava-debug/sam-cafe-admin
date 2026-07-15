@@ -242,6 +242,7 @@ label {
   min-height: 0;
   width: 100%;
   overflow: auto;
+  overflow-x: auto;
   padding: 0 10px;
   background: #e9e9e9;
   border-radius: 20px;
@@ -253,7 +254,7 @@ label {
   border-collapse: separate;
   border-spacing: 0 5px;
   background: transparent;
-  table-layout: fixed;
+  /* table-layout: fixed; */
 }
 
 .table-wrapper table thead {
@@ -1085,6 +1086,11 @@ th.sorted .sort-arrow {
   scrollbar-color: #9ca3af #f1f1f1;
 }
 
+.table-wrapper table th:not(.icon-width),
+.table-wrapper table td:not(.icon-width) {
+  min-width: 150px !important;
+}
+
 
 .ae-clear-filter {
   padding: 5px 12px !important;
@@ -1115,11 +1121,11 @@ th.sorted .sort-arrow {
     width: 100% !important;
   }
 
-  .table-wrapper tableth {
+  .table-wrapper table th {
     font-size: 12px;
   }
 
-  .table-wrapper tabletd {
+  .table-wrapper table td {
     font-size: 12px;
   }
 
