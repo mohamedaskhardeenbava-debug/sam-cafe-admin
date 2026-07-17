@@ -11,6 +11,7 @@ import { DateRangeGroup } from "../../components/FilterBar";
 import { todayStr, getWeekRange, getMonthRange, getLastMonthRange } from "../../utils/dateRangeUtils";
 
 import { useToast } from "../../useToast";
+import { allowTextInput } from "../../App";
 import closeIcon from "../../icon/close-icon.png";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
@@ -59,6 +60,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
   }, []);
 
   const [selected, setSelected] = useState(null);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [showMemo, setShowMemo] = useState(false);
   const [memo, setMemo] = useState({ staffId: "", text: "" });
   const [memoErrors, setMemoErrors] = useState({});
@@ -182,7 +184,18 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
       {/* HEADER */}
       <div className="header">
         <div>
-          <h2 className="title">Service Grooming</h2>
+          <div className="header-title-row">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+            </button>
+            <h2 className="title">Service Grooming</h2>
+          </div>
           <p className="subtitle">Uniform · Shoes · Grooming</p>
         </div>
         <div className="header-btn-container">
@@ -192,87 +205,89 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
       </div>
 
       {/* FILTER BAR */}
-      <div className="filter-bar">
-        <div className="filter-group">
-          {/* SEARCH WITH DROPDOWN */}
-          <div className="sgroom-search-wrap" ref={searchRef}>
-            <input
-              className="search-input"
-              placeholder=" Search staff…"
-              value={sgroomSearch}
-              onChange={e => { setSgroomSearch(e.target.value); setSearchOpen(true); }}
-              onFocus={() => setSearchOpen(true)}
-            />
-            {searchOpen && staffStats.length > 0 && (
-              <div className="sgroom-search-dropdown">
-                {staffStats
-                  .filter(s =>
+      {!headerCollapsed && (
+        <div className="filter-bar">
+          <div className="filter-group">
+            {/* SEARCH WITH DROPDOWN */}
+            <div className="sgroom-search-wrap" ref={searchRef}>
+              <input
+                className="search-input"
+                placeholder=" Search staff…"
+                value={sgroomSearch}
+                onChange={e => { setSgroomSearch(allowTextInput(sgroomSearch, e.target.value, 100, 5)); setSearchOpen(true); }}
+                onFocus={() => setSearchOpen(true)}
+              />
+              {searchOpen && staffStats.length > 0 && (
+                <div className="sgroom-search-dropdown">
+                  {staffStats
+                    .filter(s =>
+                      s.name.toLowerCase().includes(sgroomSearch.toLowerCase()) ||
+                      (s.role || "").toLowerCase().includes(sgroomSearch.toLowerCase())
+                    )
+                    .map((s, i) => (
+                      <div
+                        key={s.id}
+                        className="sgroom-search-suggestion"
+                        onMouseDown={() => {
+                          setSgroomSearch(s.name);
+                          setSearchOpen(false);
+                        }}
+                      >
+                        <div className="sgroom-sug-avatar" style={{ background: `hsl(${i * 55 + 200},70%,55%)` }}>
+                          {s.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="sgroom-sug-info">
+                          <span className="sgroom-sug-name">{s.name}</span>
+                          {s.role && <span className="sgroom-sug-role">{s.role}</span>}
+                        </div>
+                        <div className="sgroom-sug-bar-wrap">
+                          <div
+                            className="sgroom-sug-bar"
+                            style={{
+                              width: `${s.pct}%`,
+                              background: s.pct >= 80 ? "#16a34a" : s.pct >= 50 ? "#f59e0b" : "#dc2626"
+                            }}
+                          />
+                        </div>
+                        <span
+                          className="sgroom-sug-pct"
+                          style={{ color: s.pct >= 80 ? "#16a34a" : s.pct >= 50 ? "#f59e0b" : "#dc2626" }}
+                        >{s.pct}%</span>
+                      </div>
+                    ))}
+                  {staffStats.filter(s =>
                     s.name.toLowerCase().includes(sgroomSearch.toLowerCase()) ||
                     (s.role || "").toLowerCase().includes(sgroomSearch.toLowerCase())
-                  )
-                  .map((s, i) => (
-                    <div
-                      key={s.id}
-                      className="sgroom-search-suggestion"
-                      onMouseDown={() => {
-                        setSgroomSearch(s.name);
-                        setSearchOpen(false);
-                      }}
-                    >
-                      <div className="sgroom-sug-avatar" style={{ background: `hsl(${i * 55 + 200},70%,55%)` }}>
-                        {s.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="sgroom-sug-info">
-                        <span className="sgroom-sug-name">{s.name}</span>
-                        {s.role && <span className="sgroom-sug-role">{s.role}</span>}
-                      </div>
-                      <div className="sgroom-sug-bar-wrap">
-                        <div
-                          className="sgroom-sug-bar"
-                          style={{
-                            width: `${s.pct}%`,
-                            background: s.pct >= 80 ? "#16a34a" : s.pct >= 50 ? "#f59e0b" : "#dc2626"
-                          }}
-                        />
-                      </div>
-                      <span
-                        className="sgroom-sug-pct"
-                        style={{ color: s.pct >= 80 ? "#16a34a" : s.pct >= 50 ? "#f59e0b" : "#dc2626" }}
-                      >{s.pct}%</span>
-                    </div>
-                  ))}
-                {staffStats.filter(s =>
-                  s.name.toLowerCase().includes(sgroomSearch.toLowerCase()) ||
-                  (s.role || "").toLowerCase().includes(sgroomSearch.toLowerCase())
-                ).length === 0 && (
-                    <div className="sgroom-search-no-result">No staff found</div>
-                  )}
-              </div>
+                  ).length === 0 && (
+                      <div className="sgroom-search-no-result">No staff found</div>
+                    )}
+                </div>
+              )}
+            </div>
+            <DateRangeGroup
+              from={sgroomFrom}
+              to={sgroomTo}
+              onChangeFrom={setSgroomFrom}
+              onChangeTo={setSgroomTo}
+              preset={sgroomPreset}
+              onChangePreset={applyPreset}
+              presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
+              periodLabel="period"
+              max={today}
+              toggle={false}
+            />
+            {(sgroomSearch || sgroomPreset === "custom") && (
+              <button className="ae-clear-filter" onClick={() => { setSgroomSearch(""); applyPreset("week"); }}>Clear</button>
             )}
+            <span className="result-count">{visibleDates.length} day(s) · {visibleStaff.length} staff</span>
           </div>
-          <DateRangeGroup
-            from={sgroomFrom}
-            to={sgroomTo}
-            onChangeFrom={setSgroomFrom}
-            onChangeTo={setSgroomTo}
-            preset={sgroomPreset}
-            onChangePreset={applyPreset}
-            presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
-            periodLabel="period"
-            max={today}
-            toggle={false}
-          />
-          {(sgroomSearch || sgroomPreset === "custom") && (
-            <button className="ae-clear-filter" onClick={() => { setSgroomSearch(""); applyPreset("week"); }}>Clear</button>
-          )}
-          <span className="result-count">{visibleDates.length} day(s) · {visibleStaff.length} staff</span>
         </div>
-      </div>
+      )}
 
       {/* SUMMARY CARDS REMOVED — now shown in search dropdown */}
 
       {/* TABLE */}
-      <div className="table-wrapper" ref={containerRef}>
+      <div className={`table-wrapper${headerCollapsed ? " header-is-collapsed" : ""}`} ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -406,7 +421,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
                     className={`mat-input mat-textarea${memoErrors.text ? " mat-error" : ""}`}
                     placeholder=" "
                     value={memo.text}
-                    onChange={e => { setMemo({ ...memo, text: e.target.value }); setMemoErrors(p => ({ ...p, text: false })); }}
+                    onChange={e => { setMemo({ ...memo, text: allowTextInput(memo.text, e.target.value, 500, 100000) }); setMemoErrors(p => ({ ...p, text: false })); }}
                     rows={4}
                   />
                   <label className={`mat-label${memoErrors.text ? " mat-label-error" : ""}`}>Memo Note<span className="rf-req">*</span></label>

@@ -15,6 +15,7 @@ import { todayStr } from "../../utils/dateRangeUtils";
 
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
+import { allowTextInput } from "../../App";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
@@ -29,9 +30,9 @@ import PageLoader from "../../components/PageLoader";
 
 const CollapseChevron = ({ collapsed }) => (
   <svg
+    className={`header-collapse-icon${collapsed ? " collapsed" : ""}`}
     width="16" height="16" viewBox="0 0 24 24" fill="none"
     stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-    style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", transition: "transform 0.25s ease" }}
   >
     <polyline points="6 9 12 15 18 9" />
   </svg>
@@ -337,7 +338,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                 <div className="admin-form-group">
                   <div className="mat">
                     <input className={`mat-input${errors.name ? " mat-error" : ""}`} placeholder=" "
-                      value={form.name} onChange={e => { setF("name", e.target.value); setErrors(p => ({ ...p, name: false })); }} />
+                      value={form.name} onChange={e => { setF("name", allowTextInput(form.name, e.target.value, 100, 5)); setErrors(p => ({ ...p, name: false })); }} />
                     <label className={`mat-label${errors.name ? " mat-label-error" : ""}`}>Name <span className="evt-pre-req">*</span></label>
                     <span className={`mat-bar${errors.name ? " mat-bar-error" : ""}`} />
                   </div>
@@ -436,7 +437,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
               <div className="admin-form-group">
                 <div className="mat-area">
                   <textarea className="mat-input mat-textarea" rows={2} placeholder=" "
-                    value={form.notes} onChange={e => setF("notes", e.target.value)} />
+                    value={form.notes} onChange={e => setF("notes", allowTextInput(form.notes, e.target.value, 500, 100000))} />
                   <label className="mat-area-label">Notes (optional)</label>
                   <span className="mat-area-bar" />
                 </div>
@@ -727,23 +728,20 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
     <div className="inner-page">
 
       {/* HEADER */}
-      <div className="evt-header" style={{ position: "relative" }}>
-        <button
-          type="button"
-          onClick={() => setHeaderCollapsed(prev => !prev)}
-          title={headerCollapsed ? "Expand header" : "Collapse header"}
-          style={{
-            position: "absolute", top: 6, right: 6, zIndex: 2,
-            width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center",
-            borderRadius: "50%", border: "1px solid rgba(0,0,0,0.12)", background: "rgba(255,255,255,0.9)",
-            cursor: "pointer", color: "#333"
-          }}
-        >
-          <CollapseChevron collapsed={headerCollapsed} />
-        </button>
-        <div>
-          <h2 className="evt-title">PreBookings</h2>
-          <p className="evt-subtitle">Manage pre-orders &amp; advance bookings</p>
+      <div className="evt-header">
+        <div className="header-title-row">
+          <button
+            type="button"
+            className="header-collapse-btn"
+            onClick={() => setHeaderCollapsed(prev => !prev)}
+            title={headerCollapsed ? "Expand header" : "Collapse header"}
+          >
+            <CollapseChevron collapsed={headerCollapsed} />
+          </button>
+          <div>
+            <h2 className="evt-title">PreBookings</h2>
+            <p className="evt-subtitle">Manage pre-orders &amp; advance bookings</p>
+          </div>
         </div>
         {!headerCollapsed && (
           <>
@@ -775,7 +773,7 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
         <div className="filter-bar">
           <div className="filter-groups">
             <input className="search-input" placeholder="Search name / mobile / ID..."
-              value={search} onChange={(e) => setSearch(e.target.value)} />
+              value={search} onChange={(e) => setSearch(allowTextInput(search, e.target.value, 100, 5))} />
 
             <DateRangeGroup
               from={filterFromDate}

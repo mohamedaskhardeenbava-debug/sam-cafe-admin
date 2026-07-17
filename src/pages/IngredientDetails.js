@@ -324,7 +324,7 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
               onChange={(e) =>
                 setLocalIngredient({
                   ...localIngredient,
-                  description: e.target.value
+                  description: allowTextInput(localIngredient.description, e.target.value, 500, 100000)
                 })
               }
             />
@@ -542,7 +542,7 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
               onChange={(e) =>
                 setLocalIngredient({
                   ...localIngredient,
-                  history: e.target.value
+                  history: allowTextInput(localIngredient.history, e.target.value, 500, 100000)
                 })
               }
             />

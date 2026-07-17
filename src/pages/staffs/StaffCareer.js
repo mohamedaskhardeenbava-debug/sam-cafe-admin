@@ -10,6 +10,7 @@ import api from "../../api";
 
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
+import { allowTextInput } from "../../App";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
 import { MultiPillGroup } from "../../components/FilterBar";
@@ -39,6 +40,7 @@ export default function StaffCareer() {
   const { toast } = useToast();
   const [jobs, setJobs] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [selected, setSelected] = useState(null);
   const [careerSearch, setCareerSearch] = useState("");
   const [careerRoleFilters, setCareerRoleFilters] = useState(new Set());
@@ -92,7 +94,18 @@ export default function StaffCareer() {
 
       {/* HEADER */}
       <div className="header">
-        <h2 className="title">Career</h2>
+        <div className="header-title-row">
+          <button
+            type="button"
+            className="header-collapse-btn"
+            onClick={() => setHeaderCollapsed(prev => !prev)}
+            title={headerCollapsed ? "Expand header" : "Collapse header"}
+            aria-expanded={!headerCollapsed}
+          >
+            <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+          </button>
+          <h2 className="title">Career</h2>
+        </div>
         <div className="header-btn-container">
           <Button3D onClick={exportJobs}>Export</Button3D>
           <Button3D onClick={() => setShowForm(true)}>+ Add Job Vacancy</Button3D>
@@ -100,26 +113,28 @@ export default function StaffCareer() {
       </div>
 
       {/* FILTER BAR */}
-      <div className="filter-bar">
-        <div className="filter-groups">
-          <input
-            className="search-input"
-            placeholder=" Search role or description…"
-            value={careerSearch}
-            onChange={e => setCareerSearch(e.target.value)}
-          />
-          <MultiPillGroup
-            label="Role"
-            options={roles.map(r => [r, r])}
-            value={careerRoleFilters}
-            onToggle={(key) => toggleSet(setCareerRoleFilters, key)}
-          />
-          {(careerSearch || careerRoleFilters.size > 0) && (
-            <button className="ae-clear-filter" onClick={() => { setCareerSearch(""); setCareerRoleFilters(new Set()); }}>Clear</button>
-          )}
-          <span className="result-count">{filteredJobs.length} opening(s)</span>
+      {!headerCollapsed && (
+        <div className="filter-bar">
+          <div className="filter-groups">
+            <input
+              className="search-input"
+              placeholder=" Search role or description…"
+              value={careerSearch}
+              onChange={e => setCareerSearch(allowTextInput(careerSearch, e.target.value, 100, 5))}
+            />
+            <MultiPillGroup
+              label="Role"
+              options={roles.map(r => [r, r])}
+              value={careerRoleFilters}
+              onToggle={(key) => toggleSet(setCareerRoleFilters, key)}
+            />
+            {(careerSearch || careerRoleFilters.size > 0) && (
+              <button className="ae-clear-filter" onClick={() => { setCareerSearch(""); setCareerRoleFilters(new Set()); }}>Clear</button>
+            )}
+            <span className="result-count">{filteredJobs.length} opening(s)</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* EMPTY STATE */}
       {filteredJobs.length === 0 && (
@@ -131,7 +146,7 @@ export default function StaffCareer() {
       )}
 
       {/* CARD GRID */}
-      <div className="career-grid-wrapper">
+      <div className={`career-grid-wrapper${headerCollapsed ? " header-is-collapsed" : ""}`}>
         <div className="card-grid">
           {filteredJobs.map((job, i) => {
             const colors = roleColors[job.role] || { bg: "#f5f4f1", color: "#3a3a3a" };
@@ -194,7 +209,7 @@ export default function StaffCareer() {
                     className={`mat-input mat-textarea${formErrors.description ? " mat-error" : ""}`}
                     placeholder=" "
                     value={form.description}
-                    onChange={e => { setForm({ ...form, description: e.target.value }); setFormErrors(p => ({ ...p, description: false })); }}
+                    onChange={e => { setForm({ ...form, description: allowTextInput(form.description, e.target.value, 500, 100000) }); setFormErrors(p => ({ ...p, description: false })); }}
                   />
                   <label className={`mat-label${formErrors.description ? " mat-label-error" : ""}`}>Description<span className="rf-req">*</span></label>
                   <span className={`mat-bar${formErrors.description ? " mat-bar-error" : ""}`} />

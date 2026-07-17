@@ -25,6 +25,7 @@ const TableManagement = ({ adminData, setAdminData }) => {
   const { toast } = useToast();
   const tables = adminData.tables?.[0]?.list || [];
   const [newTable, setNewTable] = useState("");
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [selectedTable, setSelectedTable] = useState(null);
 
@@ -180,22 +181,37 @@ const TableManagement = ({ adminData, setAdminData }) => {
       {/* HEADER */}
       <div className="header">
         <div className="filter-group">
-          <h2 className="title">Table Management</h2>
-          <div className="table-mgmt-add">
-            <input
-              type="number"
-              className="table-mgmt-input"
-              placeholder="Table number"
-              value={newTable}
-              onChange={e => setNewTable(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && addTable()}
-              min="1"
-            />
-            <Button3D onClick={addTable}>Add Table</Button3D>
+          <div className="header-title-row">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+            </button>
+            <h2 className="title">Table Management</h2>
           </div>
-          <span className="subtitle">
-            {tables.length} table{tables.length !== 1 ? "s" : ""}
-          </span>
+          {!headerCollapsed && (
+            <>
+              <div className="table-mgmt-add">
+                <input
+                  type="number"
+                  className="table-mgmt-input"
+                  placeholder="Table number"
+                  value={newTable}
+                  onChange={e => setNewTable(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && addTable()}
+                  min="1"
+                />
+                <Button3D onClick={addTable}>Add Table</Button3D>
+              </div>
+              <span className="subtitle">
+                {tables.length} table{tables.length !== 1 ? "s" : ""}
+              </span>
+            </>
+          )}
         </div>
 
         <Button3D onClick={exportTables}>Export</Button3D>
@@ -203,7 +219,7 @@ const TableManagement = ({ adminData, setAdminData }) => {
       </div>
 
       {/* GRID */}
-      <div className="table-mgmt-grid-wrapper">
+      <div className={`table-mgmt-grid-wrapper${headerCollapsed ? " header-is-collapsed" : ""}`}>
         {tables.length > 0 ? (
           <div className="table-mgmt-grid">
             {tables.map(t => (

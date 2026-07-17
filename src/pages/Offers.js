@@ -16,6 +16,7 @@ import closeIcon from "../icon/close-icon.png";
 import { formatDisplayDate } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
+import { allowTextInput } from "../App";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 import CustomDropdown from "../components/CustomDropdown";
 import Button3D from "../components/Button3D";
@@ -28,6 +29,7 @@ const Offers = ({ adminData, setAdminData }) => {
 
   const { toast } = useToast();
   const [showModal, setShowModal] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const navigate = useNavigate();
 
@@ -173,7 +175,19 @@ const Offers = ({ adminData, setAdminData }) => {
     <div className="inner-page">
       {/* HEADER */}
       <div className="header">
-        <h2 className="title">Offers</h2>
+        <div className="header-title-row">
+          <button
+            type="button"
+            className="header-collapse-btn"
+            onClick={() => setHeaderCollapsed(prev => !prev)}
+            title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+            aria-expanded={!headerCollapsed}
+          >
+            <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+          </button>
+          <h2 className="title">Offers</h2>
+        </div>
+
         <div className="header-btn-container">
           <Button3D onClick={exportOffers}>Export</Button3D>
           <Button3D onClick={() => setShowModal(true)}>+ Add Offer</Button3D>
@@ -181,49 +195,51 @@ const Offers = ({ adminData, setAdminData }) => {
       </div>
 
       {/* FILTER BAR */}
-      <div className="filter-bar">
-        <div className="filter-groups">
-          <input
-            className="search-input"
-            placeholder=" Search dish…"
-            value={offerSearch}
-            onChange={e => setOfferSearch(e.target.value)}
-          />
-          <DateRangeGroup
-            from={offerFromDate}
-            to={offerToDate}
-            onChangeFrom={setOfferFromDate}
-            onChangeTo={setOfferToDate}
-            preset={offerDatePreset}
-            onChangePreset={applyOfferPreset}
-            presets={[["all", "All"], ["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
-            toggle={false}
-            noMax
-          />
+      {!headerCollapsed && (
+        <div className="filter-bar">
+          <div className="filter-groups">
+            <input
+              className="search-input"
+              placeholder=" Search dish…"
+              value={offerSearch}
+              onChange={e => setOfferSearch(allowTextInput(offerSearch, e.target.value, 100, 5))}
+            />
+            <DateRangeGroup
+              from={offerFromDate}
+              to={offerToDate}
+              onChangeFrom={setOfferFromDate}
+              onChangeTo={setOfferToDate}
+              preset={offerDatePreset}
+              onChangePreset={applyOfferPreset}
+              presets={[["all", "All"], ["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
+              toggle={false}
+              noMax
+            />
 
-          <MultiPillGroup
-            label="Status"
-            options={[
-              ["yes", "Active", "offer-pill-active"],
-              ["no", "Inactive", "offer-pill-inactive"],
-            ]}
-            value={offerStatusFilters}
-            onToggle={(key) => toggleSet(setOfferStatusFilters, key)}
-          />
+            <MultiPillGroup
+              label="Status"
+              options={[
+                ["yes", "Active", "offer-pill-active"],
+                ["no", "Inactive", "offer-pill-inactive"],
+              ]}
+              value={offerStatusFilters}
+              onToggle={(key) => toggleSet(setOfferStatusFilters, key)}
+            />
 
-          {(offerSearch || offerStatusFilters.size > 0 || offerDatePreset !== "today") && (
-            <button className="ae-clear-filter" onClick={() => {
-              setOfferSearch("");
-              setOfferStatusFilters(new Set());
-              applyOfferPreset("today");
-            }}>Clear</button>
-          )}
+            {(offerSearch || offerStatusFilters.size > 0 || offerDatePreset !== "today") && (
+              <button className="ae-clear-filter" onClick={() => {
+                setOfferSearch("");
+                setOfferStatusFilters(new Set());
+                applyOfferPreset("today");
+              }}>Clear</button>
+            )}
 
-          <span className="result-count">{filteredOffers.length} offer(s)</span>
+            <span className="result-count">{filteredOffers.length} offer(s)</span>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 260px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>

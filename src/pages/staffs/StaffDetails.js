@@ -13,6 +13,7 @@ import editIcon from "../../icon/edit-icon.png";
 import deleteIcon from "../../icon/delete-icon.png";
 import { useToast } from "../../useToast";
 import Button3D from "../../components/Button3D";
+import { allowTextInput } from "../../App";
 
 import "./StaffDetails.css";
 import PageLoader from "../../components/PageLoader";
@@ -151,7 +152,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                   <input
                     value={localStaff.name}
                     onChange={(e) =>
-                      setLocalStaff({ ...localStaff, name: e.target.value })
+                      setLocalStaff({ ...localStaff, name: allowTextInput(localStaff.name, e.target.value, 100, 5) })
                     }
                   />
                 </div>
@@ -170,7 +171,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                   <input
                     value={localStaff.role}
                     onChange={(e) =>
-                      setLocalStaff({ ...localStaff, role: e.target.value })
+                      setLocalStaff({ ...localStaff, role: allowTextInput(localStaff.role, e.target.value, 100, 5) })
                     }
                   />
                 </div>
@@ -275,7 +276,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                 <label>Educational Qualification</label>
                 <input
                   value={localStaff.education}
-                  onChange={(e) => setLocalStaff({ ...localStaff, education: e.target.value })}
+                  onChange={(e) => setLocalStaff({ ...localStaff, education: allowTextInput(localStaff.education, e.target.value, 100, 5) })}
                 />
               </div>
               <div className="admin-form-group">
@@ -354,7 +355,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                 <textarea
                   value={localStaff.residentialAddress}
                   onChange={(e) => {
-                    const value = e.target.value;
+                    const value = allowTextInput(localStaff.residentialAddress, e.target.value, 500, 100000);
                     setLocalStaff(prev => ({
                       ...prev,
                       residentialAddress: value,
@@ -389,7 +390,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                 <textarea
                   value={localStaff.permanentAddress}
                   onChange={(e) =>
-                    setLocalStaff({ ...localStaff, permanentAddress: e.target.value })
+                    setLocalStaff({ ...localStaff, permanentAddress: allowTextInput(localStaff.permanentAddress, e.target.value, 500, 100000) })
                   }
                 />
               </div>
@@ -415,7 +416,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                 <label>Bank Name</label>
                 <input
                   value={localStaff.bank.name}
-                  onChange={(e) => setLocalStaff({ ...localStaff, bank: { ...localStaff.bank, name: e.target.value } })}
+                  onChange={(e) => setLocalStaff({ ...localStaff, bank: { ...localStaff.bank, name: allowTextInput(localStaff.bank.name, e.target.value, 100, 5) } })}
                 />
               </div>
               <div className="admin-form-group">
@@ -468,7 +469,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                           value={exp.org}
                           onChange={(e) => {
                             const updated = [...editingExp];
-                            updated[i] = { ...updated[i], org: e.target.value };
+                            updated[i] = { ...updated[i], org: allowTextInput(exp.org, e.target.value, 100, 5) };
                             setEditingExp(updated);
                           }}
                         />
@@ -478,7 +479,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                           value={exp.place}
                           onChange={(e) => {
                             const updated = [...editingExp];
-                            updated[i] = { ...updated[i], place: e.target.value };
+                            updated[i] = { ...updated[i], place: allowTextInput(exp.place, e.target.value, 100, 5) };
                             setEditingExp(updated);
                           }}
                         />

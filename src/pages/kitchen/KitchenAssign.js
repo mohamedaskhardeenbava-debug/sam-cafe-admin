@@ -10,6 +10,7 @@ import { exportToExcel } from "../../utils/excelUtils";
 import api from "../../api";
 
 import { useToast } from "../../useToast";
+import { allowTextInput } from "../../App";
 import { getTomorrowKey, getTomorrowFormatted } from "../../App";
 import deleteIcon from "../../icon/delete-icon.png";
 import closeIcon from "../../icon/close-icon.png";
@@ -132,6 +133,7 @@ export default function KitchenAssign({ adminData, setAdminData }) {
   const toggleSet = (setter, val) =>
     setter(prev => { const next = new Set(prev); next.has(val) ? next.delete(val) : next.add(val); return next; });
   const [listView, setListView] = useState(false); // toggle between table / list
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
 
   // ── Derived ──────────────────────────────────────────────────
   const assignedDay = adminData.kitchenAssign?.[tomorrow] || {};
@@ -253,7 +255,18 @@ export default function KitchenAssign({ adminData, setAdminData }) {
       {/* HEADER */}
       <div className="header">
         <div>
-          <h2 className="title">Kitchen Staff Assigning</h2>
+          <div className="header-title-row">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+            </button>
+            <h2 className="title">Kitchen Staff Assigning</h2>
+          </div>
           <span className="subtitle">{tomorrowFmt}</span>
         </div>
         <div className="header-btn-container">
@@ -278,26 +291,28 @@ export default function KitchenAssign({ adminData, setAdminData }) {
       </div>
 
       {/* FILTER BAR */}
-      <div className="filter-bar">
-        <div className="filter-groups">
-          <input
-            className="search-input"
-            placeholder=" Search tasks…"
-            value={assignSearch}
-            onChange={e => setAssignSearch(e.target.value)}
-          />
-          <MultiPillGroup
-            options={Object.keys(tasks).map(s => [s, SECTION_META[s]?.label || s])}
-            value={sectionFilters}
-            onToggle={(key) => toggleSet(setSectionFilters, key)}
-            label="Section"
-          />
-          {(assignSearch || sectionFilters.size > 0) && (
-            <button className="ae-clear-filter"
-              onClick={() => { setAssignSearch(""); setSectionFilters(new Set()); }}>Clear</button>
-          )}
+      {!headerCollapsed && (
+        <div className="filter-bar">
+          <div className="filter-groups">
+            <input
+              className="search-input"
+              placeholder=" Search tasks…"
+              value={assignSearch}
+              onChange={e => setAssignSearch(allowTextInput(assignSearch, e.target.value, 100, 5))}
+            />
+            <MultiPillGroup
+              options={Object.keys(tasks).map(s => [s, SECTION_META[s]?.label || s])}
+              value={sectionFilters}
+              onToggle={(key) => toggleSet(setSectionFilters, key)}
+              label="Section"
+            />
+            {(assignSearch || sectionFilters.size > 0) && (
+              <button className="ae-clear-filter"
+                onClick={() => { setAssignSearch(""); setSectionFilters(new Set()); }}>Clear</button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* CONTENT — Table or List */}
       {listView
@@ -314,6 +329,7 @@ export default function KitchenAssign({ adminData, setAdminData }) {
           adminData={adminData}
           handleChange={handleChange}
           handleDelete={handleDelete}
+          headerCollapsed={headerCollapsed}
         />
       }
 
@@ -334,7 +350,7 @@ export default function KitchenAssign({ adminData, setAdminData }) {
                     className={`mat-input${taskErrors.newTask ? " mat-error" : ""}`}
                     placeholder=" "
                     value={newTask}
-                    onChange={e => { setNewTask(e.target.value); setTaskErrors(p => ({ ...p, newTask: false })); }}
+                    onChange={e => { setNewTask(allowTextInput(newTask, e.target.value, 100, 5)); setTaskErrors(p => ({ ...p, newTask: false })); }}
                   />
                   <label className={`mat-label${taskErrors.newTask ? " mat-label-error" : ""}`}>Task Name<span className="rf-req">*</span></label>
                   <span className={`mat-bar${taskErrors.newTask ? " mat-bar-error" : ""}`} />
@@ -361,7 +377,7 @@ export default function KitchenAssign({ adminData, setAdminData }) {
 }
 
 /* ─── TABLE LAYOUT ──────────────────────────────────────────── */
-function TableLayout({ filteredTasks, assignedDay, adminData, handleChange, handleDelete }) {
+function TableLayout({ filteredTasks, assignedDay, adminData, handleChange, handleDelete, headerCollapsed }) {
   const [openStaffDropdown, setOpenStaffDropdown] = useState(null);
 
   useEffect(() => {
@@ -371,7 +387,7 @@ function TableLayout({ filteredTasks, assignedDay, adminData, handleChange, hand
   }, []);
 
   return (
-    <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} >
+    <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 260px)" }} >
       <table >
         <thead>
           <tr>

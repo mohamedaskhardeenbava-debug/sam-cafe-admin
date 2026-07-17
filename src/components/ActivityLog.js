@@ -41,6 +41,7 @@ import { exportToExcel } from "../utils/excelUtils";
 
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
+import { allowTextInput } from "../App";
 
 /* Period presets: [key, label]. "all" resolves to a wide-open range
    (rather than empty strings) because this page's filter uses
@@ -65,6 +66,7 @@ const ActivityLog = ({ title, items = [], exportFilePrefix }) => {
   const [toDate, setToDate] = useState("2099-12-31");
   const [activePreset, setActivePreset] = useState("all");
   const [searchText, setSearchText] = useState("");
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
 
   const filtered = useMemo(
     () =>
@@ -109,49 +111,62 @@ const ActivityLog = ({ title, items = [], exportFilePrefix }) => {
   return (
     <div className="inner-page">
       <div className="header">
-        <h2 className="title">{title}</h2>
+        <div className="header-title-row">
+          <button
+            type="button"
+            className="header-collapse-btn"
+            onClick={() => setHeaderCollapsed(prev => !prev)}
+            title={headerCollapsed ? "Expand header" : "Collapse header"}
+            aria-expanded={!headerCollapsed}
+          >
+            <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+          </button>
+          <h2 className="title">{title}</h2>
+        </div>
         <Button3D onClick={handleExport}>Export</Button3D>
       </div>
 
-      <div className="filter-bar">
-        <div className="filter-group">
-          <input
-            className="search-input"
-            placeholder=" Search work / staff…"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-          />
-
+      {!headerCollapsed && (
+        <div className="filter-bar">
           <div className="filter-group">
-            <DateRangeGroup
-              from={fromDate}
-              to={toDate}
-              onChangeFrom={setFromDate}
-              onChangeTo={setToDate}
-              preset={activePreset}
-              onChangePreset={setActivePreset}
-              presets={PERIOD_PRESETS}
-              fromLabel="from"
-              toLabel="to"
-              pickerFromLabel="From"
-              pickerToLabel="To"
-              max={today}
-              showPresets={false}
-              pickerLabels
+            <input
+              className="search-input"
+              placeholder=" Search work / staff…"
+              value={searchText}
+              onChange={(e) => setSearchText(allowTextInput(searchText, e.target.value, 100, 5))}
+            />
+
+            <div className="filter-group">
+              <DateRangeGroup
+                from={fromDate}
+                to={toDate}
+                onChangeFrom={setFromDate}
+                onChangeTo={setToDate}
+                preset={activePreset}
+                onChangePreset={setActivePreset}
+                presets={PERIOD_PRESETS}
+                fromLabel="from"
+                toLabel="to"
+                pickerFromLabel="From"
+                pickerToLabel="To"
+                max={today}
+                showPresets={false}
+                pickerLabels
+              />
+            </div>
+
+            <PillGroup
+              label="period"
+              options={PERIOD_PRESETS}
+              value={activePreset}
+              onChange={applyPreset}
+              toggle={false}
             />
           </div>
-
-          <PillGroup
-            label="period"
-            options={PERIOD_PRESETS}
-            value={activePreset}
-            onChange={applyPreset}
-            toggle={false}
-          />
         </div>
-      </div>
+      )}
 
-      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} >
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 260px)" }} >
         <table className="table">
           <thead>
             <tr>

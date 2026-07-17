@@ -42,6 +42,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
   const [openFrom, setOpenFrom] = useState(false);
   const [openTo, setOpenTo] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [selectedIngredient, setSelectedIngredient] = useState(null);
   const [addStock, setAddStock] = useState("");
   const [pricePer100g, setPricePer100g] = useState("");
@@ -295,23 +296,36 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
     <div className="inner-page">
       {/* HEADER */}
       <div className="header">
-        <h2 className="title">Stocks</h2>
+        <div className="header-title-row">
+          <button
+            type="button"
+            className="header-collapse-btn"
+            onClick={() => setHeaderCollapsed(prev => !prev)}
+            title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+            aria-expanded={!headerCollapsed}
+          >
+            <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+          </button>
+          <h2 className="title">Stocks</h2>
+        </div>
 
         <Button3D onClick={handleExportStocks}>Export</Button3D>
       </div>
 
       {/* FILTER BAR */}
-      <FilterBar
-        search={stockSearch}
-        onSearchChange={setStockSearch}
-        searchPlaceholder=" Search ingredient or brand…"
-        onClear={() => setStockSearch("")}
-        active={!!stockSearch}
-        rightContent={<span className="result-count">{filteredIngredients.length} ingredient(s)</span>}
-      />
+      {!headerCollapsed && (
+        <FilterBar
+          search={stockSearch}
+          onSearchChange={setStockSearch}
+          searchPlaceholder=" Search ingredient or brand…"
+          onClear={() => setStockSearch("")}
+          active={!!stockSearch}
+          rightContent={<span className="result-count">{filteredIngredients.length} ingredient(s)</span>}
+        />
+      )}
 
       {/* TABLE */}
-      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 260px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>

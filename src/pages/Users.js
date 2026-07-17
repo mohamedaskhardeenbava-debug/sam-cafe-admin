@@ -43,6 +43,7 @@ const Users = ({ handleSort, sortConfig, users }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [userSearch, setUserSearch] = useState("");
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
 
   // ── Derived Values
 
@@ -96,7 +97,19 @@ const Users = ({ handleSort, sortConfig, users }) => {
   return (
     <div className="inner-page">
       <div className="header">
-        <h2 className="title">Users</h2>
+        <div className="header-title-row">
+          <button
+            type="button"
+            className="header-collapse-btn"
+            onClick={() => setHeaderCollapsed(prev => !prev)}
+            title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+            aria-expanded={!headerCollapsed}
+          >
+            <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+          </button>
+          <h2 className="title">Users</h2>
+        </div>
+
         <div className="header-btn-container">
           <Button3D onClick={handleExport}>Export</Button3D>
           <Button3D onClick={sendCampaignToAllUsers}>Campaign</Button3D>
@@ -104,16 +117,18 @@ const Users = ({ handleSort, sortConfig, users }) => {
       </div>
 
       {/* FILTER BAR */}
-      <FilterBar
-        search={userSearch}
-        onSearchChange={setUserSearch}
-        searchPlaceholder=" Search name or mobile…"
-        onClear={() => setUserSearch("")}
-        active={!!userSearch}
-        rightContent={<span className="ae-result-count">{filteredUsers.length} user(s)</span>}
-      />
+      {!headerCollapsed && (
+        <FilterBar
+          search={userSearch}
+          onSearchChange={setUserSearch}
+          searchPlaceholder=" Search name or mobile…"
+          onClear={() => setUserSearch("")}
+          active={!!userSearch}
+          rightContent={<span className="ae-result-count">{filteredUsers.length} user(s)</span>}
+        />
+      )}
 
-      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 260px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>

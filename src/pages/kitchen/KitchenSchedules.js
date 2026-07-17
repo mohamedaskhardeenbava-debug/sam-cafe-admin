@@ -14,6 +14,7 @@ import { resolveDateRange, todayStr } from "../../utils/dateRangeUtils";
 
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
+import { allowTextInput } from "../../App";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
 
@@ -50,6 +51,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
   const toggleSet = (setter, val) =>
     setter(prev => { const next = new Set(prev); next.has(val) ? next.delete(val) : next.add(val); return next; });
   const [searchText, setSearchText] = useState("");
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const today = todayStr();
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
@@ -177,52 +179,65 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
   return (
     <div className="inner-page">
       <div className="header">
-        <h2 className="title">Kitchen Schedules</h2>
+        <div className="header-title-row">
+          <button
+            type="button"
+            className="header-collapse-btn"
+            onClick={() => setHeaderCollapsed(prev => !prev)}
+            title={headerCollapsed ? "Expand header" : "Collapse header"}
+            aria-expanded={!headerCollapsed}
+          >
+            <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+          </button>
+          <h2 className="title">Kitchen Schedules</h2>
+        </div>
         <div className="header-btn-container">
           <Button3D onClick={handleExport}>Export</Button3D>
           <Button3D onClick={() => setShow(true)}>+ Add Schedule</Button3D>
         </div>
       </div>
 
-      <div className="filter-bar">
-        <div className="filter-group">
-          <input className="search-input" placeholder=" Search work / staff…" value={searchText} onChange={e => setSearchText(e.target.value)} />
+      {!headerCollapsed && (
+        <div className="filter-bar">
           <div className="filter-group">
-            <DateRangeGroup
-              from={fromDate}
-              to={toDate}
-              onChangeFrom={setFromDate}
-              onChangeTo={setToDate}
-              preset={activePreset}
-              onChangePreset={setActivePreset}
-              presets={PERIOD_PRESETS}
-              fromLabel="from"
-              toLabel="to"
-              pickerFromLabel="From"
-              pickerToLabel="To"
-              showPresets={false}
-              pickerLabels
-            />
+            <input className="search-input" placeholder=" Search work / staff…" value={searchText} onChange={e => setSearchText(allowTextInput(searchText, e.target.value, 100, 5))} />
+            <div className="filter-group">
+              <DateRangeGroup
+                from={fromDate}
+                to={toDate}
+                onChangeFrom={setFromDate}
+                onChangeTo={setToDate}
+                preset={activePreset}
+                onChangePreset={setActivePreset}
+                presets={PERIOD_PRESETS}
+                fromLabel="from"
+                toLabel="to"
+                pickerFromLabel="From"
+                pickerToLabel="To"
+                showPresets={false}
+                pickerLabels
+              />
 
-            <PillGroup
-              label="period"
-              options={PERIOD_PRESETS}
-              value={activePreset}
-              onChange={applyPreset}
-              toggle={false}
+              <PillGroup
+                label="period"
+                options={PERIOD_PRESETS}
+                value={activePreset}
+                onChange={applyPreset}
+                toggle={false}
+              />
+            </div>
+
+            <MultiPillGroup
+              label="status"
+              options={["Scheduled", "Completed", "Pending"].map(s => [s, s])}
+              value={statusFilters}
+              onToggle={(key) => toggleSet(setStatusFilters, key)}
             />
           </div>
-
-          <MultiPillGroup
-            label="status"
-            options={["Scheduled", "Completed", "Pending"].map(s => [s, s])}
-            value={statusFilters}
-            onToggle={(key) => toggleSet(setStatusFilters, key)}
-          />
         </div>
-      </div>
+      )}
 
-      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 290px)" }} >
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 290px)" }} >
         <table >
           <thead>
             <tr>
@@ -283,7 +298,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                     className={`mat-input${formErrors.work ? " mat-error" : ""}`}
                     placeholder=" "
                     value={form.work}
-                    onChange={e => { setForm({ ...form, work: e.target.value }); setFormErrors(p => ({ ...p, work: false })); }}
+                    onChange={e => { setForm({ ...form, work: allowTextInput(form.work, e.target.value, 100, 5) }); setFormErrors(p => ({ ...p, work: false })); }}
                   />
                   <label className={`mat-label${formErrors.work ? " mat-label-error" : ""}`}>Work<span className="rf-req">*</span></label>
                   <span className={`mat-bar${formErrors.work ? " mat-bar-error" : ""}`} />

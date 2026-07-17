@@ -18,6 +18,7 @@ import React from "react";
 import { CustomDatePicker } from "./CustomDatePicker";
 import { CustomTimePicker } from "./CustomTimePicker";
 import { resolveDateRange, todayStr, DEFAULT_PERIOD_PRESETS } from "../utils/dateRangeUtils";
+import { allowTextInput } from "../App";
 
 /* ────────────────────────────────────────────────────────────────
    MultiPillGroup — like PillGroup, but for Set-based multi-select
@@ -313,7 +314,7 @@ export const FilterBar = ({
             className="search-input"
             placeholder={searchPlaceholder}
             value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
+            onChange={(e) => onSearchChange(allowTextInput(search, e.target.value, 100, 5))}
           />
         )}
         {dateRange && <DateRangeGroup {...dateRange} />}

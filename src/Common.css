@@ -211,6 +211,45 @@ label {
   align-items: center;
 }
 
+/* ── Header collapse control (shared across all pages) ──
+   Sits in front of the page title, inline in normal flow
+   (position: relative, not absolute/floating). ── */
+.header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-collapse-btn {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.header-collapse-btn:hover {
+  background: #fff;
+  border-color: rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.header-collapse-icon {
+  transition: transform 0.25s ease;
+}
+
+.header-collapse-icon.collapsed {
+  transform: rotate(-90deg);
+}
+
 .inner-page {
   display: flex;
   flex-direction: column;
@@ -1087,7 +1126,9 @@ th.sorted .sort-arrow {
 }
 
 .table-wrapper table th:not(.icon-width),
-.table-wrapper table td:not(.icon-width) {
+.table-wrapper table td:not(.icon-width),
+.orders-table-wrapper table th:not(.icon-width),
+.orders-table-wrapper table td:not(.icon-width) {
   min-width: 150px !important;
 }
 

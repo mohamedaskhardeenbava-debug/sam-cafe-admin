@@ -15,6 +15,7 @@ import { todayStr, tomorrowStr } from "../../utils/dateRangeUtils";
 
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
+import { allowTextInput } from "../../App";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
@@ -250,7 +251,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
   const [callTooltipId, setCallTooltipId] = useState(null);
   const [callTooltipPos, setCallTooltipPos] = useState({ top: 0, left: 0 });
   const callWrapRefs = useRef({});
-
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [sortField, setSortField] = useState("createdAt");
   const [sortDir, setSortDir] = useState("desc");
   const handleSort = (field) => {
@@ -486,68 +487,85 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
 
       <div className="evt-header">
         <div>
-          <h2 className="evt-title">Catering Orders</h2>
+          <div className="header-title-row">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+            </button>
+            <h2 className="evt-title">Catering Orders</h2>
+          </div>
           <p className="evt-subtitle">Manage catering & event food orders</p>
         </div>
-        <div className="evt-kpi-row">
-          {[
-            { label: "Total", val: filteredData.length, color: "#111" },
-            { label: "Pending", val: pendingCount, color: "#ca8a04" },
-            { label: "Confirmed", val: confirmedCount, color: "#16a34a" },
-            { label: "Completed", val: completedCount, color: "#2980b9" },
-            { label: "Cancelled", val: cancelledCount, color: "#dc2626" },
-          ].map((k, i) => (
-            <div key={i} className="evt-kpi" style={{ borderTopColor: k.color }}>
-              <div className="evt-kpi-val" style={{ color: k.color }}>{k.val}</div>
-              <div className="evt-kpi-label">{k.label}</div>
+        {!headerCollapsed && (
+          <>
+            <div className="evt-kpi-row">
+              {[
+                { label: "Total", val: filteredData.length, color: "#111" },
+                { label: "Pending", val: pendingCount, color: "#ca8a04" },
+                { label: "Confirmed", val: confirmedCount, color: "#16a34a" },
+                { label: "Completed", val: completedCount, color: "#2980b9" },
+                { label: "Cancelled", val: cancelledCount, color: "#dc2626" },
+              ].map((k, i) => (
+                <div key={i} className="evt-kpi" style={{ borderTopColor: k.color }}>
+                  <div className="evt-kpi-val" style={{ color: k.color }}>{k.val}</div>
+                  <div className="evt-kpi-label">{k.label}</div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <div className="header-btn-container">
-          <Button3D onClick={handleExport}>Export</Button3D>
-          <Button3D onClick={openCreate}>+ Add Catering Order</Button3D>
-        </div>
+            <div className="header-btn-container">
+              <Button3D onClick={handleExport}>Export</Button3D>
+              <Button3D onClick={openCreate}>+ Add Catering Order</Button3D>
+            </div>
+          </>
+        )}
       </div>
 
-      <div className="filter-bar">
-        <div className="filter-groups">
-          <input className="search-input" placeholder="Search name / mobile / ID..." value={search} onChange={e => setSearch(e.target.value)} />
-          <DateRangeGroup
-            from={filterFromDate}
-            to={filterToDate}
-            onChangeFrom={setFilterFromDate}
-            onChangeTo={setFilterToDate}
-            preset={filterDatePreset}
-            onChangePreset={setFilterDatePreset}
-            presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
-            activeClass="evt-status-confirmed"
-            noMax
-            showPresets
-          />
-          {(filterFromDate || filterToDate) && (
-            <button className="filter-pill" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
-          )}
-        </div>
-        <div className="filter-groups">
+      {!headerCollapsed && (
+        <div className="filter-bar">
+          <div className="filter-groups">
+            <input className="search-input" placeholder="Search name / mobile / ID..." value={search} onChange={e => setSearch(allowTextInput(search, e.target.value, 100, 5))} />
+            <DateRangeGroup
+              from={filterFromDate}
+              to={filterToDate}
+              onChangeFrom={setFilterFromDate}
+              onChangeTo={setFilterToDate}
+              preset={filterDatePreset}
+              onChangePreset={setFilterDatePreset}
+              presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
+              activeClass="evt-status-confirmed"
+              noMax
+              showPresets
+            />
+            {(filterFromDate || filterToDate) && (
+              <button className="filter-pill" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
+            )}
+          </div>
+          <div className="filter-groups">
 
-          <MultiPillGroup
-            label="Status"
-            options={[
-              ["pending", "P", "clb-status-pending", "Pending"],
-              ["confirmed", "C", "clb-status-confirmed", "Confirmed"],
-              ["completed", "D", "clb-status-completed", "Done"],
-              ["cancelled", "X", "clb-status-cancelled", "Cancelled"],
-            ]}
-            value={filterStatuses}
-            onToggle={(key) => toggleSet(setFilterStatuses, key)}
-          />
-          {activeFilters && (
-            <button className="evt-clb-clear-btn" onClick={onResetFilters}>Clear</button>
-          )}
+            <MultiPillGroup
+              label="Status"
+              options={[
+                ["pending", "P", "clb-status-pending", "Pending"],
+                ["confirmed", "C", "clb-status-confirmed", "Confirmed"],
+                ["completed", "D", "clb-status-completed", "Done"],
+                ["cancelled", "X", "clb-status-cancelled", "Cancelled"],
+              ]}
+              value={filterStatuses}
+              onToggle={(key) => toggleSet(setFilterStatuses, key)}
+            />
+            {activeFilters && (
+              <button className="evt-clb-clear-btn" onClick={onResetFilters}>Clear</button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 300px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 300px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -883,7 +901,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                     <div className="admin-form-group" style={{ flex: 1.4 }}>
                       <div className="mat">
                         <input className={`mat-input${formErrors.name ? " mat-error" : ""}`} placeholder=" "
-                          value={form.name} onChange={e => setF("name", e.target.value)} />
+                          value={form.name} onChange={e => setF("name", allowTextInput(form.name, e.target.value, 100, 5))} />
                         <label className={`mat-label${formErrors.name ? " mat-label-error" : ""}`}>Name <span className="evt-res-req">*</span></label>
                         <span className={`mat-bar${formErrors.name ? " mat-bar-error" : ""}`} />
                       </div>
@@ -909,7 +927,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                     </div>
                     <div className="admin-form-group" style={{ flex: 1 }}>
                       <div className="mat">
-                        <input className="mat-input" placeholder=" " value={form.email} onChange={e => setF("email", e.target.value)} />
+                        <input className="mat-input" placeholder=" " value={form.email} onChange={e => setF("email", allowTextInput(form.email, e.target.value, 100, 5))} />
                         <label className="mat-label">Email</label>
                         <span className="mat-bar" />
                       </div>
@@ -1010,7 +1028,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                               if (useRestaurantAddr) return;
                               const v = field.key === "addrPincode"
                                 ? e.target.value.replace(/\D/g, "").slice(0, 6)
-                                : e.target.value;
+                                : allowTextInput(form[field.key], e.target.value, 100, 5);
                               setF(field.key, v);
                               setFormErrors(p => ({ ...p, [field.key]: false }));
                             }}
@@ -1065,7 +1083,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                       <div className="mat-area" style={{ marginTop: 8 }}>
                         <textarea className="mat-input mat-textarea" rows={2} placeholder=" "
                           value={form.specialMentionText}
-                          onChange={e => setF("specialMentionText", e.target.value)} />
+                          onChange={e => setF("specialMentionText", allowTextInput(form.specialMentionText, e.target.value, 500, 100000))} />
                         <label className="mat-area-label">Describe what to announce / mention...</label>
                         <span className="mat-area-bar" />
                       </div>
@@ -1101,7 +1119,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
 
                   <div className="admin-form-group" style={{ marginTop: 4 }}>
                     <div className="mat-area">
-                      <textarea className="mat-input mat-textarea" rows={2} placeholder=" " value={form.notes} onChange={e => setF("notes", e.target.value)} />
+                      <textarea className="mat-input mat-textarea" rows={2} placeholder=" " value={form.notes} onChange={e => setF("notes", allowTextInput(form.notes, e.target.value, 500, 100000))} />
                       <label className="mat-area-label">Notes</label>
                       <span className="mat-area-bar" />
                     </div>

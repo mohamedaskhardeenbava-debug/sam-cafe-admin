@@ -399,7 +399,7 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
           {isEditing ? (
             <textarea
               value={localDish.description}
-              onChange={e => setLocalDish({ ...localDish, description: e.target.value })}
+              onChange={e => setLocalDish({ ...localDish, description: allowTextInput(localDish.description, e.target.value, 500, 100000) })}
             />
           ) : (
             <p>{localDish.description}</p>
@@ -565,7 +565,7 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
                   <thead>
                     <tr>
                       <th>Variant Name</th>
-                      <th>Extra Charge</th>
+                      <th>Additional Cost</th>
                       <th>Action</th>
                     </tr>
                   </thead>
@@ -578,7 +578,7 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
                             value={v.name}
                             onChange={(e) => {
                               const updated = [...editingVariants];
-                              updated[index].name = e.target.value;
+                              updated[index].name = allowTextInput(v.name, e.target.value, 100, 5);
                               setEditingVariants(updated);
                             }}
                           />
@@ -617,7 +617,7 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
               ) : (
                 <table className="data-table">
                   <thead>
-                    <tr><th>Variant Name</th><th>Extra Charge</th></tr>
+                    <tr><th>Variant Name</th><th>Additional Cost</th></tr>
                   </thead>
                   <tbody>
                     {localDish.variants.map((v, index) => (

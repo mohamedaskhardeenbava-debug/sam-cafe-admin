@@ -15,6 +15,7 @@ import { todayStr } from "../../utils/dateRangeUtils";
 
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
+import { allowTextInput } from "../../App";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
@@ -187,6 +188,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
   const navigate = useNavigate();
 
   /* ── Call history tooltip ── */
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [callTooltipId, setCallTooltipId] = useState(null);
   const [callTooltipPos, setCallTooltipPos] = useState({ top: 0, left: 0 });
   const callWrapRefs = useRef({});
@@ -564,92 +566,109 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       {/* ── HEADER ── */}
       <div className="evt-header">
         <div>
-          <h2 className="evt-title">Reservations</h2>
+          <div className="header-title-row">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+            </button>
+            <h2 className="evt-title">Reservations</h2>
+          </div>
           <p className="evt-subtitle">Manage table bookings</p>
         </div>
 
-        {/* KPI strip */}
-        <div className="evt-kpi-row">
-          {[
-            { label: "Total", val: filteredData.length, color: "#111" },
-            { label: "Pending", val: pendingCount, color: "#ca8a04" },
-            { label: "Confirmed", val: confirmedCount, color: "#16a34a" },
-            { label: "Completed", val: completedCount, color: "#2980b9" },
-            { label: "Cancelled", val: cancelledCount, color: "#dc2626" },
-          ].map((k, i) => (
-            <div key={i} className="evt-kpi" style={{ borderTopColor: k.color }}>
-              <div className="evt-kpi-val" style={{ color: k.color }}>{k.val}</div>
-              <div className="evt-kpi-label">{k.label}</div>
+        {!headerCollapsed && (
+          <>
+            {/* KPI strip */}
+            <div className="evt-kpi-row">
+              {[
+                { label: "Total", val: filteredData.length, color: "#111" },
+                { label: "Pending", val: pendingCount, color: "#ca8a04" },
+                { label: "Confirmed", val: confirmedCount, color: "#16a34a" },
+                { label: "Completed", val: completedCount, color: "#2980b9" },
+                { label: "Cancelled", val: cancelledCount, color: "#dc2626" },
+              ].map((k, i) => (
+                <div key={i} className="evt-kpi" style={{ borderTopColor: k.color }}>
+                  <div className="evt-kpi-val" style={{ color: k.color }}>{k.val}</div>
+                  <div className="evt-kpi-label">{k.label}</div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        <div className="header-btn-container">
-          <Button3D variant="save" onClick={() => setShowPrefModal(true)}>Table Preferences</Button3D>
-          <Button3D onClick={handleExport}>Export</Button3D>
-          <Button3D onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setTablePrefImageFile(null); setCreateTab(0); }}>+ Add Reservation</Button3D>
-        </div>
+            <div className="header-btn-container">
+              <Button3D variant="save" onClick={() => setShowPrefModal(true)}>Table Preferences</Button3D>
+              <Button3D onClick={handleExport}>Export</Button3D>
+              <Button3D onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setTablePrefImageFile(null); setCreateTab(0); }}>+ Add Reservation</Button3D>
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── FILTER BAR ── */}
-      <div className="filter-bar">
-        <div className="filter-groups">
-          <input className="search-input" placeholder="Search name / mobile / ID..."
-            value={search} onChange={e => setSearch(e.target.value)} />
+      {!headerCollapsed && (
+        <div className="filter-bar">
+          <div className="filter-groups">
+            <input className="search-input" placeholder="Search name / mobile / ID..."
+              value={search} onChange={e => setSearch(allowTextInput(search, e.target.value, 100, 5))} />
 
-          <DateRangeGroup
-            from={filterFromDate}
-            to={filterToDate}
-            onChangeFrom={setRangeFromDate}
-            onChangeTo={setRangeToDate}
-            preset={filterDatePreset}
-            onChangePreset={setRangePreset}
-            presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
-            periodLabel="period"
-            noMax
-          />
-          {(filterFromDate || filterToDate) && (
-            <button className="filter-pill"
-              onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); setFilterDate(""); }}
-              title="Clear dates">✕</button>
-          )}
+            <DateRangeGroup
+              from={filterFromDate}
+              to={filterToDate}
+              onChangeFrom={setRangeFromDate}
+              onChangeTo={setRangeToDate}
+              preset={filterDatePreset}
+              onChangePreset={setRangePreset}
+              presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
+              periodLabel="period"
+              noMax
+            />
+            {(filterFromDate || filterToDate) && (
+              <button className="filter-pill"
+                onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); setFilterDate(""); }}
+                title="Clear dates">✕</button>
+            )}
+          </div>
+
+          <div className="filter-groups">
+            <MultiPillGroup
+              label="Slot"
+              options={SLOT_GROUPS.map(sg => [sg.key, sg.short, "", `${sg.label} (${sg.start}–${sg.end})`])}
+              value={filterSlots}
+              onToggle={(key) => toggleSet(setFilterSlots, key)}
+            />
+
+            <MultiPillGroup
+              label="Status"
+              options={[
+                ["pending", "P", "status-pending", "Pending"],
+                ["confirmed", "C", "status-confirmed", "Confirmed"],
+                ["completed", "D", "status-completed", "Done"],
+                ["cancelled", "X", "status-cancelled", "Cancelled"],
+              ]}
+              value={filterStatuses}
+              onToggle={(key) => toggleSet(setFilterStatuses, key)}
+            />
+
+            <MultiPillGroup
+              label="Source"
+              options={SOURCE_OPTIONS.map(s => [s.label, s.icon, "", s.label])}
+              value={filterSources}
+              onToggle={(label) => toggleSet(setFilterSources, label)}
+            />
+
+            {activeFilters && (
+              <button className="evt-clb-clear-btn" onClick={onResetFilters}>Clear</button>
+            )}
+          </div>
         </div>
-
-        <div className="filter-groups">
-          <MultiPillGroup
-            label="Slot"
-            options={SLOT_GROUPS.map(sg => [sg.key, sg.short, "", `${sg.label} (${sg.start}–${sg.end})`])}
-            value={filterSlots}
-            onToggle={(key) => toggleSet(setFilterSlots, key)}
-          />
-
-          <MultiPillGroup
-            label="Status"
-            options={[
-              ["pending", "P", "status-pending", "Pending"],
-              ["confirmed", "C", "status-confirmed", "Confirmed"],
-              ["completed", "D", "status-completed", "Done"],
-              ["cancelled", "X", "status-cancelled", "Cancelled"],
-            ]}
-            value={filterStatuses}
-            onToggle={(key) => toggleSet(setFilterStatuses, key)}
-          />
-
-          <MultiPillGroup
-            label="Source"
-            options={SOURCE_OPTIONS.map(s => [s.label, s.icon, "", s.label])}
-            value={filterSources}
-            onToggle={(label) => toggleSet(setFilterSources, label)}
-          />
-
-          {activeFilters && (
-            <button className="evt-clb-clear-btn" onClick={onResetFilters}>Clear</button>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* ══ TABLE — same pattern as Celebrations ══ */}
-      <div className="table-wrapper" ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 300px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -876,7 +895,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                         placeholder="Short description (shown to users)"
                         value={prefDescs[label] || ""}
                         onChange={e => {
-                          const v = e.target.value;
+                          const v = allowTextInput(prefDescs[label] || "", e.target.value, 100, 5);
                           setPrefDescs(p => ({ ...p, [label]: v }));
                           setPrefDbRecords(prev => prev.map(r => r.label === label ? { ...r, desc: v } : r));
                         }}
@@ -913,11 +932,11 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <input className="evt-res-form-input" style={{ flex: 1, minWidth: 120 }}
                     placeholder="Label e.g. Outdoor, Rooftop"
-                    value={newPrefInput} onChange={e => setNewPrefInput(e.target.value)}
+                    value={newPrefInput} onChange={e => setNewPrefInput(allowTextInput(newPrefInput, e.target.value, 100, 5))}
                     onKeyDown={e => e.key === "Enter" && handleAddPref()} />
                   <input className="evt-res-form-input" style={{ flex: 1.5, minWidth: 140 }}
                     placeholder="Description (optional)"
-                    value={newPrefDesc} onChange={e => setNewPrefDesc(e.target.value)}
+                    value={newPrefDesc} onChange={e => setNewPrefDesc(allowTextInput(newPrefDesc, e.target.value, 100, 5))}
                     onKeyDown={e => e.key === "Enter" && handleAddPref()} />
                   <input type="file" accept="image/*" ref={newPrefImgRef} style={{ display: "none" }}
                     onChange={async e => {
@@ -982,7 +1001,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                       <div className="mat">
                         <input className={`mat-input${formErrors.name ? " mat-error" : ""}`} placeholder=" "
                           value={form.name}
-                          onChange={e => { setF("name", e.target.value); setFormErrors(p => ({ ...p, name: false })); }} />
+                          onChange={e => { setF("name", allowTextInput(form.name, e.target.value, 100, 5)); setFormErrors(p => ({ ...p, name: false })); }} />
                         <label className={`mat-label${formErrors.name ? " mat-label-error" : ""}`}>Name <span className="evt-res-req">*</span></label>
                         <span className={`mat-bar${formErrors.name ? " mat-bar-error" : ""}`} />
                       </div>
@@ -1010,7 +1029,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     <div className="admin-form-group" style={{ flex: 1 }}>
                       <div className="mat">
                         <input className="mat-input" placeholder=" "
-                          value={form.email} onChange={e => setF("email", e.target.value)} />
+                          value={form.email} onChange={e => setF("email", allowTextInput(form.email, e.target.value, 100, 5))} />
                         <label className="mat-label">Email</label>
                         <span className="mat-bar" />
                       </div>
@@ -1054,7 +1073,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     ) : (
                       <div className="mat">
                         <input className="mat-input" placeholder=" " value={form.inchargePerson}
-                          onChange={e => setF("inchargePerson", e.target.value)} />
+                          onChange={e => setF("inchargePerson", allowTextInput(form.inchargePerson, e.target.value, 100, 5))} />
                         <label className="mat-label">Staff name</label>
                         <span className="mat-bar" />
                       </div>
@@ -1064,7 +1083,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                   <div className="admin-form-group">
                     <div className="mat-area">
                       <textarea className="mat-input mat-textarea" rows={2} placeholder=" "
-                        value={form.notes} onChange={e => setF("notes", e.target.value)} />
+                        value={form.notes} onChange={e => setF("notes", allowTextInput(form.notes, e.target.value, 500, 100000))} />
                       <label className="mat-area-label">Notes / Special requests</label>
                       <span className="mat-area-bar" />
                     </div>

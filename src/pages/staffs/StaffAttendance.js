@@ -16,6 +16,7 @@ import { CustomTimePicker } from "../../components/CustomTimePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 import { useToast } from "../../useToast";
+import { allowTextInput } from "../../App";
 import Button3D from "../../components/Button3D";
 
 import "./StaffAttendance.css";
@@ -62,6 +63,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
   // State
 
   const [localAttendance, setLocalAttendance] = useState({});
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [editMode, setEditMode] = useState({});
   const [holidays, setHolidays] = useState({});
   const [loadingHolidays, setLoadingHolidays] = useState(true);
@@ -294,7 +296,18 @@ export default function StaffAttendance({ adminData, setAdminData }) {
       {/* HEADER */}
       <div className="header">
         <div className="att-header-left">
-          <h2 className="title">Staff Attendance</h2>
+          <div className="header-title-row">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+            </button>
+            <h2 className="title">Staff Attendance</h2>
+          </div>
           <h5 className="subtitle">
             - {new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" })}
           </h5>
@@ -306,90 +319,92 @@ export default function StaffAttendance({ adminData, setAdminData }) {
       </div>
 
       {/* FILTER BAR */}
-      <div className="filter-bar">
-        {/* SEARCH WITH STATS DROPDOWN */}
-        <div className="filter-groups">
-          <div className="att-search-wrap" ref={searchRef}>
-            <input className="search-input" placeholder=" Search staff…"
-              value={attSearch}
-              onChange={e => { setAttSearch(e.target.value); setSearchOpen(true); }}
-              onFocus={() => setSearchOpen(true)}
-            />
-            {searchOpen && (
-              <div className="att-search-dropdown">
-                {staffStats
-                  .filter(s =>
+      {!headerCollapsed && (
+        <div className="filter-bar">
+          {/* SEARCH WITH STATS DROPDOWN */}
+          <div className="filter-groups">
+            <div className="att-search-wrap" ref={searchRef}>
+              <input className="search-input" placeholder=" Search staff…"
+                value={attSearch}
+                onChange={e => { setAttSearch(allowTextInput(attSearch, e.target.value, 100, 5)); setSearchOpen(true); }}
+                onFocus={() => setSearchOpen(true)}
+              />
+              {searchOpen && (
+                <div className="att-search-dropdown">
+                  {staffStats
+                    .filter(s =>
+                      !attSearch ||
+                      s.name.toLowerCase().includes(attSearch.toLowerCase()) ||
+                      (s.role || "").toLowerCase().includes(attSearch.toLowerCase())
+                    )
+                    .map((s, i) => (
+                      <div key={s.id} className="att-search-suggestion"
+                        onMouseDown={() => { setAttSearch(s.name); setSearchOpen(false); }}>
+                        <div className="att-sug-avatar" style={{ background: `hsl(${i * 55 + 180},65%,55%)` }}>
+                          {s.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="att-sug-info">
+                          <span className="att-sug-name">{s.name}</span>
+                          {s.role && <span className="att-sug-role">{s.role}</span>}
+                        </div>
+                        <div className="att-sug-bar-wrap">
+                          <div className="att-sug-bar" style={{
+                            width: `${s.pct}%`,
+                            background: s.pct >= 80 ? "#16a34a" : s.pct >= 60 ? "#f59e0b" : "#dc2626"
+                          }} />
+                        </div>
+                        <div className="att-sug-nums">
+                          <span className="att-sug-p">✔{s.present}</span>
+                          <span className="att-sug-a">✖{s.absent}</span>
+                          {s.leave > 0 && <span className="att-sug-l">L{s.leave}</span>}
+                        </div>
+                        <span className="att-sug-pct" style={{ color: s.pct >= 80 ? "#16a34a" : s.pct >= 60 ? "#f59e0b" : "#dc2626" }}>{s.pct}%</span>
+                      </div>
+                    ))
+                  }
+                  {staffStats.filter(s =>
                     !attSearch ||
                     s.name.toLowerCase().includes(attSearch.toLowerCase()) ||
                     (s.role || "").toLowerCase().includes(attSearch.toLowerCase())
-                  )
-                  .map((s, i) => (
-                    <div key={s.id} className="att-search-suggestion"
-                      onMouseDown={() => { setAttSearch(s.name); setSearchOpen(false); }}>
-                      <div className="att-sug-avatar" style={{ background: `hsl(${i * 55 + 180},65%,55%)` }}>
-                        {s.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="att-sug-info">
-                        <span className="att-sug-name">{s.name}</span>
-                        {s.role && <span className="att-sug-role">{s.role}</span>}
-                      </div>
-                      <div className="att-sug-bar-wrap">
-                        <div className="att-sug-bar" style={{
-                          width: `${s.pct}%`,
-                          background: s.pct >= 80 ? "#16a34a" : s.pct >= 60 ? "#f59e0b" : "#dc2626"
-                        }} />
-                      </div>
-                      <div className="att-sug-nums">
-                        <span className="att-sug-p">✔{s.present}</span>
-                        <span className="att-sug-a">✖{s.absent}</span>
-                        {s.leave > 0 && <span className="att-sug-l">L{s.leave}</span>}
-                      </div>
-                      <span className="att-sug-pct" style={{ color: s.pct >= 80 ? "#16a34a" : s.pct >= 60 ? "#f59e0b" : "#dc2626" }}>{s.pct}%</span>
-                    </div>
-                  ))
-                }
-                {staffStats.filter(s =>
-                  !attSearch ||
-                  s.name.toLowerCase().includes(attSearch.toLowerCase()) ||
-                  (s.role || "").toLowerCase().includes(attSearch.toLowerCase())
-                ).length === 0 && <div className="att-search-no-result">No staff found</div>}
-              </div>
+                  ).length === 0 && <div className="att-search-no-result">No staff found</div>}
+                </div>
+              )}
+            </div>
+            <div className="filter-group">
+              <span className="filter-group-label">Range</span>
+              {[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]].map(([k, lbl]) => (
+                <button key={k} className={`filter-pill${attPreset === k ? " active" : ""}`}
+                  onClick={() => applyAttPreset(k)}>{lbl}</button>
+              ))}
+            </div>
+            <div className="filter-group">
+              <span className="filter-group-label">From</span>
+              <CustomDatePicker value={attFromDate} max={attToDate || maxDateStr}
+                onChange={v => { setAttFromDate(v); setAttPreset("custom"); }} placeholder="Start" />
+
+              <span className="filter-group-label">To</span>
+              <CustomDatePicker value={attToDate} min={attFromDate} max={maxDateStr}
+                onChange={v => { setAttToDate(v); setAttPreset("custom"); }} placeholder="End" />
+            </div>
+            {(attSearch || attPreset === "custom") && (
+              <button className="ae-clear-filter" onClick={() => { setAttSearch(""); applyAttPreset("month"); }}>Clear</button>
             )}
-          </div>
-          <div className="filter-group">
-            <span className="filter-group-label">Range</span>
-            {[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]].map(([k, lbl]) => (
-              <button key={k} className={`filter-pill${attPreset === k ? " active" : ""}`}
-                onClick={() => applyAttPreset(k)}>{lbl}</button>
-            ))}
-          </div>
-          <div className="filter-group">
-            <span className="filter-group-label">From</span>
-            <CustomDatePicker value={attFromDate} max={attToDate || maxDateStr}
-              onChange={v => { setAttFromDate(v); setAttPreset("custom"); }} placeholder="Start" />
 
-            <span className="filter-group-label">To</span>
-            <CustomDatePicker value={attToDate} min={attFromDate} max={maxDateStr}
-              onChange={v => { setAttToDate(v); setAttPreset("custom"); }} placeholder="End" />
+            {/* Column-edit all toggle */}
+            <Button3D variant="cancel" onClick={() => {
+              const allOn = visibleDates.every(d => columnEdit[d]);
+              const next = {};
+              if (!allOn) visibleDates.forEach(d => { next[d] = true; });
+              setColumnEdit(next);
+            }}>
+              {visibleDates.every(d => columnEdit[d]) ? "Lock All" : "Edit All"}
+            </Button3D>
           </div>
-          {(attSearch || attPreset === "custom") && (
-            <button className="ae-clear-filter" onClick={() => { setAttSearch(""); applyAttPreset("month"); }}>Clear</button>
-          )}
-
-          {/* Column-edit all toggle */}
-          <Button3D variant="cancel" onClick={() => {
-            const allOn = visibleDates.every(d => columnEdit[d]);
-            const next = {};
-            if (!allOn) visibleDates.forEach(d => { next[d] = true; });
-            setColumnEdit(next);
-          }}>
-            {visibleDates.every(d => columnEdit[d]) ? "Lock All" : "Edit All"}
-          </Button3D>
         </div>
-      </div>
+      )}
 
       {/* TABLE WRAPPER */}
-      <div className="att-scroll-wrap">
+      <div className={`att-scroll-wrap${headerCollapsed ? " header-is-collapsed" : ""}`}>
         <div className="att-table-wrap" ref={containerRef}>
           <table className="att-table">
             <thead>
@@ -470,7 +485,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                                   <input className="att-reason-input" placeholder="Reason…"
                                     onChange={e => setLocalAttendance(prev => ({
                                       ...prev,
-                                      [staff.id]: { ...prev[staff.id], [date]: { status: "leave", reason: e.target.value } }
+                                      [staff.id]: { ...prev[staff.id], [date]: { status: "leave", reason: allowTextInput(prev[staff.id]?.[date]?.reason || "", e.target.value, 100, 5) } }
                                     }))} />
                                   <button className="att-save-mini" onClick={() => {
                                     const data = localAttendance[staff.id]?.[date];
@@ -598,7 +613,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                     className={`mat-input${holidayErrors.reason ? " mat-error" : ""}`}
                     placeholder=" "
                     value={holidayForm.reason}
-                    onChange={e => { setHolidayForm(prev => ({ ...prev, reason: e.target.value })); setHolidayErrors(p => ({ ...p, reason: false })); }}
+                    onChange={e => { setHolidayForm(prev => ({ ...prev, reason: allowTextInput(prev.reason, e.target.value, 100, 5) })); setHolidayErrors(p => ({ ...p, reason: false })); }}
                   />
                   <label className={`mat-label${holidayErrors.reason ? " mat-label-error" : ""}`}>Reason<span className="rf-req">*</span></label>
                   <span className={`mat-bar${holidayErrors.reason ? " mat-bar-error" : ""}`} />

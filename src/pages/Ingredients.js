@@ -53,6 +53,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
   const { toast } = useToast();
 
   const [showForm, setShowForm] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [imagePreview, setImagePreview] = useState("");
   const [formData, setFormData] = useState(EMPTY_FORM);
@@ -184,19 +185,33 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
     <div className="inner-page">
       {/* HEADER */}
       <div className="header">
-        <h2 className="title">Ingredients</h2>
+        <div className="header-title-row">
+          <button
+            type="button"
+            className="header-collapse-btn"
+            onClick={() => setHeaderCollapsed(prev => !prev)}
+            title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+            aria-expanded={!headerCollapsed}
+          >
+            <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+          </button>
+          <h2 className="title">Ingredients</h2>
+        </div>
+
         <Button3D onClick={openAddForm}>+ Add Ingredient</Button3D>
       </div>
 
       {/* FILTER BAR */}
-      <FilterBar
-        search={ingredientSearch}
-        onSearchChange={setIngredientSearch}
-        searchPlaceholder=" Search name or brand…"
-        onClear={() => setIngredientSearch("")}
-        active={!!ingredientSearch}
-        rightContent={<span className="result-count">{filteredIngredients.length} ingredient(s)</span>}
-      />
+      {!headerCollapsed && (
+        <FilterBar
+          search={ingredientSearch}
+          onSearchChange={setIngredientSearch}
+          searchPlaceholder=" Search name or brand…"
+          onClear={() => setIngredientSearch("")}
+          active={!!ingredientSearch}
+          rightContent={<span className="result-count">{filteredIngredients.length} ingredient(s)</span>}
+        />
+      )}
 
       {showForm && (
         <div className="modal-overlay">
@@ -405,7 +420,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                     placeholder=" "
 
                     value={formData.description}
-                    onChange={(e) => { setFormData({ ...formData, description: e.target.value }); setFormErrors(p => ({ ...p, description: false })); }}
+                    onChange={(e) => { setFormData({ ...formData, description: allowTextInput(formData.description, e.target.value, 500, 100000) }); setFormErrors(p => ({ ...p, description: false })); }}
                   />
                   <label className={`mat-label${formErrors.description ? " mat-label-error" : ""}`}>Description<span className="rf-req">*</span></label>
                   <span className={`mat-bar${formErrors.description ? " mat-bar-error" : ""}`} />
@@ -419,7 +434,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                     placeholder=" "
 
                     value={formData.history}
-                    onChange={(e) => { setFormData({ ...formData, history: e.target.value }); setFormErrors(p => ({ ...p, history: false })); }}
+                    onChange={(e) => { setFormData({ ...formData, history: allowTextInput(formData.history, e.target.value, 500, 100000) }); setFormErrors(p => ({ ...p, history: false })); }}
                   />
                   <label className={`mat-label${formErrors.history ? " mat-label-error" : ""}`}>History<span className="rf-req">*</span></label>
                   <span className={`mat-bar${formErrors.history ? " mat-bar-error" : ""}`} />
@@ -530,7 +545,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
         </div>
       )}
 
-      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 260px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>

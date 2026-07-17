@@ -16,6 +16,7 @@ import { CustomDatePicker } from "../components/CustomDatePicker";
 import { todayStr, getWeekRange as sharedWeekRange, getMonthRange as sharedMonthRange, getLastMonthRange as sharedLastMonthRange } from "../utils/dateRangeUtils";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
+import { allowTextInput } from "../App";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 
 const SEVEN_MIN = 7 * 60 * 1000;
@@ -355,13 +356,16 @@ const OrderRow = React.memo(({
   isActive,
   onToggle,
   onPickup,
+  onCancelItem,
   onOptionsClick,
   navigate,
   orderStatus,
   setAdminData,
   toast
 }) => {
-  const allItemsCompleted = order.items.every(i => i.status === "completed");
+  const allItemsCompleted = order.items
+    .filter(i => normalizeStatus(i.status) !== "cancelled")
+    .every(i => i.status === "completed");
 
   return (
     <React.Fragment>
@@ -420,7 +424,7 @@ const OrderRow = React.memo(({
             {orderStatus}
           </div>
         </td>
-        <td>
+        <td className="icon-width">
           <div className="bill-actions">
             <button
               className="options-btn"
@@ -466,60 +470,83 @@ const OrderRow = React.memo(({
                   <th>Qty</th>
                   <th>Timer</th>
                   <th>Status</th>
-                  {order.status === "preparing" && <th>Action</th>}
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
-                {order.items.map((item, idx) => (
-                  <tr key={idx}>
-                    <td>
-                      <span
-                        className={item.categoryId === "combo" ? "combo-item" : "clickable"}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (item.categoryId === "combo") return;
-                          navigate(
-                            `/dishes/${item.categoryId}/${item.dishId || "__custom__"}`,
-                            { state: { fromOrder: true, orderItem: item } }
-                          );
-                        }}
-                      >
-                        {item.dishName}
-                      </span>
-                    </td>
-                    <td>{item.notes ? item.notes : "-----------"}</td>
-                    <td>{item.qty ?? item.quantity}</td>
-                    <td>
-                      {item.pickupStatus === "on_time" && (
-                        <span style={{ color: "#2e7d32", fontWeight: 600 }}>On Time</span>
-                      )}
-                      {item.pickupStatus === "late" && (
-                        <span style={{ color: "#d32f2f", fontWeight: 600 }}>Late Order</span>
-                      )}
-                      {!item.pickupStatus && <ItemTimer item={item} order={order} />}
-                    </td>
-                    <td>
-                      <div className={`status status-${normalizeStatus(item.status).replace(/\s+/g, "-")}`}>
-                        {item.status}
-                      </div>
-                    </td>
-                    {order.status === "preparing" && (
+                {order.items.map((item, idx) => {
+                  const itemStatus = normalizeStatus(item.status);
+                  const isCancellable =
+                    itemStatus !== "cancelled" &&
+                    itemStatus !== "completed" &&
+                    itemStatus !== "service pickup" &&
+                    normalizeStatus(order.status) !== "cancelled";
+
+                  return (
+                    <tr key={idx} className={itemStatus === "cancelled" ? "order-item-cancelled" : ""}>
                       <td>
-                        {item.status === "preparing" && (
-                          <Button3D
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onPickup({ orderId: order.id, itemIndex: idx, item });
-                            }}
-                          >
-                            Order Pickup
-                          </Button3D>
-                        )}
+                        <span
+                          className={item.categoryId === "combo" ? "combo-item" : "clickable"}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (item.categoryId === "combo") return;
+                            navigate(
+                              `/dishes/${item.categoryId}/${item.dishId || "__custom__"}`,
+                              { state: { fromOrder: true, orderItem: item } }
+                            );
+                          }}
+                        >
+                          {item.dishName}
+                        </span>
                       </td>
-                    )}
-                  </tr>
-                ))}
+                      <td>{item.notes ? item.notes : "-----------"}</td>
+                      <td>{item.qty ?? item.quantity}</td>
+                      <td>
+                        {item.pickupStatus === "on_time" && (
+                          <span style={{ color: "#2e7d32", fontWeight: 600 }}>On Time</span>
+                        )}
+                        {item.pickupStatus === "late" && (
+                          <span style={{ color: "#d32f2f", fontWeight: 600 }}>Late Order</span>
+                        )}
+                        {!item.pickupStatus && <ItemTimer item={item} order={order} />}
+                      </td>
+                      <td>
+                        <div className={`status status-${itemStatus.replace(/\s+/g, "-")}`}>
+                          {item.status}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="order-item-actions">
+                          {order.status === "preparing" && item.status === "preparing" && (
+                            <Button3D
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onPickup({ orderId: order.id, itemIndex: idx, item });
+                              }}
+                            >
+                              Pickup
+                            </Button3D>
+                          )}
+                          {isCancellable && (
+                            <Button3D
+                              variant="cancel"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onCancelItem({ order, itemIndex: idx, item });
+                              }}
+                            >
+                              Cancel
+                            </Button3D>
+                          )}
+                          {itemStatus === "cancelled" && (
+                            <span className="order-item-cancelled-label">Cancelled</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -539,6 +566,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
   const [pickupConfirm, setPickupConfirm] = useState(null);
   const [openStatusDropdown, setOpenStatusDropdown] = useState(false);
   const [openModeDropdown, setOpenModeDropdown] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [modeFilter, setModeFilter] = useState("all");
   const [orderSearch, setOrderSearch] = useState("");
@@ -635,6 +663,8 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
   const [editableBill, setEditableBill] = useState(null);
   const [menuPos, setMenuPos] = useState(null);
   const [cancelOrderConfirm, setCancelOrderConfirm] = useState(null);
+  const [cancelItemConfirm, setCancelItemConfirm] = useState(null);
+  const [cancelItemReason, setCancelItemReason] = useState("");
   const [cancelReason, setCancelReason] = useState("");
   const tableWrapperRef = useRef(null);
 
@@ -776,8 +806,10 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
 
   const deriveOrderStatusFromItems = useCallback((items, currentStatus) => {
     if (normalizeStatus(currentStatus) === "cancelled") return "cancelled";
-    if (items.every(i => i.status === "completed")) return "completed";
-    if (items.some(i => i.status === "preparing" || i.status === "service pickup"))
+    const activeItems = items.filter(i => normalizeStatus(i.status) !== "cancelled");
+    if (activeItems.length === 0) return "cancelled";
+    if (activeItems.every(i => i.status === "completed")) return "completed";
+    if (activeItems.some(i => i.status === "preparing" || i.status === "service pickup"))
       return "preparing";
     return "placed";
   }, []);
@@ -1062,6 +1094,50 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
     }
   };
 
+  const cancelOrderItem = async (order, itemIndex, reason) => {
+    const items = order.items.map((item, idx) =>
+      idx === itemIndex
+        ? {
+          ...item,
+          status: "cancelled",
+          cancelReason: reason.trim(),
+          cancelledAt: new Date().toISOString(),
+          // Zero out billing contribution — cancelled dishes shouldn't be charged.
+          totalPrice: 0
+        }
+        : item
+    );
+
+    const recalced = recalcOrderTotals({ ...order, items });
+    const newStatus = deriveOrderStatusFromItems(recalced.items, order.status);
+
+    const updatedOrder = {
+      ...recalced,
+      status: newStatus
+    };
+
+    // 1. INSTANT UI UPDATE
+    setAdminData(prev => ({
+      ...prev,
+      orders: prev.orders.map(o => (o.id === order.id ? updatedOrder : o))
+    }));
+
+    // 2. BACKEND UPDATE
+    try {
+      await persistOrderEverywhere(updatedOrder);
+      socket.emit("data-change", {
+        resource: "orders",
+        action: "updated",
+        payload: updatedOrder
+      });
+      toast.success("Dish cancelled");
+    } catch (err) {
+      toast.error("Failed to cancel dish");
+      console.error("Failed to cancel dish", err);
+    }
+  };
+
+
   const closeAllBillOverlays = useCallback(() => {
     setEditBillOrder(null);
     setPreviewBillOrder(null);
@@ -1221,134 +1297,151 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
 
       <div className="orders-header">
         <div className="orders-header-div">
-          <h2 className="orders-title">Orders</h2>
-
-          <div className="orders-search-wrapper">
-            <input
-              className="search-input"
-              placeholder=" Search by order ID, customer, dish…"
-              value={orderSearch}
-              onChange={e => setOrderSearch(e.target.value)}
-            />
-            {orderSearch && (
-              <button className="orders-search-clear" onClick={() => setOrderSearch("")}>✕</button>
-            )}
+          <div className="header-title-row">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+            </button>
+            <h2 className="orders-title">Orders</h2>
           </div>
 
-          <Button3D
-            style={{ marginLeft: "auto" }}
-            onClick={() => exportOrders(filteredOrders, fromDate, toDate)}
-          >Export
-          </Button3D>
+          {!headerCollapsed && (
+            <>
+              <div className="orders-search-wrapper">
+                <input
+                  className="search-input"
+                  placeholder=" Search by order ID, customer, dish…"
+                  value={orderSearch}
+                  onChange={e => setOrderSearch(allowTextInput(orderSearch, e.target.value, 100, 5))}
+                />
+                {orderSearch && (
+                  <button className="orders-search-clear" onClick={() => setOrderSearch("")}>✕</button>
+                )}
+              </div>
+
+              <Button3D
+                style={{ marginLeft: "auto" }}
+                onClick={() => exportOrders(filteredOrders, fromDate, toDate)}
+              >Export
+              </Button3D>
+            </>
+          )}
         </div>
 
-        <div className="filter-group">
-          <button
-            type="button"
-            className={`filter-pill${datePreset === "today" ? " active" : ""}`}
-            onClick={() => applyPreset("today")}
-          >
-            Today
-          </button>
-          <button
-            type="button"
-            className={`filter-pill${datePreset === "week" ? " active" : ""}`}
-            onClick={() => applyPreset("week")}
-          >
-            This Week
-          </button>
-          <button
-            type="button"
-            className={`filter-pill${datePreset === "month" ? " active" : ""}`}
-            onClick={() => applyPreset("month")}
-          >
-            This Month
-          </button>
-          <button
-            type="button"
-            className={`filter-pill${datePreset === "lastmonth" ? " active" : ""}`}
-            onClick={() => applyPreset("lastmonth")}
-          >
-            Last Month
-          </button>
+        {!headerCollapsed && (
+          <div className="filter-group">
+            <button
+              type="button"
+              className={`filter-pill${datePreset === "today" ? " active" : ""}`}
+              onClick={() => applyPreset("today")}
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              className={`filter-pill${datePreset === "week" ? " active" : ""}`}
+              onClick={() => applyPreset("week")}
+            >
+              This Week
+            </button>
+            <button
+              type="button"
+              className={`filter-pill${datePreset === "month" ? " active" : ""}`}
+              onClick={() => applyPreset("month")}
+            >
+              This Month
+            </button>
+            <button
+              type="button"
+              className={`filter-pill${datePreset === "lastmonth" ? " active" : ""}`}
+              onClick={() => applyPreset("lastmonth")}
+            >
+              Last Month
+            </button>
 
-          <div>
-            <CustomDatePicker
-              label="From"
-              value={fromDate}
-              max={toDate}
-              onChange={(s) => { setFromDate(s); setDatePreset("custom"); if (s > toDate) setToDate(s); }}
-            />
-            <CustomDatePicker
-              label="To"
-              value={toDate}
-              min={fromDate}
-              max={todayISO}
-              onChange={(s) => { setToDate(s); setDatePreset("custom"); }}
-            />
-          </div>
-
-          <div>
-            <div className="orders-dropdown-wrapper">
-              <button
-                className="orders-status-dropdown"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenModeDropdown(prev => !prev);
-                }}
-              >
-                {modeFilter === "all" ? "All Modes" : modeFilter}
-              </button>
-
-              {openModeDropdown && (
-                <div className="dropdown-menu">
-                  {["all", "dine in", "take away"].map(mode => (
-                    <div
-                      key={mode}
-                      onClick={() => {
-                        setModeFilter(mode);
-                        setOpenModeDropdown(false);
-                      }}
-                    >
-                      {mode === "all" ? "All Modes" : mode}
-                    </div>
-                  ))}
-                </div>
-              )}
+            <div>
+              <CustomDatePicker
+                label="From"
+                value={fromDate}
+                max={toDate}
+                onChange={(s) => { setFromDate(s); setDatePreset("custom"); if (s > toDate) setToDate(s); }}
+              />
+              <CustomDatePicker
+                label="To"
+                value={toDate}
+                min={fromDate}
+                max={todayISO}
+                onChange={(s) => { setToDate(s); setDatePreset("custom"); }}
+              />
             </div>
-            <div className="orders-dropdown-wrapper">
-              <button
-                className="orders-status-dropdown"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenStatusDropdown(prev => !prev);
-                }}
-              >
-                {statusFilter === "all" ? "All Status" : statusFilter}
-              </button>
 
-              {openStatusDropdown && (
-                <div className="dropdown-menu">
-                  {["all", "placed", "preparing", "service pickup", "completed", "cancelled"].map(status => (
-                    <div
-                      key={status}
-                      onClick={() => {
-                        setStatusFilter(status);
-                        setOpenStatusDropdown(false);
-                      }}
-                    >
-                      {status === "all" ? "All Status" : status}
-                    </div>
-                  ))}
-                </div>
-              )}
+            <div>
+              <div className="orders-dropdown-wrapper">
+                <button
+                  className="orders-status-dropdown"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenModeDropdown(prev => !prev);
+                  }}
+                >
+                  {modeFilter === "all" ? "All Modes" : modeFilter}
+                </button>
+
+                {openModeDropdown && (
+                  <div className="dropdown-menu">
+                    {["all", "dine in", "take away"].map(mode => (
+                      <div
+                        key={mode}
+                        onClick={() => {
+                          setModeFilter(mode);
+                          setOpenModeDropdown(false);
+                        }}
+                      >
+                        {mode === "all" ? "All Modes" : mode}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="orders-dropdown-wrapper">
+                <button
+                  className="orders-status-dropdown"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenStatusDropdown(prev => !prev);
+                  }}
+                >
+                  {statusFilter === "all" ? "All Status" : statusFilter}
+                </button>
+
+                {openStatusDropdown && (
+                  <div className="dropdown-menu">
+                    {["all", "placed", "preparing", "service pickup", "completed", "cancelled"].map(status => (
+                      <div
+                        key={status}
+                        onClick={() => {
+                          setStatusFilter(status);
+                          setOpenStatusDropdown(false);
+                        }}
+                      >
+                        {status === "all" ? "All Status" : status}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
 
-      <div className="orders-table-wrapper" ref={tableWrapperRef}>
+      <div className={`orders-table-wrapper${headerCollapsed ? " header-is-collapsed" : ""}`} ref={tableWrapperRef}>
         <table className="orders-table">
           <colgroup>
             <col />
@@ -1409,7 +1502,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
                   </span>
                 </span>
               </th>
-              <th>Bill</th>
+              <th className="icon-width">Bill</th>
             </tr>
           </thead>
 
@@ -1428,6 +1521,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
                     isActive={activeOrderIds.includes(order.id)}
                     onToggle={toggleOrder}
                     onPickup={setPickupConfirm}
+                    onCancelItem={setCancelItemConfirm}
                     onOptionsClick={(id, pos) => {
                       setMenuPos(pos);
                       setOpenMenuOrderId(prev => prev === id ? null : id);
@@ -1553,7 +1647,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
               className="cancel-reason-textarea"
               placeholder="Reason for cancellation..."
               value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
+              onChange={(e) => setCancelReason(allowTextInput(cancelReason, e.target.value, 500, 100000))}
               autoFocus
               style={{
                 width: "100%",
@@ -1582,6 +1676,64 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
                   await cancelOrder(cancelOrderConfirm, cancelReason);
                   setCancelOrderConfirm(null);
                   setCancelReason("");
+                }}
+              >
+                Confirm Cancel
+              </Button3D>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cancelItemConfirm && (
+        <div
+          className="pickup-overlay"
+          onClick={() => setCancelItemConfirm(null)}
+        >
+          <div
+            className="pickup-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>Cancel Dish</h3>
+            <p>
+              Are you sure you want to cancel{" "}
+              <strong>{cancelItemConfirm?.item?.dishName}</strong>? Please provide a reason.
+            </p>
+
+            <textarea
+              className="cancel-reason-textarea"
+              placeholder="Reason for cancellation..."
+              value={cancelItemReason}
+              onChange={(e) => setCancelItemReason(allowTextInput(cancelItemReason, e.target.value, 500, 100000))}
+              autoFocus
+              style={{
+                width: "100%",
+                minHeight: "80px",
+                marginTop: "10px",
+                padding: "8px",
+                borderRadius: "6px",
+                border: "1px solid #d1d5db",
+                boxSizing: "border-box",
+                resize: "vertical",
+                fontFamily: "inherit"
+              }}
+            />
+
+            <div className="pickup-actions">
+              <Button3D
+                variant="cancel"
+                onClick={() => { setCancelItemConfirm(null); setCancelItemReason(""); }}
+              >
+                Back
+              </Button3D>
+
+              <Button3D
+                disabled={!cancelItemReason.trim()}
+                onClick={async () => {
+                  const { order, itemIndex } = cancelItemConfirm;
+                  await cancelOrderItem(order, itemIndex, cancelItemReason);
+                  setCancelItemConfirm(null);
+                  setCancelItemReason("");
                 }}
               >
                 Confirm Cancel

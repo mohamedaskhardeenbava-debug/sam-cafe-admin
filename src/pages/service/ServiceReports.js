@@ -191,6 +191,7 @@ const ServiceReports = ({ adminData = {} }) => {
   // ── Hooks
 
   const [activePie, setActivePie] = useState(null);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [activeEventPie, setActiveEventPie] = useState(null);
   const [reportFrom, setReportFrom] = useState("");
   const [reportTo, setReportTo] = useState("");
@@ -251,29 +252,47 @@ const ServiceReports = ({ adminData = {} }) => {
       {/* HEADER */}
       <div className="s-header">
         <div>
-          <h2 className="s-title">Service Management</h2>
+          <div className="header-title-row">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+              aria-expanded={!headerCollapsed}
+            >
+              <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+            </button>
+            <h2 className="s-title">Service Management</h2>
+          </div>
           <p className="s-subtitle">Operations &amp; Guest Experience Report</p>
         </div>
-        <div className="s-header-filters">
-          <DateRangeGroup
-            from={reportFrom}
-            to={reportTo}
-            onChangeFrom={setReportFrom}
-            onChangeTo={setReportTo}
-            preset={reportPreset}
-            onChangePreset={setReportPreset}
-            max={today}
-            labelClass="sgroom-filter-label"
-            groupClass="s-filter-item"
-            separateItems
-          />
-          {(reportFrom || reportTo) && (
-            <button className="ae-clear-filter" onClick={() => { setReportPreset("all"); setReportFrom(""); setReportTo(""); }}>Clear</button>
-          )}
+        {!headerCollapsed && (
+          <div className="s-header-filters">
+            <DateRangeGroup
+              from={reportFrom}
+              to={reportTo}
+              onChangeFrom={setReportFrom}
+              onChangeTo={setReportTo}
+              preset={reportPreset}
+              onChangePreset={setReportPreset}
+              max={today}
+              labelClass="sgroom-filter-label"
+              groupClass="s-filter-item"
+              separateItems
+            />
+            {(reportFrom || reportTo) && (
+              <button className="ae-clear-filter" onClick={() => { setReportPreset("all"); setReportFrom(""); setReportTo(""); }}>Clear</button>
+            )}
+            <span className="s-export-btn">
+              <Button3D onClick={exportReport}>Export</Button3D>
+            </span>
+          </div>
+        )}
+        {headerCollapsed && (
           <span className="s-export-btn">
             <Button3D onClick={exportReport}>Export</Button3D>
           </span>
-        </div>
+        )}
       </div>
 
       {/* KPI ROW */}

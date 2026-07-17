@@ -18,6 +18,7 @@ import deleteIcon from "../../icon/delete-icon.png";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 import { useToast } from "../../useToast";
+import { allowTextInput } from "../../App";
 import Button3D from "../../components/Button3D";
 import CustomDropdown from "../../components/CustomDropdown";
 import { MultiPillGroup } from "../../components/FilterBar";
@@ -73,6 +74,7 @@ export default function Staffs({
 
   const { toast } = useToast();
   const [showModal, setShowModal] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -191,7 +193,18 @@ export default function Staffs({
     <div className="inner-page">
       {/* HEADER */}
       <div className="header">
-        <h2 className="title">Staff</h2>
+        <div className="header-title-row">
+          <button
+            type="button"
+            className="header-collapse-btn"
+            onClick={() => setHeaderCollapsed(prev => !prev)}
+            title={headerCollapsed ? "Expand header" : "Collapse header"}
+            aria-expanded={!headerCollapsed}
+          >
+            <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+          </button>
+          <h2 className="title">Staff</h2>
+        </div>
         <div className="header-btn-container">
           <Button3D onClick={exportStaffs}>Export</Button3D>
           <Button3D onClick={() => { setFormData(EMPTY_FORM); setShowModal(true); }}>+ Add Staff</Button3D>
@@ -199,35 +212,37 @@ export default function Staffs({
       </div>
 
       {/* FILTER BAR */}
-      <div className="filter-bar">
-        <div className="filter-groups">
-          <input
-            className="search-input"
-            placeholder=" Search name, role, contact…"
-            value={staffSearch}
-            onChange={e => setStaffSearch(e.target.value)}
-          />
+      {!headerCollapsed && (
+        <div className="filter-bar">
+          <div className="filter-groups">
+            <input
+              className="search-input"
+              placeholder=" Search name, role, contact…"
+              value={staffSearch}
+              onChange={e => setStaffSearch(allowTextInput(staffSearch, e.target.value, 100, 5))}
+            />
 
-          <MultiPillGroup
-            label="Work Type"
-            options={[["full-time", "Full-Time"], ["part-time", "Part-Time"], ["double-shift", "Double Shift"]]}
-            value={workTypeFilters}
-            onToggle={(key) => toggleSet(setWorkTypeFilters, key)}
-          />
-          <MultiPillGroup
-            label="Role"
-            options={roles.map(r => [r, r])}
-            value={roleFilters}
-            onToggle={(key) => toggleSet(setRoleFilters, key)}
-          />
-          {(staffSearch || workTypeFilters.size > 0 || roleFilters.size > 0) && (
-            <button className="ae-clear-filter" onClick={() => { setStaffSearch(""); setWorkTypeFilters(new Set()); setRoleFilters(new Set()); }}>Clear</button>
-          )}
+            <MultiPillGroup
+              label="Work Type"
+              options={[["full-time", "Full-Time"], ["part-time", "Part-Time"], ["double-shift", "Double Shift"]]}
+              value={workTypeFilters}
+              onToggle={(key) => toggleSet(setWorkTypeFilters, key)}
+            />
+            <MultiPillGroup
+              label="Role"
+              options={roles.map(r => [r, r])}
+              value={roleFilters}
+              onToggle={(key) => toggleSet(setRoleFilters, key)}
+            />
+            {(staffSearch || workTypeFilters.size > 0 || roleFilters.size > 0) && (
+              <button className="ae-clear-filter" onClick={() => { setStaffSearch(""); setWorkTypeFilters(new Set()); setRoleFilters(new Set()); }}>Clear</button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* TABLE */}
-      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 260px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -365,7 +380,7 @@ export default function Staffs({
                         required
                         type="text"
                         value={formData.name}
-                        onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setFormErrors(p => ({ ...p, name: false })); }}
+                        onChange={(e) => { setFormData({ ...formData, name: allowTextInput(formData.name, e.target.value, 100, 5) }); setFormErrors(p => ({ ...p, name: false })); }}
                       />
                       <label className={`mat-label${formErrors.name ? " mat-label-error" : ""}`}>Full Name<span className="rf-req">*</span></label>
                       <span className={`mat-bar${formErrors.name ? " mat-bar-error" : ""}`} />
@@ -498,7 +513,7 @@ export default function Staffs({
                               required
                               type="text"
                               value={formData.education}
-                              onChange={(e) => { setFormData({ ...formData, education: e.target.value }); setFormErrors(p => ({ ...p, education: false })); }}
+                              onChange={(e) => { setFormData({ ...formData, education: allowTextInput(formData.education, e.target.value, 100, 5) }); setFormErrors(p => ({ ...p, education: false })); }}
                             />
                             <label className={`mat-label${formErrors.education ? " mat-label-error" : ""}`}>Education<span className="rf-req">*</span></label>
                             <span className={`mat-bar${formErrors.education ? " mat-bar-error" : ""}`} />
@@ -575,7 +590,7 @@ export default function Staffs({
                               placeholder=" "
                               required
                               value={tempExp.org}
-                              onChange={(e) => setTempExp({ ...tempExp, org: e.target.value })}
+                              onChange={(e) => setTempExp({ ...tempExp, org: allowTextInput(tempExp.org, e.target.value, 100, 5) })}
                             />
                             <label className="mat-label">Organization<span className="rf-req">*</span></label>
                             <span className="mat-bar" />
@@ -589,7 +604,7 @@ export default function Staffs({
                               placeholder=" "
                               required
                               value={tempExp.place}
-                              onChange={(e) => setTempExp({ ...tempExp, place: e.target.value })}
+                              onChange={(e) => setTempExp({ ...tempExp, place: allowTextInput(tempExp.place, e.target.value, 100, 5) })}
                             />
                             <label className="mat-label">Place<span className="rf-req">*</span></label>
                             <span className="mat-bar" />
@@ -696,7 +711,7 @@ export default function Staffs({
                             placeholder=" "
                             value={formData.residentialAddress}
                             onChange={(e) => {
-                              const value = e.target.value;
+                              const value = allowTextInput(formData.residentialAddress, e.target.value, 500, 100000);
                               setFormData(prev => ({
                                 ...prev,
                                 residentialAddress: value,
@@ -736,7 +751,7 @@ export default function Staffs({
                             className={`mat-input mat-textarea${formErrors.permanentAddress ? " mat-error" : ""}`}
                             placeholder=" "
                             value={formData.permanentAddress}
-                            onChange={(e) => { setFormData({ ...formData, permanentAddress: e.target.value }); setFormErrors(p => ({ ...p, permanentAddress: false })); }}
+                            onChange={(e) => { setFormData({ ...formData, permanentAddress: allowTextInput(formData.permanentAddress, e.target.value, 500, 100000) }); setFormErrors(p => ({ ...p, permanentAddress: false })); }}
                           />
                           <label className={`mat-label${formErrors.permanentAddress ? " mat-label-error" : ""}`}>Permanent Address<span className="rf-req">*</span></label>
                           <span className={`mat-bar${formErrors.permanentAddress ? " mat-bar-error" : ""}`} />
@@ -757,7 +772,7 @@ export default function Staffs({
                             placeholder=" "
                             required
                             value={formData.bank.name}
-                            onChange={(e) => { setFormData({ ...formData, bank: { ...formData.bank, name: e.target.value } }); setFormErrors(p => ({ ...p, bankName: false })); }}
+                            onChange={(e) => { setFormData({ ...formData, bank: { ...formData.bank, name: allowTextInput(formData.bank.name, e.target.value, 100, 5) } }); setFormErrors(p => ({ ...p, bankName: false })); }}
                           />
                           <label className={`mat-label${formErrors.bankName ? " mat-label-error" : ""}`}>Bank Name<span className="rf-req">*</span></label>
                           <span className={`mat-bar${formErrors.bankName ? " mat-bar-error" : ""}`} />
@@ -804,7 +819,7 @@ export default function Staffs({
                         placeholder=" "
                         required
                         value={formData.reference}
-                        onChange={(e) => { setFormData({ ...formData, reference: e.target.value }); setFormErrors(p => ({ ...p, reference: false })); }}
+                        onChange={(e) => { setFormData({ ...formData, reference: allowTextInput(formData.reference, e.target.value, 100, 5) }); setFormErrors(p => ({ ...p, reference: false })); }}
                       />
                       <label className={`mat-label${formErrors.reference ? " mat-label-error" : ""}`}>Reference<span className="rf-req">*</span></label>
                       <span className={`mat-bar${formErrors.reference ? " mat-bar-error" : ""}`} />

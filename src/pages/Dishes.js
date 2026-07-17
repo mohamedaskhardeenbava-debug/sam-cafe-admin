@@ -29,6 +29,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
   const { toast } = useToast();
   const [dishImagePreview, setDishImagePreview] = useState("");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
+  const [categoryBarCollapsed, setCategoryBarCollapsed] = useState(false);
   const [editingDish, setEditingDish] = useState(null);
   const [editingDishId, setEditingDishId] = useState(null);
   const [editedPrice, setEditedPrice] = useState("");
@@ -503,66 +504,78 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
   return (
     <div className="inner-page">
       <div className="header" style={{ alignItems: "flex-start" }}>
-        <h2 className="title">Dishes</h2>
+        <div className="header-title-row">
+          <button
+            type="button"
+            className="header-collapse-btn"
+            onClick={() => setCategoryBarCollapsed(prev => !prev)}
+            title={categoryBarCollapsed ? "Expand categories" : "Collapse categories"}
+            aria-expanded={!categoryBarCollapsed}
+          >
+            <span className={`header-collapse-arrow${categoryBarCollapsed ? " rotated" : ""}`}>▾</span>
+          </button>
+          <h2 className="title">Dishes</h2>
+        </div>
         <Button3D onClick={() => setShowForm(true)}>+ Add Dish</Button3D>
       </div>
 
-      <div className="dish-category-buttons">
+      {!categoryBarCollapsed && (
+        <div className="dish-category-buttons">
+          {adminData.categories.flatMap(cat => {
 
-        {adminData.categories.flatMap(cat => {
+            if ((cat.subCategories || []).length > 0) {
 
-          if ((cat.subCategories || []).length > 0) {
+              return cat.subCategories.map(sub => (
 
-            return cat.subCategories.map(sub => (
+                <button
+                  key={sub.id}
+                  className={`filter-pill ${selectedCategoryIds.includes(sub.id) ? "active" : ""
+                    }`}
+                  onClick={() =>
+                    setSelectedCategoryIds(prev =>
+                      prev.includes(sub.id)
+                        ? prev.filter(id => id !== sub.id)
+                        : [...prev, sub.id]
+                    )
+                  }
+                >
+                  {sub.name}
+                  <span className="filter-pill-count">{(sub.dishes || []).length}</span>
+                </button>
+
+              ));
+
+            }
+
+            return (
 
               <button
-                key={sub.id}
-                className={`filter-pill ${selectedCategoryIds.includes(sub.id) ? "active" : ""
+                key={cat.id}
+                className={`filter-pill ${selectedCategoryIds.includes(cat.id) ? "active" : ""
                   }`}
                 onClick={() =>
                   setSelectedCategoryIds(prev =>
-                    prev.includes(sub.id)
-                      ? prev.filter(id => id !== sub.id)
-                      : [...prev, sub.id]
+                    prev.includes(cat.id)
+                      ? prev.filter(id => id !== cat.id)
+                      : [...prev, cat.id]
                   )
                 }
               >
-                {sub.name}
-                <span className="filter-pill-count">{(sub.dishes || []).length}</span>
+                {cat.name}
+                <span className="filter-pill-count">{(cat.dishes || []).length}</span>
               </button>
+            );
+          })}
 
-            ));
+          {selectedCategoryIds.length > 0 && (
+            <span className="result-count">
+              {sortedDishes.length} dish{sortedDishes.length === 1 ? "" : "es"}
+            </span>
+          )}
+        </div>
+      )}
 
-          }
-
-          return (
-
-            <button
-              key={cat.id}
-              className={`filter-pill ${selectedCategoryIds.includes(cat.id) ? "active" : ""
-                }`}
-              onClick={() =>
-                setSelectedCategoryIds(prev =>
-                  prev.includes(cat.id)
-                    ? prev.filter(id => id !== cat.id)
-                    : [...prev, cat.id]
-                )
-              }
-            >
-              {cat.name}
-              <span className="filter-pill-count">{(cat.dishes || []).length}</span>
-            </button>
-          );
-        })}
-
-        {selectedCategoryIds.length > 0 && (
-          <span className="result-count">
-            {sortedDishes.length} dish{sortedDishes.length === 1 ? "" : "es"}
-          </span>
-        )}
-      </div>
-
-      <div className="table-wrapper dish-page-table" ref={containerRef}>
+      <div className="table-wrapper dish-page-table" style={{ maxHeight: categoryBarCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 260px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -747,7 +760,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                     className={`mat-input mat-textarea${formErrors.description ? " mat-error" : ""}`}
                     placeholder=" "
                     value={newDish.description}
-                    onChange={(e) => { setNewDish({ ...newDish, description: e.target.value }); setFormErrors(p => ({ ...p, description: false })); }}
+                    onChange={(e) => { setNewDish({ ...newDish, description: allowTextInput(newDish.description, e.target.value, 500, 100000) }); setFormErrors(p => ({ ...p, description: false })); }}
                   />
                   <label className={`mat-label${formErrors.description ? " mat-label-error" : ""}`}>Description<span className="rf-req">*</span></label>
                   <span className={`mat-bar${formErrors.description ? " mat-bar-error" : ""}`} />
@@ -892,7 +905,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                         placeholder=" "
                         value={variantForm.name}
                         onChange={(e) => {
-                          setVariantForm({ ...variantForm, name: e.target.value });
+                          setVariantForm({ ...variantForm, name: allowTextInput(variantForm.name, e.target.value, 100, 5) });
                           setFormErrors(p => ({ ...p, variantName: false }));
                         }}
                       />
@@ -912,7 +925,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                         value={variantForm.extraCharge}
                         onChange={(e) => setVariantForm({ ...variantForm, extraCharge: e.target.value })}
                       />
-                      <label className="mat-label">Extra Charge</label>
+                      <label className="mat-label">Additional Cost</label>
                       <span className="mat-bar" />
                     </div>
                   </div>
@@ -923,7 +936,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                       <thead>
                         <tr>
                           <th>Variant</th>
-                          <th>Extra Charge</th>
+                          <th>Additional Cost</th>
                           <th>Action</th>
                         </tr>
                       </thead>

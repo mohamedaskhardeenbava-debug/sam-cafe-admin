@@ -128,7 +128,6 @@
   border-spacing: 0 3px;
   /* row spacing */
   background: transparent;
-  table-layout: fixed;
 }
 
 /* HEADER */
@@ -303,6 +302,12 @@
   background-color: #2e7d32 !important;
 }
 
+/* cancelled */
+.status-cancelled {
+  color: #fff !important;
+  background-color: #6b7280 !important;
+}
+
 /* ===== Order Blink Highlight (FoodItem-style) ===== */
 .order-main-row.blink {
   position: relative;
@@ -384,6 +389,11 @@
   table-layout: fixed;
   border: 1px solid #e8e8e8;
   transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.order-items-table th:last-child,
+.order-items-table td:last-child {
+  width: 210px;
 }
 
 .order-items-table {
@@ -808,6 +818,36 @@
   .orders-table td {
     font-size: 12px;
   }
+}
+
+/* ── Per-item cancel (item-level cancellation inside an order) ── */
+.order-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.order-item-cancelled {
+  opacity: 0.55;
+}
+
+.order-item-cancelled td {
+  text-decoration: line-through;
+  text-decoration-color: #c0392b;
+}
+
+.order-item-cancelled td:nth-child(5),
+.order-item-cancelled td:nth-child(6) {
+  text-decoration: none;
+}
+
+.order-item-cancelled-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #c0392b;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
 /* ── Infinite scroll sentinel ── */

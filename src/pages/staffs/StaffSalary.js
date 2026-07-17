@@ -13,6 +13,7 @@ import editIcon from "../../icon/edit-icon.png";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 import { useToast } from "../../useToast";
+import { allowTextInput } from "../../App";
 import Button3D from "../../components/Button3D";
 
 import "./StaffModules.css";
@@ -26,6 +27,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
   const [selected, setSelected] = useState(null);
   const [staffList, setStaffList] = useState(adminData.staff);
   const [salarySearch, setSalarySearch] = useState("");
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [form, setForm] = useState({
     advance: 0,
     deduction: 0,
@@ -123,7 +125,18 @@ export default function StaffSalary({ adminData, setAdminData }) {
   return (
     <div className="inner-page">
       <div className="header">
-        <h2 className="title">Salary Management</h2>
+        <div className="header-title-row">
+          <button
+            type="button"
+            className="header-collapse-btn"
+            onClick={() => setHeaderCollapsed(prev => !prev)}
+            title={headerCollapsed ? "Expand header" : "Collapse header"}
+            aria-expanded={!headerCollapsed}
+          >
+            <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+          </button>
+          <h2 className="title">Salary Management</h2>
+        </div>
         <Button3D onClick={() => {
           const rows = filteredList.map((s, i) => {
             const rec = (s.remainingSalary || [])[0] || {};
@@ -151,22 +164,24 @@ export default function StaffSalary({ adminData, setAdminData }) {
       </div>
 
       {/* FILTER BAR */}
-      <div className="filter-bar">
-        <div className="justify">
-          <input
-            className="search-input"
-            placeholder=" Search name or role…"
-            value={salarySearch}
-            onChange={e => setSalarySearch(e.target.value)}
-          />
-          {salarySearch && (
-            <button className="ae-clear-filter" onClick={() => setSalarySearch("")}>Clear</button>
-          )}
-          <span className="result-count">{filteredList.length} staff</span>
+      {!headerCollapsed && (
+        <div className="filter-bar">
+          <div className="justify">
+            <input
+              className="search-input"
+              placeholder=" Search name or role…"
+              value={salarySearch}
+              onChange={e => setSalarySearch(allowTextInput(salarySearch, e.target.value, 100, 5))}
+            />
+            {salarySearch && (
+              <button className="ae-clear-filter" onClick={() => setSalarySearch("")}>Clear</button>
+            )}
+            <span className="result-count">{filteredList.length} staff</span>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 260px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
