@@ -18,6 +18,7 @@ import useInfiniteScroll from "../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
+import CollapseChevron from "../components/CollapseChevron";
 import { FilterBar } from "../components/FilterBar";
 
 import "./Ingredients.css";
@@ -193,7 +194,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
             title={headerCollapsed ? "Expand filters" : "Collapse filters"}
             aria-expanded={!headerCollapsed}
           >
-            <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+            <CollapseChevron collapsed={headerCollapsed} />
           </button>
           <h2 className="title">Ingredients</h2>
         </div>

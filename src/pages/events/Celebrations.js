@@ -20,6 +20,7 @@ import { CustomTimePicker } from "../../components/CustomTimePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 
 import "./Celebrations.css";
 import "./EvtCommon.css";
@@ -436,7 +437,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
               title={headerCollapsed ? "Expand header" : "Collapse header"}
               aria-expanded={!headerCollapsed}
             >
-              <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+              <CollapseChevron collapsed={headerCollapsed} />
             </button>
             <h2 className="evt-title">Celebrations</h2>
           </div>

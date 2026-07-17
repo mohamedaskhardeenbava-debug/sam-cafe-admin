@@ -11,6 +11,7 @@ import { DateRangeGroup } from "../../components/FilterBar";
 import { todayStr } from "../../utils/dateRangeUtils";
 
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 
 import "./ServiceReports.css";
 import {
@@ -260,7 +261,7 @@ const ServiceReports = ({ adminData = {} }) => {
               title={headerCollapsed ? "Expand filters" : "Collapse filters"}
               aria-expanded={!headerCollapsed}
             >
-              <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+              <CollapseChevron collapsed={headerCollapsed} />
             </button>
             <h2 className="s-title">Service Management</h2>
           </div>

@@ -18,6 +18,7 @@ import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 import { useToast } from "../useToast";
 import CustomDropdown from "../components/CustomDropdown";
 import Button3D from "../components/Button3D";
+import CollapseChevron from "../components/CollapseChevron";
 
 import "./Dishes.css";
 import "./ModalCSS.css";
@@ -512,7 +513,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
             title={categoryBarCollapsed ? "Expand categories" : "Collapse categories"}
             aria-expanded={!categoryBarCollapsed}
           >
-            <span className={`header-collapse-arrow${categoryBarCollapsed ? " rotated" : ""}`}>▾</span>
+            <CollapseChevron collapsed={categoryBarCollapsed} />
           </button>
           <h2 className="title">Dishes</h2>
         </div>

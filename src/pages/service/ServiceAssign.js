@@ -15,6 +15,7 @@ import { allowTextInput } from "../../App";
 import deleteIcon from "../../icon/delete-icon.png";
 import closeIcon from "../../icon/close-icon.png";
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 import CustomDropdown from "../../components/CustomDropdown";
 import { MultiPillGroup } from "../../components/FilterBar";
 
@@ -270,7 +271,7 @@ export default function ServiceAssign({ adminData, setAdminData }) {
               title={headerCollapsed ? "Expand header" : "Collapse header"}
               aria-expanded={!headerCollapsed}
             >
-              <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+              <CollapseChevron collapsed={headerCollapsed} />
             </button>
             <h2 className="title">Service Staff Assigning</h2>
           </div>

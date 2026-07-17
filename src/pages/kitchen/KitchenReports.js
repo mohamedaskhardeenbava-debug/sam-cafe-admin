@@ -10,6 +10,7 @@ import { DateRangeGroup } from "../../components/FilterBar";
 import { todayStr } from "../../utils/dateRangeUtils";
 
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 
 import "./KitchenReports.css";
 import {
@@ -258,7 +259,7 @@ const KitchenReports = ({ adminData = {} }) => {
                 title={headerCollapsed ? "Expand filters" : "Collapse filters"}
                 aria-expanded={!headerCollapsed}
               >
-                <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+                <CollapseChevron collapsed={headerCollapsed} />
               </button>
               <h2 className="k-title">Kitchen Management</h2>
             </div>

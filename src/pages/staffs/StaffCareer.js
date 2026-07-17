@@ -13,6 +13,7 @@ import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 import { MultiPillGroup } from "../../components/FilterBar";
 
 import "./StaffModules.css";
@@ -102,7 +103,7 @@ export default function StaffCareer() {
             title={headerCollapsed ? "Expand header" : "Collapse header"}
             aria-expanded={!headerCollapsed}
           >
-            <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+            <CollapseChevron collapsed={headerCollapsed} />
           </button>
           <h2 className="title">Career</h2>
         </div>

@@ -20,6 +20,7 @@ import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 import CustomDropdown from "../../components/CustomDropdown";
 import { MultiPillGroup } from "../../components/FilterBar";
 
@@ -201,7 +202,7 @@ export default function Staffs({
             title={headerCollapsed ? "Expand header" : "Collapse header"}
             aria-expanded={!headerCollapsed}
           >
-            <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+            <CollapseChevron collapsed={headerCollapsed} />
           </button>
           <h2 className="title">Staff</h2>
         </div>

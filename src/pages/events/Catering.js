@@ -20,6 +20,7 @@ import { CustomTimePicker } from "../../components/CustomTimePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 import CustomDropdown from "../../components/CustomDropdown";
 
 import "./Catering.css";
@@ -495,7 +496,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
               title={headerCollapsed ? "Expand header" : "Collapse header"}
               aria-expanded={!headerCollapsed}
             >
-              <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+              <CollapseChevron collapsed={headerCollapsed} />
             </button>
             <h2 className="evt-title">Catering Orders</h2>
           </div>

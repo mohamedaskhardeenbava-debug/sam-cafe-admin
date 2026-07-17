@@ -13,6 +13,7 @@ import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 
 import "./KitchenRecipe.css";
 
@@ -102,7 +103,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
             title={headerCollapsed ? "Expand header" : "Collapse header"}
             aria-expanded={!headerCollapsed}
           >
-            <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+            <CollapseChevron collapsed={headerCollapsed} />
           </button>
           <h2 className="title">Recipes</h2>
         </div>

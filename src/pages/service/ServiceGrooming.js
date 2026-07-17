@@ -17,6 +17,7 @@ import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 
 import "./ServiceGrooming.css";
 
@@ -192,7 +193,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
               title={headerCollapsed ? "Expand header" : "Collapse header"}
               aria-expanded={!headerCollapsed}
             >
-              <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+              <CollapseChevron collapsed={headerCollapsed} />
             </button>
             <h2 className="title">Service Grooming</h2>
           </div>

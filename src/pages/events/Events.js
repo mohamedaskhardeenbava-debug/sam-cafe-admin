@@ -17,6 +17,7 @@ import { allowTextInput } from "../../App";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 
 import "./Events.css";
 import "../ModalCSS.css";
@@ -756,7 +757,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               title={headerCollapsed ? "Expand filters" : "Collapse filters"}
               aria-expanded={!headerCollapsed}
             >
-              <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+              <CollapseChevron collapsed={headerCollapsed} />
             </button>
             <h2 className="evt-title">Events</h2>
           </div>

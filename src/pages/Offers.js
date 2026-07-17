@@ -20,6 +20,7 @@ import { allowTextInput } from "../App";
 import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
 import CustomDropdown from "../components/CustomDropdown";
 import Button3D from "../components/Button3D";
+import CollapseChevron from "../components/CollapseChevron";
 
 import "./Offers.css";
 import PageLoader from "../components/PageLoader";
@@ -183,7 +184,7 @@ const Offers = ({ adminData, setAdminData }) => {
             title={headerCollapsed ? "Expand filters" : "Collapse filters"}
             aria-expanded={!headerCollapsed}
           >
-            <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+            <CollapseChevron collapsed={headerCollapsed} />
           </button>
           <h2 className="title">Offers</h2>
         </div>

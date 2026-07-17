@@ -21,22 +21,13 @@ import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 import Button3D from "../../components/Button3D";
 import CustomDropdown from "../../components/CustomDropdown";
+import CollapseChevron from "../../components/CollapseChevron";
 
 import "./PreBookings.css";
 import "./EvtCommon.css";
 import "../ModalCSS.css";
 import "./PreviewModal.css";
 import PageLoader from "../../components/PageLoader";
-
-const CollapseChevron = ({ collapsed }) => (
-  <svg
-    className={`header-collapse-icon${collapsed ? " collapsed" : ""}`}
-    width="16" height="16" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-  >
-    <polyline points="6 9 12 15 18 9" />
-  </svg>
-);
 
 const pad = (n) => String(n).padStart(2, "0");
 

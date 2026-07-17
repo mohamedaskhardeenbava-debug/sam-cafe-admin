@@ -41,6 +41,7 @@ import { exportToExcel } from "../utils/excelUtils";
 
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
+import CollapseChevron from "../components/CollapseChevron";
 import { allowTextInput } from "../App";
 
 /* Period presets: [key, label]. "all" resolves to a wide-open range
@@ -119,7 +120,7 @@ const ActivityLog = ({ title, items = [], exportFilePrefix }) => {
             title={headerCollapsed ? "Expand header" : "Collapse header"}
             aria-expanded={!headerCollapsed}
           >
-            <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+            <CollapseChevron collapsed={headerCollapsed} />
           </button>
           <h2 className="title">{title}</h2>
         </div>

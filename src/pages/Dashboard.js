@@ -26,6 +26,7 @@ import { CustomDatePicker } from "../components/CustomDatePicker";
 import { todayStr, getWeekRange as sharedWeekRange, getMonthRange as sharedMonthRange, getLastMonthRange as sharedLastMonthRange } from "../utils/dateRangeUtils";
 import Button3D from "../components/Button3D";
 import PageLoader from "../components/PageLoader";
+import CollapseChevron from "../components/CollapseChevron";
 
 const COLORS = ["#ff9f43", "#54a0ff", "#FFD700", "#1dd1a1", "#00FFFF", "#e93c3c", "#FFFF00", "#FF8AFF"];
 const STAFF_PALETTE = ["#4361ee", "#06d6a0", "#ffd166", "#ef476f", "#7209b7", "#4cc9f0", "#f72585", "#3a0ca3"];
@@ -59,16 +60,6 @@ const applyAutoColumnWidth = (sheet, rows) => {
 
 const NoChartData = ({ message = "No data available" }) => (
   <div style={{ height: "100%", minHeight: 80, display: "flex", alignItems: "center", justifyContent: "center", color: "#aaa", fontWeight: 500, fontSize: 13 }}>{message}</div>
-);
-
-const CollapseChevron = ({ collapsed }) => (
-  <svg
-    className={`header-collapse-icon${collapsed ? " collapsed" : ""}`}
-    width="16" height="16" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-  >
-    <polyline points="6 9 12 15 18 9" />
-  </svg>
 );
 
 const Dashboard = ({ adminData, setAdminData, orders = [] }) => {

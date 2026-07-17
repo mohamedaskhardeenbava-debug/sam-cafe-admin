@@ -15,6 +15,7 @@ import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
 import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 
 import "./StaffModules.css";
 import PageLoader from "../../components/PageLoader";
@@ -133,7 +134,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
             title={headerCollapsed ? "Expand header" : "Collapse header"}
             aria-expanded={!headerCollapsed}
           >
-            <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+            <CollapseChevron collapsed={headerCollapsed} />
           </button>
           <h2 className="title">Salary Management</h2>
         </div>

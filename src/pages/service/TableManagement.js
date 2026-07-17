@@ -16,6 +16,7 @@ import qrIcon from "../../icon/qr-icon.png";
 import logo from "../../icon/logo.png";
 import { useToast } from "../../useToast";
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 
 import "./TableManagement.css";
 
@@ -189,7 +190,7 @@ const TableManagement = ({ adminData, setAdminData }) => {
               title={headerCollapsed ? "Expand header" : "Collapse header"}
               aria-expanded={!headerCollapsed}
             >
-              <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+              <CollapseChevron collapsed={headerCollapsed} />
             </button>
             <h2 className="title">Table Management</h2>
           </div>

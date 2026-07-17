@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import api from "../api";
 import "./Orders.css";
 import Button3D from "../components/Button3D";
+import CollapseChevron from "../components/CollapseChevron";
 import closeIcon from "../icon/close-icon.png";
 import { EmptyRow } from "../App";
 import { QRCodeCanvas } from "qrcode.react";
@@ -1305,7 +1306,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
               title={headerCollapsed ? "Expand header" : "Collapse header"}
               aria-expanded={!headerCollapsed}
             >
-              <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+              <CollapseChevron collapsed={headerCollapsed} />
             </button>
             <h2 className="orders-title">Orders</h2>
           </div>
