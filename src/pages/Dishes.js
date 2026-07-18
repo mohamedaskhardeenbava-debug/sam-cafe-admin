@@ -510,7 +510,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
   };
 
   return (
-    <div className="inner-page">
+    <div className="inner-page" style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
       <div className="header" style={{ alignItems: "flex-start" }}>
         <div className="header-title-with-count">
           <button
@@ -541,7 +541,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
         <Button3D onClick={() => setShowForm(true)}>+ Add Dish</Button3D>
       </div>
 
-      {!categoryBarCollapsed && (
+      {!categoryBarCollapsed && adminData.categories.length > 0 && (
         <div className="dish-category-buttons">
           {adminData.categories.flatMap(cat => {
 
@@ -591,7 +591,11 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
         </div>
       )}
 
-      <div className="table-wrapper dish-page-table" style={{ maxHeight: categoryBarCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 260px)" }} ref={containerRef}>
+      <div
+        className="table-wrapper dish-page-table"
+        style={{ flex: 1, minHeight: 0, overflowY: "auto" }}
+        ref={containerRef}
+      >
         <table >
           <thead>
             <tr>
