@@ -211,7 +211,6 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
     totalAdvance: staffStats.reduce((s, x) => s + x.advance, 0),
     avgAttendance: staffStats.length > 0 ? Math.round(staffStats.reduce((s, x) => s + x.attPct, 0) / staffStats.length) : 0,
   }), [staffStats]);
-  if (!adminData?.orders?.length) return <PageLoader label="Loading dashboard…" />;
 
   const attendanceBarData = staffStats.map(s => ({ name: s.name.split(" ")[0], Present: s.present, Leave: s.leave, Absent: s.absent, pct: s.attPct }));
   const salaryPieData = staffStats.map((s, i) => ({ name: s.name.split(" ")[0], value: s.salary, color: STAFF_PALETTE[i % STAFF_PALETTE.length], role: s.role }));

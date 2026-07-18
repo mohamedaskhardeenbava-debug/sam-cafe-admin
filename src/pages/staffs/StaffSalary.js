@@ -11,14 +11,13 @@ import api from "../../api";
 import closeIcon from "../../icon/close-icon.png";
 import editIcon from "../../icon/edit-icon.png";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
 
 import "./StaffModules.css";
-import PageLoader from "../../components/PageLoader";
 
 export default function StaffSalary({ adminData, setAdminData }) {
   // ── Hooks
@@ -119,24 +118,30 @@ export default function StaffSalary({ adminData, setAdminData }) {
     )
     : staffList;
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(filteredList.length, 30);
-  if (!adminData?.staff?.length) return <PageLoader label="Loading salary records…" />;
 
   return (
     <div className="inner-page">
       <div className="header">
         <div className="header-title-row">
-          <button
-            type="button"
-            className="header-collapse-btn"
-            onClick={() => setHeaderCollapsed(prev => !prev)}
-            title={headerCollapsed ? "Expand header" : "Collapse header"}
-            aria-expanded={!headerCollapsed}
-          >
-            <CollapseChevron collapsed={headerCollapsed} />
-          </button>
-          <h2 className="title">Salary Management</h2>
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Salary Management</h2>
+              <span className="result-count">{filteredList.length} staff</span>
+            </div>
+          </div>
         </div>
         <Button3D onClick={() => {
           const rows = filteredList.map((s, i) => {
@@ -177,12 +182,11 @@ export default function StaffSalary({ adminData, setAdminData }) {
             {salarySearch && (
               <button className="ae-clear-filter" onClick={() => setSalarySearch("")}>Clear</button>
             )}
-            <span className="result-count">{filteredList.length} staff</span>
           </div>
         </div>
       )}
 
-      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 260px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 260px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -192,7 +196,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
               <th>Deduction</th>
               <th>Penalty</th>
               <th>Bonus</th>
-              <th>Overtime</th>
+              <th>Overtime / Extrawages</th>
               <th>Remaining</th>
               <th className="icon-width">Edit</th>
             </tr>
@@ -256,6 +260,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
             />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
       {selected && (
         <div className="modal-overlay">

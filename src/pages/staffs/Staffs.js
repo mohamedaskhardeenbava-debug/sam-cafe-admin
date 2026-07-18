@@ -16,7 +16,7 @@ import editIcon from "../../icon/edit-icon.png";
 import closeIcon from "../../icon/close-icon.png";
 import deleteIcon from "../../icon/delete-icon.png";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import Button3D from "../../components/Button3D";
@@ -26,7 +26,6 @@ import { MultiPillGroup } from "../../components/FilterBar";
 
 import "./Staffs.css";
 import "../ModalCSS.css";
-import PageLoader from "../../components/PageLoader";
 
 const roles = ["Chef", "Waiter", "Supervisor", "Manager", "Cleaner"];
 
@@ -108,9 +107,8 @@ export default function Staffs({
     return sorted;
   }, [adminData.staff, sortConfig, workTypeFilters, roleFilters, staffSearch]);
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(staffs.length, 30);
-  if (!adminData?.staff?.length) return <PageLoader label="Loading staff…" />;
 
   const exportStaffs = () => {
     if (!staffs.length) { toast.warning("No staff to export"); return; }
@@ -195,16 +193,23 @@ export default function Staffs({
       {/* HEADER */}
       <div className="header">
         <div className="header-title-row">
-          <button
-            type="button"
-            className="header-collapse-btn"
-            onClick={() => setHeaderCollapsed(prev => !prev)}
-            title={headerCollapsed ? "Expand header" : "Collapse header"}
-            aria-expanded={!headerCollapsed}
-          >
-            <CollapseChevron collapsed={headerCollapsed} />
-          </button>
-          <h2 className="title">Staff</h2>
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Staff</h2>
+              <span className="result-count">{staffs.length} staff</span>
+            </div>
+          </div>
         </div>
         <div className="header-btn-container">
           <Button3D onClick={exportStaffs}>Export</Button3D>
@@ -243,7 +248,7 @@ export default function Staffs({
       )}
 
       {/* TABLE */}
-      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 260px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 260px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -351,6 +356,7 @@ export default function Staffs({
             />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
 
       {/* MODAL */}

@@ -15,7 +15,7 @@ import { allowTextInput } from "../App";
 import { sortArray } from "../App";
 import { EmptyRow } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
 import CollapseChevron from "../components/CollapseChevron";
@@ -23,7 +23,6 @@ import { FilterBar } from "../components/FilterBar";
 
 import "./Ingredients.css";
 import "./ModalCSS.css";
-import PageLoader from "../components/PageLoader";
 
 const EMPTY_FORM = {
   id: "",
@@ -88,9 +87,8 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
       : sortedIngredients;
   }, [sortedIngredients, ingredientSearch]);
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(filteredIngredients.length, 30);
-  if (!adminData?.ingredients?.length) return <PageLoader label="Loading ingredients…" />;
 
   const handleSave = async () => {
     const e = {};
@@ -187,16 +185,23 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
       {/* HEADER */}
       <div className="header">
         <div className="header-title-row">
-          <button
-            type="button"
-            className="header-collapse-btn"
-            onClick={() => setHeaderCollapsed(prev => !prev)}
-            title={headerCollapsed ? "Expand filters" : "Collapse filters"}
-            aria-expanded={!headerCollapsed}
-          >
-            <CollapseChevron collapsed={headerCollapsed} />
-          </button>
-          <h2 className="title">Ingredients</h2>
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Ingredients</h2>
+              <span className="result-count">{filteredIngredients.length} ingredient(s)</span>
+            </div>
+          </div>
         </div>
 
         <Button3D onClick={openAddForm}>+ Add Ingredient</Button3D>
@@ -210,7 +215,6 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
           searchPlaceholder=" Search name or brand…"
           onClear={() => setIngredientSearch("")}
           active={!!ingredientSearch}
-          rightContent={<span className="result-count">{filteredIngredients.length} ingredient(s)</span>}
         />
       )}
 
@@ -546,7 +550,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
         </div>
       )}
 
-      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 260px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 260px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -644,6 +648,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
             />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
     </div>
   );

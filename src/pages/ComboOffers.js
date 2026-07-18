@@ -292,7 +292,10 @@ const ComboOffers = () => {
 
       {/* ── header ── */}
       <div className="header">
-        <h2 className="title">Combo Offers</h2>
+        <div className="header-title-with-count">
+          <h2 className="title">Combo Offers</h2>
+          <span className="result-count">{sortedOffers.length} combo(s)</span>
+        </div>
         <Button3D onClick={openNew}>+ Add Combo</Button3D>
       </div>
 

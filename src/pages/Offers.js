@@ -17,13 +17,12 @@ import { formatDisplayDate } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
 import { allowTextInput } from "../App";
-import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import CustomDropdown from "../components/CustomDropdown";
 import Button3D from "../components/Button3D";
 import CollapseChevron from "../components/CollapseChevron";
 
 import "./Offers.css";
-import PageLoader from "../components/PageLoader";
 
 const Offers = ({ adminData, setAdminData }) => {
   // ── Hooks
@@ -143,7 +142,7 @@ const Offers = ({ adminData, setAdminData }) => {
     });
   }, [adminData.offers, offerSearch, offerStatusFilters, offerFromDate, offerToDate]);
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(filteredOffers.length, 30);
   // Gate on categories, not offers.length — an empty offers list is a
   // legitimate state (no active promotions), not a "still loading" state.
@@ -152,7 +151,6 @@ const Offers = ({ adminData, setAdminData }) => {
   // between "not loaded yet" and "loaded, zero offers" — checking
   // categories (which offers always depend on for the dish dropdown,
   // and which every seeded café has at least one of) gives a real signal.
-  if (!adminData?.categories?.length) return <PageLoader label="Loading offers…" />;
 
   const exportOffers = () => {
     if (!filteredOffers.length) { toast.warning("No offers to export"); return; }
@@ -177,16 +175,23 @@ const Offers = ({ adminData, setAdminData }) => {
       {/* HEADER */}
       <div className="header">
         <div className="header-title-row">
-          <button
-            type="button"
-            className="header-collapse-btn"
-            onClick={() => setHeaderCollapsed(prev => !prev)}
-            title={headerCollapsed ? "Expand filters" : "Collapse filters"}
-            aria-expanded={!headerCollapsed}
-          >
-            <CollapseChevron collapsed={headerCollapsed} />
-          </button>
-          <h2 className="title">Offers</h2>
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Offers</h2>
+              <span className="result-count">{filteredOffers.length} offer(s)</span>
+            </div>
+          </div>
         </div>
 
         <div className="header-btn-container">
@@ -234,13 +239,11 @@ const Offers = ({ adminData, setAdminData }) => {
                 applyOfferPreset("today");
               }}>Clear</button>
             )}
-
-            <span className="result-count">{filteredOffers.length} offer(s)</span>
           </div>
         </div>
       )}
 
-      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 260px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 260px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -287,6 +290,7 @@ const Offers = ({ adminData, setAdminData }) => {
             />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
 
       {/* MODAL */}

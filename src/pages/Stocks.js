@@ -17,14 +17,13 @@ import { EmptyRow } from "../App";
 import { formatDisplayDate } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
-import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import CustomDropdown from "../components/CustomDropdown";
 import Button3D from "../components/Button3D";
 import CollapseChevron from "../components/CollapseChevron";
 import { FilterBar } from "../components/FilterBar";
 
 import "./Stocks.css";
-import PageLoader from "../components/PageLoader";
 
 const toTwoDecimals = (value) =>
   Math.round((Number(value) + Number.EPSILON) * 100) / 100;
@@ -154,7 +153,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
   const [stockSearch, setStockSearch] = useState("");
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(sortedIngredients.length, 30);
 
   const filteredIngredients = useMemo(() => {
@@ -166,7 +165,6 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       )
       : sortedIngredients;
   }, [sortedIngredients, stockSearch]);
-  if (!adminData?.categories?.length) return <PageLoader label="Loading stocks…" />;
 
   /* ---------------- EDIT MODAL ---------------- */
   const openEditModal = (ingredient) => {
@@ -298,16 +296,23 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       {/* HEADER */}
       <div className="header">
         <div className="header-title-row">
-          <button
-            type="button"
-            className="header-collapse-btn"
-            onClick={() => setHeaderCollapsed(prev => !prev)}
-            title={headerCollapsed ? "Expand filters" : "Collapse filters"}
-            aria-expanded={!headerCollapsed}
-          >
-            <CollapseChevron collapsed={headerCollapsed} />
-          </button>
-          <h2 className="title">Stocks</h2>
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Stocks</h2>
+              <span className="result-count">{filteredIngredients.length} ingredient(s)</span>
+            </div>
+          </div>
         </div>
 
         <Button3D onClick={handleExportStocks}>Export</Button3D>
@@ -321,12 +326,11 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
           searchPlaceholder=" Search ingredient or brand…"
           onClear={() => setStockSearch("")}
           active={!!stockSearch}
-          rightContent={<span className="result-count">{filteredIngredients.length} ingredient(s)</span>}
         />
       )}
 
       {/* TABLE */}
-      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 260px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 260px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -494,6 +498,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
             />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
       {showEditModal && selectedIngredient && (
         <div className="modal-overlay">

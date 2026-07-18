@@ -17,7 +17,6 @@ import CollapseChevron from "../../components/CollapseChevron";
 import { MultiPillGroup } from "../../components/FilterBar";
 
 import "./StaffModules.css";
-import PageLoader from "../../components/PageLoader";
 
 const typeColors = {
   Online: { bg: "#dbeafe", color: "#1e40af" },
@@ -59,7 +58,6 @@ export default function StaffTraining({ adminData, setAdminData }) {
     };
     load();
   }, []);
-  if (!adminData?.staff?.length) return <PageLoader label="Loading training records…" />;
 
   const addTraining = async (e) => {
     e.preventDefault();
@@ -122,16 +120,23 @@ export default function StaffTraining({ adminData, setAdminData }) {
       {/* HEADER */}
       <div className="header">
         <div className="header-title-row">
-          <button
-            type="button"
-            className="header-collapse-btn"
-            onClick={() => setHeaderCollapsed(prev => !prev)}
-            title={headerCollapsed ? "Expand header" : "Collapse header"}
-            aria-expanded={!headerCollapsed}
-          >
-            <CollapseChevron collapsed={headerCollapsed} />
-          </button>
-          <h2 className="title">Training</h2>
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Training</h2>
+              <span className="result-count">{filteredTrainings.length} record(s)</span>
+            </div>
+          </div>
         </div>
         <div className="header-btn-container">
           <Button3D onClick={exportTrainings}>Export</Button3D>
@@ -158,7 +163,6 @@ export default function StaffTraining({ adminData, setAdminData }) {
             {(trainingSearch || trainingTypeFilters.size > 0) && (
               <button className="ae-clear-filter" onClick={() => { setTrainingSearch(""); setTrainingTypeFilters(new Set()); }}>Clear</button>
             )}
-            <span className="result-count">{filteredTrainings.length} record(s)</span>
           </div>
         </div>
       )}
@@ -309,7 +313,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
 
       {/* DETAIL MODAL */}
       {selected && (
-        <div className="modal-overlay" onClick={() => setSelected(null)}>
+        <div className="modal-overlay">
           <div className="admin-modal" onClick={e => e.stopPropagation()}>
             <div className="admin-modal-header">
               <div>

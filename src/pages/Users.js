@@ -19,7 +19,7 @@ import { todayStr } from "../utils/dateUtils";
 import { sortArray, EmptyRow } from "../App";
 import { useToast } from "../useToast";
 import useInfiniteScroll from "../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import Button3D from "../components/Button3D";
 import { FilterBar } from "../components/FilterBar";
 
@@ -60,7 +60,7 @@ const Users = ({ handleSort, sortConfig, users }) => {
       : sortedUsers;
   }, [sortedUsers, userSearch]);
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(filteredUsers.length, 30);
 
   /* ── Export ── */
@@ -98,16 +98,23 @@ const Users = ({ handleSort, sortConfig, users }) => {
     <div className="inner-page">
       <div className="header">
         <div className="header-title-row">
-          <button
-            type="button"
-            className="header-collapse-btn"
-            onClick={() => setHeaderCollapsed(prev => !prev)}
-            title={headerCollapsed ? "Expand filters" : "Collapse filters"}
-            aria-expanded={!headerCollapsed}
-          >
-            <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
-          </button>
-          <h2 className="title">Users</h2>
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+              aria-expanded={!headerCollapsed}
+            >
+              <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Users</h2>
+              <span className="ae-result-count">{filteredUsers.length} user(s)</span>
+            </div>
+          </div>
         </div>
 
         <div className="header-btn-container">
@@ -124,11 +131,10 @@ const Users = ({ handleSort, sortConfig, users }) => {
           searchPlaceholder=" Search name or mobile…"
           onClear={() => setUserSearch("")}
           active={!!userSearch}
-          rightContent={<span className="ae-result-count">{filteredUsers.length} user(s)</span>}
         />
       )}
 
-      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 260px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 260px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -191,6 +197,7 @@ const Users = ({ handleSort, sortConfig, users }) => {
             />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
     </div>
   );

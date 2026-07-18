@@ -112,8 +112,8 @@ export default function ServiceMise({ adminData, setAdminData }) {
 
       {/* HEADER */}
       <div className="header">
-        <div >
-          <div className="header-title-row">
+        <div className="header-title-row">
+          <div className="header-collapse-col">
             <button
               type="button"
               className="header-collapse-btn"
@@ -123,9 +123,14 @@ export default function ServiceMise({ adminData, setAdminData }) {
             >
               <CollapseChevron collapsed={headerCollapsed} />
             </button>
-            <h2 className="title">Service Mise en Place & Cleaning</h2>
           </div>
-          <span className="subtitle">{todayFmt}</span>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Service Mise en Place & Cleaning</h2>
+              <span className="result-count">{allTasks.length} task(s)</span>
+            </div>
+            <span className="subtitle">{todayFmt}</span>
+          </div>
         </div>
         <div className="header-btn-container">
           <div className="service-mise-stat-badge service-mise-stat-assigned">
@@ -175,7 +180,7 @@ export default function ServiceMise({ adminData, setAdminData }) {
       )}
 
       {/* UNIFIED TABLE */}
-      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 165px)" : "calc(100vh - 265px)" }} >
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 265px)" }} >
         <table >
           <thead>
             <tr>

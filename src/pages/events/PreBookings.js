@@ -18,7 +18,7 @@ import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 import Button3D from "../../components/Button3D";
 import CustomDropdown from "../../components/CustomDropdown";
 import CollapseChevron from "../../components/CollapseChevron";
@@ -27,7 +27,6 @@ import "./PreBookings.css";
 import "./EvtCommon.css";
 import "../ModalCSS.css";
 import "./PreviewModal.css";
-import PageLoader from "../../components/PageLoader";
 
 const pad = (n) => String(n).padStart(2, "0");
 
@@ -289,7 +288,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
   const slotLabel = SLOT_GROUPS.find(s => s.key === form.slotGroup)?.label || "—";
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="event-modal" onClick={e => e.stopPropagation()}>
 
         <div className="admin-modal-header">
@@ -633,9 +632,8 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
     });
   }, [filteredData, sortField, sortDir]);
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(sortedData.length, 30);
-  if (!adminData?.preBookings?.length) return <PageLoader label="Loading pre-bookings…" />;
 
   /* inline status update */
   const updateStatus = async (e, id, status) => {
@@ -721,16 +719,21 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
       {/* HEADER */}
       <div className="evt-header">
         <div className="header-title-row">
-          <button
-            type="button"
-            className="header-collapse-btn"
-            onClick={() => setHeaderCollapsed(prev => !prev)}
-            title={headerCollapsed ? "Expand header" : "Collapse header"}
-          >
-            <CollapseChevron collapsed={headerCollapsed} />
-          </button>
-          <div>
-            <h2 className="evt-title">PreBookings</h2>
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="evt-title">PreBookings</h2>
+              <span className="result-count">{filteredData.length} booking(s)</span>
+            </div>
             <p className="evt-subtitle">Manage pre-orders &amp; advance bookings</p>
           </div>
         </div>
@@ -814,7 +817,7 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
       )}
 
       {/* TABLE */}
-      <div className="table-wrapper" ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 300px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -961,6 +964,7 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
             />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
 
       {/* ── Call History Portal Tooltip ── */}

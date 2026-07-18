@@ -21,6 +21,17 @@
   border-radius: 16px;
 }
 
+.dish-header-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 10px;
+}
+
+.dish-header-search .search-input {
+  width: 220px;
+}
+
 .dish-category-buttons .filter-pill {
   display: inline-flex;
   align-items: center;

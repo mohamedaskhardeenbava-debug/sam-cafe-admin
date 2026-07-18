@@ -16,13 +16,12 @@ import { allowTextInput } from "../App";
 import { sortArray } from "../App";
 import { EmptyRow } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
 
 import "./Categories.css";
 import "./ModalCSS.css";
-import PageLoader from "../components/PageLoader";
 
 const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }) => {
   // ── Hooks
@@ -79,9 +78,8 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
     [adminData.categories, sortConfig]
   );
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(sortedCategories.length, 30);
-  if (!adminData?.categories?.length) return <PageLoader label="Loading categories…" />;
 
   const generateCategoryId = (name) => {
     const base = name.toLowerCase().trim()
@@ -512,7 +510,10 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
   return (
     <div className="inner-page">
       <div className="header">
-        <h2 className="title">Categories</h2>
+        <div className="header-title-with-count">
+          <h2 className="title">Categories</h2>
+          <span className="result-count">{sortedCategories.length} categor{sortedCategories.length === 1 ? "y" : "ies"}</span>
+        </div>
         <Button3D onClick={() => setShowForm(true)}>+ Add Category</Button3D>
       </div>
 
@@ -686,6 +687,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
             />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
 
       {

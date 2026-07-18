@@ -14,11 +14,12 @@ import { formatIndianTime } from "../App";
 import socket from "../socket";
 import { printBill as sendBillToPrinter, printKot as sendKotToPrinter } from "../printUtils";
 import { CustomDatePicker } from "../components/CustomDatePicker";
+import CustomDropdown from "../components/CustomDropdown";
 import { todayStr, getWeekRange as sharedWeekRange, getMonthRange as sharedMonthRange, getLastMonthRange as sharedLastMonthRange } from "../utils/dateRangeUtils";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
 import { allowTextInput } from "../App";
-import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 
 const SEVEN_MIN = 7 * 60 * 1000;
 const ONE_MIN = 60 * 1000;
@@ -137,15 +138,20 @@ const BillLayout = React.memo(({
       (sum, i) => sum + Number(i.totalPrice || 0),
       0
     );
-    const cgst = +(subTotal * 0.025).toFixed(2);
-    const sgst = +(subTotal * 0.025).toFixed(2);
+    const discountPercent = Math.max(0, Math.min(100, Number(order.discount?.percent) || 0));
+    const discountAmount = +(subTotal * (discountPercent / 100)).toFixed(2);
+    const taxableAmount = +(subTotal - discountAmount).toFixed(2);
+    const cgst = +(taxableAmount * 0.025).toFixed(2);
+    const sgst = +(taxableAmount * 0.025).toFixed(2);
     return {
       subTotal,
+      discountPercent,
+      discountAmount,
       cgst,
       sgst,
-      total: +(subTotal + cgst + sgst).toFixed(2)
+      total: +(taxableAmount + cgst + sgst).toFixed(2)
     };
-  }, [order.items]);
+  }, [order.items, order.discount]);
 
   const finalAmount =
     order.splitType === "amount"
@@ -253,6 +259,12 @@ const BillLayout = React.memo(({
           </div>
         )}
         <div><span>Subtotal</span><span>₹{totals.subTotal}</span></div>
+        {totals.discountPercent > 0 && (
+          <div className="bill-discount-row">
+            <span>Discount ({totals.discountPercent}%){order.discount?.reason ? ` — ${order.discount.reason}` : ""}</span>
+            <span>−₹{totals.discountAmount}</span>
+          </div>
+        )}
         <div><span>CGST @2.5%</span><span>₹{totals.cgst}</span></div>
         <div><span>SGST @2.5%</span><span>₹{totals.sgst}</span></div>
         <div className="total">
@@ -565,8 +577,6 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
   const orders = adminData.orders || [];
   const [activeOrderIds, setActiveOrderIds] = useState([]);
   const [pickupConfirm, setPickupConfirm] = useState(null);
-  const [openStatusDropdown, setOpenStatusDropdown] = useState(false);
-  const [openModeDropdown, setOpenModeDropdown] = useState(false);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [modeFilter, setModeFilter] = useState("all");
@@ -667,7 +677,23 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
   const [cancelItemConfirm, setCancelItemConfirm] = useState(null);
   const [cancelItemReason, setCancelItemReason] = useState("");
   const [cancelReason, setCancelReason] = useState("");
+  const [cancelReasonOption, setCancelReasonOption] = useState("");
+  const [cancelItemReasonOption, setCancelItemReasonOption] = useState("");
+  const [discountModalOrder, setDiscountModalOrder] = useState(null);
+  const [discountPercent, setDiscountPercent] = useState("");
+  const [discountReason, setDiscountReason] = useState("");
   const tableWrapperRef = useRef(null);
+
+  // Shared preset reasons for order/dish cancellation. "Others" always
+  // renders last and, when selected, reveals a free-text input capped
+  // at 5 words / 100 characters via allowTextInput.
+  const CANCEL_REASONS = [
+    "Customer changed their mind",
+    "Item out of stock",
+    "Kitchen delay / unable to prepare",
+    "Order placed by mistake",
+    "Others",
+  ];
 
 
 
@@ -802,7 +828,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
     return data;
   }, [filteredOrders, sortConfig]);
 
-  const { displayLimit, sentinelRef, hasMore } =
+  const { displayLimit, sentinelRef, hasMore, isLoadingMore } =
     useInfiniteScroll(sortedOrders.length, 50, tableWrapperRef.current);
 
   const deriveOrderStatusFromItems = useCallback((items, currentStatus) => {
@@ -953,17 +979,6 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
     if (td) setToDate(td);
 
   }, [location.state]);
-
-  useEffect(() => {
-    const closeDropdowns = () => {
-      setOpenStatusDropdown(false);
-      setOpenModeDropdown(false);
-    };
-
-    window.addEventListener("click", closeDropdowns);
-
-    return () => window.removeEventListener("click", closeDropdowns);
-  }, []);
 
   const exportOrders = (orders, from, to) => {
     if (!orders.length) {
@@ -1164,6 +1179,35 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [openMenuOrderId, closeOptionsMenu]);
 
+  const applyDiscount = async (order, percent, reason) => {
+    const pct = Math.max(0, Math.min(100, Number(percent) || 0));
+
+    const updatedOrder = recalcOrderTotals({
+      ...order,
+      discount: { percent: pct, reason: reason.trim() }
+    });
+
+    // 1. INSTANT UI UPDATE
+    setAdminData(prev => ({
+      ...prev,
+      orders: prev.orders.map(o => (o.id === order.id ? updatedOrder : o))
+    }));
+
+    // 2. BACKEND UPDATE
+    try {
+      await persistOrderEverywhere(updatedOrder);
+      socket.emit("data-change", {
+        resource: "orders",
+        action: "updated",
+        payload: updatedOrder
+      });
+      toast.success("Discount applied");
+    } catch (err) {
+      toast.error("Failed to apply discount");
+      console.error("Failed to apply discount", err);
+    }
+  };
+
   const recalcOrderTotals = (order) => {
     const items = order.items.map(item => {
       const qty = Number(item.quantity || 0);
@@ -1189,16 +1233,22 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
       0
     ).toFixed(2);
 
-    const cgst = +(subTotal * 0.025).toFixed(2);
-    const sgst = +(subTotal * 0.025).toFixed(2);
-    const total = +(subTotal + cgst + sgst).toFixed(2);
+    const discountPct = Math.max(0, Math.min(100, Number(order.discount?.percent) || 0));
+    const discountAmount = +(subTotal * (discountPct / 100)).toFixed(2);
+    const taxableAmount = +(subTotal - discountAmount).toFixed(2);
+
+    const cgst = +(taxableAmount * 0.025).toFixed(2);
+    const sgst = +(taxableAmount * 0.025).toFixed(2);
+    const total = +(taxableAmount + cgst + sgst).toFixed(2);
 
     return {
       ...order,
       items,
-      totalAmount: subTotal,
+      totalAmount: taxableAmount,
       totalWithGST: {
         subTotal,
+        discountPercent: discountPct,
+        discountAmount,
         cgst,
         sgst,
         total
@@ -1299,16 +1349,23 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
       <div className="orders-header">
         <div className="orders-header-div">
           <div className="header-title-row">
-            <button
-              type="button"
-              className="header-collapse-btn"
-              onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand header" : "Collapse header"}
-              aria-expanded={!headerCollapsed}
-            >
-              <CollapseChevron collapsed={headerCollapsed} />
-            </button>
-            <h2 className="orders-title">Orders</h2>
+            <div className="header-collapse-col">
+              <button
+                type="button"
+                className="header-collapse-btn"
+                onClick={() => setHeaderCollapsed(prev => !prev)}
+                title={headerCollapsed ? "Expand header" : "Collapse header"}
+                aria-expanded={!headerCollapsed}
+              >
+                <CollapseChevron collapsed={headerCollapsed} />
+              </button>
+            </div>
+            <div className="header-title-col">
+              <div className="header-title-with-count">
+                <h2 className="orders-title">Orders</h2>
+                <span className="result-count">{sortedOrders.length} order(s)</span>
+              </div>
+            </div>
           </div>
 
           {!headerCollapsed && (
@@ -1335,37 +1392,39 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
         </div>
 
         {!headerCollapsed && (
-          <div className="filter-group">
-            <button
-              type="button"
-              className={`filter-pill${datePreset === "today" ? " active" : ""}`}
-              onClick={() => applyPreset("today")}
-            >
-              Today
-            </button>
-            <button
-              type="button"
-              className={`filter-pill${datePreset === "week" ? " active" : ""}`}
-              onClick={() => applyPreset("week")}
-            >
-              This Week
-            </button>
-            <button
-              type="button"
-              className={`filter-pill${datePreset === "month" ? " active" : ""}`}
-              onClick={() => applyPreset("month")}
-            >
-              This Month
-            </button>
-            <button
-              type="button"
-              className={`filter-pill${datePreset === "lastmonth" ? " active" : ""}`}
-              onClick={() => applyPreset("lastmonth")}
-            >
-              Last Month
-            </button>
+          <div className="filter-groups">
+            <div className="filter-group">
+              <button
+                type="button"
+                className={`filter-pill${datePreset === "today" ? " active" : ""}`}
+                onClick={() => applyPreset("today")}
+              >
+                Today
+              </button>
+              <button
+                type="button"
+                className={`filter-pill${datePreset === "week" ? " active" : ""}`}
+                onClick={() => applyPreset("week")}
+              >
+                This Week
+              </button>
+              <button
+                type="button"
+                className={`filter-pill${datePreset === "month" ? " active" : ""}`}
+                onClick={() => applyPreset("month")}
+              >
+                This Month
+              </button>
+              <button
+                type="button"
+                className={`filter-pill${datePreset === "lastmonth" ? " active" : ""}`}
+                onClick={() => applyPreset("lastmonth")}
+              >
+                Last Month
+              </button>
+            </div>
 
-            <div>
+            <div className="filter-group">
               <CustomDatePicker
                 label="From"
                 value={fromDate}
@@ -1381,61 +1440,22 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
               />
             </div>
 
-            <div>
-              <div className="orders-dropdown-wrapper">
-                <button
-                  className="orders-status-dropdown"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setOpenModeDropdown(prev => !prev);
-                  }}
-                >
-                  {modeFilter === "all" ? "All Modes" : modeFilter}
-                </button>
-
-                {openModeDropdown && (
-                  <div className="dropdown-menu">
-                    {["all", "dine in", "take away"].map(mode => (
-                      <div
-                        key={mode}
-                        onClick={() => {
-                          setModeFilter(mode);
-                          setOpenModeDropdown(false);
-                        }}
-                      >
-                        {mode === "all" ? "All Modes" : mode}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="orders-dropdown-wrapper">
-                <button
-                  className="orders-status-dropdown"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setOpenStatusDropdown(prev => !prev);
-                  }}
-                >
-                  {statusFilter === "all" ? "All Status" : statusFilter}
-                </button>
-
-                {openStatusDropdown && (
-                  <div className="dropdown-menu">
-                    {["all", "placed", "preparing", "service pickup", "completed", "cancelled"].map(status => (
-                      <div
-                        key={status}
-                        onClick={() => {
-                          setStatusFilter(status);
-                          setOpenStatusDropdown(false);
-                        }}
-                      >
-                        {status === "all" ? "All Status" : status}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+            <div className="filter-group">
+              <CustomDropdown
+                value={modeFilter === "all" ? "" : modeFilter}
+                onChange={(val) => setModeFilter(val || "all")}
+                options={[
+                  { value: "dine in", label: "dine in" },
+                  { value: "take away", label: "take away" },
+                ]}
+                placeholder="All Modes"
+              />
+              <CustomDropdown
+                value={statusFilter === "all" ? "" : statusFilter}
+                onChange={(val) => setStatusFilter(val || "all")}
+                options={["placed", "preparing", "service pickup", "completed", "cancelled"].map(s => ({ value: s, label: s }))}
+                placeholder="All Status"
+              />
             </div>
           </div>
         )}
@@ -1540,6 +1560,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
             />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
       {pickupConfirm && (
         <div
@@ -1635,38 +1656,63 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
       {cancelOrderConfirm && (
         <div
           className="pickup-overlay"
-          onClick={() => setCancelOrderConfirm(null)}
         >
           <div
             className="pickup-modal"
             onClick={(e) => e.stopPropagation()}
           >
             <h3>Cancel Order {cancelOrderConfirm.id}</h3>
-            <p>Are you sure you want to cancel this order? Please provide a reason.</p>
+            <p>Are you sure you want to cancel this order? Please select a reason.</p>
 
-            <textarea
-              className="cancel-reason-textarea"
-              placeholder="Reason for cancellation..."
-              value={cancelReason}
-              onChange={(e) => setCancelReason(allowTextInput(cancelReason, e.target.value, 500, 100000))}
-              autoFocus
-              style={{
-                width: "100%",
-                minHeight: "80px",
-                marginTop: "10px",
-                padding: "8px",
-                borderRadius: "6px",
-                border: "1px solid #d1d5db",
-                boxSizing: "border-box",
-                resize: "vertical",
-                fontFamily: "inherit"
-              }}
-            />
+            <div className="cancel-reason-options" style={{ marginTop: "10px" }}>
+              {CANCEL_REASONS.map((reason, i) => (
+                <div className="form-check" key={i}>
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="cancelOrderReason"
+                    id={`cancelOrderReason-${i}`}
+                    checked={cancelReasonOption === reason}
+                    onChange={() => {
+                      setCancelReasonOption(reason);
+                      setCancelReason(reason === "Others" ? "" : reason);
+                    }}
+                  />
+                  <label className="form-check-label" htmlFor={`cancelOrderReason-${i}`}>
+                    {reason}
+                  </label>
+                </div>
+              ))}
+
+              {cancelReasonOption === "Others" && (
+                <input
+                  type="text"
+                  className="cancel-reason-others-input"
+                  placeholder="Enter reason (max 5 words, 100 characters)…"
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(allowTextInput(cancelReason, e.target.value, 100, 5))}
+                  autoFocus
+                  style={{
+                    width: "100%",
+                    marginTop: "10px",
+                    padding: "8px",
+                    borderRadius: "6px",
+                    border: "1px solid #d1d5db",
+                    boxSizing: "border-box",
+                    fontFamily: "inherit"
+                  }}
+                />
+              )}
+            </div>
 
             <div className="pickup-actions">
               <Button3D
                 variant="cancel"
-                onClick={() => setCancelOrderConfirm(null)}
+                onClick={() => {
+                  setCancelOrderConfirm(null);
+                  setCancelReasonOption("");
+                  setCancelReason("");
+                }}
               >
                 Back
               </Button3D>
@@ -1677,6 +1723,7 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
                   await cancelOrder(cancelOrderConfirm, cancelReason);
                   setCancelOrderConfirm(null);
                   setCancelReason("");
+                  setCancelReasonOption("");
                 }}
               >
                 Confirm Cancel
@@ -1689,7 +1736,6 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
       {cancelItemConfirm && (
         <div
           className="pickup-overlay"
-          onClick={() => setCancelItemConfirm(null)}
         >
           <div
             className="pickup-modal"
@@ -1698,32 +1744,58 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
             <h3>Cancel Dish</h3>
             <p>
               Are you sure you want to cancel{" "}
-              <strong>{cancelItemConfirm?.item?.dishName}</strong>? Please provide a reason.
+              <strong>{cancelItemConfirm?.item?.dishName}</strong>? Please select a reason.
             </p>
 
-            <textarea
-              className="cancel-reason-textarea"
-              placeholder="Reason for cancellation..."
-              value={cancelItemReason}
-              onChange={(e) => setCancelItemReason(allowTextInput(cancelItemReason, e.target.value, 500, 100000))}
-              autoFocus
-              style={{
-                width: "100%",
-                minHeight: "80px",
-                marginTop: "10px",
-                padding: "8px",
-                borderRadius: "6px",
-                border: "1px solid #d1d5db",
-                boxSizing: "border-box",
-                resize: "vertical",
-                fontFamily: "inherit"
-              }}
-            />
+            <div className="cancel-reason-options" style={{ marginTop: "10px" }}>
+              {CANCEL_REASONS.map((reason, i) => (
+                <div className="form-check" key={i}>
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="cancelItemReason"
+                    id={`cancelItemReason-${i}`}
+                    checked={cancelItemReasonOption === reason}
+                    onChange={() => {
+                      setCancelItemReasonOption(reason);
+                      setCancelItemReason(reason === "Others" ? "" : reason);
+                    }}
+                  />
+                  <label className="form-check-label" htmlFor={`cancelItemReason-${i}`}>
+                    {reason}
+                  </label>
+                </div>
+              ))}
+
+              {cancelItemReasonOption === "Others" && (
+                <input
+                  type="text"
+                  className="cancel-reason-others-input"
+                  placeholder="Enter reason (max 5 words, 100 characters)…"
+                  value={cancelItemReason}
+                  onChange={(e) => setCancelItemReason(allowTextInput(cancelItemReason, e.target.value, 100, 5))}
+                  autoFocus
+                  style={{
+                    width: "100%",
+                    marginTop: "10px",
+                    padding: "8px",
+                    borderRadius: "6px",
+                    border: "1px solid #d1d5db",
+                    boxSizing: "border-box",
+                    fontFamily: "inherit"
+                  }}
+                />
+              )}
+            </div>
 
             <div className="pickup-actions">
               <Button3D
                 variant="cancel"
-                onClick={() => { setCancelItemConfirm(null); setCancelItemReason(""); }}
+                onClick={() => {
+                  setCancelItemConfirm(null);
+                  setCancelItemReason("");
+                  setCancelItemReasonOption("");
+                }}
               >
                 Back
               </Button3D>
@@ -1735,9 +1807,83 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
                   await cancelOrderItem(order, itemIndex, cancelItemReason);
                   setCancelItemConfirm(null);
                   setCancelItemReason("");
+                  setCancelItemReasonOption("");
                 }}
               >
                 Confirm Cancel
+              </Button3D>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {discountModalOrder && (
+        <div className="pickup-overlay">
+          <div
+            className="pickup-modal discount-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>Add Discount — Order {discountModalOrder.id}</h3>
+            <p>Enter a discount percentage and the reason for it.</p>
+
+            <div className="discount-modal-fields">
+              <div className="mat">
+                <input
+                  type="number"
+                  className="mat-input"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  placeholder=" "
+                  value={discountPercent}
+                  onChange={(e) => {
+                    let v = e.target.value;
+                    if (v !== "" && Number(v) > 100) v = "100";
+                    if (v !== "" && Number(v) < 0) v = "0";
+                    setDiscountPercent(v);
+                  }}
+                  autoFocus
+                />
+                <label className="mat-label">Discount %</label>
+                <span className="mat-bar" />
+              </div>
+
+              <input
+                type="text"
+                className="discount-reason-input"
+                placeholder="Reason for discount (max 5 words, 100 characters)…"
+                value={discountReason}
+                onChange={(e) => setDiscountReason(allowTextInput(discountReason, e.target.value, 100, 5))}
+              />
+            </div>
+
+            <div className="pickup-actions">
+              <Button3D
+                variant="cancel"
+                onClick={() => {
+                  setDiscountModalOrder(null);
+                  setDiscountPercent("");
+                  setDiscountReason("");
+                }}
+              >
+                Cancel
+              </Button3D>
+
+              <Button3D
+                disabled={
+                  discountPercent === "" ||
+                  isNaN(Number(discountPercent)) ||
+                  Number(discountPercent) <= 0 ||
+                  !discountReason.trim()
+                }
+                onClick={async () => {
+                  await applyDiscount(discountModalOrder, discountPercent, discountReason);
+                  setDiscountModalOrder(null);
+                  setDiscountPercent("");
+                  setDiscountReason("");
+                }}
+              >
+                Apply Discount
               </Button3D>
             </div>
           </div>
@@ -1803,6 +1949,27 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
             >
               Print KOT
             </div>
+
+            {normalizeStatus(
+              orders.find(o => o.id === openMenuOrderId)?.status
+            ) !== "cancelled" && (
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const selectedOrder = orders.find(o => o.id === openMenuOrderId);
+                    closeOptionsMenu();
+                    setDiscountPercent(
+                      selectedOrder?.discount?.percent != null
+                        ? String(selectedOrder.discount.percent)
+                        : ""
+                    );
+                    setDiscountReason(selectedOrder?.discount?.reason || "");
+                    setDiscountModalOrder(selectedOrder);
+                  }}
+                >
+                  Add Discount
+                </div>
+              )}
 
             {normalizeStatus(
               orders.find(o => o.id === openMenuOrderId)?.status

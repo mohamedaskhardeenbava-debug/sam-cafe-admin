@@ -18,7 +18,7 @@ import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
 import CustomDropdown from "../../components/CustomDropdown";
@@ -27,7 +27,6 @@ import "./Reservations.css";
 import "./EvtCommon.css";
 import "../ModalCSS.css";
 import "./PreviewModal.css";
-import PageLoader from "../../components/PageLoader";
 
 /* ─── Helpers ─── */
 const pad = (n) => String(n).padStart(2, "0");
@@ -329,10 +328,9 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
     });
   }, [filteredData, sortField, sortDir]);
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(sortedData.length, 30);
 
-  if (!adminData?.reservations?.length) return <PageLoader label="Loading reservations…" />;
 
   const today = todayStr();
   const pendingCount = filteredData.filter(r => (r.status || "pending") === "pending").length;
@@ -566,8 +564,8 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
       {/* ── HEADER ── */}
       <div className="evt-header">
-        <div>
-          <div className="header-title-row">
+        <div className="header-title-row">
+          <div className="header-collapse-col">
             <button
               type="button"
               className="header-collapse-btn"
@@ -577,9 +575,14 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
             >
               <CollapseChevron collapsed={headerCollapsed} />
             </button>
-            <h2 className="evt-title">Reservations</h2>
           </div>
-          <p className="evt-subtitle">Manage table bookings</p>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="evt-title">Reservations</h2>
+              <span className="result-count">{sortedData.length} reservation(s)</span>
+            </div>
+            <p className="evt-subtitle">Manage table bookings</p>
+          </div>
         </div>
 
         {!headerCollapsed && (
@@ -669,7 +672,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       )}
 
       {/* ══ TABLE — same pattern as Celebrations ══ */}
-      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 300px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 300px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -836,6 +839,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
             <InfiniteScrollLoader sentinelRef={sentinelRef} hasMore={hasMore} colSpan={12} />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
 
       {/* ══ Call History Portal Tooltip ══ */}
@@ -866,7 +870,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
       {/* ══ Table Preference Manager Modal ══ */}
       {showPrefModal && (
-        <div className="event-modal-overlay" onClick={() => setShowPrefModal(false)}>
+        <div className="event-modal-overlay">
           <div className="event-modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
             <div className="admin-modal-header">
               <h3>Table Preferences</h3>
@@ -967,7 +971,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
       {/* ══ Create Reservation Modal ══ */}
       {showCreate && (
-        <div className="event-modal-overlay" onClick={() => setShowCreate(false)}>
+        <div className="event-modal-overlay">
           <div className="event-modal" style={{ width: 620 }} onClick={e => e.stopPropagation()}>
             <div className="admin-modal-header">
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>

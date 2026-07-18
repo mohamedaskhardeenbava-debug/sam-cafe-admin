@@ -14,7 +14,7 @@ import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import closeIcon from "../../icon/close-icon.png";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
@@ -120,7 +120,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
     };
   }), [visibleStaff, adminData.grooming, visibleDates]);
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(visibleStaff.length, 20);
 
   // ── Export ────────────────────────────────────────────────────
@@ -193,8 +193,8 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
 
       {/* HEADER */}
       <div className="header">
-        <div>
-          <div className="header-title-row">
+        <div className="header-title-row">
+          <div className="header-collapse-col">
             <button
               type="button"
               className="header-collapse-btn"
@@ -204,9 +204,14 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
             >
               <CollapseChevron collapsed={headerCollapsed} />
             </button>
-            <h2 className="title">Kitchen Grooming</h2>
           </div>
-          <p className="subtitle">Uniform · Shoes · Grooming</p>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Kitchen Grooming</h2>
+              <span className="result-count">{visibleDates.length} day(s) · {visibleStaff.length} staff</span>
+            </div>
+            <p className="subtitle">Uniform · Shoes · Grooming</p>
+          </div>
         </div>
         <div className="header-btn-container">
           <Button3D onClick={exportGrooming}>Export</Button3D>
@@ -289,7 +294,6 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
             {(groomSearch || groomPreset === "custom") && (
               <button className="ae-clear-filter" onClick={() => { setGroomSearch(""); applyPreset("week"); }}>Clear</button>
             )}
-            <span className="result-count">{visibleDates.length} day(s) · {visibleStaff.length} staff</span>
           </div>
         </div>
       )}
@@ -376,6 +380,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
             />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
 
       {/* DETAIL MODAL */}

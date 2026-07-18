@@ -18,7 +18,7 @@ import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
 
@@ -26,7 +26,6 @@ import "./Celebrations.css";
 import "./EvtCommon.css";
 import "../ModalCSS.css";
 import "./PreviewModal.css";
-import PageLoader from "../../components/PageLoader";
 
 const pad = (n) => String(n).padStart(2, "0");
 
@@ -236,9 +235,8 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
     return d;
   }, [filteredData, sortField, sortDir]);
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(sortedData.length, 30);
-  if (!adminData?.celebrations?.length) return <PageLoader label="Loading celebrations…" />;
 
   /* ─── Inline status update ─── */
   const updateStatus = async (e, id, newStatus) => {
@@ -428,8 +426,8 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
       {/* HEADER */}
       <div className="evt-header">
-        <div>
-          <div className="header-title-row">
+        <div className="header-title-row">
+          <div className="header-collapse-col">
             <button
               type="button"
               className="header-collapse-btn"
@@ -439,9 +437,14 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
             >
               <CollapseChevron collapsed={headerCollapsed} />
             </button>
-            <h2 className="evt-title">Celebrations</h2>
           </div>
-          <p className="evt-subtitle">Manage event & celebration bookings</p>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="evt-title">Celebrations</h2>
+              <span className="result-count">{sortedData.length} celebration{sortedData.length === 1 ? "" : "s"}</span>
+            </div>
+            <p className="evt-subtitle">Manage event & celebration bookings</p>
+          </div>
         </div>
 
         {!headerCollapsed && (
@@ -524,7 +527,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       )}
 
       {/* TABLE */}
-      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 300px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 300px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -684,6 +687,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
             />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
 
       {/* ── Call History Portal Tooltip ── */}
@@ -715,7 +719,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       )}
 
       {showCreate && (
-        <div className="event-modal-overlay" onClick={() => setShowCreate(false)}>
+        <div className="event-modal-overlay">
           <div className="event-modal" style={{ width: 640 }} onClick={e => e.stopPropagation()}>
             <div className="admin-modal-header">
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>

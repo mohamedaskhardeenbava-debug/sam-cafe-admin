@@ -163,63 +163,46 @@ function App() {
 
   /* ---------------- FETCH DATA ---------------- */
   const fetchAllData = async () => {
+    console.log("[DEBUG] fetchAllData: start");
     try {
-      const [
-        catRes,
-        ingRes,
-        ordersRes,
-        usersRes,
-        favRes,
-        staffRes,
-        groomRes,
-        miseRes,
-        kitchenAssignRes,
-        recipeRes,
-        offerRes,
-        activityRes,
-        schedulesRes,
-        serviceAssignRes,
-        serviceGroomRes,
-        serviceMiseRes,
-        serviceActivityRes,
-        serviceSchedulesRes,
-        tablesRes,
-        reservationsRes,
-        celebrationsRes,
-        preBookingsRes,
-        cateringRes,
-        eventsRes,
-        bookingsRes,
-        tasksRes,
-      ] = await Promise.all([
-        api.get("/categories"),
-        api.get("/ingredients"),
-        api.get("/orders"),
-        api.get("/users"),
-        api.get("/favourites"),
-        api.get("/staff"),
-        api.get("/grooming"),
-        api.get("/mise"),
-        api.get("/kitchenAssign"),
-        api.get("/recipes"),
-        api.get("/offers"),
-        api.get("/kitchenActivity"),
-        api.get("/kitchenSchedules"),
-        api.get("/serviceAssign"),
-        api.get("/serviceGrooming"),
-        api.get("/serviceMise"),
-        api.get("/serviceActivity"),
-        api.get("/serviceSchedules"),
-        api.get("/tables"),
-        api.get("/reservations"),
-        api.get("/celebrations"),
-        api.get("/preBookings"),
-        api.get("/cateringOrders"),
-        api.get("/events"),
-        api.get("/eventBookings"),
-        api.get("/tasks"),
-      ]);
+      const endpoints = [
+        "/categories", "/ingredients", "/orders", "/users", "/favourites",
+        "/staff", "/grooming", "/mise", "/kitchenAssign", "/recipes",
+        "/offers", "/kitchenActivity", "/kitchenSchedules", "/serviceAssign",
+        "/serviceGrooming", "/serviceMise", "/serviceActivity",
+        "/serviceSchedules", "/tables", "/reservations", "/celebrations",
+        "/preBookings", "/cateringOrders", "/events", "/eventBookings",
+        "/tasks",
+      ];
 
+      const settled = await Promise.allSettled(
+        endpoints.map((path) => api.get(path))
+      );
+      console.log("[DEBUG] fetchAllData: allSettled resolved", settled.map(s => s.status));
+
+      // Log each failure individually so a single bad route is visible
+      // in the console instead of silently killing every other endpoint.
+      settled.forEach((result, i) => {
+        if (result.status === "rejected") {
+          console.error(`Failed to fetch ${endpoints[i]}:`, result.reason);
+        }
+      });
+
+      const dataOf = (i) =>
+        settled[i].status === "fulfilled" ? settled[i].value.data : undefined;
+
+      const [
+        catRes, ingRes, ordersRes, usersRes, favRes, staffRes, groomRes,
+        miseRes, kitchenAssignRes, recipeRes, offerRes, activityRes,
+        schedulesRes, serviceAssignRes, serviceGroomRes, serviceMiseRes,
+        serviceActivityRes, serviceSchedulesRes, tablesRes, reservationsRes,
+        celebrationsRes, preBookingsRes, cateringRes, eventsRes, bookingsRes,
+        tasksRes,
+      ] = endpoints.map((_, i) => ({ data: dataOf(i) }));
+
+      const anyFailed = settled.some((r) => r.status === "rejected");
+
+      console.log("[DEBUG] fetchAllData: about to setAdminData / setIsAppLoading(false)");
       setAdminData({
         categories: catRes.data || [],
         ingredients: ingRes.data || [],
@@ -252,14 +235,17 @@ function App() {
         },
       });
 
-      setConnectionError(false);
+      // Show a non-blocking error banner if some endpoints failed, but
+      // never let a partial failure keep the app stuck on the loader —
+      // the admin shell renders with whatever data did come back.
+      setConnectionError(anyFailed);
       setIsAppLoading(false);
+      console.log("[DEBUG] fetchAllData: setIsAppLoading(false) called (success path)");
     } catch (err) {
       console.error("Failed to fetch admin data", err);
       setConnectionError(true);
-      // isAppLoading stays true here on purpose — the loader keeps showing
-      // (with a "reconnecting" message) instead of falling through to a
-      // blank/broken admin shell when the initial fetch fails.
+      setIsAppLoading(false);
+      console.log("[DEBUG] fetchAllData: setIsAppLoading(false) called (catch path)", err);
     }
   };
 
@@ -269,13 +255,21 @@ function App() {
     fetchAllData();
   }, [isAuthenticated]);
 
-  // Auto-retry the initial connection if it failed, so the admin isn't
-  // stuck on a loading/blank screen forever without another attempt.
+  // Auto-retry the initial connection a bounded number of times if it
+  // failed, so a genuinely down backend doesn't retry forever — but the
+  // admin shell is still visible in the meantime since isAppLoading is
+  // cleared above regardless of success/failure.
+  const retryCountRef = useRef(0);
+  const MAX_RETRIES = 5;
   useEffect(() => {
-    if (!isAuthenticated || !isAppLoading || !connectionError) return;
-    const retryTimer = setTimeout(() => { fetchAllData(); }, 3000);
+    if (!isAuthenticated || !connectionError) return;
+    if (retryCountRef.current >= MAX_RETRIES) return;
+    const retryTimer = setTimeout(() => {
+      retryCountRef.current += 1;
+      fetchAllData();
+    }, 3000);
     return () => clearTimeout(retryTimer);
-  }, [isAuthenticated, isAppLoading, connectionError]);
+  }, [isAuthenticated, connectionError]);
 
   /* ---------------- SOCKET: real-time data-change listener ---------------- */
   useEffect(() => {
@@ -547,6 +541,7 @@ function App() {
       .replace(/\s+/g, "_");
 
   /* ---------------- ADMIN LAYOUT ---------------- */
+  console.log("[DEBUG] render: isAppLoading =", isAppLoading, "isAuthenticated =", isAuthenticated);
   if (isAppLoading) {
     return (
       <PageLoader
@@ -684,7 +679,7 @@ function App() {
                 <Orders
                   adminData={adminData}
                   setAdminData={setAdminData}
-                  handleSort={handleSort} 
+                  handleSort={handleSort}
                   sortConfig={sortConfig}
                 />
               }

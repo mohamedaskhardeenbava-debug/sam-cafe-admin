@@ -53,9 +53,9 @@ export default function PageLoader({ label = "Loading…", inline = false }) {
   return (
     <div className="pl-page">
 
-      <span class="loaderpan"></span>
+      <span className="loaderpan"></span>
 
-      {/* <span class="loaderpantop"></span> */}
+      {/* <span className="loaderpantop"></span> */}
 
     </div>
   );

@@ -45,15 +45,6 @@ export const CustomDatePicker = ({ value, onChange, label, min, max, placeholder
     }
   }, [value]);
 
-  // Close on outside click
-  useEffect(() => {
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
   const minD = min ? new Date(min + "T00:00:00") : null;
   const maxD = max ? new Date(max + "T00:00:00") : null;
 
@@ -117,7 +108,7 @@ export const CustomDatePicker = ({ value, onChange, label, min, max, placeholder
       </button>
 
       {open && (
-        <div className="cdp-overlay" onMouseDown={() => setOpen(false)}>
+        <div className="cdp-overlay">
           <div className="cdp-popup" onMouseDown={(e) => e.stopPropagation()}>
             {/* Navigation */}
             <div className="cdp-nav">

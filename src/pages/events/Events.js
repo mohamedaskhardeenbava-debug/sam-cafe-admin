@@ -21,7 +21,6 @@ import CollapseChevron from "../../components/CollapseChevron";
 
 import "./Events.css";
 import "../ModalCSS.css";
-import PageLoader from "../../components/PageLoader";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const generateId = (name) =>
@@ -335,7 +334,6 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
 
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
-  if (!adminData?.events?.length) return <PageLoader label="Loading events…" />;
 
   const resetForm = () => {
     setShowForm(false);
@@ -748,8 +746,8 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
     <div className="inner-page">
       {/* PAGE HEADER */}
       <div className="evt-header">
-        <div>
-          <div className="header-title-row">
+        <div className="header-title-row">
+          <div className="header-collapse-col">
             <button
               type="button"
               className="header-collapse-btn"
@@ -759,9 +757,18 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
             >
               <CollapseChevron collapsed={headerCollapsed} />
             </button>
-            <h2 className="evt-title">Events</h2>
           </div>
-          <p className="evt-subtitle">Manage restaurant events &amp; track bookings</p>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="evt-title">Events</h2>
+              <span className="result-count">
+                {activeTab === "events"
+                  ? `${filteredEvents.length} event(s)`
+                  : `${filteredBookings.length} result(s)`}
+              </span>
+            </div>
+            <p className="evt-subtitle">Manage restaurant events &amp; track bookings</p>
+          </div>
         </div>
         <div className="ae-header-actions">
           <div className="ae-tab-pills">
@@ -854,7 +861,6 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                     setEvtFromDate(""); setEvtToDate(""); setEvtDatePreset("");
                   }}>Clear</button>
                 )}
-                <span className="result-count">{filteredEvents.length} event(s)</span>
               </div>
             </div>
           )}
@@ -1003,13 +1009,12 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                     setSearchQuery(""); setFilterFromDate(""); setFilterToDate("");
                   }}>Clear</button>
                 )}
-                <span className="ae-result-count">{filteredBookings.length} result(s)</span>
 
               </div>
             </div>
           )}
 
-          <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 200px)" : "calc(100vh - 340px)" }}>
+          <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 340px)" }}>
             {filteredBookings.length === 0 ? (
               <div className="ae-empty-state"><p>No bookings found.</p></div>
             ) : (

@@ -250,8 +250,8 @@ const KitchenReports = ({ adminData = {} }) => {
       {/* HEADER */}
       <div className="k-header">
         <div className="k-header-row">
-          <div>
-            <div className="header-title-row">
+          <div className="header-title-row">
+            <div className="header-collapse-col">
               <button
                 type="button"
                 className="header-collapse-btn"
@@ -261,9 +261,11 @@ const KitchenReports = ({ adminData = {} }) => {
               >
                 <CollapseChevron collapsed={headerCollapsed} />
               </button>
-              <h2 className="k-title">Kitchen Management</h2>
             </div>
-            <p className="k-subtitle">Operations &amp; Performance Report</p>
+            <div className="header-title-col">
+              <h2 className="k-title">Kitchen Management</h2>
+              <p className="k-subtitle">Operations &amp; Performance Report</p>
+            </div>
           </div>
           {!headerCollapsed && (
             <div className="k-header-filters">

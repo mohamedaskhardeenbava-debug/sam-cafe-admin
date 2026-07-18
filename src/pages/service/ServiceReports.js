@@ -252,8 +252,8 @@ const ServiceReports = ({ adminData = {} }) => {
 
       {/* HEADER */}
       <div className="s-header">
-        <div>
-          <div className="header-title-row">
+        <div className="header-title-row">
+          <div className="header-collapse-col">
             <button
               type="button"
               className="header-collapse-btn"
@@ -263,9 +263,11 @@ const ServiceReports = ({ adminData = {} }) => {
             >
               <CollapseChevron collapsed={headerCollapsed} />
             </button>
-            <h2 className="s-title">Service Management</h2>
           </div>
-          <p className="s-subtitle">Operations &amp; Guest Experience Report</p>
+          <div className="header-title-col">
+            <h2 className="s-title">Service Management</h2>
+            <p className="s-subtitle">Operations &amp; Guest Experience Report</p>
+          </div>
         </div>
         {!headerCollapsed && (
           <div className="s-header-filters">

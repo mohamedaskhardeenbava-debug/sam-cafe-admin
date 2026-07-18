@@ -18,7 +18,7 @@ import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
 import CustomDropdown from "../../components/CustomDropdown";
@@ -27,7 +27,6 @@ import "./Catering.css";
 import "./PreviewModal.css";
 import "../ModalCSS.css";
 import "./EvtCommon.css";
-import PageLoader from "../../components/PageLoader";
 
 /* ─── helpers ─── */
 const pad = (n) => String(n).padStart(2, "0");
@@ -310,9 +309,8 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
     return d;
   }, [filteredData, sortField, sortDir]);
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(sortedData.length, 30);
-  if (!adminData?.cateringOrders?.length) return <PageLoader label="Loading catering orders…" />;
 
   const updateStatus = async (e, id, newStatus) => {
     e.stopPropagation();
@@ -487,8 +485,8 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
     <div className="inner-page">
 
       <div className="evt-header">
-        <div>
-          <div className="header-title-row">
+        <div className="header-title-row">
+          <div className="header-collapse-col">
             <button
               type="button"
               className="header-collapse-btn"
@@ -498,9 +496,14 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
             >
               <CollapseChevron collapsed={headerCollapsed} />
             </button>
-            <h2 className="evt-title">Catering Orders</h2>
           </div>
-          <p className="evt-subtitle">Manage catering & event food orders</p>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="evt-title">Catering Orders</h2>
+              <span className="result-count">{sortedData.length} order{sortedData.length === 1 ? "" : "s"}</span>
+            </div>
+            <p className="evt-subtitle">Manage catering & event food orders</p>
+          </div>
         </div>
         {!headerCollapsed && (
           <>
@@ -566,7 +569,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
         </div>
       )}
 
-      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 300px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 300px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -732,6 +735,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
             />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
       {callTooltipId && createPortal(
         (() => {
@@ -821,7 +825,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
 
       {/* Items popup */}
       {itemsPopup && (
-        <div className="ingredient-modal-overlay" onClick={() => setItemsPopup(null)}>
+        <div className="ingredient-modal-overlay">
           <div className="ingredient-modal" style={{ width: 520, maxWidth: "95vw" }} onClick={e => e.stopPropagation()}>
             <div className="ingredient-modal-header">
               <h3>Dishes — {itemsPopup.name} <span style={{ fontSize: 12, fontWeight: 400, color: "#888", marginLeft: 8 }}>#{(itemsPopup.id || "").slice(-6)}</span></h3>
@@ -866,7 +870,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
 
       {/* ══ CREATE MODAL ══ */}
       {showCreate && (
-        <div className="event-modal-overlay" onClick={() => setShowCreate(false)}>
+        <div className="event-modal-overlay">
           <div className="event-modal act-modal" onClick={e => e.stopPropagation()}>
 
             <div className="admin-modal-header">

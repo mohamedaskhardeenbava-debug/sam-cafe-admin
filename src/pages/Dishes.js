@@ -31,6 +31,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
   const [dishImagePreview, setDishImagePreview] = useState("");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const [categoryBarCollapsed, setCategoryBarCollapsed] = useState(false);
+  const [dishSearch, setDishSearch] = useState("");
   const [editingDish, setEditingDish] = useState(null);
   const [editingDishId, setEditingDishId] = useState(null);
   const [editedPrice, setEditedPrice] = useState("");
@@ -107,7 +108,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!adminData.categories?.length) return <PageLoader label="Loading dishes…" />;
+    if (!adminData.categories?.length) return;
 
     if (categoryId) {
       setSelectedCategoryIds([categoryId]);
@@ -182,8 +183,14 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
   }, [adminData.categories, selectedCategoryIds, sortConfig]);
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
-    useInfiniteScroll(sortedDishes.length, 30);
+  const filteredDishes = useMemo(() => {
+    const term = dishSearch.trim().toLowerCase();
+    if (!term) return sortedDishes;
+    return sortedDishes.filter(d => (d.name || "").toLowerCase().includes(term));
+  }, [sortedDishes, dishSearch]);
+
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
+    useInfiniteScroll(filteredDishes.length, 30);
 
   const handleSaveDish = async () => {
     const e = {};
@@ -505,7 +512,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
   return (
     <div className="inner-page">
       <div className="header" style={{ alignItems: "flex-start" }}>
-        <div className="header-title-row">
+        <div className="header-title-with-count">
           <button
             type="button"
             className="header-collapse-btn"
@@ -516,6 +523,20 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
             <CollapseChevron collapsed={categoryBarCollapsed} />
           </button>
           <h2 className="title">Dishes</h2>
+          <span className="result-count">
+            {filteredDishes.length} dish{filteredDishes.length === 1 ? "" : "es"}
+          </span>
+          <div className="dish-header-search">
+            <input
+              className="search-input"
+              placeholder=" Search dish name…"
+              value={dishSearch}
+              onChange={e => setDishSearch(e.target.value)}
+            />
+            {dishSearch && (
+              <button type="button" className="ae-clear-filter" onClick={() => setDishSearch("")}>Clear</button>
+            )}
+          </div>
         </div>
         <Button3D onClick={() => setShowForm(true)}>+ Add Dish</Button3D>
       </div>
@@ -567,12 +588,6 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               </button>
             );
           })}
-
-          {selectedCategoryIds.length > 0 && (
-            <span className="result-count">
-              {sortedDishes.length} dish{sortedDishes.length === 1 ? "" : "es"}
-            </span>
-          )}
         </div>
       )}
 
@@ -600,7 +615,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
           </thead>
 
           <tbody>
-            {sortedDishes.slice(0, displayLimit).map((dish) => (
+            {filteredDishes.slice(0, displayLimit).map((dish) => (
               <tr key={dish.id}>
                 <td
                   className="clickable icon-width"
@@ -644,12 +659,13 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               </tr>
             ))}
 
-            {sortedDishes.length === 0 && (
+            {filteredDishes.length === 0 && (
               <EmptyRow colSpan={6} message="No dishes available" />
             )}
             <InfiniteScrollLoader
               sentinelRef={sentinelRef}
               hasMore={hasMore}
+              isLoadingMore={isLoadingMore}
               colSpan={6}
             />
           </tbody>

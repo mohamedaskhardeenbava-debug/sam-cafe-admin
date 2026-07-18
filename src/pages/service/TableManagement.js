@@ -183,35 +183,39 @@ const TableManagement = ({ adminData, setAdminData }) => {
       <div className="header">
         <div className="filter-group">
           <div className="header-title-row">
-            <button
-              type="button"
-              className="header-collapse-btn"
-              onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand header" : "Collapse header"}
-              aria-expanded={!headerCollapsed}
-            >
-              <CollapseChevron collapsed={headerCollapsed} />
-            </button>
-            <h2 className="title">Table Management</h2>
+            <div className="header-collapse-col">
+              <button
+                type="button"
+                className="header-collapse-btn"
+                onClick={() => setHeaderCollapsed(prev => !prev)}
+                title={headerCollapsed ? "Expand header" : "Collapse header"}
+                aria-expanded={!headerCollapsed}
+              >
+                <CollapseChevron collapsed={headerCollapsed} />
+              </button>
+            </div>
+            <div className="header-title-col">
+              <div className="header-title-with-count">
+                <h2 className="title">Table Management</h2>
+                <span className="result-count">
+                  {tables.length} table{tables.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+            </div>
           </div>
           {!headerCollapsed && (
-            <>
-              <div className="table-mgmt-add">
-                <input
-                  type="number"
-                  className="table-mgmt-input"
-                  placeholder="Table number"
-                  value={newTable}
-                  onChange={e => setNewTable(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && addTable()}
-                  min="1"
-                />
-                <Button3D onClick={addTable}>Add Table</Button3D>
-              </div>
-              <span className="subtitle">
-                {tables.length} table{tables.length !== 1 ? "s" : ""}
-              </span>
-            </>
+            <div className="table-mgmt-add">
+              <input
+                type="number"
+                className="table-mgmt-input"
+                placeholder="Table number"
+                value={newTable}
+                onChange={e => setNewTable(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && addTable()}
+                min="1"
+              />
+              <Button3D onClick={addTable}>Add Table</Button3D>
+            </div>
           )}
         </div>
 
@@ -261,7 +265,6 @@ const TableManagement = ({ adminData, setAdminData }) => {
       {showQRModal && (
         <div
           className="modal-overlay"
-          onClick={() => setShowQRModal(false)}
         >
           <div
             className="qr-modal"

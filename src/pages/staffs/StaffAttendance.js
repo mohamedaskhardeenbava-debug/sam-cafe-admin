@@ -14,14 +14,13 @@ import editIcon from "../../icon/edit-icon.png";
 import closeIcon from "../../icon/close-icon.png";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
 
 import "./StaffAttendance.css";
-import PageLoader from "../../components/PageLoader";
 
 /*
   DATA SHAPE: attendance lives on staff[].attendance
@@ -287,9 +286,8 @@ export default function StaffAttendance({ adminData, setAdminData }) {
     return { id: s.id, name: s.name, role: s.role, present, absent, leave, pct, total: nonHoliday.length };
   }), [visibleStaff, visibleDates, holidays, getRecord]);
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(visibleStaff.length, 20);
-  if (!adminData?.staff?.length) return <PageLoader label="Loading attendance…" />;
 
   return (
     <div className="inner-page">
@@ -298,20 +296,27 @@ export default function StaffAttendance({ adminData, setAdminData }) {
       <div className="header">
         <div className="att-header-left">
           <div className="header-title-row">
-            <button
-              type="button"
-              className="header-collapse-btn"
-              onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand header" : "Collapse header"}
-              aria-expanded={!headerCollapsed}
-            >
-              <CollapseChevron collapsed={headerCollapsed} />
-            </button>
-            <h2 className="title">Staff Attendance</h2>
+            <div className="header-collapse-col">
+              <button
+                type="button"
+                className="header-collapse-btn"
+                onClick={() => setHeaderCollapsed(prev => !prev)}
+                title={headerCollapsed ? "Expand header" : "Collapse header"}
+                aria-expanded={!headerCollapsed}
+              >
+                <CollapseChevron collapsed={headerCollapsed} />
+              </button>
+            </div>
+            <div className="header-title-col">
+              <div className="header-title-with-count">
+                <h2 className="title">Staff Attendance</h2>
+                <span className="result-count">{visibleStaff.length} staff · {visibleDates.length} day(s)</span>
+              </div>
+              <h5 className="subtitle">
+                - {new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" })}
+              </h5>
+            </div>
           </div>
-          <h5 className="subtitle">
-            - {new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" })}
-          </h5>
         </div>
         <div className="header-btn-container">
           <Button3D onClick={exportAttendance}>Export</Button3D>
@@ -587,6 +592,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
               />
             </tbody>
           </table>
+          <InfiniteScrollOverlay isLoading={isLoadingMore} />
         </div>
       </div>
 

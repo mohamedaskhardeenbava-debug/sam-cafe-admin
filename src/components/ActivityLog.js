@@ -113,16 +113,23 @@ const ActivityLog = ({ title, items = [], exportFilePrefix }) => {
     <div className="inner-page">
       <div className="header">
         <div className="header-title-row">
-          <button
-            type="button"
-            className="header-collapse-btn"
-            onClick={() => setHeaderCollapsed(prev => !prev)}
-            title={headerCollapsed ? "Expand header" : "Collapse header"}
-            aria-expanded={!headerCollapsed}
-          >
-            <CollapseChevron collapsed={headerCollapsed} />
-          </button>
-          <h2 className="title">{title}</h2>
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">{title}</h2>
+              <span className="result-count">{filtered.length} entr{filtered.length === 1 ? "y" : "ies"}</span>
+            </div>
+          </div>
         </div>
         <Button3D onClick={handleExport}>Export</Button3D>
       </div>
@@ -167,7 +174,7 @@ const ActivityLog = ({ title, items = [], exportFilePrefix }) => {
         </div>
       )}
 
-      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 260px)" }} >
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 260px)" }} >
         <table className="table">
           <thead>
             <tr>

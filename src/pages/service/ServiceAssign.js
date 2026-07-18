@@ -20,7 +20,6 @@ import CustomDropdown from "../../components/CustomDropdown";
 import { MultiPillGroup } from "../../components/FilterBar";
 
 import "./ServiceAssign.css";
-import PageLoader from "../../components/PageLoader";
 
 /*
   DATA SHAPE (serviceAssign in db.json):
@@ -157,7 +156,6 @@ export default function ServiceAssign({ adminData, setAdminData }) {
     });
     return result;
   }, [tasks, assignSearch, sectionFilters]);
-  if (!adminData?.staff?.length) return <PageLoader label="Loading assignments…" />;
 
   const assignedCount = Object.values(assignedDay).filter(v => v?.staff).length;
   const totalTasks = Object.values(tasks).flat().length;
@@ -262,8 +260,8 @@ export default function ServiceAssign({ adminData, setAdminData }) {
 
       {/* HEADER */}
       <div className="header">
-        <div>
-          <div className="header-title-row">
+        <div className="header-title-row">
+          <div className="header-collapse-col">
             <button
               type="button"
               className="header-collapse-btn"
@@ -273,9 +271,14 @@ export default function ServiceAssign({ adminData, setAdminData }) {
             >
               <CollapseChevron collapsed={headerCollapsed} />
             </button>
-            <h2 className="title">Service Staff Assigning</h2>
           </div>
-          <span className="subtitle">{tomorrowFmt}</span>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Service Staff Assigning</h2>
+              <span className="result-count">{assignedCount}/{totalTasks} assigned</span>
+            </div>
+            <span className="subtitle">{tomorrowFmt}</span>
+          </div>
         </div>
         <div className="header-btn-container">
           <div className="service-assign-progress-badge">
@@ -395,7 +398,7 @@ function STableLayout({ filteredTasks, assignedDay, adminData, handleChange, han
   }, []);
 
   return (
-    <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 260px)" }} >
+    <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 260px)" }} >
       <table >
         <thead>
           <tr>

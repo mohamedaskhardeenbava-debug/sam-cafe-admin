@@ -181,16 +181,23 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
     <div className="inner-page">
       <div className="header">
         <div className="header-title-row">
-          <button
-            type="button"
-            className="header-collapse-btn"
-            onClick={() => setHeaderCollapsed(prev => !prev)}
-            title={headerCollapsed ? "Expand header" : "Collapse header"}
-            aria-expanded={!headerCollapsed}
-          >
-            <CollapseChevron collapsed={headerCollapsed} />
-          </button>
-          <h2 className="title">Kitchen Schedules</h2>
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Kitchen Schedules</h2>
+              <span className="result-count">{filteredList.length} schedule(s)</span>
+            </div>
+          </div>
         </div>
         <div className="header-btn-container">
           <Button3D onClick={handleExport}>Export</Button3D>
@@ -238,7 +245,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
         </div>
       )}
 
-      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 160px)" : "calc(100vh - 290px)" }} >
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 290px)" }} >
         <table >
           <thead>
             <tr>
