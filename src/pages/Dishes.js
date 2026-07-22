@@ -788,45 +788,48 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 </div>
               </div>
 
-              <div className="admin-form-group">
-                <label>Type</label>
-                <div className="veg-toggle-group">
-                  <button
-                    type="button"
-                    className={`veg-toggle-btn${newDish.isVeg ? " active-veg" : ""}`}
-                    onClick={() => setNewDish({ ...newDish, isVeg: true })}
-                  >
-                    <span className="veg-dot veg" /> Veg
-                  </button>
-                  <button
-                    type="button"
-                    className={`veg-toggle-btn${!newDish.isVeg ? " active-non-veg" : ""}`}
-                    onClick={() => setNewDish({ ...newDish, isVeg: false })}
-                  >
-                    <span className="veg-dot non-veg" /> Non-Veg
-                  </button>
+              <div className="horizontal-form-group">
+                <div className="admin-form-group">
+                  <label>Type</label>
+                  <div className="veg-toggle-group">
+                    <button
+                      type="button"
+                      className={`veg-toggle-btn${newDish.isVeg ? " active-veg" : ""}`}
+                      onClick={() => setNewDish({ ...newDish, isVeg: true })}
+                    >
+                      <span className="veg-dot veg" /> Veg
+                    </button>
+                    <button
+                      type="button"
+                      className={`veg-toggle-btn${!newDish.isVeg ? " active-non-veg" : ""}`}
+                      onClick={() => setNewDish({ ...newDish, isVeg: false })}
+                    >
+                      <span className="veg-dot non-veg" /> Non-Veg
+                    </button>
+                  </div>
+                </div>
+
+                <div className="admin-form-group">
+                  <label>Event Food</label>
+                  <div className="veg-toggle-group">
+                    <button
+                      type="button"
+                      className={`veg-toggle-btn${newDish.isEventFood ? " active-veg" : ""}`}
+                      onClick={() => setNewDish({ ...newDish, isEventFood: true })}
+                    >
+                      <span className="veg-dot veg" /> Yes
+                    </button>
+                    <button
+                      type="button"
+                      className={`veg-toggle-btn${!newDish.isEventFood ? " active-non-veg" : ""}`}
+                      onClick={() => setNewDish({ ...newDish, isEventFood: false })}
+                    >
+                      <span className="veg-dot non-veg" /> No
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div className="admin-form-group">
-                <label>Event Food</label>
-                <div className="veg-toggle-group">
-                  <button
-                    type="button"
-                    className={`veg-toggle-btn${newDish.isEventFood ? " active-veg" : ""}`}
-                    onClick={() => setNewDish({ ...newDish, isEventFood: true })}
-                  >
-                    <span className="veg-dot veg" /> Yes
-                  </button>
-                  <button
-                    type="button"
-                    className={`veg-toggle-btn${!newDish.isEventFood ? " active-non-veg" : ""}`}
-                    onClick={() => setNewDish({ ...newDish, isEventFood: false })}
-                  >
-                    <span className="veg-dot non-veg" /> No
-                  </button>
-                </div>
-              </div>
               <div className="admin-form-group">
                 <label htmlFor="">Nutrition</label>
                 <div className="benefits-grid border">
@@ -858,29 +861,31 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               <div className="admin-form-group">
                 <label htmlFor="">Ingredients</label>
                 <div className="border form-group">
-                  <div className="admin-form-group">
-                    <CustomDropdown
-                      label="Select Ingredient"
-                      value={ingredientForm.name}
-                      onChange={(val) => setIngredientForm(prev => ({ ...prev, name: val }))}
-                      options={availableIngredients.map(ing => ing.name)}
-                      placeholder="Select Ingredient"
-                    />
-                  </div>
-
-                  <div className="admin-form-group">
-                    <div className="mat">
-                      <input
-                        className={`mat-input${ingErrors.quantity ? " mat-error" : ""}`}
-                        placeholder=" "
-                        type="number"
-                        min="1"
-                        step="1"
-                        value={ingredientForm.quantity}
-                        onChange={(e) => { setIngredientForm({ ...ingredientForm, quantity: e.target.value }); setIngErrors(p => ({ ...p, quantity: false })); }}
+                  <div className="horizontal-form-group">
+                    <div className="admin-form-group">
+                      <CustomDropdown
+                        label="Select Ingredient"
+                        value={ingredientForm.name}
+                        onChange={(val) => setIngredientForm(prev => ({ ...prev, name: val }))}
+                        options={availableIngredients.map(ing => ing.name)}
+                        placeholder="Select Ingredient"
                       />
-                      <label className={`mat-label${ingErrors.quantity ? " mat-label-error" : ""}`}>Quantity in grams</label>
-                      <span className={`mat-bar${ingErrors.quantity ? " mat-bar-error" : ""}`} />
+                    </div>
+
+                    <div className="admin-form-group">
+                      <div className="mat">
+                        <input
+                          className={`mat-input${ingErrors.quantity ? " mat-error" : ""}`}
+                          placeholder=" "
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={ingredientForm.quantity}
+                          onChange={(e) => { setIngredientForm({ ...ingredientForm, quantity: e.target.value }); setIngErrors(p => ({ ...p, quantity: false })); }}
+                        />
+                        <label className={`mat-label${ingErrors.quantity ? " mat-label-error" : ""}`}>Quantity in grams</label>
+                        <span className={`mat-bar${ingErrors.quantity ? " mat-bar-error" : ""}`} />
+                      </div>
                     </div>
                   </div>
 
@@ -919,6 +924,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               <div className="admin-form-group">
                 <label htmlFor="">Variants</label>
                 <div className="border form-group">
+                  <div className="horizontal-form-group">
                   <div className="admin-form-group">
                     <div className="mat">
                       <input
@@ -949,6 +955,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                       <label className="mat-label">Additional Cost</label>
                       <span className="mat-bar" />
                     </div>
+                  </div>
                   </div>
 
                   <Button3D onClick={handleAddVariant}>Add Variant</Button3D>
@@ -984,9 +991,9 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               <Button3D type="submit">Add Dish</Button3D>
             </div>
           </form>
-        </div>
+        </div >
       )}
-    </div>
+    </div >
   );
 };
 

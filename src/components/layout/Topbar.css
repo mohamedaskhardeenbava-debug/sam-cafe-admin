@@ -954,6 +954,100 @@
   .phone-list__item--log {
     opacity: 0.85;
   }
+
+  /* ═══════════════════════════════════════════
+     RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+  ═══════════════════════════════════════════ */
+  @media (max-width: 1080px) {
+    .topbar-right {
+      max-width: calc(100vw - 200px);
+    }
+
+    .topbar-center {
+      max-width: 500px;
+    }
+  }
+
+  @media (max-width: 992px) {
+    padding: 0 14px;
+
+    .topbar-title {
+      font-size: 16px;
+    }
+
+    .topbar-center {
+      max-width: 320px;
+    }
+
+    .profile-name {
+      display: none;
+    }
+  }
+
+  @media (max-width: 768px) {
+    height: 58px;
+    gap: 6px;
+
+    .topbar-center {
+      max-width: 180px;
+      padding: 6px;
+    }
+
+    .topbar-right {
+      max-width: calc(100vw - 140px);
+      gap: 6px;
+    }
+
+    .dropdown {
+      width: min(320px, 92vw);
+      right: 8px !important;
+      left: auto;
+    }
+
+    .notification-dropdown {
+      right: 54px;
+    }
+
+    .profile-dropdown {
+      right: 8px;
+    }
+  }
+
+  @media (max-width: 578px) {
+    padding: 0 10px;
+
+    .topbar-title {
+      display: none;
+    }
+
+    .topbar-center {
+      max-width: 120px;
+    }
+
+    .notification-icon-btn {
+      padding: 5px;
+    }
+
+    .profile-avatar {
+      width: 30px;
+      height: 30px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .topbar-center {
+      display: none;
+    }
+
+    .topbar-right {
+      max-width: calc(100vw - 60px);
+    }
+
+    .dropdown {
+      width: 94vw;
+      right: 3vw !important;
+    }
+  }
 }
 
 /* ── Urgent chip blink ring — must be top-level, not nested inside .topbar ── */
@@ -1096,4 +1190,10 @@
   font-size: 13px;
   flex-shrink: 0;
   line-height: 1.4;
+}
+
+@media (max-width: 578px) {
+  .chip-tooltip--portal {
+    width: min(250px, 88vw);
+  }
 }

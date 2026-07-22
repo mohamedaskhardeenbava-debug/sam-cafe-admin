@@ -280,7 +280,7 @@ const ServiceReports = ({ adminData = {} }) => {
               onChangePreset={setReportPreset}
               max={today}
               labelClass="sgroom-filter-label"
-              groupClass="s-filter-item"
+              groupClass="filter-group"
               separateItems
             />
             {(reportFrom || reportTo) && (

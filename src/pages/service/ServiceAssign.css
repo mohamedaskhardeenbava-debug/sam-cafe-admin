@@ -282,3 +282,27 @@
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .service-assign-header {
+    flex-direction: column;
+  }
+
+  .service-assign-title,
+  .service-assign-date {
+    font-size: 19px;
+  }
+}
+
+@media (max-width: 578px) {
+  .service-assign-progress-badge {
+    min-width: 46px;
+    padding: 3px 8px;
+  }
+
+  .service-assign-progress-num {
+    font-size: 13px;
+  }
+}

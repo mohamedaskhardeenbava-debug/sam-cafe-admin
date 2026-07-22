@@ -278,7 +278,7 @@ const KitchenReports = ({ adminData = {} }) => {
                 onChangePreset={setReportPreset}
                 max={today}
                 labelClass="kgroom-filter-label"
-                groupClass="k-filter-item"
+                groupClass="filter-group"
                 separateItems
               />
               {(reportFrom || reportTo) && (

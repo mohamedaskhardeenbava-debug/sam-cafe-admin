@@ -151,6 +151,7 @@ td input {
   cursor: pointer;
   transition: all 0.2s ease;
   color: #555;
+  max-width: 110px;
 }
 
 .veg-toggle-btn:hover {
@@ -205,4 +206,48 @@ td input {
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   margin-top: 20px;
   z-index: 10;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .dish-details-image {
+    width: 110px;
+    height: 110px;
+  }
+
+  .image-upload-btn {
+    left: 70px;
+  }
+}
+
+@media (max-width: 578px) {
+  .dish-details-image {
+    width: 90px;
+    height: 90px;
+  }
+
+  .image-upload-btn {
+    left: 55px;
+    font-size: 11px;
+  }
+
+  .action,
+  .actions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .action button,
+  .actions button {
+    width: 100%;
+  }
+
+  .action,
+  .actions {
+    flex-direction: column;
+  }
 }

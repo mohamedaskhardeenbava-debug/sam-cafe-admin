@@ -1235,8 +1235,10 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #888;
+  color: #111;
   margin: 0 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #9c9c9c;
 }
 
 .ae-detail-event-title {
@@ -1451,6 +1453,15 @@
 
   .ae-tab-pills {
     width: 100%;
+  }
+
+  .act-dish-card,
+  .act-dish-info {
+    flex-direction: column;
+  }
+
+  .act-dish-card {
+    border: 1px solid #d8d8d8;
   }
 }
 
@@ -2167,7 +2178,6 @@
   border-radius: 8px;
   font-size: 13px;
   transition: background 0.15s;
-  border: none;
   background: transparent;
 }
 
@@ -2926,7 +2936,7 @@
 .ae-tag-input-row button .front {
   display: block;
   position: relative;
-  padding: 14px 20px;
+  padding: 10px 22px;
   border-radius: 10px;
   font-size: 13px;
   font-weight: 700;
@@ -3015,4 +3025,84 @@
   font-weight: 500;
   color: #111;
   word-break: break-word;
+}
+
+.evt-page.dishes-status-dropdowm {
+  min-width: 150px !important;
+  width: 100% !important;
+  height: 46px !important;
+  padding: 0 36px 0 10px !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  color: #111 !important;
+  background-color: #f9f9f9 !important;
+  box-sizing: border-box;
+  text-align: left !important;
+  cursor: pointer !important;
+  transition: border-color 0.2s ease !important;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='%23666' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  background-size: 16px !important;
+  appearance: none !important;
+  border: none !important;
+  text-transform: capitalize !important;
+  text-align: center !important;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE ADDENDUM — 1080 / 992 / 768 / 578 / 480
+   Covers grid classes not addressed by the earlier
+   768/578 responsive blocks in this file.
+═══════════════════════════════════════════ */
+@media (max-width: 1080px) {
+
+  .ae-category-grid,
+  .ae-packages-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+
+  .ae-form-row,
+  .ae-spec-summary-grid,
+  .ae-addr-grid,
+  .ae-dishes-split {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .ae-form-row,
+  .ae-spec-summary-grid,
+  .ae-addr-grid,
+  .ae-dishes-split {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-bar .search-input,
+  .ae-events-filter-top .search-input {
+    width: 100%;
+  }
+}
+
+@media (max-width: 578px) {
+  .ae-events-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ebutton {
+    min-width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .ae-category-grid,
+  .ae-packages-grid {
+    grid-template-columns: 1fr;
+  }
 }

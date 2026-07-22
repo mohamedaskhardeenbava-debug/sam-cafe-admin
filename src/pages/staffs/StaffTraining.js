@@ -324,7 +324,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
             </div>
 
             <div className="admin-modal-body">
-              <table className="staff-training-table">
+              <table className="data-table">
                 <tbody>
                   <tr><td>Staff</td><td>{selected.staffName}</td></tr>
                   <tr><td>Role</td><td>{selected.role}</td></tr>

@@ -1442,19 +1442,21 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
 
             <div className="filter-group">
               <CustomDropdown
-                value={modeFilter === "all" ? "" : modeFilter}
+                value={modeFilter}
                 onChange={(val) => setModeFilter(val || "all")}
                 options={[
+                  { value: "all", label: "All Modes" },
                   { value: "dine in", label: "dine in" },
                   { value: "take away", label: "take away" },
                 ]}
-                placeholder="All Modes"
               />
               <CustomDropdown
-                value={statusFilter === "all" ? "" : statusFilter}
+                value={statusFilter}
                 onChange={(val) => setStatusFilter(val || "all")}
-                options={["placed", "preparing", "service pickup", "completed", "cancelled"].map(s => ({ value: s, label: s }))}
-                placeholder="All Status"
+                options={[
+                  { value: "all", label: "All Status" },
+                  ...["placed", "preparing", "service pickup", "completed", "cancelled"].map(s => ({ value: s, label: s }))
+                ]}
               />
             </div>
           </div>

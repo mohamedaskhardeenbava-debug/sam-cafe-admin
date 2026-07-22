@@ -76,63 +76,63 @@ const OrderDetails = ({ orders, menu }) => {
     status.toLowerCase().trim();
 
   return (
-    <div className="order-details-page">
-      <div className="details-container">
+    <div className="details-container">
 
-        {/* HEADER */}
-        <div className="details-header">
-          <button
-            className="back-btn"
-            onClick={() => navigate(-1)}
-          />
-          <h2>Order {order.id}</h2>
-        </div>
+      {/* HEADER */}
+      <div className="details-header">
+        <button
+          className="back-btn"
+          onClick={() => navigate(-1)}
+        />
+        <h2>Order {order.id}</h2>
+      </div>
 
-        <div className="details-body">
-          {/* ORDER INFO */}
-          <div className="section">
-            <div className="section-title">
-              <span>Order Information</span>
-            </div>
-
-            <table className="data-table">
-              <tbody>
-                <tr>
-                  <td><strong>Date:</strong> {formatDisplayDate(order.date)}</td>
-                  <td><strong>Order ID:</strong> {order.id ?? "-"}</td>
-                </tr>
-                <tr>
-                  <td>
-                    <strong>Status:</strong>{" "}
-                    <span
-                      className={`dd-status status-${normalizeStatus(order.status).replace(/\s+/g, "-")}`}
-                    >
-                      {order.status}
-                    </span>
-                  </td>
-                  <td><strong>Customer Name:</strong> {order.userName ?? "-"}</td>
-                </tr>
-                {normalizeStatus(order.status) === "cancelled" && order.cancelReason && (
-                  <tr>
-                    <td colSpan={2}>
-                      <strong>Cancellation Reason:</strong> {order.cancelReason}
-                    </td>
-                  </tr>
-                )}
-                <tr>
-                  <td><strong>Mode:</strong> {order.mode}</td>
-                  <td><strong>Table No:</strong> {order.tableNo ?? "-"}</td>
-                </tr>
-              </tbody>
-            </table>
+      <div className="details-body">
+        {/* ORDER INFO */}
+        <div className="section">
+          <div className="section-title">
+            <span>Order Information</span>
           </div>
 
-          {/* ITEMS */}
-          <div className="section">
-            <div className="section-title">
-              <span>Ordered Items</span>
-            </div>
+          <table className="data-table">
+            <tbody>
+              <tr>
+                <td><strong>Date:</strong> {formatDisplayDate(order.date)}</td>
+                <td><strong>Order ID:</strong> {order.id ?? "-"}</td>
+              </tr>
+              <tr>
+                <td>
+                  <strong>Status:</strong>{" "}
+                  <span
+                    className={`dd-status status-${normalizeStatus(order.status).replace(/\s+/g, "-")}`}
+                  >
+                    {order.status}
+                  </span>
+                </td>
+                <td><strong>Customer Name:</strong> {order.userName ?? "-"}</td>
+              </tr>
+              {normalizeStatus(order.status) === "cancelled" && order.cancelReason && (
+                <tr>
+                  <td colSpan={2}>
+                    <strong>Cancellation Reason:</strong> {order.cancelReason}
+                  </td>
+                </tr>
+              )}
+              <tr>
+                <td><strong>Mode:</strong> {order.mode}</td>
+                <td><strong>Table No:</strong> {order.tableNo ?? "-"}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
+        {/* ITEMS */}
+        <div className="section">
+          <div className="section-title">
+            <span>Ordered Items</span>
+          </div>
+
+          <div className="data-table-wrapper">
             <table className="data-table">
               <thead>
                 <tr>
@@ -187,40 +187,40 @@ const OrderDetails = ({ orders, menu }) => {
               </tbody>
             </table>
           </div>
-
-          {/* TOTAL */}
-          <div className="section">
-            {order.splitType && (
-              <div className="section">
-                <div className="section-title">
-                  <span>Split Details</span>
-                </div>
-
-                {order.splitType === "amount" && (
-                  <p>
-                    {order.splitDetails?.customers} People • ₹{order.splitDetails?.perHead} per head
-                  </p>
-                )}
-
-                {order.splitType === "bill" && (
-                  <div>
-                    {order.splitDetails?.map((bill, i) => (
-                      <p key={i}>
-                        Bill {i + 1}: ₹{bill.total}
-                      </p>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-            <div className="section-title">
-              <span>Total Amount</span>
-              <p className="order-total">₹{totalAmount}</p>
-            </div>
-          </div>
         </div>
 
+        {/* TOTAL */}
+        <div className="section">
+          {order.splitType && (
+            <div className="section">
+              <div className="section-title">
+                <span>Split Details</span>
+              </div>
+
+              {order.splitType === "amount" && (
+                <p>
+                  {order.splitDetails?.customers} People • ₹{order.splitDetails?.perHead} per head
+                </p>
+              )}
+
+              {order.splitType === "bill" && (
+                <div>
+                  {order.splitDetails?.map((bill, i) => (
+                    <p key={i}>
+                      Bill {i + 1}: ₹{bill.total}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          <div className="section-title">
+            <span>Total Amount</span>
+            <p className="order-total">₹{totalAmount}</p>
+          </div>
+        </div>
       </div>
+
     </div>
   );
 };

@@ -185,3 +185,36 @@
     font-size: 13px;
     color: var(--ink-4);
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 1080px) {
+  .card-grid-wrapper {
+    height: calc(100vh - 220px);
+  }
+}
+
+@media (max-width: 768px) {
+  .card-grid-wrapper {
+    height: calc(100vh - 260px);
+  }
+
+  .recipe-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+  }
+
+  .recipe-card {
+    padding: 14px 16px;
+  }
+}
+
+@media (max-width: 578px) {
+  .recipe-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .recipe-empty {
+    padding: 36px 14px;
+  }
+}

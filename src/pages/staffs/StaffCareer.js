@@ -261,7 +261,7 @@ export default function StaffCareer() {
             </div>
 
             <div className="admin-modal-body">
-              <table className="staff-training-table">
+              <table className="data-table">
                 <tbody>
                   <tr><td>Role</td><td>{selected.role}</td></tr>
                   <tr><td>Experience</td><td>{expLabel(selected.experience)}</td></tr>

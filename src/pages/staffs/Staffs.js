@@ -326,12 +326,12 @@ export default function Staffs({
                       {staff.workType || "full-time"}
                     </span>
                   </td>
-                  <td onClick={e => e.stopPropagation()}>
+                  <td className="icon-width" onClick={e => e.stopPropagation()}>
                     <Button3D variant="cancel" iconOnly onClick={() => { setFormData(staff); setIsEditMode(true); setShowModal(true); }}
                       title="Edit"><img src={editIcon} alt="" /></Button3D>
                   </td>
 
-                  <td onClick={e => e.stopPropagation()}>
+                  <td className="icon-width" onClick={e => e.stopPropagation()}>
                     <Button3D variant="cancel" iconOnly title="Delete" onClick={() => deleteRecord({
                       api, toast,
                       endpoint: `/staff/${staff.id}`,

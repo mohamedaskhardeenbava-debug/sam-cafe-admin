@@ -736,9 +736,6 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     {/* Guest Name */}
                     <td>
                       <div className="evt-res-name-cell">
-                        <div className="evt-res-avatar">
-                          {(item.name || "?").charAt(0).toUpperCase()}
-                        </div>
                         <span>
                           <span className="evt-res-name clickable"
                             onClick={() => navigate(`/reservations/${item.id}`, { state: { fromDetail: true } })}>
@@ -761,7 +758,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     <td style={{ fontWeight: 600 }}>{item.reservedDate || item.date || "—"}</td>
 
                     {/* Booked On */}
-                    <td style={{ fontSize: 12, color: "#666" }}>{item.bookedDate || "—"}</td>
+                    <td>{item.bookedDate || "—"}</td>
 
                     {/* Slot */}
                     <td>
@@ -778,7 +775,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
                     {/* Table Preference */}
                     <td>
-                      <div className="evt-res-tpref-cell">
+                      <div>
                         {item.tablePrefImage
                           ? <img src={item.tablePrefImage} alt={item.tablePref} className="evt-res-tpref-thumb" />
                           : null}
@@ -796,7 +793,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     </td>
 
                     {/* Incharge */}
-                    <td style={{ fontSize: 12, color: "#666" }}>{item.inchargePerson || "—"}</td>
+                    <td>{item.inchargePerson || "—"}</td>
 
                     {/* Status */}
                     <td onClick={e => e.stopPropagation()}>

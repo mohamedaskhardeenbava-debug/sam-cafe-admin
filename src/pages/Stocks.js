@@ -509,36 +509,38 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
             </div>
 
             <div className="admin-modal-body">
-              <div className="admin-form-group">
-                <div className="mat">
-                  <input
-                    className="mat-input"
-                    placeholder=" "
-                    autoFocus
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={pricePer100g}
-                    onChange={(e) => setPricePer100g(e.target.value)}
-                  />
-                  <label className="mat-label">Price per 100g<span className="rf-req">*</span></label>
-                  <span className="mat-bar" />
+              <div className="horizontal-form-group">
+                <div className="admin-form-group">
+                  <div className="mat">
+                    <input
+                      className="mat-input"
+                      placeholder=" "
+                      autoFocus
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={pricePer100g}
+                      onChange={(e) => setPricePer100g(e.target.value)}
+                    />
+                    <label className="mat-label">Price per 100g<span className="rf-req">*</span></label>
+                    <span className="mat-bar" />
+                  </div>
                 </div>
-              </div>
 
-              <div className="admin-form-group">
-                <div className="mat">
-                  <input
-                    className="mat-input"
-                    placeholder=" "
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={stockMax}
-                    onChange={(e) => setStockMax(e.target.value)}
-                  />
-                  <label className="mat-label">Stock Max (kg)<span className="rf-req">*</span></label>
-                  <span className="mat-bar" />
+                <div className="admin-form-group">
+                  <div className="mat">
+                    <input
+                      className="mat-input"
+                      placeholder=" "
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={stockMax}
+                      onChange={(e) => setStockMax(e.target.value)}
+                    />
+                    <label className="mat-label">Stock Max (kg)<span className="rf-req">*</span></label>
+                    <span className="mat-bar" />
+                  </div>
                 </div>
               </div>
 

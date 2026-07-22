@@ -164,7 +164,7 @@ export default function ScheduleSection({ adminData, navigate }) {
   return (
     <>
       {/* Two-column pie grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14, marginBottom: 20 }}>
+      <div className="horizontal-form-group">
         <SchedulePieCard
           title="Kitchen Schedules"
           data={kitchenData}

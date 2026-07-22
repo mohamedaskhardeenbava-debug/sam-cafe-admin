@@ -743,7 +743,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
   );
 
   return (
-    <div className="inner-page">
+    <div className="inner-page evt-page">
       {/* PAGE HEADER */}
       <div className="evt-header">
         <div className="header-title-row">
@@ -1779,7 +1779,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                     </div>
                     <div className="ae-detail-section">
                       <h4>Guest Information</h4>
-                      <table className="ae-detail-table">
+                      <table className="data-table">
                         <tbody>
                           <tr><td>Name</td><td>{b.name}</td></tr>
                           <tr><td>Email</td><td>{b.email}</td></tr>
@@ -1819,7 +1819,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
 
                     <div className="ae-detail-section">
                       <h4>Booking Info</h4>
-                      <table className="ae-detail-table">
+                      <table className="data-table">
                         <tbody>
                           <tr><td>Booking ID</td><td className="ae-mono">{b.id}</td></tr>
                           <tr><td>Booked On</td><td>{formatDate(b.bookedAt)}</td></tr>

@@ -414,3 +414,85 @@
   z-index: 100;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+
+@media (max-width: 1080px) {
+  .sidebar-brand {
+    height: 58px;
+  }
+
+  .brand-logo-img {
+    width: 78px;
+  }
+}
+
+/* 992px and below: sidebar becomes a fixed overlay drawer
+   (positioning handled in Common.css .app > .sidebar). A dimmed
+   backdrop appears behind it whenever it's expanded. */
+@media (max-width: 992px) {
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 1100;
+    animation: fadeSlide 0.15s ease;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar-link {
+    padding: 11px 12px;
+    font-size: 14px;
+  }
+
+  .sidebar-icon-wrap {
+    width: 30px;
+    height: 30px;
+  }
+
+  .sidebar-floating-menu {
+    min-width: 180px;
+  }
+}
+
+@media (max-width: 578px) {
+  .sidebar-brand {
+    height: 54px;
+    padding: 0 10px;
+  }
+
+  .brand-icon-wrap {
+    width: 32px;
+    height: 32px;
+  }
+
+  .brand-logo-img {
+    width: 70px;
+  }
+
+  .sidebar-footer-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* On the smallest screens the drawer takes the full width so
+     labels stay fully readable rather than a cramped mid-width panel. */
+  .app > .sidebar {
+    width: 82vw;
+    max-width: 300px;
+  }
+
+  .sidebar-menu {
+    padding: 8px 6px;
+  }
+
+  .sidebar-sublink {
+    font-size: 12.5px;
+  }
+}

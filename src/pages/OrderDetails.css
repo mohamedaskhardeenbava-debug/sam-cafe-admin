@@ -90,3 +90,42 @@
   font-weight: 700;
   color: var(--color-green);
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .order-info-table,
+  .items-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .items-table th,
+  .items-table td {
+    font-size: 12px;
+  }
+
+  .back-btn {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 578px) {
+  .order-total {
+    font-size: 19px;
+  }
+
+  .order-info-table td {
+    padding: 6px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .items-table th,
+  .items-table td {
+    padding: 6px;
+  }
+}

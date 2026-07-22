@@ -94,3 +94,36 @@
   background: #e53935;
   color: #fff;
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .login-card {
+    width: 88vw;
+    padding: 26px;
+  }
+}
+
+@media (max-width: 578px) {
+  .login-card {
+    width: 92vw;
+    padding: 20px;
+    gap: 10px;
+  }
+
+  .login-card h2 {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    width: 96vw;
+    padding: 16px;
+    border-radius: 8px;
+  }
+
+  .login-card button {
+    width: 100%;
+  }
+}

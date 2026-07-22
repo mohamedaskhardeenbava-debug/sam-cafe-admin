@@ -168,7 +168,7 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
       </div>
 
       <div className="details-body">
-        <div className="horizontal-form-group" style={{ alignItems: "end" }} >
+        <div className="horizontal-form-group">
           {/* IMAGE — thumbnail style (matches DishDetails) */}
           <div className="ingredient-details-image">
             <img src={localIngredient.image} alt={localIngredient.name} />

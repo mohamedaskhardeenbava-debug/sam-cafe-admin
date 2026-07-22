@@ -527,3 +527,94 @@
   color: #e74c3c;
   margin-left: 2px;
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 1080px) {
+  .dish-page-table {
+    height: calc(100vh - 220px) !important;
+  }
+}
+
+@media (max-width: 992px) {
+  .dish-header-search {
+    margin-left: 0;
+  }
+
+  .dish-header-search .search-input {
+    width: 180px;
+  }
+
+  .dish-header-actions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .dish-page-table {
+    height: calc(100vh - 260px) !important;
+  }
+
+  .dish-category-buttons {
+    padding: 6px 8px;
+    gap: 5px;
+  }
+
+  .dish-header-search {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .dish-header-search .search-input {
+    width: 100%;
+  }
+
+  .dish-header-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .benefits-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .veg-toggle-group {
+    gap: 6px;
+  }
+}
+
+@media (max-width: 578px) {
+  .dish-name {
+    font-size: 13px;
+  }
+
+  .veg-badge {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+
+  .dish-image,
+  .dish-placeholder {
+    width: 30px;
+    height: 30px;
+  }
+
+  .ingredient-form-table th,
+  .ingredient-form-table td {
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dish-category-buttons {
+    gap: 4px;
+  }
+
+  .filter-pill-count {
+    min-width: 15px;
+    height: 15px;
+    font-size: 10px;
+  }
+}

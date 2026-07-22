@@ -188,3 +188,28 @@
         font-size: 12px;
     }
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE ADDENDUM — 992 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 992px) {
+  .staff-details-image {
+    width: 30%;
+  }
+}
+
+@media (max-width: 578px) {
+  .staff-details-image {
+    width: 120px;
+  }
+
+  .data-table th,
+  .data-table td {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .staff-details-image {
+    width: 100px;
+  }
+}

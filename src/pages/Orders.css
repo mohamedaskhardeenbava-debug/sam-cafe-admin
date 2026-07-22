@@ -987,6 +987,28 @@
   background: #fff5f5 !important;
 }
 
+@media (max-width: 1080px) {
+  .orders-header-div {
+    flex-wrap: wrap;
+    height: auto;
+  }
+}
+
+@media (max-width: 992px) {
+  .orders-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .orders-header-div {
+    gap: 8px;
+  }
+
+  .orders-search-wrapper {
+    width: 100%;
+  }
+}
+
 @media screen and (max-width: 768px) {
   .orders-table-wrapper {
     width: 100% !important;
@@ -998,6 +1020,52 @@
 
   .orders-table td {
     font-size: 12px;
+  }
+
+  .orders-header-div {
+    flex-direction: column;
+    height: auto;
+    align-items: stretch;
+  }
+
+  .orders-filter {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .orders-page .dishes-status-dropdown {
+    height: 40px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 578px) {
+  .orders-header .filter-group {
+    width: 100%;
+  }
+  
+  .orders-title {
+    font-size: 16px;
+  }
+
+  .order-item-actions {
+    gap: 4px;
+  }
+
+  .order-item-cancelled-label {
+    font-size: 10px;
+  }
+
+  .orders-loading-more {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .orders-page .dishes-status-dropdown {
+    min-width: 0;
+    font-size: 12px;
+    padding: 0 28px 0 8px;
   }
 }
 

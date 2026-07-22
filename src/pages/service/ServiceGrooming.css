@@ -519,3 +519,29 @@
   font-weight: 500;
   white-space: nowrap;
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE ADDENDUM — 1080 / 992 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 992px) {
+  .sgroom-search-dropdown {
+    min-width: 240px;
+  }
+}
+
+@media (max-width: 578px) {
+  .sgroom-search-dropdown {
+    min-width: 0;
+    max-width: 90vw;
+  }
+
+  .sgroom-avatar {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sgroom-name-wrap {
+    max-width: 120px;
+  }
+}

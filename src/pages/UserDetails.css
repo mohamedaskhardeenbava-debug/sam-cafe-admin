@@ -31,3 +31,23 @@
 .clickable {
   cursor: pointer;
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .user-info-table,
+  .user-orders-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 578px) {
+  .user-info-table td,
+  .user-orders-table th,
+  .user-orders-table td {
+    padding: 6px;
+    font-size: 12px;
+  }
+}

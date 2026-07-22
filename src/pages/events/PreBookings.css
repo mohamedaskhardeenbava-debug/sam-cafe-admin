@@ -892,3 +892,42 @@
     flex-direction: column;
   }
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE ADDENDUM — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .evt-pre-table-wrapper {
+    border-radius: 12px;
+    padding: 0 4px;
+  }
+
+  .evt-pre-table th {
+    font-size: 10px;
+    padding: 10px 8px;
+  }
+
+  .evt-pre-row td {
+    font-size: 12px;
+    padding: 9px 8px;
+  }
+
+  .evt-pre-add-btn,
+  .evt-pre-clear-all {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 578px) {
+  .evt-pre-avatar {
+    width: 26px;
+    height: 26px;
+    font-size: 11px;
+  }
+
+  .evt-pre-slot-badge,
+  .evt-pre-discount-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+}

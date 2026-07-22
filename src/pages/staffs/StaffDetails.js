@@ -366,7 +366,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
               </div>
 
               <div className="admin-form-group">
-                <label>
+                <label className="checkbox-item">
                   <input
                     type="checkbox"
                     checked={sameAddress}

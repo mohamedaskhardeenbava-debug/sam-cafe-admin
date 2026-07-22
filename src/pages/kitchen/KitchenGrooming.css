@@ -709,3 +709,31 @@
   font-weight: 500;
   white-space: nowrap;
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE ADDENDUM — 1080 / 992 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 992px) {
+  .kgroom-filter-bar,
+  .assign-filter-bar,
+  .recipe-filter-bar {
+    padding: 8px 10px 10px;
+  }
+}
+
+@media (max-width: 578px) {
+  .kgroom-modal {
+    width: 92vw;
+  }
+
+  .kgroom-table th,
+  .kgroom-table td {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .kgroom-modal-footer {
+    flex-wrap: wrap;
+    padding: 12px 14px;
+  }
+}

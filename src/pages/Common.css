@@ -90,6 +90,7 @@ textarea {
   outline: none;
   border-radius: 4px;
   border: 1px solid var(--color-offwhite);
+  resize: none !important;
 }
 
 input[type="number"]::-webkit-outer-spin-button,
@@ -139,8 +140,7 @@ label {
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 .topbar {
@@ -150,6 +150,9 @@ label {
 
 .page {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: 24px;
   box-sizing: border-box;
   background: linear-gradient(0deg,
@@ -162,7 +165,6 @@ label {
   transition: background 0.3s ease, color 0.3s ease;
 }
 
-
 /* ─────────────────────────────────────────────────────────────
    4. PAGE HEADER (shared .header / .title / .subtitle)
 ───────────────────────────────────────────────────────────── */
@@ -172,6 +174,13 @@ label {
   margin-bottom: 20px;
   gap: 14px;
   align-items: flex-start;
+  flex-shrink: 0;
+}
+
+/* optional filter row between header and table-wrapper */
+.filter-bar {
+  flex-shrink: 0;
+  margin-bottom: 14px;
 }
 
 .title {
@@ -189,7 +198,7 @@ label {
 
 .result-count {
   font-size: 12px;
-  color: #888;
+  color: #555;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -200,9 +209,82 @@ label {
   align-items: center;
 }
 
+/* ── Header collapse control (shared across all pages) ──
+   Sits in front of the page title, inline in normal flow
+   (position: relative, not absolute/floating). ── */
+.header-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* Collapse button lives in its own flex child, separate from the
+   title/subtitle block, per the two-column header layout. */
+.header-collapse-col {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Title + subtitle grouped together in their own flex child. */
+.header-title-col {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Title + result-count sit side by side on one line, with the
+   subtitle (if any) still stacking underneath via .header-title-col. */
+.header-title-with-count {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.header-title-with-count .result-count,
+.header-title-with-count .ae-result-count {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #555;
+  white-space: nowrap;
+}
+
+.header-collapse-btn {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.header-collapse-btn:hover {
+  background: #fff;
+  border-color: rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.header-collapse-icon {
+  transition: transform 0.25s ease;
+}
+
+.header-collapse-icon.collapsed {
+  transform: rotate(-90deg);
+}
+
 .inner-page {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
   gap: 0;
 }
 
@@ -223,31 +305,66 @@ label {
 /* ─────────────────────────────────────────────────────────────
    5. TABLE SYSTEM
 ───────────────────────────────────────────────────────────── */
+/* ── Header-collapsed table stretch (item 3) ──
+   Several pages toggle a `header-is-collapsed` class on their table/grid
+   wrapper when the header is collapsed. This is the shared rule that
+   actually makes that stretch happen: the wrapper grows to fill the
+   remaining viewport height instead of leaving a gap where the header
+   used to be. Uses !important because per-page CSS often sets a fixed
+   maxHeight inline or via a more specific selector that this needs to
+   override regardless of load order.
+
+   .orders-table-wrapper is intentionally excluded: it's a flex child
+   of .orders-page (flex: 1; min-height: 0; see Orders.css) so it
+   already stretches to fill whatever space its collapsed header
+   leaves behind. Forcing a fixed height here would fight that flex
+   sizing and reintroduce the overflow/clipping bug this rule was
+   meant to fix elsewhere. */
+.header-is-collapsed:not(.orders-table-wrapper) {
+  max-height: calc(100vh - 120px) !important;
+  height: calc(100vh - 120px) !important;
+}
+
+/* Page-specific table wrappers that use the header-is-collapsed toggle
+   need position:relative too, so InfiniteScrollOverlay can anchor. */
+.kgroom-table-wrapper,
+.orders-table-wrapper,
+.att-scroll-wrap,
+.att-table-wrap,
+.card-grid-wrapper,
+.career-grid-wrapper,
+.table-mgmt-grid-wrapper {
+  position: relative;
+}
+
 .table-wrapper {
+  flex: 1;
+  min-height: 0;
   width: 100%;
-  height: calc(100vh - 175px);
   overflow: auto;
+  overflow-x: auto;
   padding: 0 10px;
   background: #e9e9e9;
   border-radius: 20px;
   box-sizing: border-box;
+  position: relative;
 }
 
-.table {
+.table-wrapper table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0 5px;
   background: transparent;
-  table-layout: fixed;
+  /* table-layout: fixed; */
 }
 
-.table thead {
+.table-wrapper table thead {
   position: sticky;
   top: 0;
   z-index: 10;
 }
 
-.table th {
+.table-wrapper table th {
   padding: 16px 12px;
   font-size: 13px;
   font-weight: 600;
@@ -258,7 +375,7 @@ label {
   text-align: left;
 }
 
-.table td {
+.table-wrapper table td {
   font-size: 14px;
   text-align: left;
   white-space: nowrap;
@@ -267,28 +384,28 @@ label {
   border-bottom: 1px solid #cacaca;
 }
 
-.table tbody tr {
+.table-wrapper table tbody tr {
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
   transition: all 0.25s ease;
 }
 
-.table tbody tr:hover {
+.table-wrapper table tbody tr:hover {
   background-color: rgb(234, 234, 234);
 }
 
-.table tbody tr td {
+.table-wrapper table tbody tr td {
   padding: 10px;
   font-size: 14px;
   border: none;
   background: #ffffff;
 }
 
-.table tbody tr td:first-child {
+.table-wrapper table tbody tr td:first-child {
   border-top-left-radius: 16px;
   border-bottom-left-radius: 16px;
 }
 
-.table tbody tr td:last-child {
+.table-wrapper table tbody tr td:last-child {
   border-top-right-radius: 16px;
   border-bottom-right-radius: 16px;
 }
@@ -323,7 +440,7 @@ th.sorted .sort-arrow {
 
 /* Utility column widths */
 .icon-width {
-  width: 50px !important;
+  width: 72px !important;
 }
 
 /* Table image cell */
@@ -371,7 +488,7 @@ th.sorted .sort-arrow {
 /* ─────────────────────────────────────────────────────────────
    6. FORM HELPERS
 ───────────────────────────────────────────────────────────── */
-.form-group {
+.admin-form-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -394,7 +511,7 @@ th.sorted .sort-arrow {
 }
 
 .horizontal-form-group label,
-.form-group label,
+.admin-form-group label,
 .border label {
   display: block;
   font-size: 13px;
@@ -404,8 +521,8 @@ th.sorted .sort-arrow {
 
 .horizontal-form-group input,
 .horizontal-form-group select,
-.form-group input,
-.form-group select {
+.admin-form-group input,
+.admin-form-group select {
   width: 100%;
   box-sizing: border-box;
   padding: 8px 10px;
@@ -585,6 +702,8 @@ th.sorted .sort-arrow {
   flex-shrink: 0;
   width: fit-content;
   margin-top: 6px;
+
+  padding: 0 !important;
 }
 
 .modal-save-btn:hover,
@@ -662,6 +781,21 @@ th.sorted .sort-arrow {
   transform: translateY(-4px);
   transition: transform 600ms cubic-bezier(.3, .7, .4, 1);
   white-space: nowrap;
+
+  line-height: 1;
+  font-family: inherit;
+  font-size: 14px !important;
+}
+
+.modal-save-btn .front img,
+.modal-cancel-btn .front img,
+.modal-prev-btn .front img,
+.modal-next-btn .front img,
+.modal-confirm-btn .front img,
+.modal-danger-btn .front img {
+  vertical-align: middle;
+  width: 16px;
+  height: 16px;
 }
 
 .modal-save-btn:hover .front,
@@ -856,7 +990,7 @@ th.sorted .sort-arrow {
 ───────────────────────────────────────────────────────────── */
 
 /* Wrapper for inline status / staff dropdowns used in table cells.
-   Must be position:relative so .dropdown-menu (position:absolute)
+   Must be position:relative so .dishes-dropdown-menu (position:absolute)
    anchors here instead of escaping to a clipping overflow ancestor. */
 .dishes-dropdown-wrapper {
   position: relative;
@@ -865,7 +999,8 @@ th.sorted .sort-arrow {
 }
 
 .dishes-status-dropdown {
-  width: 100%;
+  width: 100% !important;
+  height: 40px !important;
   box-sizing: border-box;
   background: #f9fafb;
   border: 1px solid #d1d5db;
@@ -882,7 +1017,11 @@ th.sorted .sort-arrow {
   border-color: var(--color-blue);
 }
 
-.dropdown-menu {
+.dishes-status-dropdown-placeholder {
+  color: #9ca3af;
+}
+
+.dishes-dropdown-menu {
   position: absolute !important;
   max-height: 165px;
   overflow: auto;
@@ -900,7 +1039,7 @@ th.sorted .sort-arrow {
   animation: dropdownFade 0.15s ease;
 }
 
-.dropdown-menu div {
+.dishes-dropdown-menu>div:not(.dishes-dropdown-menu-options) {
   padding: 10px 14px;
   font-size: 14px;
   border-radius: 10px;
@@ -908,7 +1047,7 @@ th.sorted .sort-arrow {
   text-transform: capitalize;
 }
 
-.dropdown-menu div:hover {
+.dishes-dropdown-menu>div:not(.dishes-dropdown-menu-options):hover {
   background: #f3f4f6;
 }
 
@@ -922,6 +1061,92 @@ th.sorted .sort-arrow {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ── CustomDropdown overlay variant ──────────────────────────────
+   CustomDropdown (the shared floating-label select) opens
+   .dishes-dropdown-menu as a centered modal card inside a dimmed
+   .dishes-dropdown-overlay backdrop, mirroring CustomDatePicker's
+   overlay/popup pattern, rather than the absolute-positioned inline
+   menu used elsewhere. These selectors are scoped under
+   .dishes-dropdown-overlay so the original inline-menu rules above
+   are untouched for any other consumer of .dishes-dropdown-menu. */
+.dishes-dropdown-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dishes-dropdown-overlay .dishes-dropdown-menu {
+  position: static !important;
+  top: auto;
+  left: auto;
+  width: 280px !important;
+  max-width: calc(100vw - 32px) !important;
+  max-height: min(420px, calc(100vh - 64px)) !important;
+  overflow: hidden !important;
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  box-sizing: border-box;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  animation: dropdownFade 0.15s ease;
+}
+
+.dishes-dropdown-menu-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: #333;
+  text-align: center;
+  padding-bottom: 10px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #eee;
+}
+
+.dishes-dropdown-menu-options {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dishes-dropdown-menu-option {
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  text-align: center;
+  text-transform: capitalize;
+  transition: background 120ms ease-in;
+}
+
+.dishes-dropdown-menu-option:hover {
+  background: #f4f4f4 !important;
+}
+
+.dishes-dropdown-menu-option.dishes-dropdown-menu-option-sel {
+  background: #e74c3c !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+
+.dishes-dropdown-menu-option-placeholder {
+  color: #888;
+  font-style: italic;
+}
+
+.dishes-dropdown-menu-option-placeholder.dishes-dropdown-menu-option-sel {
+  background: #e74c3c !important;
+  color: #fff !important;
+  font-style: normal !important;
+  font-weight: 600 !important;
 }
 
 
@@ -1052,29 +1277,346 @@ th.sorted .sort-arrow {
   scrollbar-color: #9ca3af #f1f1f1;
 }
 
+.table-wrapper table th:not(.icon-width),
+.table-wrapper table td:not(.icon-width),
+.orders-table-wrapper table th:not(.icon-width),
+.orders-table-wrapper table td:not(.icon-width) {
+  min-width: 150px !important;
+}
+
+
+.ae-clear-filter {
+  padding: 5px 12px !important;
+  border-radius: 999px !important;
+  border: 1.5px solid #fca5a5 !important;
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  transition: all 0.15s !important;
+}
+
+.ae-clear-filter:hover {
+  background: #fecaca !important;
+}
 
 /* ─────────────────────────────────────────────────────────────
    16. RESPONSIVE
+   Breakpoints: 1080 (small laptop), 992 & 768 (tablet),
+   578 & 480 (mobile). Each tier is additive/cascading — narrower
+   tiers inherit and override the wider ones above them.
 ───────────────────────────────────────────────────────────── */
+
+/* ── 1080px — small laptop ─────────────────────────────────── */
+@media (max-width: 1080px) {
+  .page {
+    padding: 18px;
+  }
+
+  .search-input {
+    width: 260px;
+  }
+
+  .details-container {
+    padding: 20px;
+  }
+
+  .table-wrapper table th:not(.icon-width),
+  .table-wrapper table td:not(.icon-width),
+  .orders-table-wrapper table th:not(.icon-width),
+  .orders-table-wrapper table td:not(.icon-width) {
+    min-width: 130px !important;
+  }
+}
+
+/* ── 992px — tablet (landscape) ────────────────────────────── */
+@media (max-width: 992px) {
+  .header {
+    flex-wrap: wrap;
+  }
+
+  .header-btn-container {
+    flex-wrap: wrap;
+  }
+
+  .search-input {
+    width: 200px;
+  }
+
+  .title {
+    font-size: 21px;
+  }
+
+  .details-header h2 {
+    font-size: 19px;
+  }
+
+  .admin-form-group,
+  .horizontal-form-group {
+    min-width: 0;
+  }
+}
+
+/* ── 768px — tablet (portrait) ─────────────────────────────── */
 @media (max-width: 768px) {
   .page {
-    padding: 10px;
+    padding: 12px;
   }
 
-  .table-wrapper {
-    width: 100% !important;
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
   }
 
-  .table th {
-    font-size: 12px;
+  .header-btn-container {
+    width: 100%;
+    justify-content: flex-start;
   }
 
-  .table td {
-    font-size: 12px;
+  .header-title-with-count {
+    flex-wrap: wrap;
+  }
+
+  .justify {
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .search-input {
     width: 100%;
     min-width: unset;
+  }
+
+  .filter-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .filter-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .table-wrapper {
+    width: 100% !important;
+    border-radius: 12px;
+    padding: 0 6px;
+  }
+
+  .table-wrapper table th {
+    font-size: 12px;
+    padding: 12px 8px;
+  }
+
+  .table-wrapper table td {
+    font-size: 12px;
+  }
+
+  .table-wrapper table tbody tr td {
+    padding: 8px;
+  }
+
+  .details-container {
+    padding: 16px;
+    border-radius: 10px;
+  }
+
+  .details-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .details-header h2 {
+    font-size: 18px;
+  }
+
+  .details-footer {
+    flex-wrap: wrap;
+  }
+
+  .horizontal-form-group {
+    flex-direction: column;
+  }
+
+  .modal-save-btn .front,
+  .modal-cancel-btn .front,
+  .modal-prev-btn .front,
+  .modal-next-btn .front,
+  .modal-confirm-btn .front,
+  .modal-danger-btn .front {
+    padding: 9px 16px;
+    font-size: 13px !important;
+  }
+
+  .dishes-dropdown-overlay .dishes-dropdown-menu {
+    width: 90vw !important;
+  }
+}
+
+/* ── 578px — large mobile ──────────────────────────────────── */
+@media (max-width: 578px) {
+  .page {
+    padding: 10px;
+  }
+
+  .title {
+    font-size: 18px;
+  }
+
+  .subtitle {
+    font-size: 12px;
+  }
+
+  .result-count,
+  .header-title-with-count .result-count,
+  .header-title-with-count .ae-result-count {
+    font-size: 11px;
+  }
+
+  .category-add-btn,
+  .export-btn {
+    height: 34px;
+    padding: 0 14px;
+    font-size: 12px;
+  }
+
+  .filter-pill {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+
+  .status {
+    padding: 3px 9px;
+    font-size: 11px;
+  }
+
+  .details-container {
+    padding: 12px;
+  }
+
+  .details-header h2 {
+    font-size: 16px;
+  }
+
+  .section-title {
+    font-size: 13px;
+  }
+
+  /* Card-style table fallback: only takes effect on tables opted
+     in via .table-wrapper--stack (per-page JS toggle), so tables
+     that already handle their own mobile layout are untouched. */
+  .table-wrapper--stack table,
+  .table-wrapper--stack thead,
+  .table-wrapper--stack tbody,
+  .table-wrapper--stack tr {
+    display: block;
+    width: 100%;
+  }
+
+  .table-wrapper--stack thead {
+    display: none;
+  }
+
+  .table-wrapper--stack tbody tr {
+    margin-bottom: 10px;
+    border-radius: 12px;
+    background: #fff;
+    padding: 8px;
+  }
+
+  .table-wrapper--stack tbody tr td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    white-space: normal;
+    border-radius: 0 !important;
+  }
+
+  .table-wrapper--stack tbody tr td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #666;
+    font-size: 11px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+}
+
+/* ── 480px — small mobile ──────────────────────────────────── */
+@media (max-width: 480px) {
+  .page {
+    padding: 8px;
+  }
+
+  .title {
+    font-size: 16px;
+  }
+
+  .header-collapse-btn {
+    width: 24px;
+    height: 24px;
+  }
+
+  .category-add-btn,
+  .export-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .header-btn-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .modal-save-btn,
+  .modal-cancel-btn,
+  .modal-prev-btn,
+  .modal-next-btn,
+  .modal-confirm-btn,
+  .modal-danger-btn {
+    width: 100%;
+  }
+
+  .modal-save-btn .front,
+  .modal-cancel-btn .front,
+  .modal-prev-btn .front,
+  .modal-next-btn .front,
+  .modal-confirm-btn .front,
+  .modal-danger-btn .front {
+    width: 100%;
+    text-align: center;
+  }
+
+  .dishes-dropdown-overlay .dishes-dropdown-menu {
+    width: 94vw !important;
+    padding: 12px;
+  }
+
+  .table-image {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+@media (max-width: 992px) {
+  .app {
+    position: relative;
+  }
+
+  .app>.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 1200;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
+  }
+
+  .app-main {
+    width: 100%;
   }
 }

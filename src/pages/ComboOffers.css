@@ -500,3 +500,85 @@
         grid-template-columns: 1fr;
     }
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 1080px) {
+  .co-modal-wide {
+    width: 92% !important;
+  }
+}
+
+@media (max-width: 992px) {
+  .co-modal-body {
+    height: 76vh;
+  }
+}
+
+@media (max-width: 768px) {
+  .co-modal-wide {
+    width: 96% !important;
+  }
+
+  /* Two-column builder stacks vertically on tablet/mobile so the
+     drag-and-drop dish list and slot targets are both fully usable
+     rather than being squeezed side-by-side. */
+  .co-modal-body {
+    flex-direction: column !important;
+    height: auto;
+    max-height: 82vh;
+    overflow-y: auto;
+  }
+
+  .co-modal-left {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #f0f0f0;
+    max-height: 320px;
+  }
+
+  .co-modal-right {
+    width: 100%;
+  }
+
+  .co-dish-list {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 578px) {
+  .co-modal-left,
+  .co-modal-right {
+    padding: 14px;
+  }
+
+  .co-dish-list {
+    grid-template-columns: 1fr;
+  }
+
+  .co-dish-row-name {
+    font-size: 12px;
+  }
+
+  .co-slot {
+    padding: 9px 10px;
+    min-height: 56px;
+  }
+
+  .co-toast {
+    right: 10px;
+    left: 10px;
+    top: 12px;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .co-modal-left {
+    max-height: 240px;
+  }
+
+  .co-section-label {
+    font-size: 10px;
+  }
+}

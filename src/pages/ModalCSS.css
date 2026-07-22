@@ -158,3 +158,80 @@
     border: none;
     cursor: pointer;
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 1080px) {
+  .admin-modal {
+    width: 520px;
+  }
+}
+
+@media (max-width: 992px) {
+  .admin-modal {
+    width: 90vw;
+  }
+
+  .modal.large {
+    width: 90vw;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-modal {
+    width: 94vw;
+    min-height: auto;
+    max-height: 90vh;
+    padding: 18px;
+    border-radius: 12px;
+  }
+
+  .admin-modal-header h1,
+  .admin-modal-header h2,
+  .admin-modal-header h3,
+  .admin-modal-header h4,
+  .admin-modal-header h5 {
+    font-size: 18px !important;
+  }
+
+  .modal-actions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 578px) {
+  .admin-modal {
+    width: 96vw;
+    height: 60vh;
+    max-height: 92vh;
+    padding: 14px;
+    border-radius: 10px;
+    gap: 8px;
+  }
+
+  .close-btn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .modal-actions button {
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-modal {
+    width: 98vw;
+    padding: 12px;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .modal-actions button {
+    width: 100%;
+  }
+}

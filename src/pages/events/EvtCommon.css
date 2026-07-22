@@ -4,19 +4,6 @@
    Depends on Common.css and ModalCSS.css.
 ═══════════════════════════════════════════════════════ */
 
-/* ── Page wrapper ── */
-.evt-page {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.evt-page .filter-bar {
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-
 /* ── Header ── */
 .evt-header {
   display: flex;
@@ -46,6 +33,7 @@
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  text-align: center;
 }
 
 .evt-kpi {
@@ -108,7 +96,6 @@
   white-space: nowrap;
   margin-right: 1px;
 }
-
 
 /* ── Event modal overlay ── */
 .event-modal-overlay {
@@ -435,5 +422,91 @@ label.mat-label-error {
 
   .evt-kpi {
     min-width: 50px;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE ADDENDUM — 1080 / 992 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 1080px) {
+  .evt-kpi-row {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 992px) {
+  .evt-title {
+    font-size: 20px;
+  }
+
+  .evt-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 578px) {
+  .evt-title {
+    font-size: 17px;
+  }
+
+  .evt-subtitle {
+    font-size: 12px;
+  }
+
+  .evt-kpi-val {
+    font-size: 17px;
+  }
+
+  .evt-kpi {
+    min-width: 42%;
+    padding: 8px;
+  }
+
+  .event-modal {
+    width: 98vw;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — evt-details-* shared grid (used by
+   CateringDetails / CelebrationDetails / PreBookingDetails /
+   ReservationDetails) — 992 / 768 / 578
+═══════════════════════════════════════════ */
+@media (max-width: 992px) {
+  .evt-details-info-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+
+  .evt-details-info-grid,
+  .evt-details-extras-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 578px) {
+
+  .evt-details-info-grid,
+  .evt-details-extras-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-group {
+    flex-wrap: wrap;
+  }
+
+  .evt-kpi {
+    flex-basis: 48%;
+  }
+
+  .event-package-body {
+    flex-direction: column;
+  }
+
+  .ae-live-summary {
+    min-height: 200px;
   }
 }

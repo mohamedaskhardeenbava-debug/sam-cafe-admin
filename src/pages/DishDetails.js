@@ -265,7 +265,6 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
 
         <div
           className="horizontal-form-group"
-          style={{ alignItems: "end" }}
         >
           <div>
             {/* IMAGE */}
