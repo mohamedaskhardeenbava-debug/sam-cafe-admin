@@ -96,6 +96,23 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     });
   }, [location.pathname]);
 
+  // Auto-collapse the sidebar on narrow screens (<578px)
+  React.useEffect(() => {
+    const AUTO_COLLAPSE_BREAKPOINT = 578;
+
+    const handleResize = () => {
+      if (window.innerWidth < AUTO_COLLAPSE_BREAKPOINT) {
+        setIsOpen(false);
+      }
+    };
+
+    // Check on mount in case the page already loads narrow
+    handleResize();
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [setIsOpen]);
+
   return (
     <motion.aside
       className="sidebar"
@@ -259,6 +276,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                             className={({ isActive }) =>
                               `sidebar-sublink ${isActive ? "sublink-active" : ""}`
                             }
+                            onClick={() => setHoverMenu(null)}
                           >
                             {sub.label}
                           </NavLink>
