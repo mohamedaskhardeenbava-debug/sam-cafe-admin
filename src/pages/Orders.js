@@ -6,6 +6,7 @@ import "./Orders.css";
 import Button3D from "../components/Button3D";
 import CollapseChevron from "../components/CollapseChevron";
 import closeIcon from "../icon/close-icon.png";
+import cancelIcon from "../icon/cancel-icon.png";
 import { EmptyRow } from "../App";
 import { QRCodeCanvas } from "qrcode.react";
 import { createPortal } from "react-dom";
@@ -124,6 +125,7 @@ const BillLayout = React.memo(({
   order,
   editable,
   onQtyChange,
+  onBillAssign,
   buildUpiUrl,
   onClose,
   splitPeople,
@@ -153,11 +155,33 @@ const BillLayout = React.memo(({
     };
   }, [order.items, order.discount]);
 
+  const billGroups = useMemo(() => {
+    if (order.splitType !== "bill" || !order.splitBillCount) return null;
+
+    const billCount = Number(order.splitBillCount);
+    const discountPercent = Math.max(0, Math.min(100, Number(order.discount?.percent) || 0));
+
+    const groups = Array.from({ length: billCount }, (_, i) => {
+      const billNo = i + 1;
+      const items = order.items.filter(it => Number(it.billAssignment) === billNo);
+      const subTotal = +items.reduce((sum, it) => sum + Number(it.totalPrice || 0), 0).toFixed(2);
+      const discountAmount = +(subTotal * (discountPercent / 100)).toFixed(2);
+      const taxable = +(subTotal - discountAmount).toFixed(2);
+      const cgst = +(taxable * 0.025).toFixed(2);
+      const sgst = +(taxable * 0.025).toFixed(2);
+      const total = +(taxable + cgst + sgst).toFixed(2);
+      return { billNo, itemCount: items.length, subTotal, total };
+    });
+
+    const unassignedCount = order.items.filter(it => !it.billAssignment).length;
+    return { groups, unassignedCount };
+  }, [order.splitType, order.splitBillCount, order.items, order.discount]);
+
   const finalAmount =
     order.splitType === "amount"
       ? order.splitDetails?.perHead
       : order.splitType === "bill"
-        ? order.splitDetails?.[0]?.total
+        ? billGroups?.groups?.[0]?.total
         : totals.total;
 
   const qrValue = useMemo(
@@ -199,44 +223,67 @@ const BillLayout = React.memo(({
           <span>TOTAL</span>
         </div>
 
-        {order.items.map((item, idx) => (
-          <div key={idx} className="bill-row">
-            <span>{item.dishName}</span>
+        {order.items.map((item, idx) => {
+          const showBillPicker = editable && order.splitType === "bill" && order.splitBillCount > 0;
+          const rowClass = [
+            "bill-row",
+            editable && "bill-row--editable",
+            showBillPicker && "bill-row--split"
+          ].filter(Boolean).join(" ");
 
-            {editable ? (
-              <>
-                <input
-                  type="number"
-                  min="1"
-                  value={item.quantity}
-                  onChange={(e) =>
-                    onQtyChange(idx, {
-                      quantity: e.target.value,
-                      price: resolveUnitPrice(item)
-                    })
-                  }
-                />
+          return (
+            <div key={idx} className={rowClass}>
+              <span>{item.dishName}</span>
 
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={resolveUnitPrice(item)}
-                  onChange={(e) =>
-                    onQtyChange(idx, {
-                      quantity: item.quantity,
-                      price: Number(e.target.value)
-                    })
-                  }
-                />
-              </>
-            ) : (
-              <span>{item.quantity}</span>
-            )}
+              {editable ? (
+                <>
+                  <input
+                    type="number"
+                    min="1"
+                    value={item.quantity}
+                    onChange={(e) =>
+                      onQtyChange(idx, {
+                        quantity: e.target.value,
+                        price: resolveUnitPrice(item)
+                      })
+                    }
+                  />
 
-            <span>₹{item.totalPrice}</span>
-          </div>
-        ))}
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={resolveUnitPrice(item)}
+                    onChange={(e) =>
+                      onQtyChange(idx, {
+                        quantity: item.quantity,
+                        price: Number(e.target.value)
+                      })
+                    }
+                  />
+                </>
+              ) : (
+                <span>{item.quantity}</span>
+              )}
+
+              <span>₹{item.totalPrice}</span>
+
+              {showBillPicker && (
+                <select
+                  className={`bill-assign-select ${!item.billAssignment ? "bill-assign-select--empty" : ""}`}
+                  value={item.billAssignment || ""}
+                  onChange={(e) => onBillAssign(idx, e.target.value ? Number(e.target.value) : null)}
+                  title="Assign this dish to a bill"
+                >
+                  <option value="">Unassigned</option>
+                  {Array.from({ length: Number(order.splitBillCount) }, (_, i) => i + 1).map(billNo => (
+                    <option key={billNo} value={billNo}>Bill {billNo}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <hr />
@@ -249,13 +296,18 @@ const BillLayout = React.memo(({
           </div>
         )}
 
-        {order.splitType === "bill" && (
+        {order.splitType === "bill" && billGroups && (
           <div className="bill-split-info">
-            {order.splitDetails?.map((bill, i) => (
-              <div key={i}>
-                Bill {i + 1}: ₹{bill.total}
+            {billGroups.groups.map(g => (
+              <div key={g.billNo}>
+                Bill {g.billNo}: {g.itemCount} item{g.itemCount === 1 ? "" : "s"} — ₹{g.total}
               </div>
             ))}
+            {billGroups.unassignedCount > 0 && (
+              <div className="bill-split-warning">
+                ⚠ {billGroups.unassignedCount} item{billGroups.unassignedCount === 1 ? "" : "s"} not yet assigned to a bill
+              </div>
+            )}
           </div>
         )}
         <div><span>Subtotal</span><span>₹{totals.subTotal}</span></div>
@@ -1011,6 +1063,54 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
     exportToExcel({ rows, sheetName: "Orders", fileName: `orders_${from}_to_${to}.xlsx` });
   };
 
+  // Scales a full order's GST breakdown down to a split's share so every
+  // line on a receipt (Subtotal/CGST/SGST/TOTAL) stays internally
+  // consistent — used only for split-bill, where each bill's totals are
+  // computed straight from its own assigned items instead.
+  const computeGSTFromSubtotal = (subTotal, discountPercent) => {
+    const discountAmount = +(subTotal * ((discountPercent || 0) / 100)).toFixed(2);
+    const taxable = +(subTotal - discountAmount).toFixed(2);
+    const cgst = +(taxable * 0.025).toFixed(2);
+    const sgst = +(taxable * 0.025).toFixed(2);
+    const total = +(taxable + cgst + sgst).toFixed(2);
+    return { subTotal: +subTotal.toFixed(2), discountPercent: discountPercent || 0, discountAmount, cgst, sgst, total };
+  };
+
+  // Builds the printer-shaped payload for a single receipt. `overrides`
+  // lets split-bill printing swap in a filtered item list / per-bill
+  // totals without duplicating the base mapping logic.
+  const buildPrinterOrder = (order, overrides = {}) => {
+    const totalWithGST = overrides.totalWithGST || order.totalWithGST || (() => {
+      const subTotal = Number(order.resolvedTotal || 0);
+      const cgst = +(subTotal * 0.025).toFixed(2);
+      const sgst = +(subTotal * 0.025).toFixed(2);
+      const total = +(subTotal + cgst + sgst).toFixed(2);
+      return { subTotal, cgst, sgst, total };
+    })();
+
+    const sourceItems = overrides.items || order.items;
+
+    return {
+      id: order.id,
+      date: order.date,
+      time: order.time,
+      tableNo: order.tableNo,
+      staffName: order.staffName,
+      userName: order.userName || "Guest",
+      items: sourceItems.map(item => ({
+        dishName: item.dishName,
+        quantity: item.quantity,
+        totalPrice: item.totalPrice,
+        selectedSize: item.selectedSize,
+        spiciness: item.spiciness
+      })),
+      totalWithGST,
+      upiUrl: overrides.upiUrl || buildUpiUrl(totalWithGST.total, order.id),
+      ...(overrides.splitLabel ? { splitLabel: overrides.splitLabel } : {}),
+      ...(overrides.perHeadNote ? { perHeadNote: overrides.perHeadNote } : {})
+    };
+  };
+
   const printBill = async (order) => {
     // previewBillOrder / editableBill (built via recalcOrderTotals) already
     // carry a correct totalWithGST object computed from the actual line
@@ -1019,34 +1119,66 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
     // resolvedTotal when it's missing (e.g. after a bill edit) was
     // silently producing NaN/undefined totals that never made it to the
     // printer.
-    const totalWithGST = order.totalWithGST || (() => {
-      const subTotal = Number(order.resolvedTotal || 0);
-      const cgst = +(subTotal * 0.025).toFixed(2);
-      const sgst = +(subTotal * 0.025).toFixed(2);
-      const total = +(subTotal + cgst + sgst).toFixed(2);
-      return { subTotal, cgst, sgst, total };
-    })();
 
-    // Shape must match what bridge.js's printBill() expects:
-    // order.items[].{dishName, quantity, totalPrice} + order.totalWithGST
-    const printerOrder = {
-      id: order.id,
-      date: order.date,
-      time: order.time,
-      tableNo: order.tableNo,
-      staffName: order.staffName,
-      userName: order.userName || "Guest",
-      items: order.items.map(item => ({
-        dishName: item.dishName,
-        quantity: item.quantity,
-        totalPrice: item.totalPrice,
-        selectedSize: item.selectedSize,
-        spiciness: item.spiciness
-      })),
-      totalWithGST,
-      upiUrl: buildUpiUrl(totalWithGST.total)
-    };
+    // ── SPLIT AMOUNT: still a single receipt with every item listed —
+    //    the split is only a payment note ("split N ways, ₹X/head")
+    //    printed at the bottom, not a change to what's billed.
+    if (order.splitType === "amount" && order.splitDetails?.customers > 0) {
+      const { customers, perHead } = order.splitDetails;
+      const printerOrder = buildPrinterOrder(order, {
+        perHeadNote: `Split ${customers} ways — ₹${perHead} per head`
+      });
 
+      const result = await sendBillToPrinter(socket, printerOrder);
+      if (!result.success) {
+        toast.error(result.error || "Failed to print bill");
+        console.error("Bill print failed:", result.error);
+      }
+      return;
+    }
+
+    // ── SPLIT BILL: item-level split — each bill only lists the dishes
+    //    assigned to it (via the per-row bill picker), with its own
+    //    subtotal/tax/total computed from just those items. Prints one
+    //    receipt per bill.
+    if (order.splitType === "bill" && order.splitBillCount > 0) {
+      const billCount = Number(order.splitBillCount);
+      const discountPercent = Math.max(0, Math.min(100, Number(order.discount?.percent) || 0));
+
+      const unassigned = order.items.filter(it => !it.billAssignment);
+      if (unassigned.length > 0) {
+        toast.error(`${unassigned.length} item(s) aren't assigned to a bill yet — assign every dish before printing.`);
+        return;
+      }
+
+      let allOk = true;
+      for (let billNo = 1; billNo <= billCount; billNo++) {
+        const billItems = order.items.filter(it => Number(it.billAssignment) === billNo);
+        if (billItems.length === 0) continue; // nothing assigned to this bill — skip, don't print an empty receipt
+
+        const subTotal = +billItems.reduce((sum, it) => sum + Number(it.totalPrice || 0), 0).toFixed(2);
+        const totalWithGST = computeGSTFromSubtotal(subTotal, discountPercent);
+
+        const printerOrder = buildPrinterOrder(order, {
+          items: billItems,
+          totalWithGST,
+          upiUrl: buildUpiUrl(totalWithGST.total, order.id),
+          splitLabel: `Bill ${billNo} of ${billCount}`
+        });
+
+        const result = await sendBillToPrinter(socket, printerOrder);
+        if (!result.success) {
+          allOk = false;
+          toast.error(result.error || `Failed to print bill ${billNo}/${billCount}`);
+          console.error(`Split bill ${billNo}/${billCount} print failed:`, result.error);
+        }
+      }
+      if (allOk) toast.success(`Printed ${billCount} split bills`);
+      return;
+    }
+
+    // ── NORMAL (unsplit) bill — single receipt, unchanged behaviour.
+    const printerOrder = buildPrinterOrder(order);
     const result = await sendBillToPrinter(socket, printerOrder);
     if (!result.success) {
       toast.error(result.error || "Failed to print bill");
@@ -1066,7 +1198,9 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
         quantity: item.quantity,
         selectedSize: item.selectedSize,
         spiciness: item.spiciness,
-        notes: item.notes
+        notes: item.notes,
+        isCustomized: item.isCustomized,
+        ingredients: Array.isArray(item.ingredients) ? item.ingredients : []
       }))
     };
 
@@ -1159,6 +1293,11 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
     setPreviewBillOrder(null);
     if (originalBill) setEditableBill(originalBill);
     setOriginalBill(null);
+    // Reset the split-input fields too — otherwise a half-typed "3" left
+    // in the Split Amount/Split Bill box would carry over into the next
+    // order's edit session and could be applied by mistake.
+    setSplitPeople("");
+    setSplitBills("");
   }, [originalBill]);
 
   const closeOptionsMenu = useCallback(() => {
@@ -1278,24 +1417,26 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
 
   const applySplitBill = () => {
     if (!splitBills || isNaN(splitBills)) return;
+    const billCount = Number(splitBills);
+    if (billCount < 1) return;
 
-    const total = editableBill.items.reduce(
-      (sum, i) => sum + Number(i.totalPrice || 0),
-      0
-    );
-
-    const perBill = (total / Number(splitBills)).toFixed(2);
-
-    const splitDetails = Array.from({ length: Number(splitBills) }, () => ({
-      total: perBill
-    }));
-
+    // Item-level split: create `billCount` empty bill slots and clear any
+    // existing assignments so staff can pick which bill each dish goes to
+    // via the per-row bill-picker, rather than guessing an even split.
     setEditableBill(prev => ({
       ...prev,
       splitType: "bill",
-      splitDetails
+      splitBillCount: billCount,
+      items: prev.items.map(item => ({ ...item, billAssignment: null }))
     }));
   };
+
+  // NOTE: per-bill grouping (items/subtotal/tax/total per billAssignment)
+  // is computed inline inside BillLayout's `billGroups` useMemo for
+  // display, and inline inside printBill's split-bill branch for the
+  // actual print payloads — kept separate/inline rather than shared here
+  // since one needs itemCount-only summaries and the other needs the
+  // full item list per bill.
 
   const handleSplitAmount = (order) => {
     const customers = prompt("Enter number of people:");
@@ -1319,28 +1460,11 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
     setEditableBill(updatedOrder);
   };
 
-  const handleSplitBill = (order) => {
-    const bills = prompt("Enter number of bills:");
-    if (!bills || isNaN(bills)) return;
-
-    const total = order.items.reduce(
-      (sum, i) => sum + Number(i.totalPrice || 0),
-      0
-    );
-
-    const perBill = (total / Number(bills)).toFixed(2);
-
-    const splitDetails = Array.from({ length: Number(bills) }, () => ({
-      total: perBill
-    }));
-
-    const updatedOrder = {
-      ...order,
-      splitType: "bill",
-      splitDetails
-    };
-    setEditableBill(updatedOrder);
-  };
+  // NOTE: handleSplitBill (prompt-based, evenly-divided) was removed —
+  // "Split Bill" is now item-level (each dish assigned to a bill number
+  // via the per-row picker in the edit modal), so there's no valid
+  // "just divide the total by N" shortcut anymore. Use applySplitBill via
+  // the edit modal instead.
 
 
   return (
@@ -2033,10 +2157,19 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
                   };
                 });
               }}
+
+              onBillAssign={(idx, billNo) => {
+                setEditableBill(prev => ({
+                  ...prev,
+                  items: prev.items.map((item, i) =>
+                    i === idx ? { ...item, billAssignment: billNo } : item
+                  )
+                }));
+              }}
             />
 
             <div className="admin-modal-footer">
-              <button className="modal-cancel-btn" onClick={() => setEditBillOrder(null)}>
+              <button className="modal-cancel-btn" onClick={closeAllBillOverlays}>
                 <span class="shadow"></span>
                 <span class="edge"></span>
                 <span class="front">Cancel</span>
@@ -2072,6 +2205,11 @@ const Orders = ({ adminData, setAdminData, handleSort, sortConfig = {} }) => {
                     }));
 
                     setEditBillOrder(null);
+                    setOriginalBill(null);
+                    // Clear the split-input boxes so a leftover "3" or "2"
+                    // doesn't carry over into the next order's edit session.
+                    setSplitPeople("");
+                    setSplitBills("");
                   } catch (err) {
                     toast.error("Failed to save bill");
                     console.error("Save failed", err);

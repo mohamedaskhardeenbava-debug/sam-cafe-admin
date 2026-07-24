@@ -46,6 +46,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     description: "",
     isVeg: true,
     isEventFood: false,
+    isComboFood: false,
     benefits: {
       calories: "",
       protein: "",
@@ -80,6 +81,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       description: "",
       isVeg: true,
       isEventFood: false,
+      isComboFood: false,
       benefits: {
         calories: "",
         protein: "",
@@ -192,6 +194,42 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
   const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(filteredDishes.length, 30);
 
+  // ── Track which category's rows are currently in view while scrolling,
+  // so the matching filter-pill can be highlighted. Only meaningful when
+  // more than one category is selected (multi-select filter).
+  const [visibleCategoryId, setVisibleCategoryId] = useState(null);
+  const rowRefs = React.useRef({});
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || selectedCategoryIds.length < 2) {
+      setVisibleCategoryId(null);
+      return;
+    }
+
+    const handleScroll = () => {
+      const containerTop = container.getBoundingClientRect().top;
+      let closestId = null;
+      let closestDist = Infinity;
+
+      for (const dish of filteredDishes.slice(0, displayLimit)) {
+        const el = rowRefs.current[dish.id];
+        if (!el) continue;
+        const dist = Math.abs(el.getBoundingClientRect().top - containerTop);
+        if (el.getBoundingClientRect().top - containerTop <= 40 && dist < closestDist) {
+          closestDist = dist;
+          closestId = dish.categoryId;
+        }
+      }
+
+      if (closestId) setVisibleCategoryId(closestId);
+    };
+
+    handleScroll();
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [containerRef, filteredDishes, displayLimit, selectedCategoryIds.length]);
+
   const handleSaveDish = async () => {
     const e = {};
     if (!newDish.name.trim()) e.name = true;
@@ -259,6 +297,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       image: newDish.image,
       isVeg: newDish.isVeg,
       isEventFood: newDish.isEventFood,
+      isComboFood: newDish.isComboFood,
 
       basePrice: Number(newDish.basePrice),
 
@@ -552,7 +591,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 <button
                   key={sub.id}
                   className={`filter-pill ${selectedCategoryIds.includes(sub.id) ? "active" : ""
-                    }`}
+                    }${visibleCategoryId === sub.id ? " scroll-active" : ""}`}
                   onClick={() =>
                     setSelectedCategoryIds(prev =>
                       prev.includes(sub.id)
@@ -574,7 +613,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               <button
                 key={cat.id}
                 className={`filter-pill ${selectedCategoryIds.includes(cat.id) ? "active" : ""
-                  }`}
+                  }${visibleCategoryId === cat.id ? " scroll-active" : ""}`}
                 onClick={() =>
                   setSelectedCategoryIds(prev =>
                     prev.includes(cat.id)
@@ -620,7 +659,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
           <tbody>
             {filteredDishes.slice(0, displayLimit).map((dish) => (
-              <tr key={dish.id}>
+              <tr key={dish.id} ref={el => { rowRefs.current[dish.id] = el; }}>
                 <td
                   className="clickable icon-width"
                   onClick={() => navigate(`/dishes/${dish.categoryId}/${dish.id}`)}
@@ -831,6 +870,26 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               </div>
 
               <div className="admin-form-group">
+                <label>Combo Food</label>
+                <div className="veg-toggle-group">
+                  <button
+                    type="button"
+                    className={`veg-toggle-btn${newDish.isComboFood ? " active-veg" : ""}`}
+                    onClick={() => setNewDish({ ...newDish, isComboFood: true })}
+                  >
+                    <span className="veg-dot veg" /> Yes
+                  </button>
+                  <button
+                    type="button"
+                    className={`veg-toggle-btn${!newDish.isComboFood ? " active-non-veg" : ""}`}
+                    onClick={() => setNewDish({ ...newDish, isComboFood: false })}
+                  >
+                    <span className="veg-dot non-veg" /> No
+                  </button>
+                </div>
+              </div>
+
+              <div className="admin-form-group">
                 <label htmlFor="">Nutrition</label>
                 <div className="benefits-grid border">
                   {["calories", "protein", "fibre", "fat"].map(key => (
@@ -925,37 +984,37 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 <label htmlFor="">Variants</label>
                 <div className="border form-group">
                   <div className="horizontal-form-group">
-                  <div className="admin-form-group">
-                    <div className="mat">
-                      <input
-                        className={`mat-input${formErrors.variantName ? " mat-error" : ""}`}
-                        placeholder=" "
-                        value={variantForm.name}
-                        onChange={(e) => {
-                          setVariantForm({ ...variantForm, name: allowTextInput(variantForm.name, e.target.value, 100, 5) });
-                          setFormErrors(p => ({ ...p, variantName: false }));
-                        }}
-                      />
-                      <label className={`mat-label${formErrors.variantName ? " mat-label-error" : ""}`}>Variant Name</label>
-                      <span className={`mat-bar${formErrors.variantName ? " mat-bar-error" : ""}`} />
+                    <div className="admin-form-group">
+                      <div className="mat">
+                        <input
+                          className={`mat-input${formErrors.variantName ? " mat-error" : ""}`}
+                          placeholder=" "
+                          value={variantForm.name}
+                          onChange={(e) => {
+                            setVariantForm({ ...variantForm, name: allowTextInput(variantForm.name, e.target.value, 100, 5) });
+                            setFormErrors(p => ({ ...p, variantName: false }));
+                          }}
+                        />
+                        <label className={`mat-label${formErrors.variantName ? " mat-label-error" : ""}`}>Variant Name</label>
+                        <span className={`mat-bar${formErrors.variantName ? " mat-bar-error" : ""}`} />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="admin-form-group">
-                    <div className="mat">
-                      <input
-                        className="mat-input"
-                        placeholder=" "
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={variantForm.extraCharge}
-                        onChange={(e) => setVariantForm({ ...variantForm, extraCharge: e.target.value })}
-                      />
-                      <label className="mat-label">Additional Cost</label>
-                      <span className="mat-bar" />
+                    <div className="admin-form-group">
+                      <div className="mat">
+                        <input
+                          className="mat-input"
+                          placeholder=" "
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={variantForm.extraCharge}
+                          onChange={(e) => setVariantForm({ ...variantForm, extraCharge: e.target.value })}
+                        />
+                        <label className="mat-label">Additional Cost</label>
+                        <span className="mat-bar" />
+                      </div>
                     </div>
-                  </div>
                   </div>
 
                   <Button3D onClick={handleAddVariant}>Add Variant</Button3D>

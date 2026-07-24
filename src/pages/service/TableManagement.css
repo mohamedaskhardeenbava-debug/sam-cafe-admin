@@ -25,33 +25,7 @@
   --t: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ADD ROW */
-.table-mgmt-add {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  justify-content: center;
-}
-
-.table-mgmt-input {
-  height: 38px;
-  padding: 0 14px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-med);
-  outline: none;
-  font-size: 14px;
-  font-family: var(--font);
-  color: var(--ink);
-  background: var(--surface);
-  width: 200px;
-  transition: var(--t);
-}
-
-.table-mgmt-input:focus {
-  border-color: var(--color-blue);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
+/* EXPORT BUTTON */
 .table-mgmt-btn {
   height: 38px;
   padding: 0 20px;
@@ -181,6 +155,43 @@
 
 .table-icon-btn:hover img {
   opacity: 1;
+}
+
+/* ADD TABLE CARD */
+.table-card-add {
+  cursor: pointer;
+  border: 2px dashed var(--color-red);
+  background: var(--surface-2);
+  box-shadow: none;
+}
+
+.table-card-add:hover {
+  border-color: var(--ink-3);
+  background: var(--surface-3);
+  transform: translateY(-3px);
+}
+
+.table-card-add:hover::after {
+  transform: scaleX(0);
+}
+
+.table-card-add-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1.5px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 400;
+  color: #fff;
+  transition: var(--t);
+}
+
+.table-card-add:hover .table-card-add-icon {
+  border-color: var(--ink);
+  color: var(--ink);
 }
 
 /* EMPTY STATE */
@@ -377,18 +388,11 @@
   height: 15px;
   opacity: 0.5;
 }
+
 /* ═══════════════════════════════════════════
    RESPONSIVE — 1080 / 992 / 768 / 578 / 480
 ═══════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .table-mgmt-add {
-    flex-wrap: wrap;
-  }
-
-  .table-mgmt-input {
-    width: 100%;
-  }
-
   .table-mgmt-grid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   }

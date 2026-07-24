@@ -858,13 +858,6 @@
   font-size: 12px;
 }
 
-.bill-split-info {
-  font-size: 12px;
-  margin-top: 8px;
-  text-align: right;
-  color: #444;
-}
-
 .bill-preview-row {
   display: flex;
   justify-content: space-between;
@@ -918,6 +911,18 @@
   grid-template-columns: 1fr 40px 60px;
   gap: 6px;
   font-size: 13px;
+  align-items: center;
+}
+
+/* Editable rows add a qty input + price input, so name shrinks a bit
+   to make room for two number fields instead of one qty span. */
+.bill-row--editable {
+  grid-template-columns: 1fr 44px 56px 60px;
+}
+
+/* Split-bill mode adds the per-item bill picker as a 5th column. */
+.bill-row--split {
+  grid-template-columns: 1fr 44px 56px 60px 92px;
 }
 
 .bill-row.head {
@@ -943,6 +948,66 @@
   font-weight: 700;
   border-top: 1px dashed #000;
   margin-top: 6px;
+}
+
+/* ── Per-item bill picker (split-bill mode) ──────────────── */
+.bill-assign-select {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 11px;
+  background: #fafafa;
+  color: #333;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+
+.bill-assign-select:hover {
+  border-color: #bbb;
+}
+
+.bill-assign-select:focus {
+  outline: none;
+  border-color: var(--color-blue, #2563eb);
+  background: #fff;
+}
+
+/* Unassigned rows get a soft red tint so unassigned dishes are visible
+   at a glance without reading every dropdown. */
+.bill-assign-select--empty {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+/* ── Split-bill summary breakdown (per-bill item counts + totals) ── */
+.bill-split-info {
+  font-size: 12px;
+  margin-top: 8px;
+  text-align: right;
+  color: #444;
+}
+
+.bill-split-info div {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+}
+
+.bill-split-warning {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: right;
 }
 
 .split-box {
@@ -1043,7 +1108,7 @@
   .orders-header .filter-group {
     width: 100%;
   }
-  
+
   .orders-title {
     font-size: 16px;
   }
@@ -1154,6 +1219,6 @@
   background-size: 16px;
   appearance: none;
   border: none;
-text-transform: capitalize;
+  text-transform: capitalize;
   text-align: center;
 }

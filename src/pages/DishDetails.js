@@ -390,6 +390,35 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
               </span>
             )}
           </div>
+
+          {/* COMBO FOOD */}
+          <div className="section">
+            <div className="section-title"><span>Combo Food</span></div>
+            {isEditing ? (
+              <div className="veg-toggle-group" style={{ marginTop: 5 }}>
+                <button
+                  type="button"
+                  className={`veg-toggle-btn${localDish.isComboFood ? " active-veg" : ""}`}
+                  onClick={() => setLocalDish({ ...localDish, isComboFood: true })}
+                >
+                  <span className="veg-dot veg" /> Yes
+                </button>
+                <button
+                  type="button"
+                  className={`veg-toggle-btn${!localDish.isComboFood ? " active-non-veg" : ""}`}
+                  onClick={() => setLocalDish({ ...localDish, isComboFood: false })}
+                >
+                  <span className="veg-dot non-veg" /> No
+                </button>
+              </div>
+            ) : (
+              <span
+                className={`veg-badge ${localDish.isComboFood ? "veg" : "non-veg"}`}
+              >
+                {localDish.isComboFood ? "Yes" : "No"}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* DESCRIPTION */}

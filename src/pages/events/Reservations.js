@@ -1149,29 +1149,32 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                   </div>
 
                   <div className="horizontal-form-group">
-                    <div className="admin-form-group" style={{ flex: 1 }}>
-                      <label className={formErrors.time ? "mat-label-error" : ""}>
-                        Time <span className="evt-res-req">*</span>
-                        {!form.slotGroup
-                          ? <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(select slot first)</span>
-                          : (() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()
-                        }
-                      </label>
-                      <CustomTimePicker value={form.time}
-                        onChange={v => { setF("time", v); setFormErrors(p => ({ ...p, time: false })); }}
-                        slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
-                        slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
-                        disabled={!form.slotGroup}
-                        hasError={!!formErrors.time}
-                        isToday={form.reservedDate === todayStr()} />
-                    </div>
-                    <div className="admin-form-group" style={{ flex: 1 }}>
-                      <label>Table No. <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(available)</span></label>
-                      <CustomDropdown value={form.tableNo} onChange={v => setF("tableNo", v)}
-                        options={availableTablesForForm.map(t => ({ value: t, label: `Table ${t}` }))}
-                        placeholder="— No table —" />
-                    </div>
+                    {form.slotGroup && (
+                      <div className="admin-form-group" style={{ flex: 1 }}>
+                        <label className={formErrors.time ? "mat-label-error" : ""}>
+                          Time <span className="evt-res-req">*</span>
+                          {(() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()}
+                        </label>
+                        <CustomTimePicker value={form.time}
+                          onChange={v => { setF("time", v); setFormErrors(p => ({ ...p, time: false })); }}
+                          slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
+                          slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
+                          hasError={!!formErrors.time}
+                          isToday={form.reservedDate === todayStr()} />
+                      </div>
+                    )}
+                    {form.slotGroup && (
+                      <div className="admin-form-group" style={{ flex: 1 }}>
+                        <label>Table No. <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(available)</span></label>
+                        <CustomDropdown value={form.tableNo} onChange={v => setF("tableNo", v)}
+                          options={availableTablesForForm.map(t => ({ value: t, label: `Table ${t}` }))}
+                          placeholder="— No table —" />
+                      </div>
+                    )}
                   </div>
+                  {!form.slotGroup && (
+                    <div style={{ fontSize: 11, color: "#aaa", marginTop: -6, marginBottom: 4 }}>Select a dining slot above to choose a time and table</div>
+                  )}
 
                   <div className="admin-form-group">
                     <label>Table Preference</label>

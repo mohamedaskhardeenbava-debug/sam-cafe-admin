@@ -387,7 +387,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                             setF("slotGroup", next);
                             setF("time", "");
                           }}>
-                          {sg.label}
+                          <span className="evt-res-slot-chip-label">{sg.label}</span>
                           <span className="evt-pre-modal-slot-time">{sg.start}–{sg.end}</span>
                           {isPast && <span style={{ fontSize: 9, color: "#ef4444", display: "block" }}>Passed</span>}
                         </button>
@@ -396,15 +396,21 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                   </div>
                 </div>
 
-                <div className="admin-form-group">
-                  <label className={errors.time ? "mat-label-error" : ""}>Time <span className="evt-pre-req">*</span>{!form.slotGroup && <span className="evt-pre-opt"> (select slot first)</span>}</label>
-                  <CustomTimePicker value={form.time} onChange={v => { setF("time", v); setErrors(p => ({ ...p, time: false })); }}
-                    slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
-                    slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
-                    disabled={!form.slotGroup}
-                    hasError={!!errors.time}
-                    isToday={form.date === todayStr()} />
-                </div>
+                {form.slotGroup ? (
+                  <div className="admin-form-group">
+                    <label className={errors.time ? "mat-label-error" : ""}>Time <span className="evt-pre-req">*</span></label>
+                    <CustomTimePicker value={form.time} onChange={v => { setF("time", v); setErrors(p => ({ ...p, time: false })); }}
+                      slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
+                      slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
+                      hasError={!!errors.time}
+                      isToday={form.date === todayStr()} />
+                  </div>
+                ) : (
+                  <div className="admin-form-group">
+                    <label>Time</label>
+                    <span className="evt-pre-opt" style={{ fontSize: 11, color: "#aaa", display: "block" }}>Select a dining slot first</span>
+                  </div>
+                )}
               </div>
 
               <div className="evt-res-form-section-label">Source & Notes</div>

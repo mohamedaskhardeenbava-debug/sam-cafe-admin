@@ -25,14 +25,12 @@ const TableManagement = ({ adminData, setAdminData }) => {
 
   const { toast } = useToast();
   const tables = adminData.tables?.[0]?.list || [];
-  const [newTable, setNewTable] = useState("");
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [selectedTable, setSelectedTable] = useState(null);
 
   const addTable = async () => {
-    if (!newTable) return;
-    const num = Number(newTable);
+    const num = tables.length ? Math.max(...tables) + 1 : 1;
     if (tables.includes(num)) {
       toast.warning("Table already exists");
       return;
@@ -41,7 +39,6 @@ const TableManagement = ({ adminData, setAdminData }) => {
     try {
       await api.put("/tables/1", { id: 1, list: updated });
       setAdminData(prev => ({ ...prev, tables: [{ id: 1, list: updated }] }));
-      setNewTable("");
       toast.success("Table added successfully.");
     } catch (err) {
       console.error("Failed to add table:", err);
@@ -203,20 +200,6 @@ const TableManagement = ({ adminData, setAdminData }) => {
               </div>
             </div>
           </div>
-          {!headerCollapsed && (
-            <div className="table-mgmt-add">
-              <input
-                type="number"
-                className="table-mgmt-input"
-                placeholder="Table number"
-                value={newTable}
-                onChange={e => setNewTable(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && addTable()}
-                min="1"
-              />
-              <Button3D onClick={addTable}>Add Table</Button3D>
-            </div>
-          )}
         </div>
 
         <Button3D onClick={exportTables}>Export</Button3D>
@@ -227,6 +210,16 @@ const TableManagement = ({ adminData, setAdminData }) => {
       <div className={`table-mgmt-grid-wrapper${headerCollapsed ? " header-is-collapsed" : ""}`}>
         {tables.length > 0 ? (
           <div className="table-mgmt-grid">
+            <Button3D style={{width:"100%"}} onClick={addTable} role="button" tabIndex={0}>
+              <div style={{textAlign:"center", width:"100%"}}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#fff", letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 16 }}>
+                  New
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "#f0f0f0" }}>
+                  Add Table
+                </div>
+              </div>
+            </Button3D>
             {tables.map(t => (
               <div className="table-card" key={t}>
                 <div>
@@ -253,10 +246,18 @@ const TableManagement = ({ adminData, setAdminData }) => {
             ))}
           </div>
         ) : (
-          <div className="table-empty">
-            <div className="table-empty-icon">🪑</div>
-            <p>No tables yet</p>
-            <span>Add a table number above to get started</span>
+          <div className="table-mgmt-grid">
+            <div className="table-card table-card-add" onClick={addTable} role="button" tabIndex={0}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#a3a3a3", letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 4 }}>
+                  New
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "#0f0f0f" }}>
+                  Add Table
+                </div>
+              </div>
+              <div className="table-card-add-icon">+</div>
+            </div>
           </div>
         )}
       </div>

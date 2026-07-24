@@ -690,7 +690,11 @@ th.sorted .sort-arrow {
 }
 
 .filter-pill.active {
-  box-shadow: inset 0 0 6px 1px #98989c;
+  box-shadow: inset 0 0 6px 1px var(--color-red);
+}
+
+.filter-pill.active.scroll-active {
+  box-shadow: inset 0 0 6px 1px var(--color-green);
 }
 
 

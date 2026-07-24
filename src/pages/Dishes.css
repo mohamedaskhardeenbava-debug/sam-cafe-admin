@@ -56,6 +56,13 @@
   background: rgba(255, 255, 255, 0.25);
 }
 
+/* Highlighted while its dishes are the ones currently scrolled into view
+   (only applied when multiple categories are selected at once) */
+.dish-category-buttons .filter-pill.scroll-active:not(.active) {
+  border: 1.5px solid #111;
+  box-shadow: 0 0 0 2px rgba(17, 17, 17, 0.08);
+}
+
 /* Veg / Non-Veg badge */
 .veg-badge {
   display: inline-flex;
@@ -527,6 +534,7 @@
   color: #e74c3c;
   margin-left: 2px;
 }
+
 /* ═══════════════════════════════════════════
    RESPONSIVE — 1080 / 992 / 768 / 578 / 480
 ═══════════════════════════════════════════ */

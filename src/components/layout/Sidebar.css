@@ -94,6 +94,7 @@
 .sidebar-floating-menu {
   position: fixed;
   min-width: 200px;
+  max-width: calc(100vw - 20px);
   background: #fff;
   border: 1px solid #eee;
   border-radius: 12px;

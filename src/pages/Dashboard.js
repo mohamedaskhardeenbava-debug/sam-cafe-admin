@@ -326,19 +326,17 @@ const Dashboard = ({ adminData, setAdminData, orders = [] }) => {
                 <h2 className="dashboard-title">Dashboard</h2>
               </div>
 
-              {!headerCollapsed && (
-                <div className="db-tab-pills">
-                  <button className={`db-tab-pill ${activeTab === "sales" ? "active" : ""}`} onClick={() => setActiveTab("sales")}>
-                    Sales
-                  </button>
-                  <button className={`db-tab-pill ${activeTab === "staff" ? "active" : ""}`} onClick={() => setActiveTab("staff")}>
-                    Staff
-                  </button>
-                  <button className={`db-tab-pill ${activeTab === "schedules" ? "active" : ""}`} onClick={() => setActiveTab("schedules")}>
-                    Schedules
-                  </button>
-                </div>
-              )}
+              <div className="db-tab-pills">
+                <button className={`db-tab-pill ${activeTab === "sales" ? "active" : ""}`} onClick={() => setActiveTab("sales")}>
+                  Sales
+                </button>
+                <button className={`db-tab-pill ${activeTab === "staff" ? "active" : ""}`} onClick={() => setActiveTab("staff")}>
+                  Staff
+                </button>
+                <button className={`db-tab-pill ${activeTab === "schedules" ? "active" : ""}`} onClick={() => setActiveTab("schedules")}>
+                  Schedules
+                </button>
+              </div>
             </div>
             {!headerCollapsed && <Button3D onClick={handleExport}>Export</Button3D>}
           </div>

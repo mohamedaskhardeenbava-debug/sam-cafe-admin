@@ -79,10 +79,47 @@ const menu = [
   { label: "Theme Settings", path: "/theme-settings", icon: themeIcon }
 ];
 
+const HOVER_CLOSE_DELAY = 120; // ms grace period so moving link -> menu doesn't flicker-close
+
+// Positions the floating submenu next to a collapsed sidebar-link, clamped
+// to stay within the viewport vertically.
+const computeHoverPosition = (index, rect) => {
+  const dropdownHeight = 220; // approx height
+  const viewportHeight = window.innerHeight;
+
+  let top = rect.top;
+  if (top + dropdownHeight > viewportHeight - 10) {
+    top = viewportHeight - dropdownHeight - 10;
+  }
+  if (top < 10) {
+    top = 10;
+  }
+
+  return { index, top, left: rect.right + 8 };
+};
+
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const [openMenu, setOpenMenu] = useState(null);
   const [hoverMenu, setHoverMenu] = useState(null);
   const location = useLocation();
+  const closeTimerRef = React.useRef(null);
+
+  const cancelClose = () => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  };
+
+  const scheduleClose = () => {
+    cancelClose();
+    closeTimerRef.current = setTimeout(() => {
+      setHoverMenu(null);
+      closeTimerRef.current = null;
+    }, HOVER_CLOSE_DELAY);
+  };
+
+  React.useEffect(() => () => cancelClose(), []);
 
   // Auto-open submenu if a child route is active
   React.useEffect(() => {
@@ -170,35 +207,30 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 <div key={index} className="sidebar-group">
                   <button
                     className={`sidebar-link ${isAnyChildActive ? "sidebar-link-active" : ""}`}
-                    onClick={() => {
+                    onClick={(e) => {
                       if (isOpen) {
                         setOpenMenu(isExpanded ? null : index);
+                      } else {
+                        // Stage 4: clicking the trigger toggles the
+                        // floating menu open/closed in collapsed mode.
+                        cancelClose();
+                        setHoverMenu((prev) =>
+                          prev?.index === index ? null : computeHoverPosition(index, e.currentTarget.getBoundingClientRect())
+                        );
                       }
                     }}
                     onMouseEnter={(e) => {
                       if (!isOpen) {
-                        const rect = e.currentTarget.getBoundingClientRect();
-
-                        const dropdownHeight = 220; // approx height
-                        const viewportHeight = window.innerHeight;
-
-                        let top = rect.top;
-
-                        // ✅ Prevent bottom overflow
-                        if (top + dropdownHeight > viewportHeight - 10) {
-                          top = viewportHeight - dropdownHeight - 10;
-                        }
-
-                        // ✅ Prevent top overflow
-                        if (top < 10) {
-                          top = 10;
-                        }
-
-                        setHoverMenu({
-                          index,
-                          top,
-                          left: rect.right + 8
-                        });
+                        cancelClose();
+                        setHoverMenu(computeHoverPosition(index, e.currentTarget.getBoundingClientRect()));
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      if (!isOpen) {
+                        // Stage 3: unhovering the trigger schedules a close;
+                        // moving onto the floating menu cancels it (stage 1
+                        // then governs when it actually closes).
+                        scheduleClose();
                       }
                     }}
                   >
@@ -266,8 +298,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                           top: hoverMenu.top,
                           left: hoverMenu.left
                         }}
-                        onMouseEnter={() => setHoverMenu(hoverMenu)}
-                        onMouseLeave={() => setHoverMenu(null)}
+                        onMouseEnter={cancelClose}
+                        onMouseLeave={scheduleClose}
                       >
                         {item.children.map((sub) => (
                           <NavLink
@@ -276,7 +308,10 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                             className={({ isActive }) =>
                               `sidebar-sublink ${isActive ? "sublink-active" : ""}`
                             }
-                            onClick={() => setHoverMenu(null)}
+                            onClick={() => {
+                              cancelClose();
+                              setHoverMenu(null);
+                            }}
                           >
                             {sub.label}
                           </NavLink>

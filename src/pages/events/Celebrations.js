@@ -905,22 +905,26 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     </div>
                   </div>
 
-                  <div className="admin-form-group">
-                    <label className={formErrors.time ? "mat-label-error" : ""}>
-                      Time <span className="evt-res-req">*</span>
-                      {form.slotGroup && (() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()}
-                    </label>
-                    <CustomTimePicker
-                      value={form.time}
-                      onChange={v => { setF("time", v); setFormErrors(p => ({ ...p, time: false })); }}
-                      slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
-                      slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
-                      disabled={!form.slotGroup}
-                      isToday={false}
-                      hasError={!!formErrors.time}
-                    />
-                    {!form.slotGroup && <span style={{ fontSize: 11, color: "#aaa", marginTop: 4, display: "block" }}>Select a dining slot first to enable time picker</span>}
-                  </div>
+                  {form.slotGroup ? (
+                    <div className="admin-form-group">
+                      <label className={formErrors.time ? "mat-label-error" : ""}>
+                        Time <span className="evt-res-req">*</span>
+                        {(() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()}
+                      </label>
+                      <CustomTimePicker
+                        value={form.time}
+                        onChange={v => { setF("time", v); setFormErrors(p => ({ ...p, time: false })); }}
+                        slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
+                        slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
+                        isToday={false}
+                        hasError={!!formErrors.time}
+                      />
+                    </div>
+                  ) : (
+                    <div className="admin-form-group">
+                      <span style={{ fontSize: 11, color: "#aaa", marginTop: 4, display: "block" }}>Select a dining slot first to enable time picker</span>
+                    </div>
+                  )}
 
                   <div className="evt-res-form-section-label">Decoration</div>
                   <div className="admin-form-group">
