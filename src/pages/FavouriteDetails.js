@@ -67,56 +67,58 @@ const FavouriteDetails = ({ adminData }) => {
 
         </div>
 
-        <div className="section">
-          <div className="section-title with-action">
-            <span>Ingredients</span>
-          </div>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Quantity (g)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dish.ingredients.map((ing, i) => (
-                <tr key={i}>
-                  <td>{ing.name}</td>
-                  <td>{ing.quantity}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="section">
-          <div className="section-title with-action">
-            <span>Nutrition</span>
-          </div>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Nutrition</th>
-                <th>Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dish.benefits && Object.keys(dish.benefits).length > 0 ? (
-                Object.entries(dish.benefits).map(([key, value]) => (
-                  <tr key={key}>
-                    <td>{key}</td>
-                    <td>{value}</td>
-                  </tr>
-                ))
-              ) : (
+        <div className="horizontal-form-group">
+          <div className="section">
+            <div className="section-title with-action">
+              <span>Ingredients</span>
+            </div>
+            <table className="data-table">
+              <thead>
                 <tr>
-                  <td colSpan="2" style={{ textAlign: "center", color: "#777" }}>
-                    No nutrition information available
-                  </td>
+                  <th>Name</th>
+                  <th>Quantity (g)</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {dish.ingredients.map((ing, i) => (
+                  <tr key={i}>
+                    <td>{ing.name}</td>
+                    <td>{ing.quantity}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="section">
+            <div className="section-title with-action">
+              <span>Nutrition</span>
+            </div>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Nutrition</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dish.benefits && Object.keys(dish.benefits).length > 0 ? (
+                  Object.entries(dish.benefits).map(([key, value]) => (
+                    <tr key={key}>
+                      <td>{key}</td>
+                      <td>{value}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="2" style={{ textAlign: "center", color: "#777" }}>
+                      No nutrition information available
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

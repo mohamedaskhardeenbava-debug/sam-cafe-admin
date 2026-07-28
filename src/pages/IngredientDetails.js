@@ -312,25 +312,48 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
           </div>
         </div>
 
-        {/* DESCRIPTION */}
-        <div className="section">
-          <div className="section-title">
-            Description
+        <div className="horizontal-form-group">
+          {/* DESCRIPTION */}
+          <div className="section">
+            <div className="section-title">
+              Description
+            </div>
+
+            {isEditing ? (
+              <textarea
+                value={localIngredient.description}
+                onChange={(e) =>
+                  setLocalIngredient({
+                    ...localIngredient,
+                    description: allowTextInput(localIngredient.description, e.target.value, 500, 100000)
+                  })
+                }
+              />
+            ) : (
+              <p>{localIngredient.description}</p>
+            )}
           </div>
 
-          {isEditing ? (
-            <textarea
-              value={localIngredient.description}
-              onChange={(e) =>
-                setLocalIngredient({
-                  ...localIngredient,
-                  description: allowTextInput(localIngredient.description, e.target.value, 500, 100000)
-                })
-              }
-            />
-          ) : (
-            <p>{localIngredient.description}</p>
-          )}
+          {/* HISTORY */}
+          <div className="section">
+            <div className="section-title">
+              History
+            </div>
+
+            {isEditing ? (
+              <textarea
+                value={localIngredient.history}
+                onChange={(e) =>
+                  setLocalIngredient({
+                    ...localIngredient,
+                    history: allowTextInput(localIngredient.history, e.target.value, 500, 100000)
+                  })
+                }
+              />
+            ) : (
+              <p>{localIngredient.history}</p>
+            )}
+          </div>
         </div>
 
         {/* USED IN */}
@@ -438,117 +461,98 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
           )}
         </div>
 
-        <div className="section">
-          <div className="section-title">
-            <span>Stock & Visibility Info</span>
-          </div>
+        <div className="horizontal-form-group">
+          <div className="section">
+            <div className="section-title">
+              <span>Stock & Visibility Info</span>
+            </div>
 
-          <table className="data-table">
-            <tbody>
-              <tr>
-                <td><strong>Disabled In</strong></td>
-                <td
-                  style={{
-                    fontWeight: 600,
-                    color:
-                      getDisabledInfo().type === "all"
-                        ? "red"
-                        : getDisabledInfo().type === "partial"
-                          ? "#e6a700"
-                          : "#888"
-                  }}
-                >
-                  {getDisabledInfo().label}
-                </td>
-              </tr>
-
-              <tr>
-                <td><strong>Expiry Date</strong></td>
-                <td
-                  style={{
-                    color: isExpiringSoon(localIngredient.expiryDate)
-                      ? "red"
-                      : "inherit",
-                    fontWeight: isExpiringSoon(localIngredient.expiryDate)
-                      ? 600
-                      : 400
-                  }}
-                >
-                  {formatDisplayDate(localIngredient.expiryDate) || "-"}
-                </td>
-              </tr>
-
-              <tr>
-                <td><strong>Last Purchased</strong></td>
-                <td>{formatDisplayDate(localIngredient.lastUpdated) || "-"}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* NUTRITION TABLE */}
-        <div className="section">
-          <div className="section-title">
-            <span>Nutrition per 100g</span>
-          </div>
-
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Nutrition</th>
-                <th>Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(localIngredient.nutritionPer100g).map(([key, value]) => (
-                <tr key={key}>
-                  <td>{key}</td>
-                  <td>
-                    {isEditing ? (
-                      <input
-                        type="number"
-                        min="1"
-                        step="1"
-                        value={value}
-                        onChange={(e) =>
-                          setLocalIngredient({
-                            ...localIngredient,
-                            nutritionPer100g: {
-                              ...localIngredient.nutritionPer100g,
-                              [key]: Number(e.target.value)
-                            }
-                          })
-                        }
-                      />
-                    ) : (
-                      value
-                    )}
+            <table className="data-table">
+              <tbody>
+                <tr>
+                  <td><strong>Disabled In</strong></td>
+                  <td
+                    style={{
+                      fontWeight: 600,
+                      color:
+                        getDisabledInfo().type === "all"
+                          ? "red"
+                          : getDisabledInfo().type === "partial"
+                            ? "#e6a700"
+                            : "#888"
+                    }}
+                  >
+                    {getDisabledInfo().label}
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
 
-        {/* HISTORY */}
-        <div className="section">
-          <div className="section-title">
-            History
+                <tr>
+                  <td><strong>Expiry Date</strong></td>
+                  <td
+                    style={{
+                      color: isExpiringSoon(localIngredient.expiryDate)
+                        ? "red"
+                        : "inherit",
+                      fontWeight: isExpiringSoon(localIngredient.expiryDate)
+                        ? 600
+                        : 400
+                    }}
+                  >
+                    {formatDisplayDate(localIngredient.expiryDate) || "-"}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td><strong>Last Purchased</strong></td>
+                  <td>{formatDisplayDate(localIngredient.lastUpdated) || "-"}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
-          {isEditing ? (
-            <textarea
-              value={localIngredient.history}
-              onChange={(e) =>
-                setLocalIngredient({
-                  ...localIngredient,
-                  history: allowTextInput(localIngredient.history, e.target.value, 500, 100000)
-                })
-              }
-            />
-          ) : (
-            <p>{localIngredient.history}</p>
-          )}
+          {/* NUTRITION TABLE */}
+          <div className="section">
+            <div className="section-title">
+              <span>Nutrition per 100g</span>
+            </div>
+
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Nutrition</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(localIngredient.nutritionPer100g).map(([key, value]) => (
+                  <tr key={key}>
+                    <td>{key}</td>
+                    <td>
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={value}
+                          onChange={(e) =>
+                            setLocalIngredient({
+                              ...localIngredient,
+                              nutritionPer100g: {
+                                ...localIngredient.nutritionPer100g,
+                                [key]: Number(e.target.value)
+                              }
+                            })
+                          }
+                        />
+                      ) : (
+                        value
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

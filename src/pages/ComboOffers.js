@@ -148,8 +148,8 @@ const ComboOffers = () => {
   const [saving, setSaving] = useState(false);
 
   /* modal fields */
-  const [slots, setSlots] = useState({ dishes: null, desserts: null, beverages: null });
-  const [activeTab, setActiveTab] = useState("dishes");
+  const [slots, setSlots] = useState(() => Object.fromEntries(DEFAULT_SECTIONS.map(s => [s.key, null])));
+  const [activeTab, setActiveTab] = useState(DEFAULT_SECTIONS[0]?.key || "dishes");
   const [discountVal, setDiscountVal] = useState("");
   const [offerType, setOfferType] = useState("PERCENT");
   const [offerLabel, setOfferLabel] = useState("");
@@ -178,7 +178,7 @@ const ComboOffers = () => {
   const sectionLabel = (key) => sectionConfig.find(s => s.key === key)?.label || key;
 
   const getActual = (o) =>
-    (o.condition?.dishesPrice || 0) + (o.condition?.dessertsPrice || 0) + (o.condition?.beveragesPrice || 0);
+    sectionConfig.reduce((sum, s) => sum + (o.condition?.[`${s.key}Price`] || 0), 0);
   const sortedOffers = useMemo(() => {
     if (!sortConfig.key) return offers;
     return [...offers].sort((a, b) => {
@@ -194,7 +194,8 @@ const ComboOffers = () => {
     });
   }, [offers, sortConfig]);
 
-  /* ── build dish pools from categories + section config, filtered to isComboFood ── */
+  /* ── build dish pools from categories + section config, filtered to
+     eventField === "yes" (combo/event-eligible dishes) ── */
   const buildComboSections = (categories, sections) => {
     const collectDishes = (catIds) => {
       const items = [];
@@ -204,7 +205,7 @@ const ComboOffers = () => {
           const directDishes = cat.dishes || [];
           const subDishes = (cat.subCategories || []).flatMap(s => s.dishes || []);
           [...directDishes, ...subDishes].forEach(d => {
-            if (!d.isComboFood) return; // only combo-eligible dishes
+            if (d.eventField !== "yes") return; // only event/combo-eligible dishes
             items.push({
               id: d.id,
               name: d.name,
@@ -248,8 +249,8 @@ const ComboOffers = () => {
   /* ── open modal (new) ── */
   const openNew = () => {
     setEditOffer(null);
-    setSlots({ dishes: null, desserts: null, beverages: null });
-    setActiveTab("dishes");
+    setSlots(Object.fromEntries(sectionConfig.map(s => [s.key, null])));
+    setActiveTab(sectionConfig[0]?.key || "dishes");
     setDiscountVal("");
     setOfferType("PERCENT");
     setOfferLabel("");
@@ -259,14 +260,38 @@ const ComboOffers = () => {
     setModalOpen(true);
   };
 
-  /* ── open modal (edit) ── */
+  /* ── open modal (edit) ──
+     Slots are built per the CURRENT sectionConfig (not a hardcoded
+     dishes/desserts/beverages triple) since admins can rename, add,
+     or remove sections. For each configured section key, we try to
+     resolve the offer's saved dish name against the live
+     comboSections pool first (picks up the dish's current price/id/
+     image). If that lookup misses — the dish's eventField flipped to
+     "no", it was renamed, or moved to a different section — we fall
+     back to the name+price the offer itself saved at creation time,
+     so the slot still shows the original selection instead of going
+     blank. That fallback has no real `id`, so re-selecting a live
+     dish into the same slot always overwrites it cleanly. ── */
   const openEdit = (offer) => {
     setEditOffer(offer);
-    const d = comboSections.dishes.find(i => i.name === offer.condition?.dishes) || null;
-    const de = comboSections.desserts.find(i => i.name === offer.condition?.desserts) || null;
-    const b = comboSections.beverages.find(i => i.name === offer.condition?.beverages) || null;
-    setSlots({ dishes: d, desserts: de, beverages: b });
-    setActiveTab("dishes");
+
+    const nextSlots = {};
+    sectionConfig.forEach(s => {
+      const key = s.key;
+      const savedName = offer.condition?.[key];
+      if (!savedName) { nextSlots[key] = null; return; }
+
+      const live = (comboSections[key] || []).find(i => i.name === savedName);
+      if (live) {
+        nextSlots[key] = live;
+      } else {
+        const savedPrice = offer.condition?.[`${key}Price`] ?? 0;
+        nextSlots[key] = { id: null, name: savedName, price: savedPrice };
+      }
+    });
+    setSlots(nextSlots);
+
+    setActiveTab(sectionConfig[0]?.key || "dishes");
     setOfferType(offer.type || "PERCENT");
     setDiscountVal(String(offer.value || ""));
     setOfferLabel(offer.label || "");
@@ -277,18 +302,20 @@ const ComboOffers = () => {
   };
 
   /* ── pricing ── */
+  const filledSlotCount = Object.values(slots).filter(Boolean).length;
   const totalActual = Object.values(slots).reduce((a, d) => a + (d?.price || 0), 0);
   const totalFinal = calcFinal(totalActual, offerType, parseFloat(discountVal));
   const savings = totalActual - totalFinal;
   const autoLabel = () => offerType === "PERCENT" && discountVal ? `${discountVal}% OFF`
     : offerType === "FLAT" && discountVal ? `Flat ₹${discountVal} OFF` : "";
 
-  /* ── validate ── */
+  /* ── validate ──
+     Exactly 2 dishes required — any pair of the configured sections. ── */
   const validate = () => {
     const e = {};
     const filled = Object.values(slots).filter(Boolean).length;
-    if (filled < 2)
-      e.slots = `Add at least 2 dishes — any combination of ${sectionConfig.map(s => s.label).join(", ")}`;
+    if (filled !== 2)
+      e.slots = `Pick exactly 2 dishes — any combination of ${sectionConfig.map(s => s.label).join(", ")}`;
     if (!discountVal || isNaN(parseFloat(discountVal)) || parseFloat(discountVal) <= 0)
       e.discount = "Enter a valid discount value";
     return e;
@@ -301,9 +328,13 @@ const ComboOffers = () => {
 
     const label = offerLabel.trim() || autoLabel();
     const condition = {};
-    if (slots.dishes) { condition.dishes = slots.dishes.name; condition.dishesPrice = slots.dishes.price; }
-    if (slots.desserts) { condition.desserts = slots.desserts.name; condition.dessertsPrice = slots.desserts.price; }
-    if (slots.beverages) { condition.beverages = slots.beverages.name; condition.beveragesPrice = slots.beverages.price; }
+    sectionConfig.forEach(s => {
+      const key = s.key;
+      if (slots[key]) {
+        condition[key] = slots[key].name;
+        condition[`${key}Price`] = slots[key].price;
+      }
+    });
 
     const payload = { id: editOffer?.id || uid(), label, type: offerType, value: parseFloat(discountVal), condition };
     setSaving(true);
@@ -338,9 +369,19 @@ const ComboOffers = () => {
     });
   };
 
-  /* ── click-to-add / click-to-remove ── */
+  /* ── click-to-add / click-to-remove ──
+     Offers are strictly 2-dish combos — any pair of the configured
+     sections (Dishes+Beverages, Beverages+Desserts, Dishes+Desserts).
+     Once 2 slots are filled, adding a 3rd is blocked outright rather
+     than allowed and only caught at save time. ── */
   const addSelectedToSlot = () => {
     if (!selectedListDishId) return;
+    const filledCount = Object.values(slots).filter(Boolean).length;
+    const alreadyFilledInTab = !!slots[activeTab];
+    if (filledCount >= 2 && !alreadyFilledInTab) {
+      toast.warning("A combo offer can only have 2 dishes. Remove one to add another.");
+      return;
+    }
     const dish = (comboSections[activeTab] || []).find(d => d.id === selectedListDishId);
     if (!dish) return;
     setSlots(prev => ({ ...prev, [activeTab]: dish }));
@@ -497,7 +538,7 @@ const ComboOffers = () => {
                 </td>
                 <td>
                   {(() => {
-                    const actual = (o.condition?.dishesPrice || 0) + (o.condition?.dessertsPrice || 0) + (o.condition?.beveragesPrice || 0);
+                    const actual = getActual(o);
                     return actual > 0
                       ? <span className="co-actual-price">₹{actual}</span>
                       : <span style={{ color: "#ccc" }}>—</span>;
@@ -505,7 +546,7 @@ const ComboOffers = () => {
                 </td>
                 <td>
                   {(() => {
-                    const actual = (o.condition?.dishesPrice || 0) + (o.condition?.dessertsPrice || 0) + (o.condition?.beveragesPrice || 0);
+                    const actual = getActual(o);
                     if (!actual) return <span style={{ color: "#ccc" }}>—</span>;
                     const final = calcFinal(actual, o.type, o.value);
                     return <span className="co-final-price">₹{final}</span>;
@@ -553,7 +594,9 @@ const ComboOffers = () => {
                 </div>
 
                 <p className="co-section-label">
-                  Select a {sectionLabel(activeTab)} dish, then use → to add it to the {sectionLabel(activeTab)} slot
+                  {filledSlotCount >= 2 && !slots[activeTab]
+                    ? "Combo is full (2/2) — remove a dish to add a different one"
+                    : <>Select a {sectionLabel(activeTab)} dish, then use → to add it to the {sectionLabel(activeTab)} slot</>}
                 </p>
 
                 <DishList
@@ -571,7 +614,7 @@ const ComboOffers = () => {
                 <button
                   type="button"
                   className="co-arrow-btn co-arrow-btn--add"
-                  disabled={!selectedListDishId}
+                  disabled={!selectedListDishId || (filledSlotCount >= 2 && !slots[activeTab])}
                   onClick={addSelectedToSlot}
                 >
                   <img src={doubleArrowIcon} alt="Add" className="co-arrow-icon" />

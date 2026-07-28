@@ -151,6 +151,11 @@
   }
 }
 
+.event-modal .cdp-wrap,
+.event-modal .ctp-wrap {
+  max-width: 300px;
+}
+
 .event-modal-header {
   position: sticky;
   top: 0;

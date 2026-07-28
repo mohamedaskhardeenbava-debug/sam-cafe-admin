@@ -104,6 +104,33 @@
   transform: scaleX(1);
 }
 
+/* NEWLY ADDED TABLE — brief highlight so the freshly created
+   table is easy to spot in the grid right after creation. */
+@keyframes newTablePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(54, 43, 214, 0.45), var(--shadow-sm);
+    border-color: var(--color-blue);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(43, 54, 214, 0), var(--shadow-md);
+    border-color: var(--color-blue);
+  }
+
+  100% {
+    box-shadow: var(--shadow-sm);
+    border-color: var(--border);
+  }
+}
+
+.table-card--new {
+  animation: newTablePulse 1.8s ease-out 1;
+}
+
+.table-card--new::after {
+  transform: scaleX(1);
+}
+
 .table-card-label {
   font-size: 14px;
   font-weight: 600;

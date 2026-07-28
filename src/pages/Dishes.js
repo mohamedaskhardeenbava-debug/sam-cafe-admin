@@ -830,40 +830,40 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               <div className="horizontal-form-group">
                 <div className="admin-form-group">
                   <label>Type</label>
-                  <div className="veg-toggle-group">
+                  <div className="dish-switch-group">
                     <button
                       type="button"
-                      className={`veg-toggle-btn${newDish.isVeg ? " active-veg" : ""}`}
+                      className={`dish-switch-btn${newDish.isVeg ? " is-active" : ""}`}
                       onClick={() => setNewDish({ ...newDish, isVeg: true })}
                     >
-                      <span className="veg-dot veg" /> Veg
+                      <span className="dish-switch-dot veg" /> Veg
                     </button>
                     <button
                       type="button"
-                      className={`veg-toggle-btn${!newDish.isVeg ? " active-non-veg" : ""}`}
+                      className={`dish-switch-btn${!newDish.isVeg ? " is-active" : ""}`}
                       onClick={() => setNewDish({ ...newDish, isVeg: false })}
                     >
-                      <span className="veg-dot non-veg" /> Non-Veg
+                      <span className="dish-switch-dot non-veg" /> Non-Veg
                     </button>
                   </div>
                 </div>
 
                 <div className="admin-form-group">
                   <label>Event Food</label>
-                  <div className="veg-toggle-group">
+                  <div className="dish-switch-group">
                     <button
                       type="button"
-                      className={`veg-toggle-btn${newDish.isEventFood ? " active-veg" : ""}`}
+                      className={`dish-switch-btn${newDish.isEventFood ? " is-active" : ""}`}
                       onClick={() => setNewDish({ ...newDish, isEventFood: true })}
                     >
-                      <span className="veg-dot veg" /> Yes
+                      <span className="dish-switch-dot veg" /> Yes
                     </button>
                     <button
                       type="button"
-                      className={`veg-toggle-btn${!newDish.isEventFood ? " active-non-veg" : ""}`}
+                      className={`dish-switch-btn${!newDish.isEventFood ? " is-active" : ""}`}
                       onClick={() => setNewDish({ ...newDish, isEventFood: false })}
                     >
-                      <span className="veg-dot non-veg" /> No
+                      <span className="dish-switch-dot non-veg" /> No
                     </button>
                   </div>
                 </div>
@@ -871,20 +871,20 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
               <div className="admin-form-group">
                 <label>Combo Food</label>
-                <div className="veg-toggle-group">
+                <div className="dish-switch-group">
                   <button
                     type="button"
-                    className={`veg-toggle-btn${newDish.isComboFood ? " active-veg" : ""}`}
+                    className={`dish-switch-btn${newDish.isComboFood ? " is-active" : ""}`}
                     onClick={() => setNewDish({ ...newDish, isComboFood: true })}
                   >
-                    <span className="veg-dot veg" /> Yes
+                    <span className="dish-switch-dot veg" /> Yes
                   </button>
                   <button
                     type="button"
-                    className={`veg-toggle-btn${!newDish.isComboFood ? " active-non-veg" : ""}`}
+                    className={`dish-switch-btn${!newDish.isComboFood ? " is-active" : ""}`}
                     onClick={() => setNewDish({ ...newDish, isComboFood: false })}
                   >
-                    <span className="veg-dot non-veg" /> No
+                    <span className="dish-switch-dot non-veg" /> No
                   </button>
                 </div>
               </div>

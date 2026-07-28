@@ -28,6 +28,7 @@ const TableManagement = ({ adminData, setAdminData }) => {
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [selectedTable, setSelectedTable] = useState(null);
+  const [newlyAddedTable, setNewlyAddedTable] = useState(null);
 
   const addTable = async () => {
     const num = tables.length ? Math.max(...tables) + 1 : 1;
@@ -40,22 +41,32 @@ const TableManagement = ({ adminData, setAdminData }) => {
       await api.put("/tables/1", { id: 1, list: updated });
       setAdminData(prev => ({ ...prev, tables: [{ id: 1, list: updated }] }));
       toast.success("Table added successfully.");
+      setNewlyAddedTable(num);
+      // Clear the highlight after the intro animation has had time
+      // to draw attention, so it doesn't linger indefinitely.
+      setTimeout(() => setNewlyAddedTable(prev => (prev === num ? null : prev)), 2600);
     } catch (err) {
       console.error("Failed to add table:", err);
       toast.error("Failed to add table");
     }
   };
 
-  const removeTable = async (tableNo) => {
-    const updated = tables.filter(t => t !== tableNo);
-    try {
-      await api.put("/tables/1", { id: 1, list: updated });
-      setAdminData(prev => ({ ...prev, tables: [{ id: 1, list: updated }] }));
-      toast.success("Table removed.");
-    } catch (err) {
-      console.error("Failed to remove table:", err);
-      toast.error("Failed to remove table");
-    }
+  const handleRemoveTable = (tableNo) => {
+    toast.confirm(`Remove Table ${tableNo}? This will permanently remove it and its QR code.`, async () => {
+      // Re-read the current table list at the moment the user actually
+      // confirms, not from a variable captured when the toast was first
+      // created — same reasoning as handleDelete in Dishes.js.
+      const currentTables = adminData.tables?.[0]?.list || [];
+      const updated = currentTables.filter(t => t !== tableNo);
+      try {
+        await api.put("/tables/1", { id: 1, list: updated });
+        setAdminData(prev => ({ ...prev, tables: [{ id: 1, list: updated }] }));
+        toast.success("Table removed.");
+      } catch (err) {
+        console.error("Failed to remove table:", err);
+        toast.error("Failed to remove table");
+      }
+    });
   };
 
   // ── Helpers
@@ -210,8 +221,8 @@ const TableManagement = ({ adminData, setAdminData }) => {
       <div className={`table-mgmt-grid-wrapper${headerCollapsed ? " header-is-collapsed" : ""}`}>
         {tables.length > 0 ? (
           <div className="table-mgmt-grid">
-            <Button3D style={{width:"100%"}} onClick={addTable} role="button" tabIndex={0}>
-              <div style={{textAlign:"center", width:"100%"}}>
+            <Button3D style={{ width: "100%" }} onClick={addTable} role="button" tabIndex={0}>
+              <div style={{ textAlign: "center", width: "100%" }}>
                 <div style={{ fontSize: 16, fontWeight: 700, color: "#fff", letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 16 }}>
                   New
                 </div>
@@ -221,7 +232,7 @@ const TableManagement = ({ adminData, setAdminData }) => {
               </div>
             </Button3D>
             {tables.map(t => (
-              <div className="table-card" key={t}>
+              <div className={`table-card${newlyAddedTable === t ? " table-card--new" : ""}`} key={t}>
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#a3a3a3", letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 4 }}>
                     Table
@@ -240,7 +251,7 @@ const TableManagement = ({ adminData, setAdminData }) => {
                     }}><img src={qrIcon} alt="QR" className="qr-icon" /></Button3D>
 
                   <Button3D variant="cancel" iconOnly title="Remove table"
-                    onClick={() => removeTable(t)}><img src={deleteIcon} alt="" /></Button3D>
+                    onClick={() => handleRemoveTable(t)}><img src={deleteIcon} alt="" /></Button3D>
                 </div>
               </div>
             ))}
@@ -295,6 +306,7 @@ const TableManagement = ({ adminData, setAdminData }) => {
           </div>
         </div>
       )}
+
     </div>
   );
 };

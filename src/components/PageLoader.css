@@ -1,11 +1,42 @@
 /* ═══════════════════════════════════════════════════
-   Pageloaderpan.css  —  Sam Cafe Admin Panel
-   Styles for the shared Pageloaderpan component.
-   Import path: src/components/Pageloaderpan.css
-   (auto-imported by Pageloaderpan.jsx — no manual import needed)
+   PageLoader.css  —  Sam Cafe Admin Panel
+   Styles for the shared PageLoader component.
+   Import path: src/components/PageLoader.css
+   (auto-imported by PageLoader.jsx — no manual import needed)
+
+   Full-page variant is a top-down vegetable cutter scene (chef's knife
+   chopping a carrot on a wooden board). Colour/timing tokens live in the
+   ":root" block below; the SVG gradients in PageLoader.jsx read these
+   directly via stop-color: var(...).
 ═══════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css?family=Amatic+SC');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  /* wooden board */
+  --board-top: #dba05c;
+  --board-mid: #b87a3c;
+  --board-shadow: #7a4e24;
+  --board-grain: #5a3412;
+  --board-rim: #6b4520;
+
+  /* carrot */
+  --carrot-light: #ff9e52;
+  --carrot-base: #f3782e;
+  --carrot-dark: #c85a1b;
+  --carrot-core: #ffe3b0;
+  --carrot-ring: #ffb870;
+  --carrot-green: #8bab55;
+  --carrot-green-dark: #54702f;
+
+  /* knife */
+  --knife-blade-light: #f6f9fb;
+  --knife-blade-mid: #cbd5db;
+  --knife-blade-dark: #838d96;
+  --knife-handle: #1c1611;
+  --knife-handle-light: #362c22;
+  --knife-rivet: #caa227;
+}
 
 /* ── Full-page variant ─────────────────────────── */
 .pl-page {
@@ -24,206 +55,235 @@
   background: #fff;
 }
 
-.loaderpan {
-  --color-1: #3e494d;
-  --color-2: #5d6063;
-  --color-3: #6c4924;
-  --color-4: #4b2d21;
-  --color-5: #4d5457;
-  --color-6: #9f9e9e;
-  --color-7: #fff;
-  --color-8: #fff6;
-  --color-9: #ffc400;
-  --color-10: #ffae00;
-  --color-11: #0002;
-  --color-12: #0003;
-  --size: 0.6px;
+/* ── Card wrapping the scene + label ──────────── */
+.loader-card {
+  width: 100%;
+  max-width: min(560px, 90vw);
+  padding: clamp(16px, 3vw, 32px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 
+.loader-visual {
   position: relative;
-  width: calc(120 * var(--size));
-  height: calc(14 * var(--size));
-  border-radius: 0 0 calc(15 * var(--size)) calc(15 * var(--size));
-  background-color: var(--color-1);
-  box-shadow: 0 calc(-1 * var(--size)) calc(4 * var(--size)) var(--color-2) inset;
-  animation: panex 0.5s linear alternate infinite;
-  transform-origin: calc(170 * var(--size)) 0;
-  z-index: 10;
-  perspective: calc(300 * var(--size));
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 900 / 500;
 }
 
-.loaderpan::before {
-  content: '';
-  position: absolute;
-  left: calc(100% - calc(2 * var(--size)));
-  top: 0;
-  z-index: -2;
-  height: calc(10 * var(--size));
-  width: calc(70 * var(--size));
-  border-radius: 0 calc(4 * var(--size)) calc(4 * var(--size)) 0;
-  background-repeat: no-repeat;
-  background-image:
-    linear-gradient(var(--color-3), var(--color-4)),
-    linear-gradient(var(--color-5) calc(24 * var(--size)), transparent 0),
-    linear-gradient(var(--color-6) calc(24 * var(--size)), transparent 0);
-  background-size:
-    calc(50 * var(--size)) calc(10 * var(--size)),
-    calc(4 * var(--size)) calc(8 * var(--size)),
-    calc(24 * var(--size)) calc(4 * var(--size));
-  background-position:
-    right center,
-    calc(17 * var(--size)) center,
-    0 center;
+.loader-visual svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
-.loaderpan::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 0;
-  z-index: -2;
-  transform: translate(-50%, calc(-20 * var(--size))) rotate3d(75, -2, 3, 78deg);
-  width: calc(55 * var(--size));
-  height: calc(53 * var(--size));
-  background: var(--color-7);
-  background-image:
-    radial-gradient(circle calc(3 * var(--size)), var(--color-8) 90%, transparent 10%),
-    radial-gradient(circle calc(12 * var(--size)), var(--color-9) 90%, transparent 10%),
-    radial-gradient(circle calc(12 * var(--size)), var(--color-10) 100%, transparent 0);
-  background-repeat: no-repeat;
-  background-position:
-    calc(-4 * var(--size)) calc(-6 * var(--size)),
-    calc(-2 * var(--size)) calc(-2 * var(--size)),
-    calc(-1 * var(--size)) calc(-1 * var(--size));
-  box-shadow:
-    calc(-2 * var(--size)) calc(-3 * var(--size)) var(--color-11) inset,
-    0 0 calc(4 * var(--size)) var(--color-12) inset;
-  border-radius: 47% 36% 50% 50% / 49% 45% 42% 44%;
-  animation: eggRst 1s ease-out infinite;
+/* ---------- grounding shadow the whole board casts ---------- */
+.board-ambient-shadow {
+  fill: rgba(0, 0, 0, 0.12);
+  filter: blur(14px);
 }
 
-@keyframes eggRst {
+/* ---------- cutting board (flat top-down slab) ---------- */
+.board-top {
+  fill: url(#gradBoard);
+}
+
+.board-rim {
+  fill: none;
+  stroke: var(--board-rim);
+  stroke-width: 3;
+  opacity: 0.55;
+}
+
+.board-top-highlight {
+  fill: rgba(255, 255, 255, 0.16);
+  filter: blur(6px);
+}
+
+.board-grain path {
+  fill: none;
+  stroke: var(--board-grain);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.35;
+}
+
+/* ---------- carrot ---------- */
+#carrot {
+  transform-box: view-box;
+}
+
+#carrot-shadow {
+  fill: rgba(0, 0, 0, 0.2);
+  filter: blur(3px);
+}
+
+#carrot-body {
+  fill: url(#gradCarrot);
+  stroke: rgba(0, 0, 0, 0.08);
+  stroke-width: 1;
+}
+
+#carrot-highlight {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.35);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.leaf {
+  fill: url(#gradGreen);
+}
+
+.leaf-stem {
+  fill: var(--carrot-green-dark);
+}
+
+/* ---------- falling slices & crumbs (built at runtime) ---------- */
+.fx-slice,
+.fx-slice-shadow {
+  transform-box: view-box;
+}
+
+.fx-slice-shadow {
+  fill: rgba(0, 0, 0, 0.22);
+  filter: blur(2.5px);
+}
+
+.fx-crumb {
+  fill: var(--carrot-base);
+}
+
+/* ---------- knife ---------- */
+#knife-swing {
+  transform-box: view-box;
+}
+
+#knife-shadow {
+  fill: rgba(0, 0, 0, 0.24);
+  filter: blur(5px);
+}
+
+.handle {
+  fill: url(#gradHandle);
+}
+
+.handle-highlight {
+  fill: rgba(255, 255, 255, 0.14);
+}
+
+.bolster {
+  fill: var(--knife-blade-dark);
+}
+
+.rivet {
+  fill: var(--knife-rivet);
+}
+
+.blade {
+  fill: url(#gradBlade);
+  stroke: rgba(0, 0, 0, 0.18);
+  stroke-width: 1;
+}
+
+.blade-spine-shine,
+.blade-edge-shine {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  opacity: 0.45;
+}
+
+/* ── Inline / section variant ─────────────────── */
+.pl-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 28px 20px;
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+  box-sizing: border-box;
+}
+
+/* ── Inline: simple spinner ring ──────────────── */
+.pl-inline .pl-ring {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2.5px solid var(--color-offwhite, #e5e7eb);
+  border-top-color: var(--color-accent, #111);
+  animation: pl-spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Label text ────────────────────────────────── */
+.pl-label {
+  margin: clamp(10px, 2.4vw, 18px) 0 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(15px, 2.6vw, 19px);
+  letter-spacing: 0.01em;
+  color: #6b6b6b;
+  text-align: center;
+}
+
+.pl-inline .pl-label {
+  font-family: inherit;
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-3, #6b6b6b);
+  letter-spacing: 0.01em;
+  margin: 0;
+}
+
+/* ── Trailing dots on the full-page label ─────── */
+.pl-dots span {
+  display: inline-block;
+  opacity: 0;
+  color: #c9832f;
+  animation: pl-dot-blink 1.4s infinite;
+}
+
+.pl-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.pl-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes pl-dot-blink {
 
   0%,
-  100% {
-    transform: translate(-50%, calc(-20 * var(--size))) rotate3d(90, 0, 0, 90deg);
+  20% {
     opacity: 0;
   }
 
-  10%,
-  90% {
-    transform: translate(-50%, calc(-30 * var(--size))) rotate3d(90, 0, 0, 90deg);
+  50% {
     opacity: 1;
   }
 
-  25% {
-    transform: translate(-50%, calc(-40 * var(--size))) rotate3d(85, 17, 2, 70deg);
-  }
-
-  75% {
-    transform: translate(-50%, calc(-40 * var(--size))) rotate3d(75, -3, 2, 70deg);
-  }
-
-  50% {
-    transform: translate(-55%, calc(-50 * var(--size))) rotate3d(75, -8, 3, 50deg);
-  }
-}
-
-@keyframes panex {
-  0% {
-    transform: rotate(-5deg);
-  }
-
   100% {
-    transform: rotate(10deg);
+    opacity: 0;
   }
 }
 
-.loaderpantop {
-  --color-1: #222;
-  --color-2: #333;
-  --color-3: #0003;
-  --color-4: #0002;
-  --color-5: #fff;
-  --color-6: #fff6;
-  --color-7: #ffc400;
-  --color-8: #ffae00;
-  --color-9: #222222;
-  --color-10: #eee2;
-  --size: 1px;
-
-  width: calc(100 * var(--size));
-  height: calc(100 * var(--size));
-  display: block;
-  margin: auto;
-  position: relative;
-  background: var(--color-1);
-  border-radius: 50%;
-  box-sizing: border-box;
-  transform-origin: calc(170 * var(--size)) calc(50 * var(--size));
-  border: calc(4 * var(--size)) solid var(--color-2);
-  box-shadow:
-    calc(3 * var(--size)) calc(4 * var(--size)) var(--color-3) inset,
-    0 0 calc(6 * var(--size)) var(--color-4) inset;
-  animation: panmov 0.4s ease-in-out infinite alternate;
-}
-
-.loaderpantop::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%) skew(-15deg, 15deg) rotate(-15deg);
-  width: calc(55 * var(--size));
-  height: calc(53 * var(--size));
-  background: var(--color-5);
-  background-image:
-    radial-gradient(circle calc(3 * var(--size)), var(--color-6) 90%, transparent 10%),
-    radial-gradient(circle calc(12 * var(--size)), var(--color-7) 90%, transparent 10%),
-    radial-gradient(circle calc(12 * var(--size)), var(--color-8) 100%, transparent 0);
-  background-repeat: no-repeat;
-  background-position:
-    calc(-4 * var(--size)) calc(-6 * var(--size)),
-    calc(-2 * var(--size)) calc(-2 * var(--size)),
-    calc(-1 * var(--size)) calc(-1 * var(--size));
-  box-shadow:
-    calc(-2 * var(--size)) calc(-3 * var(--size)) var(--color-4) inset,
-    0 0 calc(4 * var(--size)) var(--color-3) inset;
-  border-radius: 47% 36% 50% 50% / 49% 45% 42% 44%;
-  animation: ylmov 0.6s ease-in-out infinite alternate;
-}
-
-.loaderpantop::after {
-  content: '';
-  position: absolute;
-  left: 100%;
-  top: calc(48 * var(--size));
-  height: calc(15 * var(--size));
-  width: calc(70 * var(--size));
-  background: var(--color-9);
-  border-radius: 0 calc(8 * var(--size)) calc(8 * var(--size)) 0;
-  box-shadow: calc(3 * var(--size)) 0 calc(3 * var(--size)) var(--color-10) inset;
-  transform: rotate(5deg) translateX(calc(3 * var(--size)));
-}
-
-@keyframes panmov {
-
-  0%,
-  10% {
-    transform: rotate(5deg);
-  }
-
-  90%,
-  100% {
-    transform: rotate(-5deg);
-  }
-}
-
-@keyframes ylmov {
-  to {
-    border-radius: 50% 36% 50% 50% / 49% 50% 45% 45%;
-    background-position:
-      calc(-2 * var(--size)) calc(-4 * var(--size)),
-      calc(2 * var(--size)) calc(2 * var(--size)),
-      calc(1 * var(--size)) calc(1 * var(--size));
+@media (prefers-reduced-motion: reduce) {
+  .pl-dots span {
+    animation-duration: 2.6s;
   }
 }

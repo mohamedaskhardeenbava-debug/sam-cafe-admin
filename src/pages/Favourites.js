@@ -74,7 +74,7 @@ const Favourites = ({ adminData, handleSort, sortConfig }) => {
               </th>
               <th
                 onClick={() => handleSort("price")}
-                className={`${sortConfig.key === "price" ? "sorted" : ""} icon-width`}
+                className={`${sortConfig.key === "price" ? "sorted" : ""}`}
               >
                 <span className="th-content sort-th">
                   <span>Price</span>
@@ -95,7 +95,7 @@ const Favourites = ({ adminData, handleSort, sortConfig }) => {
               sortedFavourites.slice(0, displayLimit).map((dish) => (
                 <tr key={dish.id}>
                   <td
-                    className="clickable"
+                    className="clickable icon-width"
                     onClick={() => navigate(`/favourites/${dish.id}`)}
                   >
                     <div className="favourites-image">

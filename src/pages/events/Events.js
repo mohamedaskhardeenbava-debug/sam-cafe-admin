@@ -702,12 +702,12 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
             </div>
             <table className="ae-sdt">
               <thead>
-                <tr><th>#</th><th>Dish</th><th>Category</th><th>Qty (guests)</th><th>Price</th><th></th></tr>
+                <tr><th className="icon-width">#</th><th>Dish</th><th>Category</th><th>Qty (guests)</th><th>Price</th><th></th></tr>
               </thead>
               <tbody>
                 {selectedDetails.map((d, i) => (
                   <tr key={d.id}>
-                    <td>{i + 1}</td>
+                    <td className="icon-width">{i + 1}</td>
                     <td><div className="ae-sdt-dish"><span>{d.name}</span></div></td>
                     <td className="ae-sdt-cat">{d.subCat || d.cat || "—"}</td>
                     <td style={{ textAlign: "center" }}>{effectiveQty(d.id)}</td>
