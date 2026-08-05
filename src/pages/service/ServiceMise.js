@@ -9,8 +9,11 @@ import { exportToExcel } from "../../utils/excelUtils";
 import api from "../../api";
 
 import { getTodayKey, getTodayFormatted } from "../../App";
+import { EmptyRow } from "../../App";
 import { useToast } from "../../useToast";
+import { allowTextInput } from "../../App";
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 import { MultiPillGroup } from "../../components/FilterBar";
 
 import "./ServiceMise.css";
@@ -40,6 +43,7 @@ export default function ServiceMise({ adminData, setAdminData }) {
   const tasks = adminData.tasks?.service || {};
 
   const [miseSearch, setMiseSearch] = useState("");
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [sectionFilters, setSectionFilters] = useState(new Set());
   const toggleSet = (setter, val) =>
     setter(prev => { const next = new Set(prev); next.has(val) ? next.delete(val) : next.add(val); return next; });
@@ -109,9 +113,25 @@ export default function ServiceMise({ adminData, setAdminData }) {
 
       {/* HEADER */}
       <div className="header">
-        <div >
-          <h2 className="title">Service Mise en Place & Cleaning</h2>
-          <span className="subtitle">{todayFmt}</span>
+        <div className="header-title-row">
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Service Mise en Place & Cleaning</h2>
+              <span className="result-count">{allTasks.length} task(s)</span>
+            </div>
+            <span className="subtitle">{todayFmt}</span>
+          </div>
         </div>
         <div className="header-btn-container">
           <div className="service-mise-stat-badge service-mise-stat-assigned">
@@ -126,38 +146,42 @@ export default function ServiceMise({ adminData, setAdminData }) {
         </div>
       </div>
 
-      {/* PROGRESS BAR */}
-      <div className="service-mise-progress-wrap">
-        <div
-          className="service-mise-progress-bar"
-          style={{ width: allTasks.length ? `${Math.round((verifiedCnt / allTasks.length) * 100)}%` : "0%" }}
-        />
-      </div>
+      {!headerCollapsed && (
+        <>
+          {/* PROGRESS BAR */}
+          <div className="service-mise-progress-wrap">
+            <div
+              className="service-mise-progress-bar"
+              style={{ width: allTasks.length ? `${Math.round((verifiedCnt / allTasks.length) * 100)}%` : "0%" }}
+            />
+          </div>
 
-      {/* FILTER BAR */}
-      <div className="filter-bar">
-        <div className="filter-group">
-          <input
-            className="search-input"
-            placeholder=" Search tasks…"
-            value={miseSearch}
-            onChange={e => setMiseSearch(e.target.value)}
-          />
-          <MultiPillGroup
-            options={Object.keys(tasks).map(s => [s, SECTION_META[s]?.label || s])}
-            value={sectionFilters}
-            onToggle={(key) => toggleSet(setSectionFilters, key)}
-            label="Section"
-          />
-          {(miseSearch || sectionFilters.size > 0) && (
-            <button className="ae-clear-filter"
-              onClick={() => { setMiseSearch(""); setSectionFilters(new Set()); }}>Clear</button>
-          )}
-        </div>
-      </div>
+          {/* FILTER BAR */}
+          <div className="filter-bar">
+            <div className="filter-group">
+              <input
+                className="search-input"
+                placeholder=" Search tasks…"
+                value={miseSearch}
+                onChange={e => setMiseSearch(allowTextInput(miseSearch, e.target.value, 100, 5))}
+              />
+              <MultiPillGroup
+                options={Object.keys(tasks).map(s => [s, SECTION_META[s]?.label || s])}
+                value={sectionFilters}
+                onToggle={(key) => toggleSet(setSectionFilters, key)}
+                label="Section"
+              />
+              {(miseSearch || sectionFilters.size > 0) && (
+                <button className="ae-clear-filter"
+                  onClick={() => { setMiseSearch(""); setSectionFilters(new Set()); }}>Clear</button>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* UNIFIED TABLE */}
-      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 265px)" }} >
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 265px)" }} >
         <table >
           <thead>
             <tr>
@@ -168,8 +192,11 @@ export default function ServiceMise({ adminData, setAdminData }) {
             </tr>
           </thead>
           <tbody>
-            {Object.entries(filteredTasks).map(([sec, items]) => (
-              <React.Fragment key={sec}>
+            {Object.keys(filteredTasks).length === 0 ? (
+              <EmptyRow colSpan={4} message="No tasks available" />
+            ) : (
+              Object.entries(filteredTasks).map(([sec, items]) => (
+                <React.Fragment key={sec}>
                 <tr className="mise-section-row">
                   <td colSpan="4">
                     <span className="mise-section-icon">{SECTION_META[sec]?.icon}</span>
@@ -208,7 +235,8 @@ export default function ServiceMise({ adminData, setAdminData }) {
                   );
                 })}
               </React.Fragment>
-            ))}
+            ))
+            )}
           </tbody>
         </table>
       </div>

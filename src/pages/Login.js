@@ -1,70 +1,82 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import Button3D from "../components/Button3D";
+import AuthPasswordField from "./AuthPasswordField";
+import AuthShell from "./AuthShell";
 import "./Login.css";
 
-const ADMIN_EMAIL = "admin@samcafe.com";
-const ADMIN_PASSWORD = "admin123";
-
-const Login = ({ onLogin }) => {
+const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(false);
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      onLogin();
+    setError("");
+    setIsSubmitting(true);
+    try {
+      await login(email, password);
       navigate("/", { replace: true });
-    } else {
-      setError(true);
+    } catch (err) {
+      setError(err.response?.data?.error || "Invalid email or password");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="login-container">
-      <form className="login-card" onSubmit={handleSubmit}>
-        <h2>Admin Login</h2>
+    <AuthShell title="Welcome back!">
+      <div className="auth-tabs">
+        <button type="button" className="auth-tab" onClick={() => navigate("/signup")}>
+          SIGN UP
+        </button>
+        <button type="button" className="auth-tab active">
+          LOG IN
+        </button>
+      </div>
 
-        <div className="username-section">
-          <label>Username</label>
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <div className="mat">
           <input
+            className={`mat-input${error ? " auth-input-error" : ""}`}
             type="email"
-            placeholder="Enter username"
+            placeholder=" "
             value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              setError(false);
-            }}
+            onChange={(e) => { setEmail(e.target.value); setError(""); }}
             required
+            autoComplete="username"
           />
+          <label className="mat-label">Email</label>
+          <span className="mat-bar" />
         </div>
 
-        <div className="password-section">
-          <label>Password</label>
-          <input
-            type="password"
-            placeholder="Enter password"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              setError(false);
-            }}
-            required
-          />
+        <AuthPasswordField
+          label="Password"
+          value={password}
+          onChange={(e) => { setPassword(e.target.value); setError(""); }}
+          autoComplete="current-password"
+          hasError={!!error}
+        />
+
+        <Link className="auth-forgot" to="/forgot-password">Forgot Password?</Link>
+
+        <div className="auth-submit-row">
+          <Button3D type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Logging in..." : "Log In"}
+          </Button3D>
         </div>
-
-        <p className="forgot">Forgot Password?</p>
-
-        {error && <p className="error-text">Invalid username or password</p>}
-
-        <button type="submit">Login</button>
       </form>
-    </div>
+
+      <p className="auth-switch-hint">
+        Don't have an account? <Link to="/signup">Create one</Link>
+      </p>
+    </AuthShell>
   );
 };
 
 export default Login;
-

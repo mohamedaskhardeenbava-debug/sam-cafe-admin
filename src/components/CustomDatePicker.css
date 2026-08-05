@@ -75,11 +75,10 @@
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.45);
-    z-index: 998;
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: cdpOverlayFadeIn 0.18s ease;
+    z-index: 999;
 }
 
 @keyframes cdpOverlayFadeIn {
@@ -279,4 +278,47 @@
     background: #111;
     color: #fff;
     border-color: #111;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 578px) {
+    .cdp-popup {
+        width: min(280px, 88vw);
+        height: auto;
+    }
+
+    .cdp-wrap,
+    .cdp-trigger {
+        width: 100%;
+    }
+
+    .cdp-day {
+        width: 30px;
+        height: 30px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .cdp-trigger {
+        padding: 0 10px;
+        font-size: 12px;
+    }
+
+    .cdp-popup {
+        width: 72vw;
+        padding: 12px;
+    }
+
+    .cdp-day {
+        width: 26px;
+        height: 26px;
+        font-size: 11px;
+    }
+
+    .cdp-year-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }

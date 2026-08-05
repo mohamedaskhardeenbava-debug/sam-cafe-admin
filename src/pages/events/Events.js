@@ -13,13 +13,15 @@ import { todayStr } from "../../utils/dateRangeUtils";
 
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
+import { allowTextInput } from "../../App";
+import { EmptyState } from "../../App";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 
 import "./Events.css";
 import "../ModalCSS.css";
-import PageLoader from "../../components/PageLoader";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const generateId = (name) =>
@@ -181,6 +183,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
 
 
   const [showForm, setShowForm] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [showSpecForm, setShowSpecForm] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSpecEditMode, setIsSpecEditMode] = useState(false);
@@ -332,7 +335,6 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
 
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
-  if (!adminData?.events?.length) return <PageLoader label="Loading events…" />;
 
   const resetForm = () => {
     setShowForm(false);
@@ -701,12 +703,12 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
             </div>
             <table className="ae-sdt">
               <thead>
-                <tr><th>#</th><th>Dish</th><th>Category</th><th>Qty (guests)</th><th>Price</th><th></th></tr>
+                <tr><th className="icon-width">#</th><th>Dish</th><th>Category</th><th>Qty (guests)</th><th>Price</th><th></th></tr>
               </thead>
               <tbody>
                 {selectedDetails.map((d, i) => (
                   <tr key={d.id}>
-                    <td>{i + 1}</td>
+                    <td className="icon-width">{i + 1}</td>
                     <td><div className="ae-sdt-dish"><span>{d.name}</span></div></td>
                     <td className="ae-sdt-cat">{d.subCat || d.cat || "—"}</td>
                     <td style={{ textAlign: "center" }}>{effectiveQty(d.id)}</td>
@@ -742,12 +744,32 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
   );
 
   return (
-    <div className="inner-page">
+    <div className="inner-page evt-page">
       {/* PAGE HEADER */}
       <div className="evt-header">
-        <div>
-          <h2 className="evt-title">Events</h2>
-          <p className="evt-subtitle">Manage restaurant events &amp; track bookings</p>
+        <div className="header-title-row">
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="evt-title">Events</h2>
+              <span className="result-count">
+                {activeTab === "events"
+                  ? `${filteredEvents.length} event(s)`
+                  : `${filteredBookings.length} result(s)`}
+              </span>
+            </div>
+            <p className="evt-subtitle">Manage restaurant events &amp; track bookings</p>
+          </div>
         </div>
         <div className="ae-header-actions">
           <div className="ae-tab-pills">
@@ -772,82 +794,81 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
       {activeTab === "events" && (
         <>
           {/* EVENTS FILTER BAR */}
-          <div className="filter-bar">
-            <div className="ae-events-filter-top">
-              <input
-                className="search-input"
-                placeholder=" Search title, venue, type…"
-                value={evtSearch}
-                onChange={e => setEvtSearch(e.target.value)}
-              />
-              <Button3D onClick={exportEvents}>Export</Button3D>
+          {!headerCollapsed && (
+            <div className="filter-bar">
+              <div className="ae-events-filter-top">
+                <input
+                  className="search-input"
+                  placeholder=" Search title, venue, type…"
+                  value={evtSearch}
+                  onChange={e => setEvtSearch(allowTextInput(evtSearch, e.target.value, 100, 5))}
+                />
+                <Button3D onClick={exportEvents}>Export</Button3D>
+              </div>
+              <div className="filter-groups">
+                {/* Status */}
+                <MultiPillGroup
+                  label="Status"
+                  labelClass="ae-filter-group-label"
+                  options={[
+                    ["upcoming", "Upcoming"],
+                    ["ongoing", "Ongoing"],
+                    ["completed", "Completed"],
+                    ["cancelled", "Cancelled"],
+                  ]}
+                  value={evtFilterStatuses}
+                  onToggle={(key) => toggleSet(setEvtFilterStatuses, key)}
+                />
+                {/* Date quick presets + range */}
+                <DateRangeGroup
+                  from={evtFromDate}
+                  to={evtToDate}
+                  onChangeFrom={setEvtFromDate}
+                  onChangeTo={setEvtToDate}
+                  preset={evtDatePreset}
+                  onChangePreset={setEvtDatePreset}
+                  presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
+                  labelClass="ae-filter-group-label"
+                  noMax
+                />
+                {/* Type */}
+                <MultiPillGroup
+                  label="Type"
+                  labelClass="ae-filter-group-label"
+                  options={[
+                    ["dining", "Dining"],
+                    ["special", "Special"],
+                    ["private", "Private"],
+                    ["seasonal", "Seasonal"],
+                    ["live", "Live"],
+                    ["workshop", "Workshop"],
+                  ]}
+                  value={evtFilterTypes}
+                  onToggle={(key) => toggleSet(setEvtFilterTypes, key)}
+                />
+                {/* Publish */}
+                <MultiPillGroup
+                  label="Publish"
+                  labelClass="ae-filter-group-label"
+                  options={[["live", "Live"], ["draft", "Draft"]]}
+                  value={evtFilterPublish}
+                  onToggle={(key) => toggleSet(setEvtFilterPublish, key)}
+                />
+                {/* Clear + count */}
+                {(evtSearch || evtFilterStatuses.size > 0 || evtFilterTypes.size > 0 || evtFilterPublish.size > 0 || evtFromDate || evtToDate) && (
+                  <button className="ae-clear-filter" onClick={() => {
+                    setEvtSearch(""); setEvtFilterStatuses(new Set());
+                    setEvtFilterTypes(new Set()); setEvtFilterPublish(new Set());
+                    setEvtFromDate(""); setEvtToDate(""); setEvtDatePreset("");
+                  }}>Clear</button>
+                )}
+              </div>
             </div>
-            <div className="filter-groups">
-              {/* Status */}
-              <MultiPillGroup
-                label="Status"
-                labelClass="ae-filter-group-label"
-                options={[
-                  ["upcoming", "Upcoming"],
-                  ["ongoing", "Ongoing"],
-                  ["completed", "Completed"],
-                  ["cancelled", "Cancelled"],
-                ]}
-                value={evtFilterStatuses}
-                onToggle={(key) => toggleSet(setEvtFilterStatuses, key)}
-              />
-              {/* Date quick presets + range */}
-              <DateRangeGroup
-                from={evtFromDate}
-                to={evtToDate}
-                onChangeFrom={setEvtFromDate}
-                onChangeTo={setEvtToDate}
-                preset={evtDatePreset}
-                onChangePreset={setEvtDatePreset}
-                presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
-                labelClass="ae-filter-group-label"
-                noMax
-              />
-              {/* Type */}
-              <MultiPillGroup
-                label="Type"
-                labelClass="ae-filter-group-label"
-                options={[
-                  ["dining", "Dining"],
-                  ["special", "Special"],
-                  ["private", "Private"],
-                  ["seasonal", "Seasonal"],
-                  ["live", "Live"],
-                  ["workshop", "Workshop"],
-                ]}
-                value={evtFilterTypes}
-                onToggle={(key) => toggleSet(setEvtFilterTypes, key)}
-              />
-              {/* Publish */}
-              <MultiPillGroup
-                label="Publish"
-                labelClass="ae-filter-group-label"
-                options={[["live", "Live"], ["draft", "Draft"]]}
-                value={evtFilterPublish}
-                onToggle={(key) => toggleSet(setEvtFilterPublish, key)}
-              />
-              {/* Clear + count */}
-              {(evtSearch || evtFilterStatuses.size > 0 || evtFilterTypes.size > 0 || evtFilterPublish.size > 0 || evtFromDate || evtToDate) && (
-                <button className="ae-clear-filter" onClick={() => {
-                  setEvtSearch(""); setEvtFilterStatuses(new Set());
-                  setEvtFilterTypes(new Set()); setEvtFilterPublish(new Set());
-                  setEvtFromDate(""); setEvtToDate(""); setEvtDatePreset("");
-                }}>Clear</button>
-              )}
-              <span className="result-count">{filteredEvents.length} event(s)</span>
-            </div>
-          </div>
+          )}
 
           <div className="ae-events-scroll">
             {filteredEvents.length === 0 ? (
-              <div className="ae-empty-state">
-                <p>{events.length === 0 ? "No events yet. Create your first event!" : "No events match the current filters."}</p>
-              </div>
+              <EmptyState message={events.length === 0 ? "No events yet. Create your first event!" : "No events match the current filters."} />
             ) : (
               <div className="ae-events-grid">
                 {filteredEvents.map((evt) => {
@@ -935,63 +956,64 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
       {/* BOOKINGS TAB */}
       {activeTab === "bookings" && (
         <div className="admin-events-page">
-          <div className="filter-bar">
-            <div className="ae-events-filter-top">
-              <input type="text" placeholder="Search by name, email or phone…" className="search-input" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          {!headerCollapsed && (
+            <div className="filter-bar">
+              <div className="ae-events-filter-top">
+                <input type="text" placeholder="Search by name, email or phone…" className="search-input" value={searchQuery} onChange={(e) => setSearchQuery(allowTextInput(searchQuery, e.target.value, 100, 5))} />
 
-              <Button3D onClick={exportBookings} style={{ marginLeft: "auto" }}>Export</Button3D>
+                <Button3D onClick={exportBookings} style={{ marginLeft: "auto" }}>Export</Button3D>
 
-              <DateRangeGroup
-                from={filterFromDate}
-                to={filterToDate}
-                onChangeFrom={setFilterFromDate}
-                onChangeTo={setFilterToDate}
-                preset={bookingsDatePreset}
-                onChangePreset={setBookingsDatePreset}
-                presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
-                periodLabel="period"
-                showPresets
-                noMax
-              />
-            </div>
-
-            <div className="filter-groups">
-              <div className="filter-group">
-                <span className="filter-group-label">Event</span>
-                <CustomDropdown
-                  value={filterEventId}
-                  onChange={setFilterEventId}
-                  options={[
-                    { value: "all", label: "All Events" },
-                    ...events.map(e => ({ value: e.id, label: e.title })),
-                  ]}
+                <DateRangeGroup
+                  from={filterFromDate}
+                  to={filterToDate}
+                  onChangeFrom={setFilterFromDate}
+                  onChangeTo={setFilterToDate}
+                  preset={bookingsDatePreset}
+                  onChangePreset={setBookingsDatePreset}
+                  presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
+                  periodLabel="period"
+                  showPresets
+                  noMax
                 />
               </div>
 
-              {/* Status pills */}
-              <MultiPillGroup
-                label="Status"
-                options={[
-                  ["pending", "P", "clb-status-pending", "Pending"],
-                  ["confirmed", "C", "clb-status-confirmed", "Confirmed"],
-                  ["cancelled", "X", "clb-status-cancelled", "Cancelled"],
-                ]}
-                value={filterStatuses}
-                onToggle={(key) => toggleSet(setFilterStatuses, key)}
-              />
+              <div className="filter-groups">
+                <div className="filter-group">
+                  <span className="filter-group-label">Event</span>
+                  <CustomDropdown
+                    value={filterEventId}
+                    onChange={setFilterEventId}
+                    options={[
+                      { value: "all", label: "All Events" },
+                      ...events.map(e => ({ value: e.id, label: e.title })),
+                    ]}
+                  />
+                </div>
 
-              {(filterEventId !== "all" || filterStatuses.size > 0 || searchQuery || filterFromDate || filterToDate) && (
-                <button className="evt-clb-clear-btn" onClick={() => {
-                  setFilterEventId("all"); setFilterStatuses(new Set());
-                  setSearchQuery(""); setFilterFromDate(""); setFilterToDate("");
-                }}>Clear</button>
-              )}
-              <span className="ae-result-count">{filteredBookings.length} result(s)</span>
+                {/* Status pills */}
+                <MultiPillGroup
+                  label="Status"
+                  options={[
+                    ["pending", "P", "clb-status-pending", "Pending"],
+                    ["confirmed", "C", "clb-status-confirmed", "Confirmed"],
+                    ["cancelled", "X", "clb-status-cancelled", "Cancelled"],
+                  ]}
+                  value={filterStatuses}
+                  onToggle={(key) => toggleSet(setFilterStatuses, key)}
+                />
 
+                {(filterEventId !== "all" || filterStatuses.size > 0 || searchQuery || filterFromDate || filterToDate) && (
+                  <button className="evt-clb-clear-btn" onClick={() => {
+                    setFilterEventId("all"); setFilterStatuses(new Set());
+                    setSearchQuery(""); setFilterFromDate(""); setFilterToDate("");
+                  }}>Clear</button>
+                )}
+
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="table-wrapper">
+          <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 340px)" }}>
             {filteredBookings.length === 0 ? (
               <div className="ae-empty-state"><p>No bookings found.</p></div>
             ) : (
@@ -1111,7 +1133,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                 <>
                   <div className="admin-form-group">
                     <div className="mat">
-                      <input className={`mat-input${formErrors.title ? " mat-error" : ""}`} type="text" value={formData.title} onChange={(e) => { setFormData((p) => ({ ...p, title: e.target.value })); setFormErrors(p => ({ ...p, title: false })); }} placeholder=" " />
+                      <input className={`mat-input${formErrors.title ? " mat-error" : ""}`} type="text" value={formData.title} onChange={(e) => { setFormData((p) => ({ ...p, title: allowTextInput(p.title, e.target.value, 100, 5) })); setFormErrors(p => ({ ...p, title: false })); }} placeholder=" " />
                       <label className={`mat-label${formErrors.title ? " mat-label-error" : ""}`}>Event Title <span className="rf-req">*</span></label>
                       <span className={`mat-bar${formErrors.title ? " mat-bar-error" : ""}`} />
                     </div>
@@ -1196,7 +1218,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                         Custom
                       </label>
                     </div>
-                    <textarea className={`ae-venue-textarea${formErrors.venue ? " mat-error" : ""}`} rows={3} value={formData.venue} disabled={formData.venueMode === "restaurant"} onChange={(e) => { setFormData(p => ({ ...p, venue: e.target.value })); setFormErrors(p => ({ ...p, venue: false })); }} placeholder="Enter full venue address…" />
+                    <textarea className={`ae-venue-textarea${formErrors.venue ? " mat-error" : ""}`} rows={3} value={formData.venue} disabled={formData.venueMode === "restaurant"} onChange={(e) => { setFormData(p => ({ ...p, venue: allowTextInput(p.venue, e.target.value, 500, 100000) })); setFormErrors(p => ({ ...p, venue: false })); }} placeholder="Enter full venue address…" />
                   </div>
 
                   <div className="ae-form-row">
@@ -1223,7 +1245,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                 <>
                   <div className="admin-form-group">
                     <div className="mat-area">
-                      <textarea className={`mat-input${formErrors.description ? " mat-error" : ""}`} value={formData.description} rows={3} onChange={(e) => { setFormData((p) => ({ ...p, description: e.target.value })); setFormErrors(p => ({ ...p, description: false })); }} placeholder=" " style={{ height: "auto", paddingTop: 4 }} />
+                      <textarea className={`mat-input${formErrors.description ? " mat-error" : ""}`} value={formData.description} rows={3} onChange={(e) => { setFormData((p) => ({ ...p, description: allowTextInput(p.description, e.target.value, 500, 100000) })); setFormErrors(p => ({ ...p, description: false })); }} placeholder=" " style={{ height: "auto", paddingTop: 4 }} />
                       <label className={`mat-area-label${formErrors.description ? " mat-label-error" : ""}`}>Description <span className="rf-req">*</span></label>
                       <span className={`mat-area-bar${formErrors.description ? " mat-bar-error" : ""}`} />
                     </div>
@@ -1238,7 +1260,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                     <label>Tags</label>
                     <div className="ae-tag-input-row">
                       <div className="mat" style={{ flex: 1 }}>
-                        <input className="mat-input" type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder=" " onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (!tagInput.trim()) return; setFormData((p) => ({ ...p, tags: [...(p.tags || []), tagInput.trim()] })); setTagInput(""); } }} />
+                        <input className="mat-input" type="text" value={tagInput} onChange={(e) => setTagInput(allowTextInput(tagInput, e.target.value, 100, 5))} placeholder=" " onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (!tagInput.trim()) return; setFormData((p) => ({ ...p, tags: [...(p.tags || []), tagInput.trim()] })); setTagInput(""); } }} />
                         <label className="mat-label">Add a tag…</label>
                         <span className="mat-bar" />
                       </div>
@@ -1259,7 +1281,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                     <label>Event Highlights</label>
                     <div className="ae-tag-input-row">
                       <div className="mat" style={{ flex: 1 }}>
-                        <input className="mat-input" type="text" value={highlightInput} onChange={(e) => setHighlightInput(e.target.value)} placeholder=" " onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (!highlightInput.trim()) return; setFormData((p) => ({ ...p, highlights: [...(p.highlights || []), highlightInput.trim()] })); setHighlightInput(""); } }} />
+                        <input className="mat-input" type="text" value={highlightInput} onChange={(e) => setHighlightInput(allowTextInput(highlightInput, e.target.value, 100, 5))} placeholder=" " onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (!highlightInput.trim()) return; setFormData((p) => ({ ...p, highlights: [...(p.highlights || []), highlightInput.trim()] })); setHighlightInput(""); } }} />
                         <label className="mat-label">e.g. Live music, Buffet included…</label>
                         <span className="mat-bar" />
                       </div>
@@ -1364,7 +1386,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                 <>
                   <div className="admin-form-group">
                     <div className="mat">
-                      <input className={`mat-input${specFormErrors.title ? " mat-error" : ""}`} type="text" value={specFormData.title} onChange={(e) => { setSpecFormData(p => ({ ...p, title: e.target.value })); setSpecFormErrors(p => ({ ...p, title: false })); }} placeholder=" " />
+                      <input className={`mat-input${specFormErrors.title ? " mat-error" : ""}`} type="text" value={specFormData.title} onChange={(e) => { setSpecFormData(p => ({ ...p, title: allowTextInput(p.title, e.target.value, 100, 5) })); setSpecFormErrors(p => ({ ...p, title: false })); }} placeholder=" " />
                       <label className={`mat-label${specFormErrors.title ? " mat-label-error" : ""}`}>Event Title <span className="rf-req">*</span></label>
                       <span className={`mat-bar${specFormErrors.title ? " mat-bar-error" : ""}`} />
                     </div>
@@ -1453,7 +1475,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                                 if (useRestaurantAddrSpec) return;
                                 const v = field.key === "addrPincode"
                                   ? e.target.value.replace(/\D/g, "").slice(0, 6)
-                                  : e.target.value;
+                                  : allowTextInput(specFormData[field.key], e.target.value, 100, 5);
                                 setSpecFormData(p => ({ ...p, [field.key]: v, venue: buildAddress({ ...p, [field.key]: v }) }));
                                 setSpecFormErrors(p => ({ ...p, [field.key]: false }));
                               }}
@@ -1493,7 +1515,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
 
                   <div className="admin-form-group">
                     <div className="mat-area">
-                      <textarea className="mat-input" value={specFormData.description} rows={3} onChange={(e) => setSpecFormData(p => ({ ...p, description: e.target.value }))} placeholder=" " style={{ height: "auto", paddingTop: 4 }} />
+                      <textarea className="mat-input" value={specFormData.description} rows={3} onChange={(e) => setSpecFormData(p => ({ ...p, description: allowTextInput(p.description, e.target.value, 500, 100000) }))} placeholder=" " style={{ height: "auto", paddingTop: 4 }} />
                       <label className="mat-area-label">Description</label>
                       <span className="mat-area-bar" />
                     </div>
@@ -1508,7 +1530,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                     <label>Tags</label>
                     <div className="ae-tag-input-row">
                       <div className="mat" style={{ flex: 1 }}>
-                        <input className="mat-input" type="text" value={specTagInput} onChange={(e) => setSpecTagInput(e.target.value)} placeholder=" " onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (!specTagInput.trim()) return; setSpecFormData(p => ({ ...p, tags: [...(p.tags || []), specTagInput.trim()] })); setSpecTagInput(""); } }} />
+                        <input className="mat-input" type="text" value={specTagInput} onChange={(e) => setSpecTagInput(allowTextInput(specTagInput, e.target.value, 100, 5))} placeholder=" " onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (!specTagInput.trim()) return; setSpecFormData(p => ({ ...p, tags: [...(p.tags || []), specTagInput.trim()] })); setSpecTagInput(""); } }} />
                         <label className="mat-label">Add a tag…</label>
                         <span className="mat-bar" />
                       </div>
@@ -1529,7 +1551,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                     <label>Event Highlights</label>
                     <div className="ae-tag-input-row">
                       <div className="mat" style={{ flex: 1 }}>
-                        <input className="mat-input" type="text" value={specHighlightInput} onChange={(e) => setSpecHighlightInput(e.target.value)} placeholder=" " onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (!specHighlightInput.trim()) return; setSpecFormData(p => ({ ...p, highlights: [...(p.highlights || []), specHighlightInput.trim()] })); setSpecHighlightInput(""); } }} />
+                        <input className="mat-input" type="text" value={specHighlightInput} onChange={(e) => setSpecHighlightInput(allowTextInput(specHighlightInput, e.target.value, 100, 5))} placeholder=" " onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (!specHighlightInput.trim()) return; setSpecFormData(p => ({ ...p, highlights: [...(p.highlights || []), specHighlightInput.trim()] })); setSpecHighlightInput(""); } }} />
                         <label className="mat-label">e.g. Candlelight setup…</label>
                         <span className="mat-bar" />
                       </div>
@@ -1756,7 +1778,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                     </div>
                     <div className="ae-detail-section">
                       <h4>Guest Information</h4>
-                      <table className="ae-detail-table">
+                      <table className="data-table">
                         <tbody>
                           <tr><td>Name</td><td>{b.name}</td></tr>
                           <tr><td>Email</td><td>{b.email}</td></tr>
@@ -1796,7 +1818,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
 
                     <div className="ae-detail-section">
                       <h4>Booking Info</h4>
-                      <table className="ae-detail-table">
+                      <table className="data-table">
                         <tbody>
                           <tr><td>Booking ID</td><td className="ae-mono">{b.id}</td></tr>
                           <tr><td>Booked On</td><td>{formatDate(b.bookedAt)}</td></tr>

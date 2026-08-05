@@ -30,7 +30,48 @@
  * Pass placeholder={null} to suppress the clear row entirely.
  */
 
-import React, { useRef, useState, useEffect } from "react";
+/**
+ * CustomDropdown
+ * A single, canonical floating-label dropdown used across the entire admin panel.
+ *
+ * USAGE
+ * -----
+ * import CustomDropdown from "../components/CustomDropdown";
+ *
+ * <CustomDropdown
+ *   label="Status"          // floating label (optional)
+ *   required                // adds red asterisk (optional)
+ *   value={form.status}
+ *   onChange={val => setForm(p => ({ ...p, status: val }))}
+ *   options={[
+ *     { value: "active",   label: "Active"   },
+ *     { value: "inactive", label: "Inactive" },
+ *   ]}
+ *   placeholder="Select status"   // shown as first "clear" item (default: "Select…")
+ * />
+ *
+ * OPTIONS FORMAT
+ * --------------
+ * Accepts either:
+ *   - { value, label }  objects  (preferred)
+ *   - plain strings              (value === label)
+ *
+ * CLEARING
+ * --------
+ * Clicking the placeholder row calls onChange(""), clearing the selection.
+ * Pass placeholder={null} to suppress the clear row entirely.
+ *
+ * OVERLAY BEHAVIOR
+ * -----------------
+ * Mirrors CustomDatePicker: the option list opens as a centered overlay
+ * (dimmed backdrop + popup card) rather than an inline absolute-positioned
+ * menu. Selecting an option — or clicking the clear/placeholder row —
+ * closes it, same as picking a date closes the date picker. Clicking the
+ * backdrop itself also dismisses it (no selection made), matching the
+ * date picker's outside-click-to-cancel behavior.
+ */
+
+import React, { useRef, useState } from "react";
 
 const CustomDropdown = ({
   value,
@@ -45,15 +86,6 @@ const CustomDropdown = ({
 }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-
-  /* Close on outside click */
-  useEffect(() => {
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
 
   /* Resolve display label from current value */
   const resolveOption = (v) =>
@@ -102,35 +134,42 @@ const CustomDropdown = ({
         </button>
 
         {open && (
-          <div className="dishes-dropdown-menu">
-            {/* Clear / placeholder row */}
-            {placeholder !== null && (
-              <div
-                onClick={() => {
-                  onChange("");
-                  setOpen(false);
-                }}
-              >
-                {placeholder}
-              </div>
-            )}
+          <div className="dishes-dropdown-overlay">
+            <div className="dishes-dropdown-menu" onMouseDown={(e) => e.stopPropagation()}>
+              {label && <div className="dishes-dropdown-menu-title">{label}</div>}
 
-            {options.map((o, i) => {
-              const val = o.value !== undefined ? o.value : o;
-              const lbl = o.label !== undefined ? o.label : o;
-              return (
-                <div
-                  key={i}
-                  className={val === value ? "dropdown-item-active" : ""}
-                  onClick={() => {
-                    onChange(val);
-                    setOpen(false);
-                  }}
-                >
-                  {lbl}
-                </div>
-              );
-            })}
+              <div className="dishes-dropdown-menu-options">
+                {/* Clear / placeholder row */}
+                {placeholder !== null && (
+                  <div
+                    className={`dishes-dropdown-menu-option dishes-dropdown-menu-option-placeholder${!selected ? " dishes-dropdown-menu-option-sel" : ""}`}
+                    onClick={() => {
+                      onChange("");
+                      setOpen(false);
+                    }}
+                  >
+                    {placeholder}
+                  </div>
+                )}
+
+                {options.map((o, i) => {
+                  const val = o.value !== undefined ? o.value : o;
+                  const lbl = o.label !== undefined ? o.label : o;
+                  return (
+                    <div
+                      key={i}
+                      className={`dishes-dropdown-menu-option${val === value ? " dishes-dropdown-menu-option-sel" : ""}`}
+                      onClick={() => {
+                        onChange(val);
+                        setOpen(false);
+                      }}
+                    >
+                      {lbl}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
       </div>

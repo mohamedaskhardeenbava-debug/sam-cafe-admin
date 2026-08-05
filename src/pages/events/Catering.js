@@ -15,17 +15,20 @@ import { todayStr, tomorrowStr } from "../../utils/dateRangeUtils";
 
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
+import { allowTextInput } from "../../App";
+import { EmptyRow, EmptyState } from "../../App";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 import Button3D from "../../components/Button3D";
+import { useVenue } from "../../context/VenueContext";
+import CollapseChevron from "../../components/CollapseChevron";
 import CustomDropdown from "../../components/CustomDropdown";
 
 import "./Catering.css";
 import "./PreviewModal.css";
 import "../ModalCSS.css";
 import "./EvtCommon.css";
-import PageLoader from "../../components/PageLoader";
 
 /* ─── helpers ─── */
 const pad = (n) => String(n).padStart(2, "0");
@@ -162,7 +165,7 @@ const DishPicker = ({ menuData, selectedItems, setSelectedItems, guests }) => {
       )}
       <div className="act-dish-grid">
         {filteredDishes.length === 0 ? (
-          <div className="act-dish-empty">No dishes in this category</div>
+          <EmptyState message="No dishes in this category" />
         ) : (
           filteredDishes.map(dish => {
             const sel = isSelected(dish.id);
@@ -218,6 +221,7 @@ const EMPTY_FORM = {
 const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilters }) => {
   // ── State & Setup
 
+  const { venueParam } = useVenue();
   const { fromDate: filterFromDate, toDate: filterToDate, preset: filterDatePreset, statuses: filterStatuses, search } = filters;
 
   // ── Helpers
@@ -250,7 +254,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
   const [callTooltipId, setCallTooltipId] = useState(null);
   const [callTooltipPos, setCallTooltipPos] = useState({ top: 0, left: 0 });
   const callWrapRefs = useRef({});
-
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [sortField, setSortField] = useState("createdAt");
   const [sortDir, setSortDir] = useState("desc");
   const handleSort = (field) => {
@@ -263,7 +267,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
 
   useEffect(() => {
     if (showCreate && !menuData) {
-      api.get("/categories").then(res => setMenuData(res.data)).catch(() => setMenuData([]));
+      api.get("/categories", { params: venueParam() }).then(res => setMenuData(res.data)).catch(() => setMenuData([]));
     }
   }, [showCreate]);
 
@@ -308,9 +312,8 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
     return d;
   }, [filteredData, sortField, sortDir]);
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(sortedData.length, 30);
-  if (!adminData?.cateringOrders?.length) return <PageLoader label="Loading catering orders…" />;
 
   const updateStatus = async (e, id, newStatus) => {
     e.stopPropagation();
@@ -485,69 +488,91 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
     <div className="inner-page">
 
       <div className="evt-header">
-        <div>
-          <h2 className="evt-title">Catering Orders</h2>
-          <p className="evt-subtitle">Manage catering & event food orders</p>
-        </div>
-        <div className="evt-kpi-row">
-          {[
-            { label: "Total", val: filteredData.length, color: "#111" },
-            { label: "Pending", val: pendingCount, color: "#ca8a04" },
-            { label: "Confirmed", val: confirmedCount, color: "#16a34a" },
-            { label: "Completed", val: completedCount, color: "#2980b9" },
-            { label: "Cancelled", val: cancelledCount, color: "#dc2626" },
-          ].map((k, i) => (
-            <div key={i} className="evt-kpi" style={{ borderTopColor: k.color }}>
-              <div className="evt-kpi-val" style={{ color: k.color }}>{k.val}</div>
-              <div className="evt-kpi-label">{k.label}</div>
+        <div className="header-title-row">
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="evt-title">Catering Orders</h2>
+              <span className="result-count">{sortedData.length} order{sortedData.length === 1 ? "" : "s"}</span>
             </div>
-          ))}
+            <p className="evt-subtitle">Manage catering & event food orders</p>
+          </div>
         </div>
-        <div className="header-btn-container">
-          <Button3D onClick={handleExport}>Export</Button3D>
-          <Button3D onClick={openCreate}>+ Add Catering Order</Button3D>
-        </div>
+        {!headerCollapsed && (
+          <>
+            <div className="evt-kpi-row">
+              {[
+                { label: "Total", val: filteredData.length, color: "#111" },
+                { label: "Pending", val: pendingCount, color: "#ca8a04" },
+                { label: "Confirmed", val: confirmedCount, color: "#16a34a" },
+                { label: "Completed", val: completedCount, color: "#2980b9" },
+                { label: "Cancelled", val: cancelledCount, color: "#dc2626" },
+              ].map((k, i) => (
+                <div key={i} className="evt-kpi" style={{ borderTopColor: k.color }}>
+                  <div className="evt-kpi-val" style={{ color: k.color }}>{k.val}</div>
+                  <div className="evt-kpi-label">{k.label}</div>
+                </div>
+              ))}
+            </div>
+            <div className="header-btn-container">
+              <Button3D onClick={handleExport}>Export</Button3D>
+              <Button3D onClick={openCreate}>+ Add Catering Order</Button3D>
+            </div>
+          </>
+        )}
       </div>
 
-      <div className="filter-bar">
-        <div className="filter-groups">
-          <input className="search-input" placeholder="Search name / mobile / ID..." value={search} onChange={e => setSearch(e.target.value)} />
-          <DateRangeGroup
-            from={filterFromDate}
-            to={filterToDate}
-            onChangeFrom={setFilterFromDate}
-            onChangeTo={setFilterToDate}
-            preset={filterDatePreset}
-            onChangePreset={setFilterDatePreset}
-            presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
-            activeClass="evt-status-confirmed"
-            noMax
-            showPresets
-          />
-          {(filterFromDate || filterToDate) && (
-            <button className="filter-pill" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
-          )}
-        </div>
-        <div className="filter-groups">
+      {!headerCollapsed && (
+        <div className="filter-bar">
+          <div className="filter-groups">
+            <input className="search-input" placeholder="Search name / mobile / ID..." value={search} onChange={e => setSearch(allowTextInput(search, e.target.value, 100, 5))} />
+            <DateRangeGroup
+              from={filterFromDate}
+              to={filterToDate}
+              onChangeFrom={setFilterFromDate}
+              onChangeTo={setFilterToDate}
+              preset={filterDatePreset}
+              onChangePreset={setFilterDatePreset}
+              presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
+              activeClass="evt-status-confirmed"
+              noMax
+              showPresets
+            />
+            {(filterFromDate || filterToDate) && (
+              <button className="filter-pill" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
+            )}
+          </div>
+          <div className="filter-groups">
 
-          <MultiPillGroup
-            label="Status"
-            options={[
-              ["pending", "P", "clb-status-pending", "Pending"],
-              ["confirmed", "C", "clb-status-confirmed", "Confirmed"],
-              ["completed", "D", "clb-status-completed", "Done"],
-              ["cancelled", "X", "clb-status-cancelled", "Cancelled"],
-            ]}
-            value={filterStatuses}
-            onToggle={(key) => toggleSet(setFilterStatuses, key)}
-          />
-          {activeFilters && (
-            <button className="evt-clb-clear-btn" onClick={onResetFilters}>Clear</button>
-          )}
+            <MultiPillGroup
+              label="Status"
+              options={[
+                ["pending", "P", "clb-status-pending", "Pending"],
+                ["confirmed", "C", "clb-status-confirmed", "Confirmed"],
+                ["completed", "D", "clb-status-completed", "Done"],
+                ["cancelled", "X", "clb-status-cancelled", "Cancelled"],
+              ]}
+              value={filterStatuses}
+              onToggle={(key) => toggleSet(setFilterStatuses, key)}
+            />
+            {activeFilters && (
+              <button className="evt-clb-clear-btn" onClick={onResetFilters}>Clear</button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 300px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 300px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -590,7 +615,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
           </thead>
           <tbody>
             {sortedData.length === 0 ? (
-              <tr><td colSpan="10" className="act-empty">No catering orders found</td></tr>
+              <EmptyRow colSpan={10} message="No catering orders found" />
             ) : (
               sortedData.slice(0, displayLimit).map(item => {
                 const status = item.status || "pending";
@@ -713,6 +738,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
             />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
       {callTooltipId && createPortal(
         (() => {
@@ -802,7 +828,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
 
       {/* Items popup */}
       {itemsPopup && (
-        <div className="ingredient-modal-overlay" onClick={() => setItemsPopup(null)}>
+        <div className="ingredient-modal-overlay">
           <div className="ingredient-modal" style={{ width: 520, maxWidth: "95vw" }} onClick={e => e.stopPropagation()}>
             <div className="ingredient-modal-header">
               <h3>Dishes — {itemsPopup.name} <span style={{ fontSize: 12, fontWeight: 400, color: "#888", marginLeft: 8 }}>#{(itemsPopup.id || "").slice(-6)}</span></h3>
@@ -847,7 +873,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
 
       {/* ══ CREATE MODAL ══ */}
       {showCreate && (
-        <div className="event-modal-overlay" onClick={() => setShowCreate(false)}>
+        <div className="event-modal-overlay">
           <div className="event-modal act-modal" onClick={e => e.stopPropagation()}>
 
             <div className="admin-modal-header">
@@ -883,7 +909,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                     <div className="admin-form-group" style={{ flex: 1.4 }}>
                       <div className="mat">
                         <input className={`mat-input${formErrors.name ? " mat-error" : ""}`} placeholder=" "
-                          value={form.name} onChange={e => setF("name", e.target.value)} />
+                          value={form.name} onChange={e => setF("name", allowTextInput(form.name, e.target.value, 100, 5))} />
                         <label className={`mat-label${formErrors.name ? " mat-label-error" : ""}`}>Name <span className="evt-res-req">*</span></label>
                         <span className={`mat-bar${formErrors.name ? " mat-bar-error" : ""}`} />
                       </div>
@@ -909,7 +935,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                     </div>
                     <div className="admin-form-group" style={{ flex: 1 }}>
                       <div className="mat">
-                        <input className="mat-input" placeholder=" " value={form.email} onChange={e => setF("email", e.target.value)} />
+                        <input className="mat-input" placeholder=" " value={form.email} onChange={e => setF("email", allowTextInput(form.email, e.target.value, 100, 5))} />
                         <label className="mat-label">Email</label>
                         <span className="mat-bar" />
                       </div>
@@ -942,22 +968,26 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                     </div>
                   </div>
 
-                  <div className="admin-form-group">
-                    <label className={formErrors.time ? "mat-label-error" : ""}>
-                      Time <span className="evt-res-req">*</span>
-                      {form.slotGroup && (() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()}
-                    </label>
-                    <CustomTimePicker
-                      value={form.time}
-                      onChange={v => { setF("time", v); setFormErrors(p => ({ ...p, time: false })); }}
-                      slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
-                      slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
-                      disabled={!form.slotGroup}
-                      hasError={!!formErrors.time}
-                      isToday={false}
-                    />
-                    {!form.slotGroup && <span style={{ fontSize: 11, color: "#aaa", marginTop: 4, display: "block" }}>Select a dining slot first to enable time picker</span>}
-                  </div>
+                  {form.slotGroup ? (
+                    <div className="admin-form-group">
+                      <label className={formErrors.time ? "mat-label-error" : ""}>
+                        Time <span className="evt-res-req">*</span>
+                        {(() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()}
+                      </label>
+                      <CustomTimePicker
+                        value={form.time}
+                        onChange={v => { setF("time", v); setFormErrors(p => ({ ...p, time: false })); }}
+                        slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
+                        slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
+                        hasError={!!formErrors.time}
+                        isToday={false}
+                      />
+                    </div>
+                  ) : (
+                    <div className="admin-form-group">
+                      <span style={{ fontSize: 11, color: "#aaa", marginTop: 4, display: "block" }}>Select a dining slot first to enable time picker</span>
+                    </div>
+                  )}
 
                   <div className="evt-res-source-chips">
                     {SOURCE_OPTIONS.map(src => (
@@ -1010,7 +1040,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                               if (useRestaurantAddr) return;
                               const v = field.key === "addrPincode"
                                 ? e.target.value.replace(/\D/g, "").slice(0, 6)
-                                : e.target.value;
+                                : allowTextInput(form[field.key], e.target.value, 100, 5);
                               setF(field.key, v);
                               setFormErrors(p => ({ ...p, [field.key]: false }));
                             }}
@@ -1065,7 +1095,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                       <div className="mat-area" style={{ marginTop: 8 }}>
                         <textarea className="mat-input mat-textarea" rows={2} placeholder=" "
                           value={form.specialMentionText}
-                          onChange={e => setF("specialMentionText", e.target.value)} />
+                          onChange={e => setF("specialMentionText", allowTextInput(form.specialMentionText, e.target.value, 500, 100000))} />
                         <label className="mat-area-label">Describe what to announce / mention...</label>
                         <span className="mat-area-bar" />
                       </div>
@@ -1101,7 +1131,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
 
                   <div className="admin-form-group" style={{ marginTop: 4 }}>
                     <div className="mat-area">
-                      <textarea className="mat-input mat-textarea" rows={2} placeholder=" " value={form.notes} onChange={e => setF("notes", e.target.value)} />
+                      <textarea className="mat-input mat-textarea" rows={2} placeholder=" " value={form.notes} onChange={e => setF("notes", allowTextInput(form.notes, e.target.value, 500, 100000))} />
                       <label className="mat-area-label">Notes</label>
                       <span className="mat-area-bar" />
                     </div>

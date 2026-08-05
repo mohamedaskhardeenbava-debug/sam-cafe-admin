@@ -1,0 +1,291 @@
+/* ═══════════════════════════════════════════════════════
+   Profile.css  —  Sam Cafe Admin  —  Profile page
+   Built on the shared details-page / modal classes in
+   Common.css and ModalCSS.css. Two pieces:
+     1. .profile-card       — the read-only view card
+     2. .profile-edit-*     — the "Edit your profile" modal
+        (form fields left, live preview right), matching
+        the reference design.
+═══════════════════════════════════════════════════════ */
+
+.profile-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #e63946;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.profile-note {
+  font-size: 13px;
+  color: #777;
+  margin: 8px 0 0;
+  line-height: 1.5;
+}
+
+.profile-error {
+  color: #e63946;
+  font-size: 13px;
+  margin: 4px 0 0;
+}
+
+/* ── Read-only profile card ─────────────────────────────── */
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  padding: 28px 20px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.profile-card-avatar {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.profile-card-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-card-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.profile-card-role {
+  font-size: 13px;
+  color: #888;
+}
+
+.profile-card-chip {
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #667;
+  background: #f1f3f5;
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+.profile-card-edit-btn {
+  margin-top: 18px;
+}
+
+/* ── Top row: profile card + account details side by side ──────── */
+.profile-top-row {
+  display: flex;
+  align-items: stretch;
+  gap: 20px;
+}
+
+.profile-top-row .profile-card {
+  flex: 0 0 260px;
+}
+
+.profile-account-section {
+  flex: 1;
+  min-width: 0;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  padding: 20px;
+  margin-top: 0;
+}
+
+/* ── Edit-profile modal ─────────────────────────────────── */
+.profile-edit-modal {
+  width: min(560px, 92vw);
+}
+
+.profile-edit-body {
+  display: flex;
+  flex-direction: row;
+  gap: 28px;
+  align-items: flex-start;
+}
+
+.profile-edit-form {
+  flex: 1.4;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-readonly-input {
+  color: #888 !important;
+  cursor: default;
+}
+
+/* Live preview panel, right side */
+.profile-edit-preview {
+  flex: 1;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  padding-top: 14px;
+}
+
+.profile-edit-preview-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+  align-self: flex-start;
+}
+
+.profile-preview-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.profile-preview-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Editable variant — hover affordance + hidden file input + pencil badge */
+.profile-preview-avatar-editable {
+  cursor: pointer;
+  display: block;
+}
+
+.profile-preview-avatar-editable:hover {
+  filter: brightness(0.9);
+}
+
+.profile-preview-avatar-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.profile-preview-avatar-edit-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-blue);
+  border: 2px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.profile-preview-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.profile-preview-role {
+  font-size: 12px;
+  color: #888;
+}
+
+.profile-preview-phone {
+  font-size: 11px;
+  color: #aaa;
+  margin-top: 4px;
+}
+
+/* Footer: "Last updated" note on the left, actions on the right —
+   matches the reference layout instead of the default centered
+   admin-modal-footer buttons. */
+.profile-edit-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.profile-edit-updated {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.profile-edit-footer-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.profile-table {
+  width: 100%;
+  margin-top: 6px;
+  max-width: 600px;
+}
+
+.profile-table td,
+.profile-table th {
+  padding: 8px;
+  border-bottom: 1px solid #e2e2e2;
+  font-size: 13px;
+}
+
+.profile-table th {
+  text-align: left;
+  background: #f5f5f5;
+  font-weight: 600;
+}
+
+.profile-table td {
+  width: 50%;
+}
+
+@media (max-width: 578px) {
+  .profile-top-row {
+    flex-direction: column;
+  }
+
+  .profile-top-row .profile-card {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .profile-edit-body {
+    flex-direction: column;
+  }
+
+  .profile-edit-preview {
+    align-items: center;
+    padding-top: 0;
+  }
+
+  .profile-edit-footer {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+}

@@ -13,16 +13,16 @@ import deleteIcon from "../icon/delete-icon.png";
 import closeIcon from "../icon/close-icon.png";
 import { allowTextInput } from "../App";
 import { sortArray } from "../App";
-import { EmptyRow } from "../App";
+import { EmptyRow, EmptyState } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
+import CollapseChevron from "../components/CollapseChevron";
 import { FilterBar } from "../components/FilterBar";
 
 import "./Ingredients.css";
 import "./ModalCSS.css";
-import PageLoader from "../components/PageLoader";
 
 const EMPTY_FORM = {
   id: "",
@@ -53,6 +53,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
   const { toast } = useToast();
 
   const [showForm, setShowForm] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [imagePreview, setImagePreview] = useState("");
   const [formData, setFormData] = useState(EMPTY_FORM);
@@ -86,9 +87,8 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
       : sortedIngredients;
   }, [sortedIngredients, ingredientSearch]);
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(filteredIngredients.length, 30);
-  if (!adminData?.ingredients?.length) return <PageLoader label="Loading ingredients…" />;
 
   const handleSave = async () => {
     const e = {};
@@ -184,19 +184,39 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
     <div className="inner-page">
       {/* HEADER */}
       <div className="header">
-        <h2 className="title">Ingredients</h2>
+        <div className="header-title-row">
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Ingredients</h2>
+              <span className="result-count">{filteredIngredients.length} ingredient(s)</span>
+            </div>
+          </div>
+        </div>
+
         <Button3D onClick={openAddForm}>+ Add Ingredient</Button3D>
       </div>
 
       {/* FILTER BAR */}
-      <FilterBar
-        search={ingredientSearch}
-        onSearchChange={setIngredientSearch}
-        searchPlaceholder=" Search name or brand…"
-        onClear={() => setIngredientSearch("")}
-        active={!!ingredientSearch}
-        rightContent={<span className="result-count">{filteredIngredients.length} ingredient(s)</span>}
-      />
+      {!headerCollapsed && (
+        <FilterBar
+          search={ingredientSearch}
+          onSearchChange={setIngredientSearch}
+          searchPlaceholder=" Search name or brand…"
+          onClear={() => setIngredientSearch("")}
+          active={!!ingredientSearch}
+        />
+      )}
 
       {showForm && (
         <div className="modal-overlay">
@@ -274,7 +294,10 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
               <div className="admin-form-group">
                 <label>Used For</label>
                 <div className="checkbox-grid">
-                  {adminData.categories.flatMap(cat => {
+                  {adminData.categories.length === 0 ? (
+                    <EmptyState message="No categories or dishes available yet" />
+                  ) : (
+                    adminData.categories.flatMap(cat => {
 
                     if ((cat.subCategories || []).length > 0) {
 
@@ -334,7 +357,8 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
 
                     );
 
-                  })}
+                  })
+                  )}
                 </div>
               </div>
 
@@ -405,7 +429,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                     placeholder=" "
 
                     value={formData.description}
-                    onChange={(e) => { setFormData({ ...formData, description: e.target.value }); setFormErrors(p => ({ ...p, description: false })); }}
+                    onChange={(e) => { setFormData({ ...formData, description: allowTextInput(formData.description, e.target.value, 500, 100000) }); setFormErrors(p => ({ ...p, description: false })); }}
                   />
                   <label className={`mat-label${formErrors.description ? " mat-label-error" : ""}`}>Description<span className="rf-req">*</span></label>
                   <span className={`mat-bar${formErrors.description ? " mat-bar-error" : ""}`} />
@@ -419,7 +443,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                     placeholder=" "
 
                     value={formData.history}
-                    onChange={(e) => { setFormData({ ...formData, history: e.target.value }); setFormErrors(p => ({ ...p, history: false })); }}
+                    onChange={(e) => { setFormData({ ...formData, history: allowTextInput(formData.history, e.target.value, 500, 100000) }); setFormErrors(p => ({ ...p, history: false })); }}
                   />
                   <label className={`mat-label${formErrors.history ? " mat-label-error" : ""}`}>History<span className="rf-req">*</span></label>
                   <span className={`mat-bar${formErrors.history ? " mat-bar-error" : ""}`} />
@@ -530,7 +554,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
         </div>
       )}
 
-      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 260px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -578,7 +602,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                   <td>
                     {ingredient.brands?.length
                       ? ingredient.brands.map(b => b.name).join(" / ")
-                      : "-"}
+                      : "—"}
                   </td>
                   <td className="icon-width">{ingredient.nutritionPer100g.kcal}</td>
                   <td className="icon-width">{ingredient.nutritionPer100g.protein}g</td>
@@ -628,6 +652,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
             />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
     </div>
   );

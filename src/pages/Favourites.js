@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 
 import { EmptyRow } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 
 import "./Favourites.css";
 
@@ -42,13 +42,16 @@ const Favourites = ({ adminData, handleSort, sortConfig }) => {
     return data;
   }, [dishes, sortConfig]);
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(sortedFavourites.length, 30);
 
   return (
     <div className="inner-page">
       <div className="header">
-        <h2 className="title">Favourites</h2>
+        <div className="header-title-with-count">
+          <h2 className="title">Favourites</h2>
+          <span className="result-count">{sortedFavourites.length} favourite(s)</span>
+        </div>
       </div>
 
       <div className="table-wrapper" ref={containerRef}>
@@ -71,7 +74,7 @@ const Favourites = ({ adminData, handleSort, sortConfig }) => {
               </th>
               <th
                 onClick={() => handleSort("price")}
-                className={`${sortConfig.key === "price" ? "sorted" : ""} icon-width`}
+                className={`${sortConfig.key === "price" ? "sorted" : ""}`}
               >
                 <span className="th-content sort-th">
                   <span>Price</span>
@@ -92,7 +95,7 @@ const Favourites = ({ adminData, handleSort, sortConfig }) => {
               sortedFavourites.slice(0, displayLimit).map((dish) => (
                 <tr key={dish.id}>
                   <td
-                    className="clickable"
+                    className="clickable icon-width"
                     onClick={() => navigate(`/favourites/${dish.id}`)}
                   >
                     <div className="favourites-image">
@@ -122,6 +125,7 @@ const Favourites = ({ adminData, handleSort, sortConfig }) => {
             />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
     </div>
   );

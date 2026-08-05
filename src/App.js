@@ -9,6 +9,7 @@ import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import api from "./api";
 import socket from "./socket";
 
+import { useAuth } from "./context/AuthContext";
 import { useToast } from "./useToast";
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
@@ -21,6 +22,11 @@ import DishDetails from "./pages/DishDetails";
 import Stocks from "./pages/Stocks";
 import ComboOffers from "./pages/ComboOffers";
 import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
+import ForcePasswordReset from "./pages/ForcePasswordReset";
+import Profile from "./pages/Profile";
+import Todo from "./pages/Todo";
 import Favourites from "./pages/Favourites";
 import FavouriteDetails from "./pages/FavouriteDetails";
 import Orders from "./pages/Orders";
@@ -29,6 +35,13 @@ import Offers from "./pages/Offers";
 import OfferDetails from "./pages/OfferDetails";
 import Users from "./pages/Users";
 import UserDetails from "./pages/UserDetails";
+import Venues from "./pages/Venues";
+import Permissions from "./pages/Permissions";
+import CategoryCards from "./pages/CategoryCards";
+import AuditLogs from "./pages/AuditLogs";
+import AuditLogDetails from "./pages/AuditLogDetails";
+
+import { useVenue } from "./context/VenueContext";
 
 import "./App.css"; //admin panel
 
@@ -99,7 +112,8 @@ export const allowTextInput = (
 function App() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const { isAuthenticated, isLoading: isAuthLoading, admin } = useAuth();
+  const { venueParam, venueId: activeVenueId, isLoading: isVenueLoading } = useVenue();
   const [isAppLoading, setIsAppLoading] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -125,10 +139,10 @@ function App() {
   const _today = () => new Date().toISOString().split("T")[0];
 
   const [resFilters, setResFilters] = useState({ filterDate: "", fromDate: _today(), toDate: _today(), preset: "today", slots: new Set(), statuses: new Set(), sources: new Set(), search: "" });
-  const [celFilters, setCelFilters] = useState({ fromDate: _today(), toDate: _today(), preset: "today", type: "", status: "", search: "" });
+  const [celFilters, setCelFilters] = useState({ fromDate: _today(), toDate: _today(), preset: "today", types: new Set(), statuses: new Set(), search: "" });
   const [preFilters, setPreFilters] = useState({ fromDate: _today(), toDate: _today(), preset: "today", slots: new Set(), statuses: new Set(), search: "" });
-  const [catFilters, setCatFilters] = useState({ fromDate: _today(), toDate: _today(), preset: "today", status: "", search: "" });
-  const [evtFilters, setEvtFilters] = useState({ activeTab: "events", filterEventId: "all", filterStatus: "all", filterFromDate: "", filterToDate: "", searchQuery: "", evtSearch: "", evtFilterStatus: "upcoming,ongoing", evtFilterType: "all", evtFilterPublish: "all", evtFromDate: "", evtToDate: "", evtDatePreset: "" });
+  const [catFilters, setCatFilters] = useState({ fromDate: _today(), toDate: _today(), preset: "today", statuses: new Set(), search: "" });
+  const [evtFilters, setEvtFilters] = useState({ activeTab: "events", filterEventId: "all", filterStatuses: new Set(), filterFromDate: "", filterToDate: "", bookingsDatePreset: "", searchQuery: "", evtSearch: "", evtFilterStatuses: new Set(["upcoming", "ongoing"]), evtFilterTypes: new Set(), evtFilterPublish: new Set(), evtFromDate: "", evtToDate: "", evtDatePreset: "" });
 
   const patchRes = (patch) => setResFilters(p => ({ ...p, ...patch }));
   const patchCel = (patch) => setCelFilters(p => ({ ...p, ...patch }));
@@ -137,9 +151,9 @@ function App() {
   const patchEvt = (patch) => setEvtFilters(p => ({ ...p, ...patch }));
 
   const resetResFilters = () => setResFilters({ filterDate: "", fromDate: _today(), toDate: _today(), preset: "today", slots: new Set(), statuses: new Set(), sources: new Set(), search: "" });
-  const resetCelFilters = () => setCelFilters({ fromDate: _today(), toDate: _today(), preset: "today", type: "", status: "", search: "" });
+  const resetCelFilters = () => setCelFilters({ fromDate: _today(), toDate: _today(), preset: "today", types: new Set(), statuses: new Set(), search: "" });
   const resetPreFilters = () => setPreFilters({ fromDate: _today(), toDate: _today(), preset: "today", slots: new Set(), statuses: new Set(), search: "" });
-  const resetCatFilters = () => setCatFilters({ fromDate: _today(), toDate: _today(), preset: "today", status: "", search: "" });
+  const resetCatFilters = () => setCatFilters({ fromDate: _today(), toDate: _today(), preset: "today", statuses: new Set(), search: "" });
 
   const [adminData, setAdminData] = useState({
     categories: [],
@@ -156,69 +170,44 @@ function App() {
     kitchenAssign: {},
   });
 
-  /* ---------------- LOGIN HANDLER ---------------- */
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-  };
-
   /* ---------------- FETCH DATA ---------------- */
   const fetchAllData = async () => {
     try {
+      const endpoints = [
+        "/categories", "/ingredients", "/orders", "/users", "/favourites",
+        "/staff", "/grooming", "/mise", "/kitchenAssign", "/recipes",
+        "/offers", "/kitchenActivity", "/kitchenSchedules", "/serviceAssign",
+        "/serviceGrooming", "/serviceMise", "/serviceActivity",
+        "/serviceSchedules", "/tables", "/reservations", "/celebrations",
+        "/preBookings", "/cateringOrders", "/events", "/eventBookings",
+        "/tasks",
+      ];
+
+      const settled = await Promise.allSettled(
+        endpoints.map((path) => api.get(path, { params: venueParam() }))
+      );
+
+      // Log each failure individually so a single bad route is visible
+      // in the console instead of silently killing every other endpoint.
+      settled.forEach((result, i) => {
+        if (result.status === "rejected") {
+          console.error(`Failed to fetch ${endpoints[i]}:`, result.reason);
+        }
+      });
+
+      const dataOf = (i) =>
+        settled[i].status === "fulfilled" ? settled[i].value.data : undefined;
+
       const [
-        catRes,
-        ingRes,
-        ordersRes,
-        usersRes,
-        favRes,
-        staffRes,
-        groomRes,
-        miseRes,
-        kitchenAssignRes,
-        recipeRes,
-        offerRes,
-        activityRes,
-        schedulesRes,
-        serviceAssignRes,
-        serviceGroomRes,
-        serviceMiseRes,
-        serviceActivityRes,
-        serviceSchedulesRes,
-        tablesRes,
-        reservationsRes,
-        celebrationsRes,
-        preBookingsRes,
-        cateringRes,
-        eventsRes,
-        bookingsRes,
+        catRes, ingRes, ordersRes, usersRes, favRes, staffRes, groomRes,
+        miseRes, kitchenAssignRes, recipeRes, offerRes, activityRes,
+        schedulesRes, serviceAssignRes, serviceGroomRes, serviceMiseRes,
+        serviceActivityRes, serviceSchedulesRes, tablesRes, reservationsRes,
+        celebrationsRes, preBookingsRes, cateringRes, eventsRes, bookingsRes,
         tasksRes,
-      ] = await Promise.all([
-        api.get("/categories"),
-        api.get("/ingredients"),
-        api.get("/orders"),
-        api.get("/users"),
-        api.get("/favourites"),
-        api.get("/staff"),
-        api.get("/grooming"),
-        api.get("/mise"),
-        api.get("/kitchenAssign"),
-        api.get("/recipes"),
-        api.get("/offers"),
-        api.get("/kitchenActivity"),
-        api.get("/kitchenSchedules"),
-        api.get("/serviceAssign"),
-        api.get("/serviceGrooming"),
-        api.get("/serviceMise"),
-        api.get("/serviceActivity"),
-        api.get("/serviceSchedules"),
-        api.get("/tables"),
-        api.get("/reservations"),
-        api.get("/celebrations"),
-        api.get("/preBookings"),
-        api.get("/cateringOrders"),
-        api.get("/events"),
-        api.get("/eventBookings"),
-        api.get("/tasks"),
-      ]);
+      ] = endpoints.map((_, i) => ({ data: dataOf(i) }));
+
+      const anyFailed = settled.some((r) => r.status === "rejected");
 
       setAdminData({
         categories: catRes.data || [],
@@ -252,30 +241,40 @@ function App() {
         },
       });
 
-      setConnectionError(false);
+      // Show a non-blocking error banner if some endpoints failed, but
+      // never let a partial failure keep the app stuck on the loader —
+      // the admin shell renders with whatever data did come back.
+      setConnectionError(anyFailed);
       setIsAppLoading(false);
     } catch (err) {
       console.error("Failed to fetch admin data", err);
       setConnectionError(true);
-      // isAppLoading stays true here on purpose — the loader keeps showing
-      // (with a "reconnecting" message) instead of falling through to a
-      // blank/broken admin shell when the initial fetch fails.
+      setIsAppLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || isVenueLoading) return;
     setIsAppLoading(true);
     fetchAllData();
-  }, [isAuthenticated]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, isVenueLoading, activeVenueId]);
 
-  // Auto-retry the initial connection if it failed, so the admin isn't
-  // stuck on a loading/blank screen forever without another attempt.
+  // Auto-retry the initial connection a bounded number of times if it
+  // failed, so a genuinely down backend doesn't retry forever — but the
+  // admin shell is still visible in the meantime since isAppLoading is
+  // cleared above regardless of success/failure.
+  const retryCountRef = useRef(0);
+  const MAX_RETRIES = 5;
   useEffect(() => {
-    if (!isAuthenticated || !isAppLoading || !connectionError) return;
-    const retryTimer = setTimeout(() => { fetchAllData(); }, 3000);
+    if (!isAuthenticated || !connectionError) return;
+    if (retryCountRef.current >= MAX_RETRIES) return;
+    const retryTimer = setTimeout(() => {
+      retryCountRef.current += 1;
+      fetchAllData();
+    }, 3000);
     return () => clearTimeout(retryTimer);
-  }, [isAuthenticated, isAppLoading, connectionError]);
+  }, [isAuthenticated, connectionError]);
 
   /* ---------------- SOCKET: real-time data-change listener ---------------- */
   useEffect(() => {
@@ -460,7 +459,7 @@ function App() {
   /* ---------------- INGREDIENT CRUD ---------------- */
   const addIngredient = async (ingredient) => {
     try {
-      await api.post("/ingredients", ingredient);
+      await api.post("/ingredients", ingredient, { params: venueParam() });
     } catch (err) {
       console.error("Add ingredient failed:", err);
     }
@@ -468,7 +467,7 @@ function App() {
 
   const addStaff = async (staff) => {
     try {
-      await api.post("/staff", staff);
+      await api.post("/staff", staff, { params: venueParam() });
       // State update handled by socket data-change handler
     } catch (err) {
       console.error("Add staff failed:", err.response?.data || err.message);
@@ -519,15 +518,29 @@ function App() {
   };
 
   /* ---------------- AUTH GUARD ---------------- */
+  // Wait for the initial GET /staff-auth/me check to resolve before
+  // deciding whether to show the login screen — otherwise a logged-in
+  // admin would flash the login page on every reload while the session
+  // cookie is still being verified against the server.
+  if (isAuthLoading) {
+    return <PageLoader label="Checking session…" />;
+  }
+
   if (!isAuthenticated) {
     return (
       <Routes>
-        <Route
-          path="*"
-          element={<Login onLogin={handleLogin} />}
-        />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="*" element={<Login />} />
       </Routes>
     );
+  }
+
+  // Migrated accounts (created from HR staff records) carry a temp
+  // password and mustResetPassword=true — block the app shell until
+  // they set their own password.
+  if (admin?.mustResetPassword) {
+    return <ForcePasswordReset />;
   }
 
   const toCamelCase = (value) =>
@@ -547,14 +560,6 @@ function App() {
       .replace(/\s+/g, "_");
 
   /* ---------------- ADMIN LAYOUT ---------------- */
-  if (isAppLoading) {
-    return (
-      <PageLoader
-        label={connectionError ? "Reconnecting to the server…" : "Connecting to the server…"}
-      />
-    );
-  }
-
   return (
     <div className="app">
       <Sidebar
@@ -564,13 +569,18 @@ function App() {
 
       <div className={`app-main ${isSidebarOpen ? "expanded" : "collapsed"}`}>
         <Topbar
-          isAuthenticated={isAuthenticated}
-          setIsAuthenticated={setIsAuthenticated}
+          admin={admin}
           adminData={adminData}
           setAdminData={setAdminData}
         />
 
         <div className="page">
+          {isAppLoading && (
+            <PageLoader
+              fill
+              label={connectionError ? "Reconnecting to the server…" : "Connecting to the server…"}
+            />
+          )}
           <Routes>
             <Route
               path="/"
@@ -581,6 +591,9 @@ function App() {
                 />
               }
             />
+
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/todo" element={<Todo />} />
 
             <Route
               path="/categories"
@@ -684,6 +697,8 @@ function App() {
                 <Orders
                   adminData={adminData}
                   setAdminData={setAdminData}
+                  handleSort={handleSort}
+                  sortConfig={sortConfig}
                 />
               }
             />
@@ -887,6 +902,12 @@ function App() {
 
             <Route path="/theme-settings" element={<ThemeSettings />} />
 
+            <Route path="/venues" element={<Venues />} />
+            <Route path="/permissions" element={<Permissions />} />
+            <Route path="/category-cards" element={<CategoryCards />} />
+            <Route path="/audit-logs" element={<AuditLogs />} />
+            <Route path="/audit-logs/:id" element={<AuditLogDetails />} />
+
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </div>
@@ -935,12 +956,30 @@ export const EmptyRow = ({ colSpan, message = "No data available" }) => (
         textAlign: "center",
         padding: "20px",
         color: "#777",
+        fontSize: "14px",
         fontWeight: 500
       }}
     >
       {message}
     </td>
   </tr>
+);
+
+// Same "no data" styling as EmptyRow, for card/grid pages that aren't
+// tables (e.g. Events) — keeps the empty-state look consistent across
+// every page regardless of layout.
+export const EmptyState = ({ message = "No data available" }) => (
+  <div
+    style={{
+      textAlign: "center",
+      padding: "20px",
+      color: "#777",
+      fontSize: "14px",
+      fontWeight: 500
+    }}
+  >
+    {message}
+  </div>
 );
 
 export const resolveCategoryAndSubCategory = (categories, id) => {
@@ -962,7 +1001,9 @@ export const resolveCategoryAndSubCategory = (categories, id) => {
 };
 
 export const formatDisplayDate = (date) => {
+  if (!date) return "—";
   const d = new Date(date);
+  if (isNaN(d.getTime())) return "—";
   return `${String(d.getDate()).padStart(2, "0")}-${String(
     d.getMonth() + 1
   ).padStart(2, "0")}-${d.getFullYear()}`;

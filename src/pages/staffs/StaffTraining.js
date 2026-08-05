@@ -10,12 +10,14 @@ import api from "../../api";
 
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
+import { allowTextInput } from "../../App";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 import { MultiPillGroup } from "../../components/FilterBar";
+import { useVenue } from "../../context/VenueContext";
 
 import "./StaffModules.css";
-import PageLoader from "../../components/PageLoader";
 
 const typeColors = {
   Online: { bg: "#dbeafe", color: "#1e40af" },
@@ -28,9 +30,11 @@ export default function StaffTraining({ adminData, setAdminData }) {
   // ── Hooks
 
   const { toast } = useToast();
+  const { venueParam, venueId: activeVenueId } = useVenue();
 
   const [trainings, setTrainings] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [selected, setSelected] = useState(null);
   const [trainingSearch, setTrainingSearch] = useState("");
   const [trainingTypeFilters, setTrainingTypeFilters] = useState(new Set());
@@ -44,7 +48,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await api.get("/staff");
+        const res = await api.get("/staff", { params: venueParam() });
         const all = res.data.flatMap(s =>
           (s.training || []).map(t => ({ ...t, staffName: s.name }))
         );
@@ -55,8 +59,8 @@ export default function StaffTraining({ adminData, setAdminData }) {
       }
     };
     load();
-  }, []);
-  if (!adminData?.staff?.length) return <PageLoader label="Loading training records…" />;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeVenueId]);
 
   const addTraining = async (e) => {
     e.preventDefault();
@@ -118,7 +122,25 @@ export default function StaffTraining({ adminData, setAdminData }) {
 
       {/* HEADER */}
       <div className="header">
-        <h2 className="title">Training</h2>
+        <div className="header-title-row">
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Training</h2>
+              <span className="result-count">{filteredTrainings.length} record(s)</span>
+            </div>
+          </div>
+        </div>
         <div className="header-btn-container">
           <Button3D onClick={exportTrainings}>Export</Button3D>
           <Button3D onClick={() => setShowForm(true)}>+ Add Training</Button3D>
@@ -126,26 +148,27 @@ export default function StaffTraining({ adminData, setAdminData }) {
       </div>
 
       {/* FILTER BAR */}
-      <div className="filter-bar">
-        <div className="filter-groups">
-          <input
-            className="search-input"
-            placeholder=" Search staff, role, type…"
-            value={trainingSearch}
-            onChange={e => setTrainingSearch(e.target.value)}
-          />
-          <MultiPillGroup
-            label="Type"
-            options={["Online", "Training", "Internship", "Workshop"].map(t => [t, t])}
-            value={trainingTypeFilters}
-            onToggle={(key) => toggleSet(setTrainingTypeFilters, key)}
-          />
-          {(trainingSearch || trainingTypeFilters.size > 0) && (
-            <button className="ae-clear-filter" onClick={() => { setTrainingSearch(""); setTrainingTypeFilters(new Set()); }}>Clear</button>
-          )}
-          <span className="result-count">{filteredTrainings.length} record(s)</span>
+      {!headerCollapsed && (
+        <div className="filter-bar">
+          <div className="filter-groups">
+            <input
+              className="search-input"
+              placeholder=" Search staff, role, type…"
+              value={trainingSearch}
+              onChange={e => setTrainingSearch(allowTextInput(trainingSearch, e.target.value, 100, 5))}
+            />
+            <MultiPillGroup
+              label="Type"
+              options={["Online", "Training", "Internship", "Workshop"].map(t => [t, t])}
+              value={trainingTypeFilters}
+              onToggle={(key) => toggleSet(setTrainingTypeFilters, key)}
+            />
+            {(trainingSearch || trainingTypeFilters.size > 0) && (
+              <button className="ae-clear-filter" onClick={() => { setTrainingSearch(""); setTrainingTypeFilters(new Set()); }}>Clear</button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* EMPTY STATE */}
       {filteredTrainings.length === 0 && (
@@ -156,7 +179,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
       )}
 
       {/* CARD GRID */}
-      <div className="career-grid-wrapper">
+      <div className={`career-grid-wrapper${headerCollapsed ? " header-is-collapsed" : ""}`}>
         <div className="card-grid">
           {filteredTrainings.map((t, i) => {
             const colors = typeColors[t.type] || { bg: "#f5f4f1", color: "#3a3a3a" };
@@ -293,7 +316,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
 
       {/* DETAIL MODAL */}
       {selected && (
-        <div className="modal-overlay" onClick={() => setSelected(null)}>
+        <div className="modal-overlay">
           <div className="admin-modal" onClick={e => e.stopPropagation()}>
             <div className="admin-modal-header">
               <div>
@@ -304,7 +327,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
             </div>
 
             <div className="admin-modal-body">
-              <table className="staff-training-table">
+              <table className="data-table">
                 <tbody>
                   <tr><td>Staff</td><td>{selected.staffName}</td></tr>
                   <tr><td>Role</td><td>{selected.role}</td></tr>

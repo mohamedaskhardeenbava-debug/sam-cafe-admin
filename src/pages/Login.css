@@ -1,96 +1,518 @@
-.login-container {
-  height: 100vh;
+/* ═══════════════════════════════════════════════════════
+   Login.css  —  Sam Cafe Admin  —  Auth pages
+   (Login / Signup / Forgot Password / Force Password Reset)
+
+   Light, split-screen, soft-neumorphic layout: visual panel left,
+   form right. Shares the .mat / .mat-input / .mat-label / .mat-bar
+   floating-label pattern used across the rest of the admin panel
+   (see Orders.css .discount-modal block), re-themed light/neumorphic
+   to match .auth-shell. 3D buttons come from Button3D / Common.css
+   .modal-save-btn etc. unmodified.
+═══════════════════════════════════════════════════════ */
+
+.auth-page {
+  min-height: 100vh;
   width: 100%;
   display: flex;
-  justify-content: center;
   align-items: center;
-  background: #f4f6f8;
+  justify-content: center;
+  padding: 32px;
+  box-sizing: border-box;
+  background: #e0e0e0;
 }
 
-.login-card {
-  width: 360px;
-  padding: 32px;
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+.auth-shell {
+  width: 100%;
+  max-width: 1200px;
+  min-height: 640px;
+  max-height: 860px;
+  overflow: hidden;
+  display: flex;
+
+  border-radius: 50px;
+  background: #e0e0e0;
+  box-shadow: 20px 20px 60px #bebebe,
+    -20px -20px 60px #ffffff;
+}
+
+/* ── LEFT: visual panel (soft-neumorphic inset, matches .auth-shell) ── */
+.auth-visual {
+  position: relative;
+  flex: 1.05;
+  min-width: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 28px;
+  box-sizing: border-box;
+  margin: 20px;
+  border-radius: 40px;
+  background: #e0e0e0;
+  box-shadow: inset 8px 8px 20px #bebebe,
+    inset -8px -8px 20px #ffffff;
+}
+
+.login-logo {
+  width: 100%;
+  aspect-ratio: 1/1;
+}
+
+.auth-visual-glow {
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(circle at 50% 40%, rgba(34, 197, 94, 0.06), transparent 60%);
+  pointer-events: none;
+}
+
+.auth-brand {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #2b2b2b;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.auth-brand-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffd580, #ff9f43 70%);
+  box-shadow: 4px 4px 10px #bebebe, -4px -4px 10px #ffffff;
+  flex-shrink: 0;
+}
+
+.auth-visual-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 260px;
+}
+
+.auth-stat-pill {
+  display: flex;
   align-items: center;
   gap: 12px;
+  background: #e0e0e0;
+  border-radius: 14px;
+  padding: 10px 14px;
+  color: #2b2b2b;
+  box-shadow: 6px 6px 14px #bebebe,
+    -6px -6px 14px #ffffff;
 }
 
-.login-card h2 {
-  text-align: center;
+.auth-stat-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.15);
 }
 
-.login-card input {
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  width: 100%;
+.auth-stat-icon.eth {
+  background: #465ee0;
 }
 
-.login-card button {
-  margin-top: 8px;
-  width: fit-content;
-  padding: 10px;
-  background: #e63946;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+.auth-stat-icon.svc {
+  background: #1dd15f;
 }
 
-.login-error {
-  color: red;
-  font-size: 14px;
-  text-align: center;
-}
-
-.forgot {
+.auth-stat-label {
   font-size: 12px;
-  text-decoration: underline;
-  color: rgb(54, 54, 255);
-  cursor: pointer;
-}
-
-.error-text {
-  color: #e63946;
+  color: #6b6b6b;
   margin: 0;
 }
 
-.username-section {
-  width: 100%;
+.auth-stat-value {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+  color: #16a34a;
 }
 
-.username-section input {
-  width: 100%;
+/* ── RIGHT: form panel ───────────────────────────────── */
+.auth-form-panel {
+  flex: 1;
+  min-width: 0;
+  padding: 40px 56px;
   box-sizing: border-box;
-  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  color: #2b2b2b;
 }
 
-.password-section {
-  width: 100%;
+.auth-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1f1f1f;
+  margin: 4px 0 22px;
 }
 
-.password-section input {
-  width: 100%;
-  box-sizing: border-box;
-  margin-top: 8px;
+/* Tab switch (Sign up / Log in) — pill-style, neumorphic inset track */
+.auth-tabs {
+  display: flex;
+  background: #e0e0e0;
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 22px;
+  gap: 4px;
+  box-shadow: inset 4px 4px 10px #bebebe,
+    inset -4px -4px 10px #ffffff;
 }
 
-.logout-btn {
+.auth-tab {
+  flex: 1;
+  text-align: center;
+  padding: 10px 12px;
+  border-radius: 9px;
+  border: none;
   background: transparent;
-  border: 1px solid #e53935;
-  color: #e53935;
-  padding: 6px 12px;
-  border-radius: 6px;
+  color: #8a8a8a;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
   cursor: pointer;
-  font-weight: 500;
-  margin-right: 12px;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.logout-btn:hover {
-  background: #e53935;
+.auth-tab.active {
+  background: #e0e0e0;
+  color: var(--color-blue);
+  box-shadow: 3px 3px 8px #bebebe,
+    -3px -3px 8px #ffffff;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.auth-field-row {
+  display: flex;
+  gap: 16px;
+}
+
+.auth-field-row .mat {
+  flex: 1;
+}
+
+/* ── Neumorphic mat-input (floating label), scoped to .auth-page ── */
+.auth-page .mat {
+  position: relative;
+  width: 100%;
+  padding-top: 14px;
+  margin-bottom: 14px;
+}
+
+.auth-page .mat-input,
+.auth-page .mat-select-trigger {
+  display: block;
+  width: 100%;
+  height: 40px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #1f1f1f;
+  background: #e0e0e0;
+  border: none;
+  border-radius: 10px;
+  outline: none;
+  box-shadow: inset 4px 4px 10px #bebebe,
+    inset -4px -4px 10px #ffffff;
+  box-sizing: border-box;
+  padding: 0 14px;
+  caret-color: #1f1f1f;
+  transition: box-shadow 0.25s ease, background 0.25s ease;
+}
+
+.auth-page .mat-input::placeholder {
+  color: transparent;
+}
+
+.auth-page .mat-input:hover {
+  box-shadow: inset 5px 5px 12px #bebebe,
+    inset -5px -5px 12px #ffffff;
+}
+
+.auth-page .mat-input:focus {
+  box-shadow: inset 2px 2px 6px #bebebe,
+    inset -2px -2px 6px #ffffff,
+    0 0 0 2px rgba(18, 15, 223, 0.35);
+}
+
+.auth-page .mat-label {
+  position: absolute;
+  top: 24px;
+  left: 15px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #8a8a8a;
+  pointer-events: none;
+  transition: top 0.2s ease, font-size 0.2s ease, font-weight 0.2s ease, color 0.2s ease, letter-spacing 0.2s ease, left 0.2s ease;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.auth-page .mat-input:focus~.mat-label,
+.auth-page .mat-input:not(:placeholder-shown)~.mat-label {
+  top: -6px;
+  left: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-blue);
+  background: #e0e0e0;
+  padding: 0 4px;
+  border-radius: 4px;
+}
+
+/* Bottom bar is unused in the neumorphic bordered style — inputs use
+   inset shadow instead — but kept present (display:none) so markup
+   stays identical to the shared .mat pattern used elsewhere in the app. */
+.auth-page .mat-bar {
+  display: none;
+}
+
+/* Validity tick / cross, matching the reference screenshot */
+.auth-field-status {
+  position: absolute;
+  top: 24px;
+  right: 12px;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.auth-field-status.ok {
+  background: #16a34a;
   color: #fff;
+}
+
+.auth-field-status.err {
+  background: #e11d48;
+  color: #fff;
+}
+
+/* Password fields with the eye-toggle button: push the tick/cross left
+   so it doesn't sit on top of the toggle. */
+.auth-field-status-pw {
+  right: 44px;
+}
+
+/* ── Red box-shadow error state (replaces the old text-based
+   .auth-error paragraph for field-level validation on Login) ── */
+.auth-page .mat-input.auth-input-error {
+  box-shadow: inset 4px 4px 10px #bebebe,
+    inset -4px -4px 10px #ffffff,
+    0 0 0 2px rgba(225, 29, 72, 0.55);
+}
+
+.auth-page .mat-input.auth-input-error:focus {
+  box-shadow: inset 2px 2px 6px #bebebe,
+    inset -2px -2px 6px #ffffff,
+    0 0 0 2px rgba(225, 29, 72, 0.75);
+}
+
+/* ── Password visibility eye-toggle ─────────────────────── */
+.auth-password-mat {
+  position: relative;
+}
+
+.auth-password-toggle {
+  position: absolute;
+  top: 24px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #9a9a9a;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.auth-password-toggle:hover {
+  color: #4b4b4b;
+}
+
+.auth-page select.mat-input {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, rgba(43, 43, 43, 0.5) 50%), linear-gradient(135deg, rgba(43, 43, 43, 0.5) 50%, transparent 50%);
+  background-position: calc(100% - 18px) center, calc(100% - 13px) center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.auth-page select.mat-input option {
+  background: #e0e0e0;
+  color: #1f1f1f;
+}
+
+/* <select> never matches :not(:placeholder-shown) (it always "has" a
+   value from the browser's perspective, even the empty placeholder
+   option), so its label can't float using the same CSS-only rule as
+   text inputs. The JS in Signup.js adds .has-value to .mat once a real
+   role is chosen, and this rule floats the label for that state. */
+.auth-page .mat.has-value .mat-label,
+.auth-page select.mat-input:focus~.mat-label {
+  top: -6px;
+  left: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #16a34a;
+  background: #e0e0e0;
+  padding: 0 4px;
+  border-radius: 4px;
+}
+
+.auth-checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 10px 0 18px;
+  font-size: 13px;
+  color: #5a5a5a;
+  line-height: 1.5;
+}
+
+.auth-checkbox-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  accent-color: #16a34a;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.auth-checkbox-row a {
+  color: #1c8a4a;
+  text-decoration: underline;
+}
+
+.auth-forgot {
+  align-self: flex-end;
+  font-size: 12px;
+  color: var(--color-blue);
+  margin: 2px 0 16px;
+  text-decoration: none;
+}
+
+.auth-forgot:hover {
+  color: #1f1f1f;
+}
+
+.auth-error {
+  color: #dc2626;
+  font-size: 13px;
+  margin: 4px 0 10px;
+}
+
+.auth-hint {
+  font-size: 13px;
+  color: #15803d;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 0 0 16px;
+}
+
+.auth-submit-row {
+  margin-top: 6px;
+}
+
+/* Button3D is width: fit-content by default — stretch it full-width here */
+.auth-submit-row .modal-save-btn,
+.auth-submit-row .modal-confirm-btn {
+  width: 100%;
+}
+
+.auth-submit-row .modal-save-btn .front,
+.auth-submit-row .modal-confirm-btn .front {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0 !important;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.auth-switch-hint {
+  font-size: 13px;
+  color: #6b6b6b;
+  text-align: center;
+  margin: 18px 0 0;
+}
+
+.auth-switch-hint a,
+.auth-switch-hint span.auth-link {
+  color: #16a34a;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.auth-switch-hint a:hover,
+.auth-switch-hint span.auth-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Responsive ───────────────────────────────────────── */
+@media (max-width: 900px) {
+  .auth-visual {
+    display: none;
+  }
+
+  .auth-shell {
+    max-height: none;
+  }
+
+  .auth-form-panel {
+    padding: 32px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-page {
+    padding: 0;
+  }
+
+  .auth-shell {
+    border-radius: 0;
+    min-height: 100vh;
+    box-shadow: none;
+  }
+
+  .auth-field-row {
+    flex-direction: column;
+    gap: 0;
+  }
 }

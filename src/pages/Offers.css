@@ -262,3 +262,64 @@
   background: #fee2e2;
   color: #dc2626;
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 992px) {
+  .offers-buttons {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .offers-modal,
+  .offers-modal.large {
+    width: 90vw;
+  }
+}
+
+@media (max-width: 768px) {
+  .offers-buttons {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .offers-modal,
+  .offers-modal.large {
+    width: 94vw;
+    padding: 18px;
+    max-height: 90vh;
+  }
+
+  .offers-header-actions {
+    flex-wrap: wrap;
+  }
+
+  .benefits-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 578px) {
+  .offers-buttons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .offers-name {
+    font-size: 13px;
+  }
+
+  .offers-image,
+  .offers-placeholder {
+    width: 30px;
+    height: 30px;
+  }
+
+  .offers-modal {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .offer-status-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+  }
+}

@@ -400,3 +400,25 @@
   border-color: #ccc;
   color: #111;
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .prv-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .prv-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 578px) {
+  .prv-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .prv-cell {
+    padding: 8px 12px;
+  }
+}

@@ -17,13 +17,13 @@ import { EmptyRow } from "../App";
 import { formatDisplayDate } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
-import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import CustomDropdown from "../components/CustomDropdown";
 import Button3D from "../components/Button3D";
+import CollapseChevron from "../components/CollapseChevron";
 import { FilterBar } from "../components/FilterBar";
 
 import "./Stocks.css";
-import PageLoader from "../components/PageLoader";
 
 const toTwoDecimals = (value) =>
   Math.round((Number(value) + Number.EPSILON) * 100) / 100;
@@ -42,6 +42,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
   const [openFrom, setOpenFrom] = useState(false);
   const [openTo, setOpenTo] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [selectedIngredient, setSelectedIngredient] = useState(null);
   const [addStock, setAddStock] = useState("");
   const [pricePer100g, setPricePer100g] = useState("");
@@ -152,7 +153,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
 
   const [stockSearch, setStockSearch] = useState("");
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(sortedIngredients.length, 30);
 
   const filteredIngredients = useMemo(() => {
@@ -164,7 +165,6 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       )
       : sortedIngredients;
   }, [sortedIngredients, stockSearch]);
-  if (!adminData?.categories?.length) return <PageLoader label="Loading stocks…" />;
 
   /* ---------------- EDIT MODAL ---------------- */
   const openEditModal = (ingredient) => {
@@ -244,7 +244,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
     const rows = adminData.ingredients.map((ing) => ({
       Ingredient: ing.name,
       "Stock Remaining (kg)": toTwoDecimals(ing.stockRemaining ?? 0),
-      "Last Purchased": ing.lastUpdated || "-"
+      "Last Purchased": ing.lastUpdated || "—"
     }));
 
     exportToExcel({ rows, sheetName: "Stocks", fileName: "stocks_export.xlsx" });
@@ -295,23 +295,42 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
     <div className="inner-page">
       {/* HEADER */}
       <div className="header">
-        <h2 className="title">Stocks</h2>
+        <div className="header-title-row">
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Stocks</h2>
+              <span className="result-count">{filteredIngredients.length} ingredient(s)</span>
+            </div>
+          </div>
+        </div>
 
         <Button3D onClick={handleExportStocks}>Export</Button3D>
       </div>
 
       {/* FILTER BAR */}
-      <FilterBar
-        search={stockSearch}
-        onSearchChange={setStockSearch}
-        searchPlaceholder=" Search ingredient or brand…"
-        onClear={() => setStockSearch("")}
-        active={!!stockSearch}
-        rightContent={<span className="result-count">{filteredIngredients.length} ingredient(s)</span>}
-      />
+      {!headerCollapsed && (
+        <FilterBar
+          search={stockSearch}
+          onSearchChange={setStockSearch}
+          searchPlaceholder=" Search ingredient or brand…"
+          onClear={() => setStockSearch("")}
+          active={!!stockSearch}
+        />
+      )}
 
       {/* TABLE */}
-      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 260px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -420,7 +439,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                   <td>
                     {ing.brands?.length
                       ? ing.brands.map(b => b.name).join("/ ")
-                      : "-"}
+                      : "—"}
                   </td>
                   <td>₹{toTwoDecimals(ing.pricePer100g)}</td>
                   <td>{toTwoDecimals(ing.stockRemaining ?? 0)}</td>
@@ -444,7 +463,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
                       fontWeight: isExpiringSoon(ing.expiryDate) ? 600 : 500
                     }}
                   >
-                    {formatDisplayDate(ing.expiryDate) || "-"}
+                    {formatDisplayDate(ing.expiryDate) || "—"}
                   </td>
                   <td>
                     {(() => {
@@ -479,6 +498,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
             />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
       {showEditModal && selectedIngredient && (
         <div className="modal-overlay">
@@ -489,36 +509,38 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
             </div>
 
             <div className="admin-modal-body">
-              <div className="admin-form-group">
-                <div className="mat">
-                  <input
-                    className="mat-input"
-                    placeholder=" "
-                    autoFocus
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={pricePer100g}
-                    onChange={(e) => setPricePer100g(e.target.value)}
-                  />
-                  <label className="mat-label">Price per 100g<span className="rf-req">*</span></label>
-                  <span className="mat-bar" />
+              <div className="horizontal-form-group">
+                <div className="admin-form-group">
+                  <div className="mat">
+                    <input
+                      className="mat-input"
+                      placeholder=" "
+                      autoFocus
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={pricePer100g}
+                      onChange={(e) => setPricePer100g(e.target.value)}
+                    />
+                    <label className="mat-label">Price per 100g<span className="rf-req">*</span></label>
+                    <span className="mat-bar" />
+                  </div>
                 </div>
-              </div>
 
-              <div className="admin-form-group">
-                <div className="mat">
-                  <input
-                    className="mat-input"
-                    placeholder=" "
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={stockMax}
-                    onChange={(e) => setStockMax(e.target.value)}
-                  />
-                  <label className="mat-label">Stock Max (kg)<span className="rf-req">*</span></label>
-                  <span className="mat-bar" />
+                <div className="admin-form-group">
+                  <div className="mat">
+                    <input
+                      className="mat-input"
+                      placeholder=" "
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={stockMax}
+                      onChange={(e) => setStockMax(e.target.value)}
+                    />
+                    <label className="mat-label">Stock Max (kg)<span className="rf-req">*</span></label>
+                    <span className="mat-bar" />
+                  </div>
                 </div>
               </div>
 

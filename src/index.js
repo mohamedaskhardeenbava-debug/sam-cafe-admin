@@ -5,6 +5,9 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { BrowserRouter } from "react-router-dom";
 import { ToastProvider } from "./useToast";
+import { AuthProvider } from "./context/AuthContext";
+import { VenueProvider } from "./context/VenueContext";
+import { CategoryCardsProvider } from "./context/CategoryCardsContext";
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
@@ -12,9 +15,15 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <BrowserRouter>
-    <ToastProvider>
-      <App />
-    </ToastProvider>
+    <AuthProvider>
+      <VenueProvider>
+        <CategoryCardsProvider>
+          <ToastProvider>
+            <App />
+          </ToastProvider>
+        </CategoryCardsProvider>
+      </VenueProvider>
+    </AuthProvider>
   </BrowserRouter>
 );
 

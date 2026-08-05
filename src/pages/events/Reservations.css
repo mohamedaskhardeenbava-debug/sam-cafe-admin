@@ -1041,3 +1041,23 @@
   font-size: 12px;
   white-space: nowrap;
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE ADDENDUM — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 992px) {
+  .evt-res-pref-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .evt-res-pref-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .evt-res-pref-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

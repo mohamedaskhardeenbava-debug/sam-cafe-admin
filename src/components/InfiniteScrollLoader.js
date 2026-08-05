@@ -23,6 +23,13 @@ import "./InfiniteScrollLoader.css";
  * label        string      Optional. Override the loading text.
  * colSpan      number      Optional. If provided, wraps inside a <tr><td>.
  *                          Use this when placed inside a <tbody>.
+ * isLoading    boolean     Optional. When true, renders a translucent
+ *                          overlay across the whole table/list while the
+ *                          next page of infinite-scroll rows loads in.
+ *                          Only meaningful when colSpan is NOT set (i.e.
+ *                          rendered as a sibling of the scroll container),
+ *                          pair with InfiniteScrollOverlay below for
+ *                          <table> layouts.
  */
 const InfiniteScrollLoader = ({
   sentinelRef,
@@ -54,6 +61,29 @@ const InfiniteScrollLoader = ({
   }
 
   return <div className="isl-wrapper">{content}</div>;
+};
+
+/**
+ * InfiniteScrollOverlay
+ *
+ * Renders a translucent full-table inline loader while the next batch
+ * of infinite-scroll rows is being appended. Place it as a sibling
+ * inside the same `position: relative` scroll wrapper that holds the
+ * <table>/list, right after it — it absolutely covers the whole area.
+ *
+ * Props
+ * ──────────────────────────────────────────
+ * isLoading   boolean   Required. Show/hide the overlay.
+ * label       string    Optional. Override the loading text.
+ */
+export const InfiniteScrollOverlay = ({ isLoading, label = "Loading…" }) => {
+  if (!isLoading) return null;
+  return (
+    <div className="isl-table-overlay" role="status" aria-live="polite">
+      <span className="isl-spinner" aria-hidden="true" />
+      <span className="isl-label">{label}</span>
+    </div>
+  );
 };
 
 export default InfiniteScrollLoader;

@@ -132,56 +132,64 @@ td input {
   background: #e74c3c;
 }
 
-/* Veg toggle buttons */
-.veg-toggle-group {
+/* ── Dish type/event/combo toggle — Uiverse-inspired, white/neumorphic ─── */
+.dish-switch-group {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
-.veg-toggle-btn {
+.dish-switch-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 14px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  background: #fff;
-  font-size: 14px;
-  font-weight: 500;
+  min-width: 92px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 10px;
+  background: #f4f5f7;
+  box-shadow: -4px -4px 8px #ffffff,
+    4px 4px 8px #d8dbe0;
+  color: #8a8f98;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dish-switch-btn:hover {
   color: #555;
 }
 
-.veg-toggle-btn:hover {
-  border-color: #aaa;
+.dish-switch-btn.is-active {
+  background: #eef1f5;
+  color: #111;
+  box-shadow: inset 3px 3px 6px #d8dbe0,
+    inset -3px -3px 6px #ffffff;
 }
 
-.veg-toggle-btn.active-veg {
-  border-color: #27ae60;
-  background: #e6f9ec;
-  color: #1a7a38;
-}
-
-.veg-toggle-btn.active-non-veg {
-  border-color: #e74c3c;
-  background: #fff0ee;
-  color: #c0392b;
-}
-
-.veg-dot {
-  width: 10px;
-  height: 10px;
+.dish-switch-dot {
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  background: #c7cad0;
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.2s ease;
 }
 
-.veg-dot.veg {
+.dish-switch-btn.is-active .dish-switch-dot.veg {
   background: #27ae60;
+  box-shadow: 1px 1px 3px rgba(39, 174, 96, 0.5);
 }
 
-.veg-dot.non-veg {
+.dish-switch-btn.is-active .dish-switch-dot.non-veg {
   background: #e74c3c;
+  box-shadow: 1px 1px 3px rgba(231, 76, 60, 0.5);
+}
+
+.dish-switch-btn:focus-visible {
+  outline: 2px solid var(--color-blue, #2563eb);
+  outline-offset: 2px;
 }
 
 /* Global Edit button in header */
@@ -205,4 +213,48 @@ td input {
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   margin-top: 20px;
   z-index: 10;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .dish-details-image {
+    width: 110px;
+    height: 110px;
+  }
+
+  .image-upload-btn {
+    left: 70px;
+  }
+}
+
+@media (max-width: 578px) {
+  .dish-details-image {
+    width: 90px;
+    height: 90px;
+  }
+
+  .image-upload-btn {
+    left: 55px;
+    font-size: 11px;
+  }
+
+  .action,
+  .actions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .action button,
+  .actions button {
+    width: 100%;
+  }
+
+  .action,
+  .actions {
+    flex-direction: column;
+  }
 }

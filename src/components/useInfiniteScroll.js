@@ -21,18 +21,22 @@ import { useState, useRef, useEffect, useCallback } from "react";
  */
 const useInfiniteScroll = (total, pageSize = 30, root = null) => {
   const [displayLimit, setDisplayLimit] = useState(pageSize);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const sentinelRef = useRef(null);
   const containerRef = useRef(null);
+  const loadTimerRef = useRef(null);
 
   const hasMore = displayLimit < total;
 
   const reset = useCallback(() => {
     setDisplayLimit(pageSize);
+    setIsLoadingMore(false);
   }, [pageSize]);
 
   // Reset when the total dataset changes (e.g. filter applied)
   useEffect(() => {
     setDisplayLimit(pageSize);
+    setIsLoadingMore(false);
   }, [total, pageSize]);
 
   useEffect(() => {
@@ -45,7 +49,12 @@ const useInfiniteScroll = (total, pageSize = 30, root = null) => {
       (entries) => {
         if (entries[0].isIntersecting) {
           setDisplayLimit((prev) => {
-            if (prev < total) return prev + pageSize;
+            if (prev < total) {
+              setIsLoadingMore(true);
+              clearTimeout(loadTimerRef.current);
+              loadTimerRef.current = setTimeout(() => setIsLoadingMore(false), 350);
+              return prev + pageSize;
+            }
             return prev;
           });
         }
@@ -54,11 +63,14 @@ const useInfiniteScroll = (total, pageSize = 30, root = null) => {
     );
 
     observer.observe(sentinel);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      clearTimeout(loadTimerRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [total, pageSize]);
 
-  return { displayLimit, sentinelRef, containerRef, hasMore, reset };
+  return { displayLimit, sentinelRef, containerRef, hasMore, reset, isLoadingMore };
 };
 
 export default useInfiniteScroll;

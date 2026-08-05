@@ -1,0 +1,77 @@
+/**
+ * CustomDropdown.css — Sam Cafe Admin Panel
+ * Centered overlay popup for the shared CustomDropdown component,
+ * mirroring CustomDatePicker's overlay/popup interaction pattern.
+ */
+
+.cdd-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.cdd-popup {
+    background: #fff;
+    border-radius: 16px;
+    width: 280px;
+    max-width: calc(100vw - 32px);
+    max-height: min(420px, calc(100vh - 64px));
+    padding: 16px;
+    box-sizing: border-box;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+}
+
+.cdd-popup-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: #333;
+    text-align: center;
+    padding-bottom: 10px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #eee;
+}
+
+.cdd-options {
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cdd-option {
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    text-align: center;
+    transition: background 120ms ease-in;
+}
+
+.cdd-option:hover {
+    background: #f4f4f4;
+}
+
+.cdd-option.cdd-sel {
+    background: #e74c3c;
+    color: #fff;
+    font-weight: 600;
+}
+
+.cdd-option-placeholder {
+    color: #888;
+    font-style: italic;
+}
+
+.cdd-option-placeholder.cdd-sel {
+    background: #e74c3c;
+    color: #fff;
+    font-style: normal;
+    font-weight: 600;
+}

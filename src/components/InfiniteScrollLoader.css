@@ -1,56 +1,48 @@
-/* ─── InfiniteScrollLoader ─────────────────────────────────────────────── */
+/**
+ * InfiniteScrollLoader.css — Sam Cafe Admin Panel
+ * Styles for the shared infinite-scroll sentinel, inline loading row,
+ * and full-table overlay loader.
+ */
 
-/* Sentinel: zero-height, invisible trigger element */
 .isl-sentinel {
-  height: 1px;
   width: 100%;
-  pointer-events: none;
+  height: 1px;
 }
 
-/* Outer wrapper (non-table context) */
 .isl-wrapper {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  justify-content: center;
   width: 100%;
 }
 
-/* Table-row variant */
-.isl-row {
-  border: none !important;
-  background: transparent !important;
+.isl-row td.isl-cell {
+  padding: 0;
+  border: none;
 }
 
-.isl-cell {
-  border: none !important;
-  padding: 0 !important;
-  background: transparent !important;
-}
-
-/* Loader bar */
 .isl-loader {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   padding: 14px 0;
   width: 100%;
-  color: var(--text-secondary, #888);
+  color: #888;
   font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
 }
 
-/* Spinner */
 .isl-spinner {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  border: 2.5px solid var(--border-color, #ddd);
-  border-top-color: var(--accent-color, #5b7cf6);
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-top-color: var(--color-blue, #e74c3c);
   border-radius: 50%;
   animation: isl-spin 0.7s linear infinite;
-  flex-shrink: 0;
+  display: inline-block;
+}
+
+.isl-label {
+  font-weight: 500;
 }
 
 @keyframes isl-spin {
@@ -59,6 +51,29 @@
   }
 }
 
-.isl-label {
-  color: var(--text-secondary, #888);
+/* ── Full-table inline overlay (item 5: infinite scroll loading state) ──
+   Sits absolutely inside the same position:relative scroll wrapper as
+   the <table>, covering it with a translucent scrim + centered spinner
+   while the next batch of rows is appended. Doesn't block the table's
+   own scroll, since it's shown only briefly during the load step. */
+.isl-table-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(1px);
+  z-index: 5;
+  pointer-events: none;
+  font-size: 13px;
+  color: #555;
+  font-weight: 600;
+}
+
+.isl-table-overlay .isl-spinner {
+  width: 20px;
+  height: 20px;
+  border-width: 2.5px;
 }

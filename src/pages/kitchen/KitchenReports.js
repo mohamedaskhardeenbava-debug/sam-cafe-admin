@@ -10,6 +10,7 @@ import { DateRangeGroup } from "../../components/FilterBar";
 import { todayStr } from "../../utils/dateRangeUtils";
 
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 
 import "./KitchenReports.css";
 import {
@@ -153,6 +154,7 @@ const KitchenReports = ({ adminData = {} }) => {
 
   const roundTo = (v, d = 2) => Math.round((Number(v) + Number.EPSILON) * 10 ** d) / 10 ** d;
   const [activePie, setActivePie] = useState(null);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [reportFrom, setReportFrom] = useState("");
   const [reportTo, setReportTo] = useState("");
   const [reportPreset, setReportPreset] = useState("all");
@@ -248,27 +250,42 @@ const KitchenReports = ({ adminData = {} }) => {
       {/* HEADER */}
       <div className="k-header">
         <div className="k-header-row">
-          <div>
-            <h2 className="k-title">Kitchen Management</h2>
-            <p className="k-subtitle">Operations &amp; Performance Report</p>
+          <div className="header-title-row">
+            <div className="header-collapse-col">
+              <button
+                type="button"
+                className="header-collapse-btn"
+                onClick={() => setHeaderCollapsed(prev => !prev)}
+                title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+                aria-expanded={!headerCollapsed}
+              >
+                <CollapseChevron collapsed={headerCollapsed} />
+              </button>
+            </div>
+            <div className="header-title-col">
+              <h2 className="k-title">Kitchen Management</h2>
+              <p className="k-subtitle">Operations &amp; Performance Report</p>
+            </div>
           </div>
-          <div className="k-header-filters">
-            <DateRangeGroup
-              from={reportFrom}
-              to={reportTo}
-              onChangeFrom={setReportFrom}
-              onChangeTo={setReportTo}
-              preset={reportPreset}
-              onChangePreset={setReportPreset}
-              max={today}
-              labelClass="kgroom-filter-label"
-              groupClass="k-filter-item"
-              separateItems
-            />
-            {(reportFrom || reportTo) && (
-              <button className="ae-clear-filter" onClick={() => { setReportPreset("all"); setReportFrom(""); setReportTo(""); }}>Clear</button>
-            )}
-          </div>
+          {!headerCollapsed && (
+            <div className="k-header-filters">
+              <DateRangeGroup
+                from={reportFrom}
+                to={reportTo}
+                onChangeFrom={setReportFrom}
+                onChangeTo={setReportTo}
+                preset={reportPreset}
+                onChangePreset={setReportPreset}
+                max={today}
+                labelClass="kgroom-filter-label"
+                groupClass="filter-group"
+                separateItems
+              />
+              {(reportFrom || reportTo) && (
+                <button className="ae-clear-filter" onClick={() => { setReportPreset("all"); setReportFrom(""); setReportTo(""); }}>Clear</button>
+              )}
+            </div>
+          )}
         </div>
 
         <Button3D onClick={exportReport}>Export</Button3D>

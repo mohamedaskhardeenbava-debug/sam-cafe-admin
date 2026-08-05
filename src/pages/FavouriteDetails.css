@@ -75,3 +75,34 @@
   display: flex;
   gap: 10px;
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .favourite-details-image,
+  .favourite-details-image img {
+    width: 110px !important;
+  }
+
+  .checkbox-grid {
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  }
+}
+
+@media (max-width: 578px) {
+  .favourite-details-image,
+  .favourite-details-image img {
+    width: 90px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .checkbox-grid {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  }
+
+  .action,
+  .actions {
+    flex-direction: column;
+  }
+}

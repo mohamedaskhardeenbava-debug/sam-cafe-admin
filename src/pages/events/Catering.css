@@ -880,3 +880,27 @@
   font-weight: 800;
   color: #111;
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE ADDENDUM — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 992px) {
+  .act-review-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .act-review-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ae-addr-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 578px) {
+  .act-review-cell {
+    padding: 8px 10px;
+  }
+}

@@ -2,11 +2,13 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import "./Topbar.css";
-import human from "../../icon/human.png";
 import notification from "../../icon/notification.png";
 import bellSound from "../../assets/sounds/bell.mp3";
 import socket from "../../socket";
 import api from "../../api";
+import { useAuth } from "../../context/AuthContext";
+import { useVenue } from "../../context/VenueContext";
+import CustomDropdown from "../CustomDropdown";
 
 /* ─────────────────────────────────────────────────────────────────────────────
    HELPERS
@@ -152,7 +154,58 @@ function OdometerSeg({ value, unit }) {
 /* ─────────────────────────────────────────────────────────────────────────────
    TOPBAR COMPONENT
 ───────────────────────────────────────────────────────────────────────────── */
-const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
+/**
+ * VenueIndicator — shows branch context in the topbar for every role:
+ *   - Super Admin: the interactive switcher, always scoped to exactly
+ *     one branch (defaults to the first venue — no "all venues" choice)
+ *   - Everyone else: a plain read-only label naming their own branch,
+ *     since they're always pinned to it and can never switch — this is
+ *     what surfaces "which branch am I working in" per the requirement
+ *     that non-Super-Admin roles see their branch in the profile/topbar.
+ */
+function VenueIndicator() {
+  const { isSuperAdmin, admin } = useAuth();
+  const { venues, selectedVenueId, setSelectedVenueId, isLoading } = useVenue();
+
+  if (isLoading) return null;
+
+  if (isSuperAdmin) {
+    return (
+      <CustomDropdown
+        className="topbar-venue-switcher"
+        value={selectedVenueId || ""}
+        onChange={(val) => { if (val) setSelectedVenueId(val); }}
+        options={venues.map((v) => ({ value: v.id, label: v.name }))}
+        placeholder={null}
+      />
+    );
+  }
+
+  const ownVenue = venues.find((v) => v.id === admin?.venueId);
+  if (!ownVenue) return null;
+
+  return (
+    <span
+      className="topbar-venue-label"
+      title="Your branch"
+      style={{
+        padding: "6px 10px",
+        borderRadius: 8,
+        border: "1px solid #ddd",
+        fontSize: 13,
+        marginRight: 8,
+        background: "#fff",
+        color: "#333",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {ownVenue.name}
+    </span>
+  );
+}
+
+const Topbar = ({ admin, adminData = {}, setAdminData }) => {
+  const { logout } = useAuth();
   const orders = adminData.orders || [];
   const ingredients = adminData.ingredients || [];
   const navigate = useNavigate();
@@ -545,6 +598,9 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
 
       {/* ── RIGHT ── */}
       <div className="topbar-right">
+        {/* ── VENUE SWITCHER (Super Admin only) ── */}
+        <VenueIndicator />
+
         {/* ── PHONE ICON ── */}
         <div className="topbar-icon-wrapper" ref={phoneRef}>
           <button
@@ -763,22 +819,62 @@ const Topbar = ({ setIsAuthenticated, adminData = {}, setAdminData }) => {
             }}
           >
             <div className="profile-avatar">
-              <img src={human} alt="" />
+              {admin?.photo ? (
+                <img src={admin.photo} alt="" />
+              ) : (
+                <span className="profile-avatar-initial">{admin?.name?.charAt(0)?.toUpperCase() || "S"}</span>
+              )}
             </div>
-            <span className="profile-name">Admin</span>
+            <span className="profile-name">{admin?.name || "Admin"}</span>
           </button>
 
           {showProfile && (
             <div className="dropdown profile-dropdown" onClick={(e) => e.stopPropagation()}>
               <div className="profile-info">
-                <div className="profile-avatar large">S</div>
+                <div className="profile-avatar large">
+                  {admin?.photo ? (
+                    <img src={admin.photo} alt="" />
+                  ) : (
+                    <span className="profile-avatar-initial">{admin?.name?.charAt(0)?.toUpperCase() || "S"}</span>
+                  )}
+                </div>
                 <div>
-                  <p className="profile-fullname">Sam Cafe Admin</p>
-                  <p className="profile-role">Administrator</p>
+                  <p className="profile-fullname">{admin?.name || "Sam Cafe Admin"}</p>
+                  <p className="profile-role">{admin ? `${admin.roleTitle} · ${admin.roleGroup}` : "Administrator"}</p>
                 </div>
               </div>
               <div className="dropdown-divider" />
-              <button type="button" style={{ width: "100%" }} className="modal-danger-btn" onClick={(e) => { e.stopPropagation(); setIsAuthenticated(false); }}>
+              <button
+                type="button"
+                style={{ width: "100%", marginBottom: "8px" }}
+                className="modal-cancel-btn"
+                onClick={(e) => { e.stopPropagation(); setShowProfile(false); navigate("/profile"); }}
+              >
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">My Profile</span>
+              </button>
+              <button
+                type="button"
+                style={{ width: "100%", marginBottom: "8px" }}
+                className="modal-cancel-btn"
+                onClick={(e) => { e.stopPropagation(); setShowProfile(false); navigate("/todo"); }}
+              >
+                <span className="shadow"></span>
+                <span className="edge"></span>
+                <span className="front">To-Do List</span>
+              </button>
+              <button
+                type="button"
+                style={{ width: "100%" }}
+                className="modal-danger-btn"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  setShowProfile(false);
+                  await logout();
+                  navigate("/login", { replace: true });
+                }}
+              >
                 <span className="shadow"></span>
                 <span className="edge"></span>
                 <span className="front">Logout</span>

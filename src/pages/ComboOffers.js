@@ -10,8 +10,11 @@ import api from "../api";
 import closeIcon from "../icon/close-icon.png";
 import deleteIcon from "../icon/delete-icon.png";
 import editIcon from "../icon/edit-icon.png";
+import doubleArrowIcon from "../icon/double-arrow-icon.png";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
+import { useVenue } from "../context/VenueContext";
+import { EmptyRow } from "../App";
 
 import "./ComboOffers.css";
 import PageLoader from "../components/PageLoader";
@@ -25,16 +28,16 @@ const calcFinal = (price, type, value) => {
   return Math.round(price * (1 - value / 100));
 };
 
-const SECTION_KEYS = ["starters", "mainCourse", "beverages"];
-const SECTION_LABELS = { starters: "Starter", mainCourse: "Main Course", beverages: "Beverages" };
-/* map slot key → condition field (for saving) */
-const SLOT_TO_CONDITION = { starters: "starter", mainCourse: "main", beverages: "beverages" };
-
-let dragPayload = null; // simple module-level drag carrier
+/* default combo section layout — overridden by /comboSectionConfig once loaded */
+const DEFAULT_SECTIONS = [
+  { key: "dishes", label: "Dishes", categoryIds: ["pizza", "burger", "sandwichs"] },
+  { key: "desserts", label: "Desserts", categoryIds: ["desserts"] },
+  { key: "beverages", label: "Beverages", categoryIds: ["beverages"] },
+];
 
 /* ═══════════════════════════════════════════════════════════ */
 /* ─── DishList — isolated component so key= forces full remount on tab switch ── */
-const DishList = ({ items, sectionKey, usedDishNames, onDragStart }) => {
+const DishList = ({ items, sectionKey, usedDishNames, selectedId, onSelect }) => {
   const sorted = React.useMemo(() => {
     return [...items].sort((a, b) => {
       const aUsed = usedDishNames.has(a.name) ? 1 : 0;
@@ -50,12 +53,12 @@ const DishList = ({ items, sectionKey, usedDishNames, onDragStart }) => {
       )}
       {sorted.map((dish, idx) => {
         const isUsed = usedDishNames.has(dish.name);
+        const isSelected = !isUsed && selectedId === dish.id;
         return (
           <div
             key={`${sectionKey}__${dish.id}__${idx}`}
-            className={`co-dish-row ${isUsed ? "co-dish-row--used" : ""}`}
-            draggable={!isUsed}
-            onDragStart={!isUsed ? () => onDragStart(dish, sectionKey) : undefined}
+            className={`co-dish-row ${isUsed ? "co-dish-row--used" : ""} ${isSelected ? "co-dish-row--selected" : ""}`}
+            onClick={!isUsed ? () => onSelect(dish) : undefined}
             title={isUsed ? "Already used in another combo offer" : undefined}
           >
             <div className="co-dish-row-left">
@@ -70,29 +73,98 @@ const DishList = ({ items, sectionKey, usedDishNames, onDragStart }) => {
   );
 };
 
+/* ─── MapSectionNameField — shows label as text with an Edit button;
+     clicking Edit turns it into an input for just that section ── */
+const MapSectionNameField = ({ label, onSave }) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(label);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (!editing) setDraft(label);
+  }, [label, editing]);
+
+  useEffect(() => {
+    if (editing) inputRef.current?.focus();
+  }, [editing]);
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== label) onSave(trimmed);
+    setEditing(false);
+  };
+
+  const cancel = () => {
+    setDraft(label);
+    setEditing(false);
+  };
+
+  if (!editing) {
+    return (
+      <div className="co-map-name-view">
+        <span className="co-map-name-text">{label}</span>
+        <button
+          type="button"
+          className="co-map-name-edit-btn"
+          title="Rename this category"
+          onClick={() => setEditing(true)}
+        >
+          <img src={editIcon} alt="Edit" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="co-map-name-edit">
+      <input
+        ref={inputRef}
+        className="co-map-name-input"
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === "Enter") commit();
+          if (e.key === "Escape") cancel();
+        }}
+      />
+      <button type="button" className="co-map-name-save-btn" title="Save name" onClick={commit}>✓</button>
+      <button type="button" className="co-map-name-cancel-btn" title="Cancel" onClick={cancel}>✕</button>
+    </div>
+  );
+};
+
 const ComboOffers = () => {
   /* ── top-level data ── */
 
   // ── Hooks
 
-  const [comboSections, setComboSections] = useState({ starters: [], mainCourse: [], beverages: [] });
+  const { venueParam, venueId: activeVenueId } = useVenue();
+  const [allCategories, setAllCategories] = useState([]);
+  const [sectionConfig, setSectionConfig] = useState(DEFAULT_SECTIONS);
+  const [comboSections, setComboSections] = useState({ dishes: [], desserts: [], beverages: [] });
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  /* ── modal state ── */
+  /* ── offer modal state ── */
   const [modalOpen, setModalOpen] = useState(false);
   const [editOffer, setEditOffer] = useState(null);
   const [saving, setSaving] = useState(false);
 
   /* modal fields */
-  const [slots, setSlots] = useState({ starters: null, mainCourse: null, beverages: null });
-  const [activeTab, setActiveTab] = useState("starters");
+  const [slots, setSlots] = useState(() => Object.fromEntries(DEFAULT_SECTIONS.map(s => [s.key, null])));
+  const [activeTab, setActiveTab] = useState(DEFAULT_SECTIONS[0]?.key || "dishes");
   const [discountVal, setDiscountVal] = useState("");
   const [offerType, setOfferType] = useState("PERCENT");
   const [offerLabel, setOfferLabel] = useState("");
-  const [dragOver, setDragOver] = useState(null);
+  const [selectedListDishId, setSelectedListDishId] = useState(null);
+  const [selectedSlotKey, setSelectedSlotKey] = useState(null);
   const [errors, setErrors] = useState({});
   const { toast } = useToast();
+
+  /* ── category-mapping modal state ── */
+  const [mapModalOpen, setMapModalOpen] = useState(false);
+  const [mapDraft, setMapDraft] = useState([]);
+  const [mapSaving, setMapSaving] = useState(false);
 
   /* ── sort ── */
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
@@ -106,14 +178,16 @@ const ComboOffers = () => {
 
   // ── Helpers
 
+  const sectionLabel = (key) => sectionConfig.find(s => s.key === key)?.label || key;
+
   const getActual = (o) =>
-    (o.condition?.starterPrice || 0) + (o.condition?.mainPrice || 0) + (o.condition?.beveragesPrice || 0);
+    sectionConfig.reduce((sum, s) => sum + (o.condition?.[`${s.key}Price`] || 0), 0);
   const sortedOffers = useMemo(() => {
     if (!sortConfig.key) return offers;
     return [...offers].sort((a, b) => {
       let aVal, bVal;
-      if (sortConfig.key === "starter") { aVal = a.condition?.starter || ""; bVal = b.condition?.starter || ""; }
-      else if (sortConfig.key === "main") { aVal = a.condition?.main || ""; bVal = b.condition?.main || ""; }
+      if (sortConfig.key === "dishes") { aVal = a.condition?.dishes || ""; bVal = b.condition?.dishes || ""; }
+      else if (sortConfig.key === "desserts") { aVal = a.condition?.desserts || ""; bVal = b.condition?.desserts || ""; }
       else if (sortConfig.key === "bev") { aVal = a.condition?.beverages || ""; bVal = b.condition?.beverages || ""; }
       else if (sortConfig.key === "discount") { aVal = a.value; bVal = b.value; }
       else if (sortConfig.key === "actual") { aVal = getActual(a); bVal = getActual(b); }
@@ -123,30 +197,49 @@ const ComboOffers = () => {
     });
   }, [offers, sortConfig]);
 
+  /* ── build dish pools from categories + section config, filtered to
+     eventField === "yes" (combo/event-eligible dishes) ── */
+  const buildComboSections = (categories, sections) => {
+    const collectDishes = (catIds) => {
+      const items = [];
+      categories
+        .filter(c => catIds.includes(c.id))
+        .forEach(cat => {
+          const directDishes = cat.dishes || [];
+          const subDishes = (cat.subCategories || []).flatMap(s => s.dishes || []);
+          [...directDishes, ...subDishes].forEach(d => {
+            if (d.eventField !== "yes") return; // only event/combo-eligible dishes
+            items.push({
+              id: d.id,
+              name: d.name,
+              price: d.basePrice ?? d.price ?? 0,
+              image: d.image || "",
+            });
+          });
+        });
+      return items;
+    };
+    const map = {};
+    sections.forEach(s => { map[s.key] = collectDishes(s.categoryIds); });
+    return map;
+  };
+
   /* ── load on mount ── */
   useEffect(() => {
     const load = async () => {
+      setLoading(true);
       try {
-        const [comboRes, offersRes] = await Promise.all([
-          api.get("/combo"),
-          api.get("/combo_offers"),
+        const [categoriesRes, offersRes, configRes] = await Promise.all([
+          api.get("/categories", { params: venueParam() }),
+          api.get("/combo_offers", { params: venueParam() }),
+          api.get("/comboSectionConfig", { params: venueParam() }).catch(() => null),
         ]);
-        const comboData = comboRes.data || [];
-        const sectionMap = { starters: [], mainCourse: [], beverages: [] };
-        comboData.forEach(section => {
-          if (sectionMap[section.type] !== undefined) {
-            const items = (section.groups || []).flatMap(g =>
-              (g.items || []).map(i => ({
-                id: i.id,
-                name: i.name,
-                price: i.price ?? i.basePrice ?? 0,
-                image: i.image || "",
-              }))
-            );
-            sectionMap[section.type] = items;
-          }
-        });
-        setComboSections(sectionMap);
+        const categories = categoriesRes.data || [];
+        const sections = configRes?.data?.sections?.length ? configRes.data.sections : DEFAULT_SECTIONS;
+
+        setAllCategories(categories);
+        setSectionConfig(sections);
+        setComboSections(buildComboSections(categories, sections));
         setOffers(offersRes.data || []);
       } catch {
         toast.error("Failed to load data", "error");
@@ -155,48 +248,82 @@ const ComboOffers = () => {
       }
     };
     load();
-  }, []);
+    // Re-fetch when the Super Admin switches branches via the venue
+    // switcher — this page fetches its own data independently of
+    // App.js's shared adminData, so it needs its own venue-change trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeVenueId]);
 
   /* ── open modal (new) ── */
   const openNew = () => {
     setEditOffer(null);
-    setSlots({ starters: null, mainCourse: null, beverages: null });
-    setActiveTab("starters");
+    setSlots(Object.fromEntries(sectionConfig.map(s => [s.key, null])));
+    setActiveTab(sectionConfig[0]?.key || "dishes");
     setDiscountVal("");
     setOfferType("PERCENT");
     setOfferLabel("");
+    setSelectedListDishId(null);
+    setSelectedSlotKey(null);
     setErrors({});
     setModalOpen(true);
   };
 
-  /* ── open modal (edit) ── */
+  /* ── open modal (edit) ──
+     Slots are built per the CURRENT sectionConfig (not a hardcoded
+     dishes/desserts/beverages triple) since admins can rename, add,
+     or remove sections. For each configured section key, we try to
+     resolve the offer's saved dish name against the live
+     comboSections pool first (picks up the dish's current price/id/
+     image). If that lookup misses — the dish's eventField flipped to
+     "no", it was renamed, or moved to a different section — we fall
+     back to the name+price the offer itself saved at creation time,
+     so the slot still shows the original selection instead of going
+     blank. That fallback has no real `id`, so re-selecting a live
+     dish into the same slot always overwrites it cleanly. ── */
   const openEdit = (offer) => {
     setEditOffer(offer);
-    const s = comboSections.starters.find(i => i.name === offer.condition?.starter) || null;
-    const m = comboSections.mainCourse.find(i => i.name === offer.condition?.main) || null;
-    const b = comboSections.beverages.find(i => i.name === offer.condition?.beverages) || null;
-    setSlots({ starters: s, mainCourse: m, beverages: b });
-    setActiveTab("starters");
+
+    const nextSlots = {};
+    sectionConfig.forEach(s => {
+      const key = s.key;
+      const savedName = offer.condition?.[key];
+      if (!savedName) { nextSlots[key] = null; return; }
+
+      const live = (comboSections[key] || []).find(i => i.name === savedName);
+      if (live) {
+        nextSlots[key] = live;
+      } else {
+        const savedPrice = offer.condition?.[`${key}Price`] ?? 0;
+        nextSlots[key] = { id: null, name: savedName, price: savedPrice };
+      }
+    });
+    setSlots(nextSlots);
+
+    setActiveTab(sectionConfig[0]?.key || "dishes");
     setOfferType(offer.type || "PERCENT");
     setDiscountVal(String(offer.value || ""));
     setOfferLabel(offer.label || "");
+    setSelectedListDishId(null);
+    setSelectedSlotKey(null);
     setErrors({});
     setModalOpen(true);
   };
 
   /* ── pricing ── */
+  const filledSlotCount = Object.values(slots).filter(Boolean).length;
   const totalActual = Object.values(slots).reduce((a, d) => a + (d?.price || 0), 0);
   const totalFinal = calcFinal(totalActual, offerType, parseFloat(discountVal));
   const savings = totalActual - totalFinal;
   const autoLabel = () => offerType === "PERCENT" && discountVal ? `${discountVal}% OFF`
     : offerType === "FLAT" && discountVal ? `Flat ₹${discountVal} OFF` : "";
 
-  /* ── validate ── */
+  /* ── validate ──
+     Exactly 2 dishes required — any pair of the configured sections. ── */
   const validate = () => {
     const e = {};
-    const filled = [slots.starters, slots.mainCourse, slots.beverages].filter(Boolean).length;
-    if (filled < 2)
-      e.slots = "Add at least 2 dishes — any combination of Starter, Main Course, or Beverages";
+    const filled = Object.values(slots).filter(Boolean).length;
+    if (filled !== 2)
+      e.slots = `Pick exactly 2 dishes — any combination of ${sectionConfig.map(s => s.label).join(", ")}`;
     if (!discountVal || isNaN(parseFloat(discountVal)) || parseFloat(discountVal) <= 0)
       e.discount = "Enter a valid discount value";
     return e;
@@ -209,9 +336,13 @@ const ComboOffers = () => {
 
     const label = offerLabel.trim() || autoLabel();
     const condition = {};
-    if (slots.starters) { condition.starter = slots.starters.name; condition.starterPrice = slots.starters.price; }
-    if (slots.mainCourse) { condition.main = slots.mainCourse.name; condition.mainPrice = slots.mainCourse.price; }
-    if (slots.beverages) { condition.beverages = slots.beverages.name; condition.beveragesPrice = slots.beverages.price; }
+    sectionConfig.forEach(s => {
+      const key = s.key;
+      if (slots[key]) {
+        condition[key] = slots[key].name;
+        condition[`${key}Price`] = slots[key].price;
+      }
+    });
 
     const payload = { id: editOffer?.id || uid(), label, type: offerType, value: parseFloat(discountVal), condition };
     setSaving(true);
@@ -246,44 +377,101 @@ const ComboOffers = () => {
     });
   };
 
-  /* ── drag ── */
-  const onDragStart = (item, fromSection) => {
-    dragPayload = { item, fromSection };
-  };
-
-  const onDrop = (slotKey) => {
-    if (!dragPayload) return;
-    if (dragPayload.fromSection !== slotKey) {
-      // Wrong slot — highlight error briefly then ignore
-      setErrors(prev => ({ ...prev, wrongSlot: slotKey }));
-      setTimeout(() => setErrors(prev => { const n = { ...prev }; delete n.wrongSlot; return n; }), 800);
-      setDragOver(null);
-      dragPayload = null;
+  /* ── click-to-add / click-to-remove ──
+     Offers are strictly 2-dish combos — any pair of the configured
+     sections (Dishes+Beverages, Beverages+Desserts, Dishes+Desserts).
+     Once 2 slots are filled, adding a 3rd is blocked outright rather
+     than allowed and only caught at save time. ── */
+  const addSelectedToSlot = () => {
+    if (!selectedListDishId) return;
+    const filledCount = Object.values(slots).filter(Boolean).length;
+    const alreadyFilledInTab = !!slots[activeTab];
+    if (filledCount >= 2 && !alreadyFilledInTab) {
+      toast.warning("A combo offer can only have 2 dishes. Remove one to add another.");
       return;
     }
-    setSlots(prev => ({ ...prev, [slotKey]: dragPayload.item }));
+    const dish = (comboSections[activeTab] || []).find(d => d.id === selectedListDishId);
+    if (!dish) return;
+    setSlots(prev => ({ ...prev, [activeTab]: dish }));
     setErrors(prev => { const n = { ...prev }; delete n.slots; return n; });
-    setDragOver(null);
-    dragPayload = null;
+    setSelectedListDishId(null);
   };
 
-  const clearSlot = (key) => setSlots(prev => ({ ...prev, [key]: null }));
+  const removeSelectedFromSlot = () => {
+    if (!selectedSlotKey) return;
+    setSlots(prev => ({ ...prev, [selectedSlotKey]: null }));
+    setSelectedSlotKey(null);
+  };
+
+  const clearSlot = (key) => {
+    setSlots(prev => ({ ...prev, [key]: null }));
+    if (selectedSlotKey === key) setSelectedSlotKey(null);
+  };
 
   /* ── dishes already assigned in OTHER offers (exclude current edit) ── */
   const usedDishNames = React.useMemo(() => {
     const used = new Set();
     offers.forEach(o => {
       if (editOffer && o.id === editOffer.id) return; // skip self when editing
-      if (o.condition?.starter) used.add(o.condition.starter);
-      if (o.condition?.main) used.add(o.condition.main);
+      if (o.condition?.dishes) used.add(o.condition.dishes);
+      if (o.condition?.desserts) used.add(o.condition.desserts);
       if (o.condition?.beverages) used.add(o.condition.beverages);
     });
     return used;
   }, [offers, editOffer]);
 
+  /* ── category-mapping modal ── */
+  const openMapModal = () => {
+    // deep-clone current config so edits are a draft until saved
+    setMapDraft(sectionConfig.map(s => ({ ...s, categoryIds: [...s.categoryIds] })));
+    setMapModalOpen(true);
+  };
+
+  /* which section (if any) currently claims this category — used to block duplicates */
+  const mapOwnerOf = (catId) => mapDraft.find(s => s.categoryIds.includes(catId));
+
+  const mapToggleCategory = (sectionKey, catId) => {
+    const owner = mapOwnerOf(catId);
+    if (owner && owner.key !== sectionKey) {
+      toast.error(`"${allCategories.find(c => c.id === catId)?.name || catId}" is already mapped to "${owner.label}". Remove it there first.`, "error");
+      return;
+    }
+    setMapDraft(prev => prev.map(s => {
+      if (s.key !== sectionKey) return s;
+      const has = s.categoryIds.includes(catId);
+      return { ...s, categoryIds: has ? s.categoryIds.filter(c => c !== catId) : [...s.categoryIds, catId] };
+    }));
+  };
+
+  const mapRenameSection = (sectionKey, newLabel) => {
+    setMapDraft(prev => prev.map(s => s.key === sectionKey ? { ...s, label: newLabel } : s));
+  };
+
+  const handleSaveMapping = async () => {
+    setMapSaving(true);
+    try {
+      const payload = { id: 1, sections: mapDraft };
+      await api.put("/comboSectionConfig/1", payload).catch(() => api.put("/comboSectionConfig", payload));
+      setSectionConfig(mapDraft);
+      setComboSections(buildComboSections(allCategories, mapDraft));
+      setSlots(prevSlots => {
+        const next = {};
+        mapDraft.forEach(s => { next[s.key] = prevSlots[s.key] || null; });
+        return next;
+      });
+      setActiveTab(mapDraft[0]?.key || "dishes");
+      toast.success("Combo categories updated!");
+      setMapModalOpen(false);
+    } catch {
+      toast.error("Failed to save category mapping", "error");
+    } finally {
+      setMapSaving(false);
+    }
+  };
+
   if (loading) return (
     <div className="dishes-page">
-      <PageLoader label="Loading combo offers…" />
+      <PageLoader fill label="Loading combo offers…" />
     </div>
   );
 
@@ -292,8 +480,14 @@ const ComboOffers = () => {
 
       {/* ── header ── */}
       <div className="header">
-        <h2 className="title">Combo Offers</h2>
-        <Button3D onClick={openNew}>+ Add Combo</Button3D>
+        <div className="header-title-with-count">
+          <h2 className="title">Combo Offers</h2>
+          <span className="result-count">{sortedOffers.length} combo(s)</span>
+        </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <Button3D variant="cancel" onClick={openMapModal}>Manage Categories</Button3D>
+          <Button3D onClick={openNew}>+ Add Combo</Button3D>
+        </div>
       </div>
 
       <div className="table-wrapper">
@@ -301,9 +495,9 @@ const ComboOffers = () => {
           <thead>
             <tr>
               {[
-                { label: "Starter", key: "starter" },
-                { label: "Main Course", key: "main" },
-                { label: "Beverages", key: "bev" },
+                { label: sectionLabel("dishes"), key: "dishes" },
+                { label: sectionLabel("desserts"), key: "desserts" },
+                { label: sectionLabel("beverages"), key: "bev" },
                 { label: "Discount", key: "discount" },
                 { label: "Actual Price", key: "actual" },
                 { label: "Discounted Price", key: "final" },
@@ -330,17 +524,15 @@ const ComboOffers = () => {
           </thead>
           <tbody>
             {offers.length === 0 && (
-              <tr>
-                <td colSpan={8} className="co-empty-row">No combo offers yet. Click "+ Add Combo" to create one.</td>
-              </tr>
+              <EmptyRow colSpan={8} message='No combo offers yet. Click "+ Add Combo" to create one.' />
             )}
             {sortedOffers.map((o, i) => (
               <tr key={o.id}>
                 <td>
-                  <span className="">{o.condition?.starter || "—"}</span>
+                  <span className="">{o.condition?.dishes || "—"}</span>
                 </td>
                 <td>
-                  <span className="">{o.condition?.main || "—"}</span>
+                  <span className="">{o.condition?.desserts || "—"}</span>
                 </td>
                 <td>
                   <span className="">{o.condition?.beverages || "—"}</span>
@@ -352,7 +544,7 @@ const ComboOffers = () => {
                 </td>
                 <td>
                   {(() => {
-                    const actual = (o.condition?.starterPrice || 0) + (o.condition?.mainPrice || 0) + (o.condition?.beveragesPrice || 0);
+                    const actual = getActual(o);
                     return actual > 0
                       ? <span className="co-actual-price">₹{actual}</span>
                       : <span style={{ color: "#ccc" }}>—</span>;
@@ -360,7 +552,7 @@ const ComboOffers = () => {
                 </td>
                 <td>
                   {(() => {
-                    const actual = (o.condition?.starterPrice || 0) + (o.condition?.mainPrice || 0) + (o.condition?.beveragesPrice || 0);
+                    const actual = getActual(o);
                     if (!actual) return <span style={{ color: "#ccc" }}>—</span>;
                     const final = calcFinal(actual, o.type, o.value);
                     return <span className="co-final-price">₹{final}</span>;
@@ -378,7 +570,7 @@ const ComboOffers = () => {
         </table>
       </div>
 
-      {/* ═══ MODAL ══════════════════════════════════════════════ */}
+      {/* ═══ OFFER MODAL ══════════════════════════════════════════ */}
       {modalOpen && (
         <div className="modal-overlay">
           <div className="admin-modal co-modal-wide">
@@ -396,19 +588,21 @@ const ComboOffers = () => {
               <div className="co-modal-left">
                 <p className="co-section-label">Pick a category</p>
                 <div className="dish-category-buttons" style={{ marginBottom: 14 }}>
-                  {SECTION_KEYS.map(key => (
+                  {sectionConfig.map(s => (
                     <button
-                      key={key}
-                      className={`filter-pill ${activeTab === key ? "active" : ""}`}
-                      onClick={() => setActiveTab(key)}
+                      key={s.key}
+                      className={`filter-pill ${activeTab === s.key ? "active" : ""}`}
+                      onClick={() => { setActiveTab(s.key); setSelectedListDishId(null); }}
                     >
-                      {SECTION_LABELS[key]}
+                      {s.label}
                     </button>
                   ))}
                 </div>
 
                 <p className="co-section-label">
-                  Drag a {SECTION_LABELS[activeTab]} dish into the {SECTION_LABELS[activeTab]} slot →
+                  {filledSlotCount >= 2 && !slots[activeTab]
+                    ? "Combo is full (2/2) — remove a dish to add a different one"
+                    : <>Select a {sectionLabel(activeTab)} dish, then use → to add it to the {sectionLabel(activeTab)} slot</>}
                 </p>
 
                 <DishList
@@ -416,40 +610,58 @@ const ComboOffers = () => {
                   items={comboSections[activeTab] || []}
                   sectionKey={activeTab}
                   usedDishNames={usedDishNames}
-                  onDragStart={onDragStart}
+                  selectedId={selectedListDishId}
+                  onSelect={(dish) => setSelectedListDishId(prev => prev === dish.id ? null : dish.id)}
                 />
+              </div>
+
+              {/* ── CENTER: add / remove arrows ── */}
+              <div className="co-modal-arrows">
+                <button
+                  type="button"
+                  className="co-arrow-btn co-arrow-btn--add"
+                  disabled={!selectedListDishId || (filledSlotCount >= 2 && !slots[activeTab])}
+                  onClick={addSelectedToSlot}
+                >
+                  <img src={doubleArrowIcon} alt="Add" className="co-arrow-icon" />
+                </button>
+                <button
+                  type="button"
+                  className="co-arrow-btn co-arrow-btn--remove"
+                  disabled={!selectedSlotKey}
+                  onClick={removeSelectedFromSlot}
+                >
+                  <img src={doubleArrowIcon} alt="Remove" className="co-arrow-icon co-arrow-icon--flip" />
+                </button>
               </div>
 
               {/* ── RIGHT: slots + pricing ── */}
               <div className="co-modal-right">
-                <p className="co-section-label">Drop dishes into slots</p>
+                <p className="co-section-label">Selected combo dishes</p>
 
                 {errors.slots && (
                   <div className="co-error-banner">{errors.slots}</div>
                 )}
 
                 <div className="co-slots">
-                  {SECTION_KEYS.map(key => {
-                    const isWrong = errors.wrongSlot === key;
+                  {sectionConfig.map(s => {
+                    const key = s.key;
                     const isFilled = !!slots[key];
-                    const isOver = dragOver === key;
+                    const isSelected = selectedSlotKey === key;
                     return (
                       <div
                         key={key}
                         className={[
                           "co-slot",
                           isFilled ? "filled" : "",
-                          isOver ? "drag-over" : "",
-                          isWrong ? "wrong-slot" : "",
+                          isSelected ? "selected" : "",
                         ].filter(Boolean).join(" ")}
-                        onDragOver={e => { e.preventDefault(); setDragOver(key); }}
-                        onDragLeave={() => setDragOver(null)}
-                        onDrop={() => onDrop(key)}
+                        onClick={isFilled ? () => setSelectedSlotKey(prev => prev === key ? null : key) : undefined}
                       >
                         <div className="co-slot-header">
-                          <span className="co-slot-label">{SECTION_LABELS[key].toUpperCase()}</span>
+                          <span className="co-slot-label">{s.label.toUpperCase()}</span>
                           {isFilled && (
-                            <button className="co-slot-clear" onClick={() => clearSlot(key)}>✕</button>
+                            <button className="co-slot-clear" onClick={(e) => { e.stopPropagation(); clearSlot(key); }}>✕</button>
                           )}
                         </div>
                         {isFilled ? (
@@ -459,9 +671,7 @@ const ComboOffers = () => {
                           </div>
                         ) : (
                           <div className="co-slot-empty">
-                            {isWrong
-                              ? `⚠ Only ${SECTION_LABELS[key]} dishes allowed here`
-                              : `Drop a ${SECTION_LABELS[key]} dish here`}
+                            {`No ${s.label} dish selected`}
                           </div>
                         )}
                       </div>
@@ -534,6 +744,67 @@ const ComboOffers = () => {
               <Button3D variant="cancel" onClick={() => setModalOpen(false)}>Cancel</Button3D>
               <Button3D onClick={handleSave} disabled={saving}>
                 {saving ? "Saving…" : editOffer ? "Update Offer" : "Create Offer"}
+              </Button3D>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ CATEGORY-MAPPING MODAL ═══════════════════════════════ */}
+      {mapModalOpen && (
+        <div className="modal-overlay">
+          <div className="admin-modal co-modal-wide">
+
+            {/* header */}
+            <div className="admin-modal-header">
+              <h3>Manage Combo Categories</h3>
+              <Button3D variant="cancel" iconOnly onClick={() => setMapModalOpen(false)}><img src={closeIcon} /></Button3D>
+            </div>
+
+            <div className="admin-modal-body co-map-body">
+              <p className="co-section-label" style={{ marginBottom: 10 }}>
+                Click the edit icon to rename a combo category, and choose which menu categories feed dishes into it.
+                A menu category can only belong to one combo category at a time.
+              </p>
+
+              <div className="co-map-sections">
+                {mapDraft.map(s => (
+                  <div className="co-map-section" key={s.key}>
+                    <MapSectionNameField
+                      label={s.label}
+                      onSave={(newLabel) => mapRenameSection(s.key, newLabel)}
+                    />
+
+                    <p className="co-map-hint">Mapped menu categories for "{s.label}"</p>
+                    <div className="co-map-chip-grid">
+                      {allCategories.map(cat => {
+                        const checked = s.categoryIds.includes(cat.id);
+                        const owner = mapOwnerOf(cat.id);
+                        const takenElsewhere = owner && owner.key !== s.key;
+                        return (
+                          <button
+                            type="button"
+                            key={cat.id}
+                            className={`co-map-chip ${checked ? "active" : ""} ${takenElsewhere ? "disabled" : ""}`}
+                            onClick={() => mapToggleCategory(s.key, cat.id)}
+                            title={takenElsewhere ? `Already mapped to "${owner.label}"` : undefined}
+                          >
+                            {cat.name}
+                            {takenElsewhere && <span className="co-map-chip-owner"> · {owner.label}</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* footer */}
+            <div className="admin-modal-footer">
+              <Button3D variant="cancel" onClick={() => setMapModalOpen(false)}>Cancel</Button3D>
+              <Button3D onClick={handleSaveMapping} disabled={mapSaving}>
+                {mapSaving ? "Saving…" : "Save Mapping"}
               </Button3D>
             </div>
           </div>

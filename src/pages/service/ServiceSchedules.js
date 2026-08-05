@@ -14,8 +14,11 @@ import { CustomDatePicker } from "../../components/CustomDatePicker";
 
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
+import { allowTextInput } from "../../App";
+import { EmptyRow } from "../../App";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 
 import "./ServiceSchedules.css";
 
@@ -75,6 +78,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
   const { toast } = useToast();
 
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [statusFilter, setStatusFilter] = useState(location.state?.status || "");
   const [searchText, setSearchText] = useState("");
   const today = format(new Date(), "yyyy-MM-dd");
@@ -220,47 +224,67 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
   return (
     <div className="inner-page">
       <div className="header">
-        <h2 className="title">Service Schedules</h2>
+        <div className="header-title-row">
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Service Schedules</h2>
+              <span className="result-count">{filteredList.length} schedule(s)</span>
+            </div>
+          </div>
+        </div>
         <div className="header-btn-container">
           <Button3D onClick={handleExport}>Export</Button3D>
           <Button3D onClick={() => setShow(true)}>+ Add Schedule</Button3D>
         </div>
       </div>
 
-      <div className="filter-bar">
-        <div className="filter-groups">
-          <input className="search-input" placeholder="Search work / staff…" value={searchText} onChange={e => setSearchText(e.target.value)} />
+      {!headerCollapsed && (
+        <div className="filter-bar">
+          <div className="filter-groups">
+            <input className="search-input" placeholder="Search work / staff…" value={searchText} onChange={e => setSearchText(allowTextInput(searchText, e.target.value, 100, 5))} />
 
-          <div className="filter-group">
-            <span className="filter-group-label">from</span>
-            <CustomDatePicker label="From" value={fromDate} max={toDate}
-              onChange={s => { setFromDate(s); if (s > toDate) setToDate(s); setActivePreset("custom"); }} />
-            <span className="filter-group-label">to</span>
-            <CustomDatePicker label="To" value={toDate} min={fromDate}
-              onChange={s => { setToDate(s); setActivePreset("custom"); }} />
-          </div>
+            <div className="filter-group">
+              <span className="filter-group-label">from</span>
+              <CustomDatePicker label="From" value={fromDate} max={toDate}
+                onChange={s => { setFromDate(s); if (s > toDate) setToDate(s); setActivePreset("custom"); }} />
+              <span className="filter-group-label">to</span>
+              <CustomDatePicker label="To" value={toDate} min={fromDate}
+                onChange={s => { setToDate(s); setActivePreset("custom"); }} />
+            </div>
 
-          <div className="filter-group">
-            <span className="filter-group-label">period</span>
-            {PRESETS.map(p => (
-              <button key={p.label} className={`filter-pill${activePreset === p.label ? " active" : ""}`} onClick={() => applyPreset(p)}>
-                {p.label}
-              </button>
-            ))}
-          </div>
+            <div className="filter-group">
+              <span className="filter-group-label">period</span>
+              {PRESETS.map(p => (
+                <button key={p.label} className={`filter-pill${activePreset === p.label ? " active" : ""}`} onClick={() => applyPreset(p)}>
+                  {p.label}
+                </button>
+              ))}
+            </div>
 
-          <div className="filter-group">
-            <span className="filter-group-label">status</span>
-            {["", "Scheduled", "Completed", "Pending"].map(s => (
-              <button key={s} className={`filter-pill${statusFilter === s ? " active" : ""}`} onClick={() => setStatusFilter(s)}>
-                {s || "All"}
-              </button>
-            ))}
+            <div className="filter-group">
+              <span className="filter-group-label">status</span>
+              {["", "Scheduled", "Completed", "Pending"].map(s => (
+                <button key={s} className={`filter-pill${statusFilter === s ? " active" : ""}`} onClick={() => setStatusFilter(s)}>
+                  {s || "All"}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 290px)" }} >
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 290px)" }} >
         <table >
           <thead>
             <tr>
@@ -275,7 +299,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
           </thead>
           <tbody>
             {filteredList.length === 0 ? (
-              <tr><td colSpan="7" style={{ textAlign: "center", color: "#aaa" }}>No schedules found</td></tr>
+              <EmptyRow colSpan={7} message="No schedules found" />
             ) : (
               filteredList.map(i => (
                 <tr key={i.id}>
@@ -325,7 +349,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
                     className={`mat-input${formErrors.work ? " mat-error" : ""}`}
                     placeholder=" "
                     value={form.work}
-                    onChange={e => { setForm({ ...form, work: e.target.value }); setFormErrors(p => ({ ...p, work: false })); }}
+                    onChange={e => { setForm({ ...form, work: allowTextInput(form.work, e.target.value, 100, 5) }); setFormErrors(p => ({ ...p, work: false })); }}
                   />
                   <label className={`mat-label${formErrors.work ? " mat-label-error" : ""}`}>Work<span className="rf-req">*</span></label>
                   <span className={`mat-bar${formErrors.work ? " mat-bar-error" : ""}`} />

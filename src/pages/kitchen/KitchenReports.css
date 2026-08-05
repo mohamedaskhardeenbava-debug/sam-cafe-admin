@@ -464,10 +464,6 @@
 }
 
 @media (max-width: 600px) {
-    .k-page {
-        padding: 14px;
-    }
-
     .k-kpi-row {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -868,4 +864,42 @@
     .k-filter-item {
         justify-content: space-between;
     }
+}
+/* ═══════════════════════════════════════════
+   RESPONSIVE ADDENDUM — exact 1080 / 992 / 578 / 480 tiers
+═══════════════════════════════════════════ */
+@media (max-width: 1080px) {
+  .k-kpi-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .k-grid-3 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 992px) {
+  .k-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 578px) {
+  .k-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .k-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .k-kpi-row {
+    grid-template-columns: 1fr;
+  }
+
+  .rpt-fixed-card {
+    height: 280px;
+  }
 }

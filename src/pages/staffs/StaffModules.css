@@ -880,3 +880,27 @@
     background: var(--color-paleblue);
     cursor: pointer;
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE ADDENDUM — 1080 / 992 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 992px) {
+  .sm-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 578px) {
+  .staff-modal {
+    width: 96%;
+  }
+
+  .st-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .org-add-btn {
+    width: 100%;
+  }
+}

@@ -27,3 +27,17 @@
   font-size: 14px;
   color: #666;
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 578px) {
+  .favourites-image {
+    width: 30px;
+    height: 30px;
+  }
+
+  .empty-row {
+    padding: 16px;
+    font-size: 12px;
+  }
+}

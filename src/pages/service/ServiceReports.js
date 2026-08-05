@@ -11,6 +11,7 @@ import { DateRangeGroup } from "../../components/FilterBar";
 import { todayStr } from "../../utils/dateRangeUtils";
 
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 
 import "./ServiceReports.css";
 import {
@@ -100,14 +101,16 @@ const parseDineInTrend = (orders = []) => {
   orders.forEach(o => {
     const d = (o.date || "").slice(0, 7);
     if (!d) return;
-    if (!map[d]) map[d] = { dineIn: 0, takeAway: 0, revenue: 0 };
+    if (!map[d]) map[d] = { dineIn: 0, takeAway: 0 };
     const mode = (o.mode || "").toLowerCase();
     if (mode === "dine in") map[d].dineIn++;
     else map[d].takeAway++;
-    o.items?.forEach(item => { map[d].revenue += (item.totalPrice || 0); });
+    // Revenue is deliberately not tracked here — this report is shown
+    // to service roles (Captain, Service Manager), who should not see
+    // revenue figures anywhere, including in the Excel export below.
   });
   return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([month, v]) => ({
-    month: month.slice(5), ...v, revenue: Math.round(v.revenue),
+    month: month.slice(5), ...v,
   }));
 };
 
@@ -191,6 +194,7 @@ const ServiceReports = ({ adminData = {} }) => {
   // ── Hooks
 
   const [activePie, setActivePie] = useState(null);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [activeEventPie, setActiveEventPie] = useState(null);
   const [reportFrom, setReportFrom] = useState("");
   const [reportTo, setReportTo] = useState("");
@@ -234,7 +238,9 @@ const ServiceReports = ({ adminData = {} }) => {
   const exportReport = () => {
     const attRows = attData.map(s => ({ Name: s.name, Present: s.present, Leave: s.leave, Absent: s.absent, "Attendance %": `${s.pct}%` }));
     const groomRows = groomData.map(g => ({ Name: g.name, "Grooming Score %": `${g.score}%` }));
-    const orderRows = trendData.map(t => ({ Month: t.month, "Dine In": t.dineIn, "Take Away": t.takeAway, Revenue: t.revenue }));
+    // Revenue is intentionally excluded — service roles don't see revenue
+    // anywhere in this report, including exports.
+    const orderRows = trendData.map(t => ({ Month: t.month, "Dine In": t.dineIn, "Take Away": t.takeAway }));
     exportMultiSheet({
       sheets: [
         { name: "Attendance", rows: attRows },
@@ -250,30 +256,50 @@ const ServiceReports = ({ adminData = {} }) => {
 
       {/* HEADER */}
       <div className="s-header">
-        <div>
-          <h2 className="s-title">Service Management</h2>
-          <p className="s-subtitle">Operations &amp; Guest Experience Report</p>
+        <div className="header-title-row">
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <h2 className="s-title">Service Management</h2>
+            <p className="s-subtitle">Operations &amp; Guest Experience Report</p>
+          </div>
         </div>
-        <div className="s-header-filters">
-          <DateRangeGroup
-            from={reportFrom}
-            to={reportTo}
-            onChangeFrom={setReportFrom}
-            onChangeTo={setReportTo}
-            preset={reportPreset}
-            onChangePreset={setReportPreset}
-            max={today}
-            labelClass="sgroom-filter-label"
-            groupClass="s-filter-item"
-            separateItems
-          />
-          {(reportFrom || reportTo) && (
-            <button className="ae-clear-filter" onClick={() => { setReportPreset("all"); setReportFrom(""); setReportTo(""); }}>Clear</button>
-          )}
+        {!headerCollapsed && (
+          <div className="s-header-filters">
+            <DateRangeGroup
+              from={reportFrom}
+              to={reportTo}
+              onChangeFrom={setReportFrom}
+              onChangeTo={setReportTo}
+              preset={reportPreset}
+              onChangePreset={setReportPreset}
+              max={today}
+              labelClass="sgroom-filter-label"
+              groupClass="filter-group"
+              separateItems
+            />
+            {(reportFrom || reportTo) && (
+              <button className="ae-clear-filter" onClick={() => { setReportPreset("all"); setReportFrom(""); setReportTo(""); }}>Clear</button>
+            )}
+            <span className="s-export-btn">
+              <Button3D onClick={exportReport}>Export</Button3D>
+            </span>
+          </div>
+        )}
+        {headerCollapsed && (
           <span className="s-export-btn">
             <Button3D onClick={exportReport}>Export</Button3D>
           </span>
-        </div>
+        )}
       </div>
 
       {/* KPI ROW */}

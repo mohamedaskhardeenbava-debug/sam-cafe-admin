@@ -8,6 +8,9 @@
   max-width: 100%;
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* HEADER */
@@ -113,12 +116,15 @@
 
 .orders-table-wrapper {
   width: 100%;
-  height: calc(100vh - 225px);
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: auto;
   padding: 0 10px;
   background: #e9e9e9;
   border-radius: 20px;
   box-sizing: border-box;
+  position: relative;
 }
 
 /* TABLE */
@@ -128,7 +134,6 @@
   border-spacing: 0 3px;
   /* row spacing */
   background: transparent;
-  table-layout: fixed;
 }
 
 /* HEADER */
@@ -231,7 +236,7 @@
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   z-index: 9999;
-  width: 100px;
+  width: 120px;
 }
 
 .options-menu.portal {
@@ -301,6 +306,12 @@
 .status-completed {
   color: #fff !important;
   background-color: #2e7d32 !important;
+}
+
+/* cancelled */
+.status-cancelled {
+  color: #fff !important;
+  background-color: #6b7280 !important;
 }
 
 /* ===== Order Blink Highlight (FoodItem-style) ===== */
@@ -384,6 +395,11 @@
   table-layout: fixed;
   border: 1px solid #e8e8e8;
   transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.order-items-table th:last-child,
+.order-items-table td:last-child {
+  width: 210px;
 }
 
 .order-items-table {
@@ -535,7 +551,7 @@
   background: #fff;
   padding: 24px;
   border-radius: 16px;
-  width: 320px;
+  width: 480px;
   text-align: center;
 }
 
@@ -544,6 +560,181 @@
   justify-content: center;
   gap: 20px;
   margin-top: 20px;
+}
+
+/* Cancel-reason radio options (order & dish cancellation modals) */
+.cancel-reason-options {
+  text-align: left;
+}
+
+.cancel-reason-options .form-check {
+  padding: 6px 0 6px 1.75em;
+  display: flex;
+  align-items: center;
+}
+
+.cancel-reason-options .form-check-input {
+  cursor: pointer;
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+.cancel-reason-options .form-check-input:checked {
+  background-color: #e74c3c;
+  border-color: #e74c3c;
+}
+
+.cancel-reason-options .form-check-label {
+  margin-left: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+}
+
+.cancel-reason-others-input:focus {
+  outline: none;
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.15);
+}
+
+/* Add Discount modal */
+.discount-modal-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 16px;
+  text-align: left;
+}
+
+.discount-reason-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.discount-reason-input:focus {
+  outline: none;
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.15);
+}
+
+.bill-discount-row {
+  color: #c0392b;
+}
+
+/* ══════════════════════════════════════════════════════
+   MAT INPUT — floating label pattern (Orders page)
+   Mirrors Events.css's .admin-modal-body / .event-modal-body
+   mat/mat-label/mat-bar rules, scoped here to .discount-modal
+   since Orders' modals aren't wrapped in admin-modal-body or
+   event-modal-body. Structure required in JSX:
+     <div className="mat">
+       <input className="mat-input" placeholder=" " ... />
+       <label className="mat-label">Field name</label>
+       <span className="mat-bar" />
+     </div>
+════════════════════════════════════════════════════════ */
+
+.discount-modal .mat-input {
+  display: block !important;
+  width: 100% !important;
+  height: 36px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  font-family: inherit !important;
+  color: #111 !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid #d1d5db !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+  padding: 0 2px !important;
+  caret-color: #111 !important;
+  transition: border-color 0.25s ease !important;
+}
+
+.discount-modal .mat-input::placeholder {
+  color: transparent !important;
+}
+
+.discount-modal .mat-input:hover {
+  border: none !important;
+  border-bottom: 1px solid #9ca3af !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.discount-modal .mat-input:focus {
+  border-bottom-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* mat container */
+.discount-modal .mat {
+  position: relative;
+  width: 100%;
+  padding-top: 10px;
+}
+
+/* Floating label — idle state */
+.discount-modal .mat-label {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: #9ca3af;
+  pointer-events: none;
+  transition:
+    top 0.25s ease,
+    font-size 0.25s ease,
+    font-weight 0.25s ease,
+    color 0.25s ease,
+    letter-spacing 0.25s ease;
+  line-height: 1;
+  white-space: nowrap;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+/* Floating label — floated (focus or filled) */
+.discount-modal .mat-input:focus~.mat-label,
+.discount-modal .mat-input:not(:placeholder-shown)~.mat-label {
+  top: 2px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: #e74c3c;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+/* Highlight bar — draws left→right on focus */
+.discount-modal .mat-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  width: 0;
+  background: #e74c3c;
+  border-radius: 1px;
+  transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.discount-modal .mat-input:focus~.mat-label~.mat-bar,
+.discount-modal .mat-input:focus~.mat-bar {
+  width: 100% !important;
+}
+
+.discount-modal .rf-req {
+  color: #e74c3c !important;
 }
 
 .btn-cancel {
@@ -667,13 +858,6 @@
   font-size: 12px;
 }
 
-.bill-split-info {
-  font-size: 12px;
-  margin-top: 8px;
-  text-align: right;
-  color: #444;
-}
-
 .bill-preview-row {
   display: flex;
   justify-content: space-between;
@@ -727,6 +911,18 @@
   grid-template-columns: 1fr 40px 60px;
   gap: 6px;
   font-size: 13px;
+  align-items: center;
+}
+
+/* Editable rows add a qty input + price input, so name shrinks a bit
+   to make room for two number fields instead of one qty span. */
+.bill-row--editable {
+  grid-template-columns: 1fr 44px 56px 60px;
+}
+
+/* Split-bill mode adds the per-item bill picker as a 5th column. */
+.bill-row--split {
+  grid-template-columns: 1fr 44px 56px 60px 92px;
 }
 
 .bill-row.head {
@@ -752,6 +948,66 @@
   font-weight: 700;
   border-top: 1px dashed #000;
   margin-top: 6px;
+}
+
+/* ── Per-item bill picker (split-bill mode) ──────────────── */
+.bill-assign-select {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 11px;
+  background: #fafafa;
+  color: #333;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+
+.bill-assign-select:hover {
+  border-color: #bbb;
+}
+
+.bill-assign-select:focus {
+  outline: none;
+  border-color: var(--color-blue, #2563eb);
+  background: #fff;
+}
+
+/* Unassigned rows get a soft red tint so unassigned dishes are visible
+   at a glance without reading every dropdown. */
+.bill-assign-select--empty {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+/* ── Split-bill summary breakdown (per-bill item counts + totals) ── */
+.bill-split-info {
+  font-size: 12px;
+  margin-top: 8px;
+  text-align: right;
+  color: #444;
+}
+
+.bill-split-info div {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+}
+
+.bill-split-warning {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: right;
 }
 
 .split-box {
@@ -796,6 +1052,28 @@
   background: #fff5f5 !important;
 }
 
+@media (max-width: 1080px) {
+  .orders-header-div {
+    flex-wrap: wrap;
+    height: auto;
+  }
+}
+
+@media (max-width: 992px) {
+  .orders-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .orders-header-div {
+    gap: 8px;
+  }
+
+  .orders-search-wrapper {
+    width: 100%;
+  }
+}
+
 @media screen and (max-width: 768px) {
   .orders-table-wrapper {
     width: 100% !important;
@@ -808,6 +1086,82 @@
   .orders-table td {
     font-size: 12px;
   }
+
+  .orders-header-div {
+    flex-direction: column;
+    height: auto;
+    align-items: stretch;
+  }
+
+  .orders-filter {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .orders-page .dishes-status-dropdown {
+    height: 40px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 578px) {
+  .orders-header .filter-group {
+    width: 100%;
+  }
+
+  .orders-title {
+    font-size: 16px;
+  }
+
+  .order-item-actions {
+    gap: 4px;
+  }
+
+  .order-item-cancelled-label {
+    font-size: 10px;
+  }
+
+  .orders-loading-more {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .orders-page .dishes-status-dropdown {
+    min-width: 0;
+    font-size: 12px;
+    padding: 0 28px 0 8px;
+  }
+}
+
+/* ── Per-item cancel (item-level cancellation inside an order) ── */
+.order-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.order-item-cancelled {
+  opacity: 0.55;
+}
+
+.order-item-cancelled td {
+  text-decoration: line-through;
+  text-decoration-color: #c0392b;
+}
+
+.order-item-cancelled td:nth-child(5),
+.order-item-cancelled td:nth-child(6) {
+  text-decoration: none;
+}
+
+.order-item-cancelled-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #c0392b;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
 /* ── Infinite scroll sentinel ── */
@@ -843,4 +1197,28 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.orders-page .dishes-status-dropdown {
+  min-width: 150px;
+  width: 100%;
+  height: 46px;
+  padding: 0 36px 0 10px;
+  /* top padding pushes text down so label has room */
+  font-size: 14px;
+  font-weight: 400;
+  color: #111;
+  background-color: #f9f9f9;
+  box-sizing: border-box;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='%23666' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  appearance: none;
+  border: none;
+  text-transform: capitalize;
+  text-align: center;
 }

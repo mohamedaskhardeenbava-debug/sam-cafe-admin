@@ -79,18 +79,6 @@ export const CustomTimePicker = ({
 
   useEffect(() => { modeRef.current = mode; }, [mode]);
 
-  // Close on outside click
-  useEffect(() => {
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) {
-        setOpen(false);
-        setMode("hour");
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
   // ── Slot / today constraint helpers ──────────────────────────────────────
   const slotH24Start = slotStart ? parseInt(slotStart.split(":")[0], 10) : null;
   const slotH24End = slotEnd ? parseInt(slotEnd.split(":")[0], 10) : null;
@@ -223,7 +211,7 @@ export const CustomTimePicker = ({
 
       {/* ── Popup ── */}
       {open && !disabled && (
-        <div className="ctp-overlay" onMouseDown={() => { setOpen(false); setMode("hour"); }}>
+        <div className="ctp-overlay">
           <div className="ctp-popup" onMouseDown={(e) => e.stopPropagation()}>
 
             {/* Red header: AM/PM + time display */}

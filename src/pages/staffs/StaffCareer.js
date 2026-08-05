@@ -10,9 +10,12 @@ import api from "../../api";
 
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
+import { allowTextInput } from "../../App";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 import { MultiPillGroup } from "../../components/FilterBar";
+import { useVenue } from "../../context/VenueContext";
 
 import "./StaffModules.css";
 
@@ -37,8 +40,10 @@ export default function StaffCareer() {
   // ── Hooks
 
   const { toast } = useToast();
+  const { venueParam, venueId: activeVenueId } = useVenue();
   const [jobs, setJobs] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [selected, setSelected] = useState(null);
   const [careerSearch, setCareerSearch] = useState("");
   const [careerRoleFilters, setCareerRoleFilters] = useState(new Set());
@@ -48,8 +53,9 @@ export default function StaffCareer() {
   const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
-    api.get("/careers").then(res => setJobs(res.data));
-  }, []);
+    api.get("/careers", { params: venueParam() }).then(res => setJobs(res.data));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeVenueId]);
 
   const addJob = async (e) => {
     e.preventDefault();
@@ -92,7 +98,25 @@ export default function StaffCareer() {
 
       {/* HEADER */}
       <div className="header">
-        <h2 className="title">Career</h2>
+        <div className="header-title-row">
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Career</h2>
+              <span className="result-count">{filteredJobs.length} vacanc{filteredJobs.length === 1 ? "y" : "ies"}</span>
+            </div>
+          </div>
+        </div>
         <div className="header-btn-container">
           <Button3D onClick={exportJobs}>Export</Button3D>
           <Button3D onClick={() => setShowForm(true)}>+ Add Job Vacancy</Button3D>
@@ -100,26 +124,28 @@ export default function StaffCareer() {
       </div>
 
       {/* FILTER BAR */}
-      <div className="filter-bar">
-        <div className="filter-groups">
-          <input
-            className="search-input"
-            placeholder=" Search role or description…"
-            value={careerSearch}
-            onChange={e => setCareerSearch(e.target.value)}
-          />
-          <MultiPillGroup
-            label="Role"
-            options={roles.map(r => [r, r])}
-            value={careerRoleFilters}
-            onToggle={(key) => toggleSet(setCareerRoleFilters, key)}
-          />
-          {(careerSearch || careerRoleFilters.size > 0) && (
-            <button className="ae-clear-filter" onClick={() => { setCareerSearch(""); setCareerRoleFilters(new Set()); }}>Clear</button>
-          )}
-          <span className="result-count">{filteredJobs.length} opening(s)</span>
+      {!headerCollapsed && (
+        <div className="filter-bar">
+          <div className="filter-groups">
+            <input
+              className="search-input"
+              placeholder=" Search role or description…"
+              value={careerSearch}
+              onChange={e => setCareerSearch(allowTextInput(careerSearch, e.target.value, 100, 5))}
+            />
+            <MultiPillGroup
+              label="Role"
+              options={roles.map(r => [r, r])}
+              value={careerRoleFilters}
+              onToggle={(key) => toggleSet(setCareerRoleFilters, key)}
+            />
+            {(careerSearch || careerRoleFilters.size > 0) && (
+              <button className="ae-clear-filter" onClick={() => { setCareerSearch(""); setCareerRoleFilters(new Set()); }}>Clear</button>
+            )}
+            <span className="result-count">{filteredJobs.length} opening(s)</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* EMPTY STATE */}
       {filteredJobs.length === 0 && (
@@ -131,7 +157,7 @@ export default function StaffCareer() {
       )}
 
       {/* CARD GRID */}
-      <div className="career-grid-wrapper">
+      <div className={`career-grid-wrapper${headerCollapsed ? " header-is-collapsed" : ""}`}>
         <div className="card-grid">
           {filteredJobs.map((job, i) => {
             const colors = roleColors[job.role] || { bg: "#f5f4f1", color: "#3a3a3a" };
@@ -194,7 +220,7 @@ export default function StaffCareer() {
                     className={`mat-input mat-textarea${formErrors.description ? " mat-error" : ""}`}
                     placeholder=" "
                     value={form.description}
-                    onChange={e => { setForm({ ...form, description: e.target.value }); setFormErrors(p => ({ ...p, description: false })); }}
+                    onChange={e => { setForm({ ...form, description: allowTextInput(form.description, e.target.value, 500, 100000) }); setFormErrors(p => ({ ...p, description: false })); }}
                   />
                   <label className={`mat-label${formErrors.description ? " mat-label-error" : ""}`}>Description<span className="rf-req">*</span></label>
                   <span className={`mat-bar${formErrors.description ? " mat-bar-error" : ""}`} />
@@ -227,7 +253,7 @@ export default function StaffCareer() {
 
       {/* DETAIL MODAL */}
       {selected && (
-        <div className="modal-overlay" onClick={() => setSelected(null)}>
+        <div className="modal-overlay">
           <div className="admin-modal" onClick={e => e.stopPropagation()}>
             <div className="admin-modal-header">
               <div>
@@ -238,7 +264,7 @@ export default function StaffCareer() {
             </div>
 
             <div className="admin-modal-body">
-              <table className="staff-training-table">
+              <table className="data-table">
                 <tbody>
                   <tr><td>Role</td><td>{selected.role}</td></tr>
                   <tr><td>Experience</td><td>{expLabel(selected.experience)}</td></tr>

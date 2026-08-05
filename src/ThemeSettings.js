@@ -567,19 +567,16 @@ const ThemeSettings = () => {
   const handleSave = async () => {
     setSaving(true);
     const payload = {
-      id: "1",
       light: lightTokens,
       dark: darkTokens,
       activePreset,
       updatedAt: new Date().toISOString(),
     };
     try {
-      const res = await api.get("/theme");
-      if (Array.isArray(res.data) && res.data.length > 0) {
-        await api.put("/theme/1", payload);
-      } else {
-        await api.post("/theme", payload);
-      }
+      // The backend stores theme as a single global doc (id: "singleton") —
+      // there is no array, no per-id resource, and no POST for creation.
+      // PATCH upserts it in one call regardless of whether it already exists.
+      await api.patch("/theme", payload);
       // Broadcast full token sets so the user panel can apply
       // --home-btn-filter along with every other token.
       socket.emit("theme-update", { light: lightTokens, dark: darkTokens });
@@ -596,7 +593,7 @@ const ThemeSettings = () => {
   if (loading) {
     return (
       <div className="ts-page">
-        <PageLoader label="Loading theme settings…" />
+        <PageLoader fill label="Loading theme settings…" />
       </div>
     );
   }

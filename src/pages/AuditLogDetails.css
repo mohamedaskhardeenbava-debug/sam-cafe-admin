@@ -1,0 +1,122 @@
+/**
+ * AuditLogDetails.css  —  Sam Cafe Admin Panel
+ * Built on the shared .details-container/.details-header/.back-btn
+ * classes in Common.css, plus the .audit-* diff/badge classes already
+ * defined in AuditLogs.css.
+ */
+
+.back-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.back-btn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 42%;
+  width: 11px;
+  height: 11px;
+  border-left: 3px solid #111;
+  border-bottom: 3px solid #111;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.back-btn:hover {
+  background: #f2f2f2;
+}
+
+.ald-container {
+  width: 100%;
+  max-width: 860px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ald-header-badge {
+  margin-left: auto;
+}
+
+.ald-loading {
+  color: #a3a3a3;
+  font-size: 14px;
+  padding: 20px 2px;
+}
+
+/* ── Summary grid ─────────────────────────────────────────────── */
+.ald-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  background: #fafafa;
+  border: 1px solid var(--color-offwhite, #eee);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+
+.ald-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ald-summary-item-wide {
+  grid-column: 1 / -1;
+}
+
+.ald-summary-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-placeholder, #999);
+}
+
+.ald-summary-value {
+  font-size: 14px;
+  color: var(--text-primary, #222);
+  word-break: break-word;
+}
+
+.ald-summary-value-small {
+  font-size: 12px;
+  color: var(--text-secondary, #666);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* ── Diff section ─────────────────────────────────────────────── */
+.ald-diff-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ald-diff-heading {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary, #222);
+}
+
+.ald-diff-table {
+  max-width: 100%;
+}
+
+.ald-diff-table .audit-diff-value {
+  white-space: pre-wrap;
+}
+
+@media (max-width: 578px) {
+  .ald-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

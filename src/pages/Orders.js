@@ -1,6 +1,7 @@
 /**
  * Orders.js  —  Sam Cafe Admin Panel
  * Orders management page
+ * Testing Branch MongoDB
  */
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
@@ -18,13 +19,16 @@ import closeIcon from "../icon/close-icon.png";
 import { EmptyRow } from "../App";
 import { formatDisplayDate } from "../App";
 import { formatIndianTime } from "../App";
+import { allowTextInput } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
-import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import Button3D from "../components/Button3D";
-import { printBill as sendBillToPrinter } from "../printUtils";
+import CollapseChevron from "../components/CollapseChevron";
+import { printBill as sendBillToPrinter, printKot as sendKotToPrinter } from "../printUtils";
 
 import "./Orders.css";
+import "../Common.css";
 import PageLoader from "../components/PageLoader";
 
 const SEVEN_MIN = 7 * 60 * 1000;
@@ -147,6 +151,7 @@ const BillLayout = React.memo(({
   order,
   editable,
   onQtyChange,
+  onBillAssign,
   buildUpiUrl,
   onClose,
   splitPeople,
@@ -161,21 +166,48 @@ const BillLayout = React.memo(({
       (sum, i) => sum + Number(i.totalPrice || 0),
       0
     );
-    const cgst = +(subTotal * 0.025).toFixed(2);
-    const sgst = +(subTotal * 0.025).toFixed(2);
+    const discountPercent = Math.max(0, Math.min(100, Number(order.discount?.percent) || 0));
+    const discountAmount = +(subTotal * (discountPercent / 100)).toFixed(2);
+    const taxableAmount = +(subTotal - discountAmount).toFixed(2);
+    const cgst = +(taxableAmount * 0.025).toFixed(2);
+    const sgst = +(taxableAmount * 0.025).toFixed(2);
     return {
       subTotal,
+      discountPercent,
+      discountAmount,
       cgst,
       sgst,
-      total: +(subTotal + cgst + sgst).toFixed(2)
+      total: +(taxableAmount + cgst + sgst).toFixed(2)
     };
-  }, [order.items]);
+  }, [order.items, order.discount]);
+
+  const billGroups = useMemo(() => {
+    if (order.splitType !== "bill" || !order.splitBillCount) return null;
+
+    const billCount = Number(order.splitBillCount);
+    const discountPercent = Math.max(0, Math.min(100, Number(order.discount?.percent) || 0));
+
+    const groups = Array.from({ length: billCount }, (_, i) => {
+      const billNo = i + 1;
+      const items = order.items.filter(it => Number(it.billAssignment) === billNo);
+      const subTotal = +items.reduce((sum, it) => sum + Number(it.totalPrice || 0), 0).toFixed(2);
+      const discountAmount = +(subTotal * (discountPercent / 100)).toFixed(2);
+      const taxable = +(subTotal - discountAmount).toFixed(2);
+      const cgst = +(taxable * 0.025).toFixed(2);
+      const sgst = +(taxable * 0.025).toFixed(2);
+      const total = +(taxable + cgst + sgst).toFixed(2);
+      return { billNo, itemCount: items.length, subTotal, total };
+    });
+
+    const unassignedCount = order.items.filter(it => !it.billAssignment).length;
+    return { groups, unassignedCount };
+  }, [order.splitType, order.splitBillCount, order.items, order.discount]);
 
   const finalAmount =
     order.splitType === "amount"
       ? order.splitDetails?.perHead
       : order.splitType === "bill"
-        ? order.splitDetails?.[0]?.total
+        ? billGroups?.groups?.[0]?.total
         : totals.total;
 
   const qrValue = useMemo(
@@ -210,44 +242,67 @@ const BillLayout = React.memo(({
           <span>TOTAL</span>
         </div>
 
-        {order.items.map((item, idx) => (
-          <div key={idx} className="bill-row">
-            <span>{item.dishName}</span>
+        {order.items.map((item, idx) => {
+          const showBillPicker = editable && order.splitType === "bill" && order.splitBillCount > 0;
+          const rowClass = [
+            "bill-row",
+            editable && "bill-row--editable",
+            showBillPicker && "bill-row--split"
+          ].filter(Boolean).join(" ");
 
-            {editable ? (
-              <>
-                <input
-                  type="number"
-                  min="1"
-                  value={item.quantity}
-                  onChange={(e) =>
-                    onQtyChange(idx, {
-                      quantity: e.target.value,
-                      price: resolveUnitPrice(item)
-                    })
-                  }
-                />
+          return (
+            <div key={idx} className={rowClass}>
+              <span>{item.dishName}</span>
 
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={resolveUnitPrice(item)}
-                  onChange={(e) =>
-                    onQtyChange(idx, {
-                      quantity: item.quantity,
-                      price: Number(e.target.value)
-                    })
-                  }
-                />
-              </>
-            ) : (
-              <span>{item.quantity}</span>
-            )}
+              {editable ? (
+                <>
+                  <input
+                    type="number"
+                    min="1"
+                    value={item.quantity}
+                    onChange={(e) =>
+                      onQtyChange(idx, {
+                        quantity: e.target.value,
+                        price: resolveUnitPrice(item)
+                      })
+                    }
+                  />
 
-            <span>₹{item.totalPrice}</span>
-          </div>
-        ))}
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={resolveUnitPrice(item)}
+                    onChange={(e) =>
+                      onQtyChange(idx, {
+                        quantity: item.quantity,
+                        price: Number(e.target.value)
+                      })
+                    }
+                  />
+                </>
+              ) : (
+                <span>{item.quantity}</span>
+              )}
+
+              <span>₹{item.totalPrice}</span>
+
+              {showBillPicker && (
+                <select
+                  className={`bill-assign-select ${!item.billAssignment ? "bill-assign-select--empty" : ""}`}
+                  value={item.billAssignment || ""}
+                  onChange={(e) => onBillAssign(idx, e.target.value ? Number(e.target.value) : null)}
+                  title="Assign this dish to a bill"
+                >
+                  <option value="">Unassigned</option>
+                  {Array.from({ length: Number(order.splitBillCount) }, (_, i) => i + 1).map(billNo => (
+                    <option key={billNo} value={billNo}>Bill {billNo}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <hr />
@@ -260,16 +315,27 @@ const BillLayout = React.memo(({
           </div>
         )}
 
-        {order.splitType === "bill" && (
+        {order.splitType === "bill" && billGroups && (
           <div className="bill-split-info">
-            {order.splitDetails?.map((bill, i) => (
-              <div key={i}>
-                Bill {i + 1}: ₹{bill.total}
+            {billGroups.groups.map(g => (
+              <div key={g.billNo}>
+                Bill {g.billNo}: {g.itemCount} item{g.itemCount === 1 ? "" : "s"} — ₹{g.total}
               </div>
             ))}
+            {billGroups.unassignedCount > 0 && (
+              <div className="bill-split-warning">
+                ⚠ {billGroups.unassignedCount} item{billGroups.unassignedCount === 1 ? "" : "s"} not yet assigned to a bill
+              </div>
+            )}
           </div>
         )}
         <div><span>Subtotal</span><span>₹{totals.subTotal}</span></div>
+        {totals.discountPercent > 0 && (
+          <div className="bill-discount-row">
+            <span>Discount ({totals.discountPercent}%){order.discount?.reason ? ` — ${order.discount.reason}` : ""}</span>
+            <span>−₹{totals.discountAmount}</span>
+          </div>
+        )}
         <div><span>CGST @2.5%</span><span>₹{totals.cgst}</span></div>
         <div><span>SGST @2.5%</span><span>₹{totals.sgst}</span></div>
         <div className="total">
@@ -360,6 +426,7 @@ const OrderRow = React.memo(({
   isActive,
   onToggle,
   onPickup,
+  onCancelItem,
   onOptionsClick,
   navigate,
   orderStatus,
@@ -387,7 +454,7 @@ const OrderRow = React.memo(({
         <td>{order.items.length}</td>
         <td>₹{order.resolvedTotal}</td>
         <td onClick={(e) => e.stopPropagation()}>
-          {orderStatus !== "completed" ? (
+          {orderStatus !== "completed" && orderStatus !== "cancelled" ? (
             <input
               type="checkbox"
               checked={order.priority || false}
@@ -456,6 +523,22 @@ const OrderRow = React.memo(({
       <tr className={`order-sub-row ${isActive ? "open" : ""}`}>
         <td colSpan={11}>
           <div className="order-sub-content">
+            {normalizeStatus(order.status) === "cancelled" && order.cancelReason && (
+              <div
+                className="cancel-reason-banner"
+                style={{
+                  background: "#fff0ee",
+                  border: "1px solid #f5b7b1",
+                  color: "#c0392b",
+                  borderRadius: "8px",
+                  padding: "8px 12px",
+                  marginBottom: "10px",
+                  fontSize: "14px"
+                }}
+              >
+                <strong>Cancellation Reason:</strong> {order.cancelReason}
+              </div>
+            )}
             <table className="order-items-table">
               <thead>
                 <tr>
@@ -464,57 +547,80 @@ const OrderRow = React.memo(({
                   <th>Qty</th>
                   <th>Timer</th>
                   <th>Status</th>
-                  {order.status === "preparing" && <th>Action</th>}
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
-                {order.items.map((item, idx) => (
-                  <tr key={idx}>
-                    <td>
-                      <span
-                        className={item.categoryId === "combo" ? "combo-item" : "clickable"}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (item.categoryId === "combo") return;
-                          navigate(
-                            `/dishes/${item.categoryId}/${item.dishId || "__custom__"}`,
-                            { state: { fromOrder: true, orderItem: item } }
-                          );
-                        }}
-                      >
-                        {item.dishName}
-                      </span>
-                    </td>
-                    <td>{item.notes ? item.notes : "-----------"}</td>
-                    <td>{item.qty ?? item.quantity}</td>
-                    <td>
-                      {item.pickupStatus === "on_time" && (
-                        <span style={{ color: "#2e7d32", fontWeight: 600 }}>On Time</span>
-                      )}
-                      {item.pickupStatus === "late" && (
-                        <span style={{ color: "#d32f2f", fontWeight: 600 }}>Late Order</span>
-                      )}
-                      {!item.pickupStatus && <ItemTimer item={item} order={order} />}
-                    </td>
-                    <td>
-                      <div className={`status status-${normalizeStatus(item.status).replace(/\s+/g, "-")}`}>
-                        {item.status}
-                      </div>
-                    </td>
-                    {order.status === "preparing" && (
+                {order.items.map((item, idx) => {
+                  const itemStatus = normalizeStatus(item.status);
+                  const isCancellable =
+                    itemStatus !== "cancelled" &&
+                    itemStatus !== "completed" &&
+                    itemStatus !== "service pickup" &&
+                    normalizeStatus(order.status) !== "cancelled";
+
+                  return (
+                    <tr key={idx} className={itemStatus === "cancelled" ? "order-item-cancelled" : ""}>
                       <td>
-                        {item.status === "preparing" && (
-                          <Button3D style={{ boxSizing: "border-box" }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onPickup({ orderId: order.id, itemIndex: idx, item });
-                            }}>Order Pickup</Button3D>
-                        )}
+                        <span
+                          className={item.categoryId === "combo" ? "combo-item" : "clickable"}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (item.categoryId === "combo") return;
+                            navigate(
+                              `/dishes/${item.categoryId}/${item.dishId || "__custom__"}`,
+                              { state: { fromOrder: true, orderItem: item } }
+                            );
+                          }}
+                        >
+                          {item.dishName}
+                        </span>
                       </td>
-                    )}
-                  </tr>
-                ))}
+                      <td>{item.notes ? item.notes : "-----------"}</td>
+                      <td>{item.qty ?? item.quantity}</td>
+                      <td>
+                        {item.pickupStatus === "on_time" && (
+                          <span style={{ color: "#2e7d32", fontWeight: 600 }}>On Time</span>
+                        )}
+                        {item.pickupStatus === "late" && (
+                          <span style={{ color: "#d32f2f", fontWeight: 600 }}>Late Order</span>
+                        )}
+                        {!item.pickupStatus && <ItemTimer item={item} order={order} />}
+                      </td>
+                      <td>
+                        <div className={`status status-${itemStatus.replace(/\s+/g, "-")}`}>
+                          {item.status}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="order-item-actions">
+                          {order.status === "preparing" && item.status === "preparing" && (
+                            <Button3D style={{ boxSizing: "border-box" }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onPickup({ orderId: order.id, itemIndex: idx, item });
+                              }}>Order Pickup</Button3D>
+                          )}
+                          {isCancellable && (
+                            <Button3D
+                              variant="cancel"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onCancelItem({ order, itemIndex: idx, item });
+                              }}
+                            >
+                              Cancel
+                            </Button3D>
+                          )}
+                          {itemStatus === "cancelled" && (
+                            <span className="order-item-cancelled-label">Cancelled</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -523,6 +629,7 @@ const OrderRow = React.memo(({
     </React.Fragment>
   );
 });
+
 
 const Orders = ({ adminData, setAdminData }) => {
   // Orders owns its own sort state instead of sharing App.js's global
@@ -654,6 +761,24 @@ const Orders = ({ adminData, setAdminData }) => {
   const [previewBillOrder, setPreviewBillOrder] = useState(null);
   const [editableBill, setEditableBill] = useState(null);
   const [menuPos, setMenuPos] = useState(null);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const [cancelOrderConfirm, setCancelOrderConfirm] = useState(null);
+  const [cancelItemConfirm, setCancelItemConfirm] = useState(null);
+  const [cancelItemReason, setCancelItemReason] = useState("");
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelReasonOption, setCancelReasonOption] = useState("");
+  const [cancelItemReasonOption, setCancelItemReasonOption] = useState("");
+  const [discountModalOrder, setDiscountModalOrder] = useState(null);
+  const [discountPercent, setDiscountPercent] = useState("");
+  const [discountReason, setDiscountReason] = useState("");
+
+  const CANCEL_REASONS = [
+    "Customer changed their mind",
+    "Item out of stock",
+    "Kitchen delay / unable to prepare",
+    "Order placed by mistake",
+    "Others",
+  ];
   const tableWrapperRef = useRef(null);
 
   useEffect(() => {
@@ -788,12 +913,15 @@ const Orders = ({ adminData, setAdminData }) => {
     return data;
   }, [filteredOrders, sortConfig]);
 
-  const { displayLimit, sentinelRef, hasMore } =
+  const { displayLimit, sentinelRef, hasMore, isLoadingMore } =
     useInfiniteScroll(sortedOrders.length, 50, tableWrapperRef.current);
 
-  const deriveOrderStatusFromItems = useCallback((items) => {
-    if (items.every(i => i.status === "completed")) return "completed";
-    if (items.some(i => i.status === "preparing" || i.status === "service pickup"))
+  const deriveOrderStatusFromItems = useCallback((items, currentStatus) => {
+    if (normalizeStatus(currentStatus) === "cancelled") return "cancelled";
+    const activeItems = items.filter(i => normalizeStatus(i.status) !== "cancelled");
+    if (activeItems.length === 0) return "cancelled";
+    if (activeItems.every(i => i.status === "completed")) return "completed";
+    if (activeItems.some(i => i.status === "preparing" || i.status === "service pickup"))
       return "preparing";
     return "placed";
   }, []);
@@ -879,7 +1007,7 @@ const Orders = ({ adminData, setAdminData }) => {
             return item;
           });
 
-          const newStatus = deriveOrderStatusFromItems(items);
+          const newStatus = deriveOrderStatusFromItems(items, order.status);
 
           if (!orderChanged && newStatus === order.status) return order;
 
@@ -979,40 +1107,254 @@ const Orders = ({ adminData, setAdminData }) => {
     exportToExcel({ rows, sheetName: "Orders", fileName: `orders_${from}_to_${to}.xlsx` });
   };
 
-  const printBill = async (order) => {
-    const cgst = +(order.resolvedTotal * 0.025).toFixed(2);
-    const sgst = +(order.resolvedTotal * 0.025).toFixed(2);
-    const total = +(order.resolvedTotal * 1.05).toFixed(2);
+  const computeGSTFromSubtotal = (subTotal, discountPercent) => {
+    const discountAmount = +(subTotal * ((discountPercent || 0) / 100)).toFixed(2);
+    const taxable = +(subTotal - discountAmount).toFixed(2);
+    const cgst = +(taxable * 0.025).toFixed(2);
+    const sgst = +(taxable * 0.025).toFixed(2);
+    const total = +(taxable + cgst + sgst).toFixed(2);
+    return { subTotal: +subTotal.toFixed(2), discountPercent: discountPercent || 0, discountAmount, cgst, sgst, total };
+  };
 
-    // Shape must match what bridge.js's printBill() expects:
-    // order.items[].{dishName, quantity, totalPrice} + order.totalWithGST
-    const printerOrder = {
+  // Builds the printer-shaped payload for a single receipt. `overrides`
+  // lets split-bill printing swap in a filtered item list / per-bill
+  // totals without duplicating the base mapping logic.
+  const buildPrinterOrder = (order, overrides = {}) => {
+    const totalWithGST = overrides.totalWithGST || order.totalWithGST || (() => {
+      const subTotal = Number(order.resolvedTotal || 0);
+      const cgst = +(subTotal * 0.025).toFixed(2);
+      const sgst = +(subTotal * 0.025).toFixed(2);
+      const total = +(subTotal + cgst + sgst).toFixed(2);
+      return { subTotal, cgst, sgst, total };
+    })();
+
+    const sourceItems = overrides.items || order.items;
+
+    return {
       id: order.id,
       date: order.date,
       time: order.time,
       tableNo: order.tableNo,
       staffName: order.staffName,
       userName: order.userName || "Guest",
-      items: order.items.map(item => ({
+      items: sourceItems.map(item => ({
         dishName: item.dishName,
         quantity: item.quantity,
         totalPrice: item.totalPrice,
         selectedSize: item.selectedSize,
         spiciness: item.spiciness
       })),
-      totalWithGST: {
-        subTotal: order.resolvedTotal,
-        cgst,
-        sgst,
-        total
-      },
-      upiUrl: buildUpiUrl(total)
+      totalWithGST,
+      upiUrl: overrides.upiUrl || buildUpiUrl(totalWithGST.total, order.id),
+      ...(overrides.splitLabel ? { splitLabel: overrides.splitLabel } : {}),
+      ...(overrides.perHeadNote ? { perHeadNote: overrides.perHeadNote } : {})
     };
+  };
 
+  const printBill = async (order) => {
+    // previewBillOrder / editableBill (built via recalcOrderTotals) already
+    // carry a correct totalWithGST object computed from the actual line
+    // items. Orders coming straight from the table only have
+    // `resolvedTotal`. Prefer the former — recomputing from
+    // resolvedTotal when it's missing (e.g. after a bill edit) was
+    // silently producing NaN/undefined totals that never made it to the
+    // printer.
+
+    // ── SPLIT AMOUNT: still a single receipt with every item listed —
+    //    the split is only a payment note ("split N ways, ₹X/head")
+    //    printed at the bottom, not a change to what's billed.
+    if (order.splitType === "amount" && order.splitDetails?.customers > 0) {
+      const { customers, perHead } = order.splitDetails;
+      const printerOrder = buildPrinterOrder(order, {
+        perHeadNote: `Split ${customers} ways — ₹${perHead} per head`
+      });
+
+      const result = await sendBillToPrinter(socket, printerOrder);
+      if (!result.success) {
+        toast.error(result.error || "Failed to print bill");
+        console.error("Bill print failed:", result.error);
+      }
+      return;
+    }
+
+    // ── SPLIT BILL: item-level split — each bill only lists the dishes
+    //    assigned to it (via the per-row bill picker), with its own
+    //    subtotal/tax/total computed from just those items. Prints one
+    //    receipt per bill.
+    if (order.splitType === "bill" && order.splitBillCount > 0) {
+      const billCount = Number(order.splitBillCount);
+      const discountPercent = Math.max(0, Math.min(100, Number(order.discount?.percent) || 0));
+
+      const unassigned = order.items.filter(it => !it.billAssignment);
+      if (unassigned.length > 0) {
+        toast.error(`${unassigned.length} item(s) aren't assigned to a bill yet — assign every dish before printing.`);
+        return;
+      }
+
+      let allOk = true;
+      for (let billNo = 1; billNo <= billCount; billNo++) {
+        const billItems = order.items.filter(it => Number(it.billAssignment) === billNo);
+        if (billItems.length === 0) continue; // nothing assigned to this bill — skip, don't print an empty receipt
+
+        const subTotal = +billItems.reduce((sum, it) => sum + Number(it.totalPrice || 0), 0).toFixed(2);
+        const totalWithGST = computeGSTFromSubtotal(subTotal, discountPercent);
+
+        const printerOrder = buildPrinterOrder(order, {
+          items: billItems,
+          totalWithGST,
+          upiUrl: buildUpiUrl(totalWithGST.total, order.id),
+          splitLabel: `Bill ${billNo} of ${billCount}`
+        });
+
+        const result = await sendBillToPrinter(socket, printerOrder);
+        if (!result.success) {
+          allOk = false;
+          toast.error(result.error || `Failed to print bill ${billNo}/${billCount}`);
+          console.error(`Split bill ${billNo}/${billCount} print failed:`, result.error);
+        }
+      }
+      if (allOk) toast.success(`Printed ${billCount} split bills`);
+      return;
+    }
+
+    // ── NORMAL (unsplit) bill — single receipt, unchanged behaviour.
+    const printerOrder = buildPrinterOrder(order);
     const result = await sendBillToPrinter(socket, printerOrder);
     if (!result.success) {
       toast.error(result.error || "Failed to print bill");
       console.error("Bill print failed:", result.error);
+    }
+  };
+
+  const printKot = async (order) => {
+    const printerOrder = {
+      id: order.id,
+      date: order.date,
+      time: order.time,
+      tableNo: order.tableNo,
+      staffName: order.userName,
+      items: (order.items || [])
+        .filter(item => normalizeStatus(item.status) !== "cancelled")
+        .map(item => ({
+          dishName: item.dishName,
+          quantity: item.quantity,
+          selectedSize: item.selectedSize,
+          spiciness: item.spiciness,
+          notes: item.notes
+        }))
+    };
+
+    const result = await sendKotToPrinter(socket, printerOrder);
+    if (!result.success) {
+      toast.error(result.error || "Failed to print KOT");
+      console.error("KOT print failed:", result.error);
+    } else {
+      toast.success("KOT sent to printer");
+    }
+  };
+
+  const cancelOrder = async (order, reason) => {
+    const updatedOrder = {
+      ...order,
+      status: "cancelled",
+      cancelReason: reason.trim(),
+      cancelledAt: new Date().toISOString(),
+      items: order.items.map(item => ({
+        ...item,
+        status: "cancelled"
+      }))
+    };
+
+    // 1. INSTANT UI UPDATE
+    setAdminData(prev => ({
+      ...prev,
+      orders: prev.orders.map(o => (o.id === order.id ? updatedOrder : o))
+    }));
+
+    // 2. BACKEND UPDATE
+    try {
+      await persistOrderEverywhere(updatedOrder);
+      socket.emit("data-change", {
+        resource: "orders",
+        action: "updated",
+        payload: updatedOrder
+      });
+      toast.success("Order cancelled");
+    } catch (err) {
+      toast.error("Failed to cancel order");
+      console.error("Failed to cancel order", err);
+    }
+  };
+
+  const cancelOrderItem = async (order, itemIndex, reason) => {
+    const items = order.items.map((item, idx) =>
+      idx === itemIndex
+        ? {
+          ...item,
+          status: "cancelled",
+          cancelReason: reason.trim(),
+          cancelledAt: new Date().toISOString(),
+          // Zero out billing contribution — cancelled dishes shouldn't be charged.
+          totalPrice: 0
+        }
+        : item
+    );
+
+    const recalced = recalcOrderTotals({ ...order, items });
+    const newStatus = deriveOrderStatusFromItems(recalced.items, order.status);
+
+    const updatedOrder = {
+      ...recalced,
+      status: newStatus
+    };
+
+    // 1. INSTANT UI UPDATE
+    setAdminData(prev => ({
+      ...prev,
+      orders: prev.orders.map(o => (o.id === order.id ? updatedOrder : o))
+    }));
+
+    // 2. BACKEND UPDATE
+    try {
+      await persistOrderEverywhere(updatedOrder);
+      socket.emit("data-change", {
+        resource: "orders",
+        action: "updated",
+        payload: updatedOrder
+      });
+      toast.success("Dish cancelled");
+    } catch (err) {
+      toast.error("Failed to cancel dish");
+      console.error("Failed to cancel dish", err);
+    }
+  };
+
+  const applyDiscount = async (order, percent, reason) => {
+    const pct = Math.max(0, Math.min(100, Number(percent) || 0));
+
+    const updatedOrder = recalcOrderTotals({
+      ...order,
+      discount: { percent: pct, reason: reason.trim() }
+    });
+
+    // 1. INSTANT UI UPDATE
+    setAdminData(prev => ({
+      ...prev,
+      orders: prev.orders.map(o => (o.id === order.id ? updatedOrder : o))
+    }));
+
+    // 2. BACKEND UPDATE
+    try {
+      await persistOrderEverywhere(updatedOrder);
+      socket.emit("data-change", {
+        resource: "orders",
+        action: "updated",
+        payload: updatedOrder
+      });
+      toast.success("Discount applied");
+    } catch (err) {
+      toast.error("Failed to apply discount");
+      console.error("Failed to apply discount", err);
     }
   };
 
@@ -1021,6 +1363,11 @@ const Orders = ({ adminData, setAdminData }) => {
     setPreviewBillOrder(null);
     if (originalBill) setEditableBill(originalBill);
     setOriginalBill(null);
+    // Reset the split-input fields too — otherwise a half-typed "3" left
+    // in the Split Amount/Split Bill box would carry over into the next
+    // order's edit session and could be applied by mistake.
+    setSplitPeople("");
+    setSplitBills("");
   }, [originalBill]);
 
   const closeOptionsMenu = useCallback(() => {
@@ -1041,7 +1388,14 @@ const Orders = ({ adminData, setAdminData }) => {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [openMenuOrderId, closeOptionsMenu]);
 
-  if (!adminData?.orders?.length) return <PageLoader label="Loading orders…" />;
+  // No loading check here: App.js already gates the entire route tree
+  // behind its own top-level loading screen (isAppLoading) and only
+  // mounts this page once fetchAllData has fully resolved — so by the
+  // time Orders.js renders at all, `adminData.orders` is guaranteed to
+  // be the real, current result. A branch with zero orders (a brand-new
+  // venue, for instance) is a valid final state, not a sign that data is
+  // still loading, so an empty array here should render the normal empty
+  // orders table, not a spinner.
 
   const recalcOrderTotals = (order) => {
     const items = order.items.map(item => {
@@ -1068,16 +1422,22 @@ const Orders = ({ adminData, setAdminData }) => {
       0
     ).toFixed(2);
 
-    const cgst = +(subTotal * 0.025).toFixed(2);
-    const sgst = +(subTotal * 0.025).toFixed(2);
-    const total = +(subTotal + cgst + sgst).toFixed(2);
+    const discountPct = Math.max(0, Math.min(100, Number(order.discount?.percent) || 0));
+    const discountAmount = +(subTotal * (discountPct / 100)).toFixed(2);
+    const taxableAmount = +(subTotal - discountAmount).toFixed(2);
+
+    const cgst = +(taxableAmount * 0.025).toFixed(2);
+    const sgst = +(taxableAmount * 0.025).toFixed(2);
+    const total = +(taxableAmount + cgst + sgst).toFixed(2);
 
     return {
       ...order,
       items,
-      totalAmount: subTotal,
+      totalAmount: taxableAmount,
       totalWithGST: {
         subTotal,
+        discountPercent: discountPct,
+        discountAmount,
         cgst,
         sgst,
         total
@@ -1107,22 +1467,26 @@ const Orders = ({ adminData, setAdminData }) => {
 
   const applySplitBill = () => {
     if (!splitBills || isNaN(splitBills)) return;
+    const billCount = Number(splitBills);
+    if (billCount < 1) return;
 
-    const total = editableBill.items.reduce(
-      (sum, i) => sum + Number(i.totalPrice || 0),
-      0
-    );
-
-    const perBill = (total / Number(splitBills)).toFixed(2);
-
-    const splitDetails = Array.from({ length: Number(splitBills) }, () => ({
-      total: perBill
-    }));
-
+    // Item-level split: create `billCount` empty bill slots and clear any
+    // existing assignments so staff can pick which bill each dish goes to
+    // via the per-row bill-picker, rather than guessing an even split.
     setEditableBill(prev => ({
       ...prev,
       splitType: "bill",
-      splitDetails
+      splitBillCount: billCount,
+      items: prev.items.map(item => ({ ...item, billAssignment: null }))
+    }));
+  };
+
+  const onBillAssign = (itemIndex, billNo) => {
+    setEditableBill(prev => ({
+      ...prev,
+      items: prev.items.map((item, idx) =>
+        idx === itemIndex ? { ...item, billAssignment: billNo } : item
+      )
     }));
   };
 
@@ -1130,8 +1494,28 @@ const Orders = ({ adminData, setAdminData }) => {
     <div className="orders-page">
       <div className="orders-header">
         <div className="orders-header-div">
-          <h2 className="orders-title">Orders</h2>
+          <div className="header-title-row">
+            <div className="header-collapse-col">
+              <button
+                type="button"
+                className="header-collapse-btn"
+                onClick={() => setHeaderCollapsed(prev => !prev)}
+                title={headerCollapsed ? "Expand header" : "Collapse header"}
+                aria-expanded={!headerCollapsed}
+              >
+                <CollapseChevron collapsed={headerCollapsed} />
+              </button>
+            </div>
+            <div className="header-title-col">
+              <div className="header-title-with-count">
+                <h2 className="orders-title">Orders</h2>
+                <span className="result-count">{sortedOrders.length} order(s)</span>
+              </div>
+            </div>
+          </div>
 
+          {!headerCollapsed && (
+            <>
           <div className="orders-search-wrapper">
             <input
               className="search-input"
@@ -1145,8 +1529,11 @@ const Orders = ({ adminData, setAdminData }) => {
           </div>
 
           <Button3D onClick={() => exportOrders(filteredOrders, fromDate, toDate)}>Export</Button3D>
+            </>
+          )}
         </div>
 
+        {!headerCollapsed && (
         <div className="orders-header-div">
           <button
             type="button"
@@ -1232,7 +1619,7 @@ const Orders = ({ adminData, setAdminData }) => {
 
             {openStatusDropdown && (
               <div className="dropdown-menu">
-                {["all", "placed", "preparing", "service pickup", "completed"].map(status => (
+                {["all", "placed", "preparing", "service pickup", "completed", "cancelled"].map(status => (
                   <div
                     key={status}
                     onClick={() => {
@@ -1247,10 +1634,11 @@ const Orders = ({ adminData, setAdminData }) => {
             )}
           </div>
         </div>
+        )}
 
       </div>
 
-      <div className="orders-table-wrapper" ref={tableWrapperRef}>
+      <div className={`orders-table-wrapper${headerCollapsed ? " header-is-collapsed" : ""}`} ref={tableWrapperRef}>
         <table className="orders-table">
           <colgroup>
             <col />
@@ -1324,7 +1712,7 @@ const Orders = ({ adminData, setAdminData }) => {
               <EmptyRow colSpan={11} message="No orders for selected date range" />
             ) : (
               sortedOrders.slice(0, displayLimit).map(order => {
-                const orderStatus = deriveOrderStatusFromItems(order.items);
+                const orderStatus = deriveOrderStatusFromItems(order.items, order.status);
                 return (
                   <OrderRow
                     key={order.id}
@@ -1334,6 +1722,7 @@ const Orders = ({ adminData, setAdminData }) => {
                     isActive={activeOrderIds.includes(order.id)}
                     onToggle={toggleOrder}
                     onPickup={setPickupConfirm}
+                    onCancelItem={setCancelItemConfirm}
                     onOptionsClick={(id, pos) => {
                       setMenuPos(pos);
                       setOpenMenuOrderId(prev => prev === id ? null : id);
@@ -1352,6 +1741,7 @@ const Orders = ({ adminData, setAdminData }) => {
           </tbody>
         </table>
       </div>
+      <InfiniteScrollOverlay isLoading={isLoadingMore} />
       {pickupConfirm && (
         <div
           className="pickup-overlay"
@@ -1409,7 +1799,7 @@ const Orders = ({ adminData, setAdminData }) => {
                       };
                     });
 
-                    const newStatus = deriveOrderStatusFromItems(items);
+                    const newStatus = deriveOrderStatusFromItems(items, o.status);
 
                     const updated = {
                       ...o,
@@ -1424,6 +1814,243 @@ const Orders = ({ adminData, setAdminData }) => {
 
                 setPickupConfirm(null);
               }}>Confirm</Button3D>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cancelOrderConfirm && (
+        <div
+          className="pickup-overlay"
+        >
+          <div
+            className="pickup-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>Cancel Order {cancelOrderConfirm.id}</h3>
+            <p>Are you sure you want to cancel this order? Please select a reason.</p>
+
+            <div className="cancel-reason-options" style={{ marginTop: "10px" }}>
+              {CANCEL_REASONS.map((reason, i) => (
+                <div className="form-check" key={i}>
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="cancelOrderReason"
+                    id={`cancelOrderReason-${i}`}
+                    checked={cancelReasonOption === reason}
+                    onChange={() => {
+                      setCancelReasonOption(reason);
+                      setCancelReason(reason === "Others" ? "" : reason);
+                    }}
+                  />
+                  <label className="form-check-label" htmlFor={`cancelOrderReason-${i}`}>
+                    {reason}
+                  </label>
+                </div>
+              ))}
+
+              {cancelReasonOption === "Others" && (
+                <input
+                  type="text"
+                  className="cancel-reason-others-input"
+                  placeholder="Enter reason (max 5 words, 100 characters)…"
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(allowTextInput(cancelReason, e.target.value, 100, 5))}
+                  autoFocus
+                  style={{
+                    width: "100%",
+                    marginTop: "10px",
+                    padding: "8px",
+                    borderRadius: "6px",
+                    border: "1px solid #d1d5db",
+                    boxSizing: "border-box",
+                    fontFamily: "inherit"
+                  }}
+                />
+              )}
+            </div>
+
+            <div className="pickup-actions">
+              <Button3D
+                variant="cancel"
+                onClick={() => {
+                  setCancelOrderConfirm(null);
+                  setCancelReasonOption("");
+                  setCancelReason("");
+                }}
+              >
+                Back
+              </Button3D>
+
+              <Button3D
+                disabled={!cancelReason.trim()}
+                onClick={async () => {
+                  await cancelOrder(cancelOrderConfirm, cancelReason);
+                  setCancelOrderConfirm(null);
+                  setCancelReason("");
+                  setCancelReasonOption("");
+                }}
+              >
+                Confirm Cancel
+              </Button3D>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cancelItemConfirm && (
+        <div
+          className="pickup-overlay"
+        >
+          <div
+            className="pickup-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>Cancel Dish</h3>
+            <p>
+              Are you sure you want to cancel{" "}
+              <strong>{cancelItemConfirm?.item?.dishName}</strong>? Please select a reason.
+            </p>
+
+            <div className="cancel-reason-options" style={{ marginTop: "10px" }}>
+              {CANCEL_REASONS.map((reason, i) => (
+                <div className="form-check" key={i}>
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="cancelItemReason"
+                    id={`cancelItemReason-${i}`}
+                    checked={cancelItemReasonOption === reason}
+                    onChange={() => {
+                      setCancelItemReasonOption(reason);
+                      setCancelItemReason(reason === "Others" ? "" : reason);
+                    }}
+                  />
+                  <label className="form-check-label" htmlFor={`cancelItemReason-${i}`}>
+                    {reason}
+                  </label>
+                </div>
+              ))}
+
+              {cancelItemReasonOption === "Others" && (
+                <input
+                  type="text"
+                  className="cancel-reason-others-input"
+                  placeholder="Enter reason (max 5 words, 100 characters)…"
+                  value={cancelItemReason}
+                  onChange={(e) => setCancelItemReason(allowTextInput(cancelItemReason, e.target.value, 100, 5))}
+                  autoFocus
+                  style={{
+                    width: "100%",
+                    marginTop: "10px",
+                    padding: "8px",
+                    borderRadius: "6px",
+                    border: "1px solid #d1d5db",
+                    boxSizing: "border-box",
+                    fontFamily: "inherit"
+                  }}
+                />
+              )}
+            </div>
+
+            <div className="pickup-actions">
+              <Button3D
+                variant="cancel"
+                onClick={() => {
+                  setCancelItemConfirm(null);
+                  setCancelItemReason("");
+                  setCancelItemReasonOption("");
+                }}
+              >
+                Back
+              </Button3D>
+
+              <Button3D
+                disabled={!cancelItemReason.trim()}
+                onClick={async () => {
+                  const { order, itemIndex } = cancelItemConfirm;
+                  await cancelOrderItem(order, itemIndex, cancelItemReason);
+                  setCancelItemConfirm(null);
+                  setCancelItemReason("");
+                  setCancelItemReasonOption("");
+                }}
+              >
+                Confirm Cancel
+              </Button3D>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {discountModalOrder && (
+        <div className="pickup-overlay">
+          <div
+            className="pickup-modal discount-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>Add Discount — Order {discountModalOrder.id}</h3>
+            <p>Enter a discount percentage and the reason for it.</p>
+
+            <div className="discount-modal-fields">
+              <div className="mat">
+                <input
+                  type="number"
+                  className="mat-input"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  placeholder=" "
+                  value={discountPercent}
+                  onChange={(e) => {
+                    let v = e.target.value;
+                    if (v !== "" && Number(v) > 100) v = "100";
+                    if (v !== "" && Number(v) < 0) v = "0";
+                    setDiscountPercent(v);
+                  }}
+                  autoFocus
+                />
+                <label className="mat-label">Discount %</label>
+                <span className="mat-bar" />
+              </div>
+
+              <input
+                type="text"
+                className="discount-reason-input"
+                placeholder="Reason for discount (max 5 words, 100 characters)…"
+                value={discountReason}
+                onChange={(e) => setDiscountReason(allowTextInput(discountReason, e.target.value, 100, 5))}
+              />
+            </div>
+
+            <div className="pickup-actions">
+              <Button3D
+                variant="cancel"
+                onClick={() => {
+                  setDiscountModalOrder(null);
+                  setDiscountPercent("");
+                  setDiscountReason("");
+                }}
+              >
+                Cancel
+              </Button3D>
+
+              <Button3D
+                disabled={
+                  discountPercent === "" ||
+                  isNaN(Number(discountPercent)) ||
+                  Number(discountPercent) <= 0 ||
+                  !discountReason.trim()
+                }
+                onClick={async () => {
+                  await applyDiscount(discountModalOrder, discountPercent, discountReason);
+                  setDiscountModalOrder(null);
+                  setDiscountPercent("");
+                  setDiscountReason("");
+                }}
+              >
+                Apply Discount
+              </Button3D>
             </div>
           </div>
         </div>
@@ -1478,6 +2105,51 @@ const Orders = ({ adminData, setAdminData }) => {
             >
               Print
             </div>
+
+            <div
+              onClick={(e) => {
+                closeOptionsMenu();
+                e.stopPropagation();
+                printKot(orders.find(o => o.id === openMenuOrderId));
+              }}
+            >
+              Print KOT
+            </div>
+
+            {normalizeStatus(
+              orders.find(o => o.id === openMenuOrderId)?.status
+            ) !== "cancelled" && (
+              <div
+                onClick={(e) => {
+                  closeOptionsMenu();
+                  e.stopPropagation();
+                  const order = orders.find(o => o.id === openMenuOrderId);
+                  setDiscountModalOrder(order);
+                  setDiscountPercent(order?.discount?.percent != null ? String(order.discount.percent) : "");
+                  setDiscountReason(order?.discount?.reason || "");
+                }}
+              >
+                Add Discount
+              </div>
+            )}
+
+            {normalizeStatus(
+              orders.find(o => o.id === openMenuOrderId)?.status
+            ) !== "cancelled" && (
+              <div
+                className="danger-option"
+                style={{ color: "#c0392b", fontWeight: 600 }}
+                onClick={(e) => {
+                  closeOptionsMenu();
+                  e.stopPropagation();
+                  setCancelOrderConfirm(orders.find(o => o.id === openMenuOrderId));
+                  setCancelReason("");
+                  setCancelReasonOption("");
+                }}
+              >
+                Cancel Order
+              </div>
+            )}
           </div>,
           document.body
         )
@@ -1498,6 +2170,7 @@ const Orders = ({ adminData, setAdminData }) => {
               setSplitBills={setSplitBills}
               applySplitAmount={applySplitAmount}
               applySplitBill={applySplitBill}
+              onBillAssign={onBillAssign}
 
               onQtyChange={(idx, { quantity, price }) => {
                 setEditableBill(prev => {

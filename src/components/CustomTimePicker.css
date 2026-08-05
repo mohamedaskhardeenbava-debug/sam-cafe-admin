@@ -45,7 +45,7 @@
 
 .ctp-disabled {
     opacity: 0.5;
-    cursor: not-allowed;
+    cursor: not-allowed !important;
 }
 
 /* Value / placeholder text */
@@ -77,11 +77,10 @@
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.45);
-    z-index: 9998;
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: ctpOverlayFadeIn 0.18s ease;
+    z-index: 999;
 }
 
 @keyframes ctpOverlayFadeIn {
@@ -262,4 +261,23 @@
 .cdp-error-wrap .ctp-trigger {
     border-color: #ef4444 !important;
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 578px) {
+    .ctp-popup {
+        width: min(260px, 88vw);
+    }
+}
+
+@media (max-width: 480px) {
+    .ctp-popup {
+        width: 72vw;
+    }
+
+    .ctp-header {
+        padding: 10px 12px;
+    }
 }

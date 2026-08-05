@@ -352,3 +352,49 @@
 .evt-pre-call-tooltip-row:last-child {
   border-bottom: none;
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 1080px) {
+  .evt-clb-table-wrapper {
+    height: calc(100vh - 260px);
+  }
+}
+
+@media (max-width: 768px) {
+  .evt-clb-table-wrapper {
+    height: calc(100vh - 320px);
+    border-radius: 12px;
+    padding: 0 4px;
+  }
+
+  .evt-clb-table th {
+    font-size: 10px;
+    padding: 10px 8px;
+  }
+
+  .evt-clb-row td {
+    font-size: 12px;
+    padding: 9px 8px;
+  }
+}
+
+@media (max-width: 578px) {
+  .evt-clb-avatar {
+    width: 26px;
+    height: 26px;
+    font-size: 11px;
+  }
+
+  .evt-clb-empty {
+    padding: 18px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .evt-clb-clear-btn {
+    padding: 4px 9px;
+    font-size: 10px;
+  }
+}

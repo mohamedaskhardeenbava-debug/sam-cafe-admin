@@ -106,3 +106,44 @@
   background: #111;
   color: #fff;
 }
+/* ═══════════════════════════════════════════
+   RESPONSIVE — 1080 / 992 / 768 / 578 / 480
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .offer-back-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .offer-data-table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 578px) {
+  .offer-action {
+    flex-wrap: wrap;
+  }
+
+  .offer-action button {
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .global-edit-btn {
+    margin-left: 0;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .offer-action {
+    flex-direction: column;
+  }
+
+  .offer-action button {
+    width: 100%;
+  }
+}

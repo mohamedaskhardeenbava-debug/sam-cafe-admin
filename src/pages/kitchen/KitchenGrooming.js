@@ -11,11 +11,14 @@ import { DateRangeGroup } from "../../components/FilterBar";
 import { todayStr, getWeekRange, getMonthRange, getLastMonthRange } from "../../utils/dateRangeUtils";
 
 import { useToast } from "../../useToast";
+import { allowTextInput } from "../../App";
+import { EmptyRow } from "../../App";
 import closeIcon from "../../icon/close-icon.png";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 
 import "./KitchenGrooming.css";
 
@@ -62,6 +65,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
   }, []);
 
   const [selected, setSelected] = useState(null);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [showMemo, setShowMemo] = useState(false);
   const [memo, setMemo] = useState({ staffId: "", text: "" });
   const [memoErrors, setMemoErrors] = useState({});
@@ -117,7 +121,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
     };
   }), [visibleStaff, adminData.grooming, visibleDates]);
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(visibleStaff.length, 20);
 
   // ── Export ────────────────────────────────────────────────────
@@ -190,9 +194,25 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
 
       {/* HEADER */}
       <div className="header">
-        <div>
-          <h2 className="title">Kitchen Grooming</h2>
-          <p className="subtitle">Uniform · Shoes · Grooming</p>
+        <div className="header-title-row">
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Kitchen Grooming</h2>
+              <span className="result-count">{visibleDates.length} day(s) · {visibleStaff.length} staff</span>
+            </div>
+            <p className="subtitle">Uniform · Shoes · Grooming</p>
+          </div>
         </div>
         <div className="header-btn-container">
           <Button3D onClick={exportGrooming}>Export</Button3D>
@@ -201,87 +221,88 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
       </div>
 
       {/* FILTER BAR */}
-      <div className="filter-bar">
-        <div className="filter-groups">
-          {/* SEARCH WITH DROPDOWN */}
-          <div className="kgroom-search-wrap" ref={searchRef}>
-            <input
-              className="search-input"
-              placeholder=" Search staff…"
-              value={groomSearch}
-              onChange={e => { setGroomSearch(e.target.value); setSearchOpen(true); }}
-              onFocus={() => setSearchOpen(true)}
-            />
-            {searchOpen && staffStats.length > 0 && (
-              <div className="kgroom-search-dropdown">
-                {staffStats
-                  .filter(s =>
+      {!headerCollapsed && (
+        <div className="filter-bar">
+          <div className="filter-groups">
+            {/* SEARCH WITH DROPDOWN */}
+            <div className="kgroom-search-wrap" ref={searchRef}>
+              <input
+                className="search-input"
+                placeholder=" Search staff…"
+                value={groomSearch}
+                onChange={e => { setGroomSearch(allowTextInput(groomSearch, e.target.value, 100, 5)); setSearchOpen(true); }}
+                onFocus={() => setSearchOpen(true)}
+              />
+              {searchOpen && staffStats.length > 0 && (
+                <div className="kgroom-search-dropdown">
+                  {staffStats
+                    .filter(s =>
+                      s.name.toLowerCase().includes(groomSearch.toLowerCase()) ||
+                      (s.role || "").toLowerCase().includes(groomSearch.toLowerCase())
+                    )
+                    .map((s, i) => (
+                      <div
+                        key={s.id}
+                        className="kgroom-search-suggestion"
+                        onMouseDown={() => {
+                          setGroomSearch(s.name);
+                          setSearchOpen(false);
+                        }}
+                      >
+                        <div className="kgroom-sug-avatar" style={{ background: PALETTE[i % PALETTE.length] }}>
+                          {s.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="kgroom-sug-info">
+                          <span className="kgroom-sug-name">{s.name}</span>
+                          {s.role && <span className="kgroom-sug-role">{s.role}</span>}
+                        </div>
+                        <div className="kgroom-sug-bar-wrap">
+                          <div
+                            className="kgroom-sug-bar"
+                            style={{
+                              width: `${s.pct}%`,
+                              background: s.pct >= 80 ? "#06d6a0" : s.pct >= 50 ? "#ffd166" : "#ef476f"
+                            }}
+                          />
+                        </div>
+                        <span
+                          className="kgroom-sug-pct"
+                          style={{ color: s.pct >= 80 ? "#06d6a0" : s.pct >= 50 ? "#f59e0b" : "#ef476f" }}
+                        >{s.pct}%</span>
+                      </div>
+                    ))}
+                  {staffStats.filter(s =>
                     s.name.toLowerCase().includes(groomSearch.toLowerCase()) ||
                     (s.role || "").toLowerCase().includes(groomSearch.toLowerCase())
-                  )
-                  .map((s, i) => (
-                    <div
-                      key={s.id}
-                      className="kgroom-search-suggestion"
-                      onMouseDown={() => {
-                        setGroomSearch(s.name);
-                        setSearchOpen(false);
-                      }}
-                    >
-                      <div className="kgroom-sug-avatar" style={{ background: PALETTE[i % PALETTE.length] }}>
-                        {s.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="kgroom-sug-info">
-                        <span className="kgroom-sug-name">{s.name}</span>
-                        {s.role && <span className="kgroom-sug-role">{s.role}</span>}
-                      </div>
-                      <div className="kgroom-sug-bar-wrap">
-                        <div
-                          className="kgroom-sug-bar"
-                          style={{
-                            width: `${s.pct}%`,
-                            background: s.pct >= 80 ? "#06d6a0" : s.pct >= 50 ? "#ffd166" : "#ef476f"
-                          }}
-                        />
-                      </div>
-                      <span
-                        className="kgroom-sug-pct"
-                        style={{ color: s.pct >= 80 ? "#06d6a0" : s.pct >= 50 ? "#f59e0b" : "#ef476f" }}
-                      >{s.pct}%</span>
-                    </div>
-                  ))}
-                {staffStats.filter(s =>
-                  s.name.toLowerCase().includes(groomSearch.toLowerCase()) ||
-                  (s.role || "").toLowerCase().includes(groomSearch.toLowerCase())
-                ).length === 0 && (
-                    <div className="kgroom-search-no-result">No staff found</div>
-                  )}
-              </div>
+                  ).length === 0 && (
+                      <div className="kgroom-search-no-result">No staff found</div>
+                    )}
+                </div>
+              )}
+            </div>
+            <DateRangeGroup
+              from={groomFrom}
+              to={groomTo}
+              onChangeFrom={setGroomFrom}
+              onChangeTo={setGroomTo}
+              preset={groomPreset}
+              onChangePreset={applyPreset}
+              presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
+              periodLabel="period"
+              max={today}
+              toggle={false}
+            />
+            {(groomSearch || groomPreset === "custom") && (
+              <button className="ae-clear-filter" onClick={() => { setGroomSearch(""); applyPreset("week"); }}>Clear</button>
             )}
           </div>
-          <DateRangeGroup
-            from={groomFrom}
-            to={groomTo}
-            onChangeFrom={setGroomFrom}
-            onChangeTo={setGroomTo}
-            preset={groomPreset}
-            onChangePreset={applyPreset}
-            presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
-            periodLabel="period"
-            max={today}
-            toggle={false}
-          />
-          {(groomSearch || groomPreset === "custom") && (
-            <button className="ae-clear-filter" onClick={() => { setGroomSearch(""); applyPreset("week"); }}>Clear</button>
-          )}
-          <span className="result-count">{visibleDates.length} day(s) · {visibleStaff.length} staff</span>
         </div>
-      </div>
+      )}
 
       {/* SUMMARY CARDS REMOVED — now shown in search dropdown */}
 
       {/* TABLE */}
-      <div className="kgroom-table-wrapper" ref={containerRef}>
+      <div className={`kgroom-table-wrapper${headerCollapsed ? " header-is-collapsed" : ""}`} ref={containerRef}>
         <table className="kgroom-table">
           <thead>
             <tr>
@@ -301,7 +322,11 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
             </tr>
           </thead>
           <tbody>
-            {visibleStaff.slice(0, displayLimit).map((s, si) => (
+            {visibleStaff.length === 0 ? (
+              <EmptyRow colSpan={visibleDates.length + 1} message="No staff available" />
+            ) : (
+              <>
+                {visibleStaff.slice(0, displayLimit).map((s, si) => (
               <tr key={s.id} className="kgroom-row">
                 <td className="kgroom-name-td">
                   <div className="kgroom-name-wrap">
@@ -353,13 +378,16 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
                 })}
               </tr>
             ))}
-            <InfiniteScrollLoader
-              sentinelRef={sentinelRef}
-              hasMore={hasMore}
-              colSpan={visibleDates.length + 1}
-            />
+                <InfiniteScrollLoader
+                  sentinelRef={sentinelRef}
+                  hasMore={hasMore}
+                  colSpan={visibleDates.length + 1}
+                />
+              </>
+            )}
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
 
       {/* DETAIL MODAL */}
@@ -415,7 +443,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
                     className={`mat-input mat-textarea${memoErrors.text ? " mat-error" : ""}`}
                     placeholder=" "
                     value={memo.text}
-                    onChange={e => { setMemo({ ...memo, text: e.target.value }); setMemoErrors(p => ({ ...p, text: false })); }}
+                    onChange={e => { setMemo({ ...memo, text: allowTextInput(memo.text, e.target.value, 500, 100000) }); setMemoErrors(p => ({ ...p, text: false })); }}
                     rows={4}
                   />
                   <label className={`mat-label${memoErrors.text ? " mat-label-error" : ""}`}>Memo Note<span className="rf-req">*</span></label>

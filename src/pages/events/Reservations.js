@@ -15,17 +15,20 @@ import { todayStr } from "../../utils/dateRangeUtils";
 
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
+import { allowTextInput } from "../../App";
+import { EmptyRow } from "../../App";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 import CustomDropdown from "../../components/CustomDropdown";
+import { useVenue } from "../../context/VenueContext";
 
 import "./Reservations.css";
 import "./EvtCommon.css";
 import "../ModalCSS.css";
 import "./PreviewModal.css";
-import PageLoader from "../../components/PageLoader";
 
 /* ─── Helpers ─── */
 const pad = (n) => String(n).padStart(2, "0");
@@ -160,6 +163,7 @@ const readFileAsDataURL = (file) =>
    Main Component
 ══════════════════════════════════════════════ */
 const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetFilters }) => {
+  const { venueParam } = useVenue();
 
   const {
     filterDate, fromDate: filterFromDate, toDate: filterToDate,
@@ -187,6 +191,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
   const navigate = useNavigate();
 
   /* ── Call history tooltip ── */
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [callTooltipId, setCallTooltipId] = useState(null);
   const [callTooltipPos, setCallTooltipPos] = useState({ top: 0, left: 0 });
   const callWrapRefs = useRef({});
@@ -219,7 +224,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
   useEffect(() => {
     const loadPrefs = async () => {
       try {
-        const res = await api.get("/tablePreferences");
+        const res = await api.get("/tablePreferences", { params: venueParam() });
         const records = res.data || [];
         if (records.length > 0) {
           const sorted = [...records].sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
@@ -326,10 +331,9 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
     });
   }, [filteredData, sortField, sortDir]);
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(sortedData.length, 30);
 
-  if (!adminData?.reservations?.length) return <PageLoader label="Loading reservations…" />;
 
   const today = todayStr();
   const pendingCount = filteredData.filter(r => (r.status || "pending") === "pending").length;
@@ -496,7 +500,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
         };
       });
       let existingIds = new Set();
-      try { const cur = await api.get("/tablePreferences"); (cur.data || []).forEach(r => existingIds.add(r.id)); } catch { }
+      try { const cur = await api.get("/tablePreferences", { params: venueParam() }); (cur.data || []).forEach(r => existingIds.add(r.id)); } catch { }
       for (const rec of finalRecords) {
         if (existingIds.has(rec.id)) { try { await api.put(`/tablePreferences/${rec.id}`, rec); } catch { } }
         else { try { await api.post("/tablePreferences", rec); } catch { } }
@@ -563,93 +567,115 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
       {/* ── HEADER ── */}
       <div className="evt-header">
-        <div>
-          <h2 className="evt-title">Reservations</h2>
-          <p className="evt-subtitle">Manage table bookings</p>
-        </div>
-
-        {/* KPI strip */}
-        <div className="evt-kpi-row">
-          {[
-            { label: "Total", val: filteredData.length, color: "#111" },
-            { label: "Pending", val: pendingCount, color: "#ca8a04" },
-            { label: "Confirmed", val: confirmedCount, color: "#16a34a" },
-            { label: "Completed", val: completedCount, color: "#2980b9" },
-            { label: "Cancelled", val: cancelledCount, color: "#dc2626" },
-          ].map((k, i) => (
-            <div key={i} className="evt-kpi" style={{ borderTopColor: k.color }}>
-              <div className="evt-kpi-val" style={{ color: k.color }}>{k.val}</div>
-              <div className="evt-kpi-label">{k.label}</div>
+        <div className="header-title-row">
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="evt-title">Reservations</h2>
+              <span className="result-count">{sortedData.length} reservation(s)</span>
             </div>
-          ))}
+            <p className="evt-subtitle">Manage table bookings</p>
+          </div>
         </div>
 
-        <div className="header-btn-container">
-          <Button3D variant="save" onClick={() => setShowPrefModal(true)}>Table Preferences</Button3D>
-          <Button3D onClick={handleExport}>Export</Button3D>
-          <Button3D onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setTablePrefImageFile(null); setCreateTab(0); }}>+ Add Reservation</Button3D>
-        </div>
+        {!headerCollapsed && (
+          <>
+            {/* KPI strip */}
+            <div className="evt-kpi-row">
+              {[
+                { label: "Total", val: filteredData.length, color: "#111" },
+                { label: "Pending", val: pendingCount, color: "#ca8a04" },
+                { label: "Confirmed", val: confirmedCount, color: "#16a34a" },
+                { label: "Completed", val: completedCount, color: "#2980b9" },
+                { label: "Cancelled", val: cancelledCount, color: "#dc2626" },
+              ].map((k, i) => (
+                <div key={i} className="evt-kpi" style={{ borderTopColor: k.color }}>
+                  <div className="evt-kpi-val" style={{ color: k.color }}>{k.val}</div>
+                  <div className="evt-kpi-label">{k.label}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="header-btn-container">
+              <Button3D variant="save" onClick={() => setShowPrefModal(true)}>Table Preferences</Button3D>
+              <Button3D onClick={handleExport}>Export</Button3D>
+              <Button3D onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setTablePrefImageFile(null); setCreateTab(0); }}>+ Add Reservation</Button3D>
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── FILTER BAR ── */}
-      <div className="filter-bar">
-        <div className="filter-groups">
-          <input className="search-input" placeholder="Search name / mobile / ID..."
-            value={search} onChange={e => setSearch(e.target.value)} />
+      {!headerCollapsed && (
+        <div className="filter-bar">
+          <div className="filter-groups">
+            <input className="search-input" placeholder="Search name / mobile / ID..."
+              value={search} onChange={e => setSearch(allowTextInput(search, e.target.value, 100, 5))} />
 
-          <DateRangeGroup
-            from={filterFromDate}
-            to={filterToDate}
-            onChangeFrom={setRangeFromDate}
-            onChangeTo={setRangeToDate}
-            preset={filterDatePreset}
-            onChangePreset={setRangePreset}
-            presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
-            periodLabel="period"
-            noMax
-          />
-          {(filterFromDate || filterToDate) && (
-            <button className="filter-pill"
-              onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); setFilterDate(""); }}
-              title="Clear dates">✕</button>
-          )}
+            <DateRangeGroup
+              from={filterFromDate}
+              to={filterToDate}
+              onChangeFrom={setRangeFromDate}
+              onChangeTo={setRangeToDate}
+              preset={filterDatePreset}
+              onChangePreset={setRangePreset}
+              presets={[["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
+              periodLabel="period"
+              noMax
+            />
+            {(filterFromDate || filterToDate) && (
+              <button className="filter-pill"
+                onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); setFilterDate(""); }}
+                title="Clear dates">✕</button>
+            )}
+          </div>
+
+          <div className="filter-groups">
+            <MultiPillGroup
+              label="Slot"
+              options={SLOT_GROUPS.map(sg => [sg.key, sg.short, "", `${sg.label} (${sg.start}–${sg.end})`])}
+              value={filterSlots}
+              onToggle={(key) => toggleSet(setFilterSlots, key)}
+            />
+
+            <MultiPillGroup
+              label="Status"
+              options={[
+                ["pending", "P", "status-pending", "Pending"],
+                ["confirmed", "C", "status-confirmed", "Confirmed"],
+                ["completed", "D", "status-completed", "Done"],
+                ["cancelled", "X", "status-cancelled", "Cancelled"],
+              ]}
+              value={filterStatuses}
+              onToggle={(key) => toggleSet(setFilterStatuses, key)}
+            />
+
+            <MultiPillGroup
+              label="Source"
+              options={SOURCE_OPTIONS.map(s => [s.label, s.icon, "", s.label])}
+              value={filterSources}
+              onToggle={(label) => toggleSet(setFilterSources, label)}
+            />
+
+            {activeFilters && (
+              <button className="evt-clb-clear-btn" onClick={onResetFilters}>Clear</button>
+            )}
+          </div>
         </div>
-
-        <div className="filter-groups">
-          <MultiPillGroup
-            label="Slot"
-            options={SLOT_GROUPS.map(sg => [sg.key, sg.short, "", `${sg.label} (${sg.start}–${sg.end})`])}
-            value={filterSlots}
-            onToggle={(key) => toggleSet(setFilterSlots, key)}
-          />
-
-          <MultiPillGroup
-            label="Status"
-            options={[
-              ["pending", "P", "status-pending", "Pending"],
-              ["confirmed", "C", "status-confirmed", "Confirmed"],
-              ["completed", "D", "status-completed", "Done"],
-              ["cancelled", "X", "status-cancelled", "Cancelled"],
-            ]}
-            value={filterStatuses}
-            onToggle={(key) => toggleSet(setFilterStatuses, key)}
-          />
-
-          <MultiPillGroup
-            label="Source"
-            options={SOURCE_OPTIONS.map(s => [s.label, s.icon, "", s.label])}
-            value={filterSources}
-            onToggle={(label) => toggleSet(setFilterSources, label)}
-          />
-
-          {activeFilters && (
-            <button className="evt-clb-clear-btn" onClick={onResetFilters}>Clear</button>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* ══ TABLE — same pattern as Celebrations ══ */}
-      <div className="table-wrapper" ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 300px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -689,7 +715,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
           </thead>
           <tbody>
             {sortedData.length === 0 ? (
-              <tr><td colSpan="12" className="evt-res-empty">No reservations found</td></tr>
+              <EmptyRow colSpan={12} message="No reservations found" />
             ) : (
               sortedData.slice(0, displayLimit).map(item => {
                 const status = item.status || "pending";
@@ -713,9 +739,6 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     {/* Guest Name */}
                     <td>
                       <div className="evt-res-name-cell">
-                        <div className="evt-res-avatar">
-                          {(item.name || "?").charAt(0).toUpperCase()}
-                        </div>
                         <span>
                           <span className="evt-res-name clickable"
                             onClick={() => navigate(`/reservations/${item.id}`, { state: { fromDetail: true } })}>
@@ -738,7 +761,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     <td style={{ fontWeight: 600 }}>{item.reservedDate || item.date || "—"}</td>
 
                     {/* Booked On */}
-                    <td style={{ fontSize: 12, color: "#666" }}>{item.bookedDate || "—"}</td>
+                    <td>{item.bookedDate || "—"}</td>
 
                     {/* Slot */}
                     <td>
@@ -755,7 +778,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
                     {/* Table Preference */}
                     <td>
-                      <div className="evt-res-tpref-cell">
+                      <div>
                         {item.tablePrefImage
                           ? <img src={item.tablePrefImage} alt={item.tablePref} className="evt-res-tpref-thumb" />
                           : null}
@@ -773,7 +796,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     </td>
 
                     {/* Incharge */}
-                    <td style={{ fontSize: 12, color: "#666" }}>{item.inchargePerson || "—"}</td>
+                    <td>{item.inchargePerson || "—"}</td>
 
                     {/* Status */}
                     <td onClick={e => e.stopPropagation()}>
@@ -816,6 +839,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
             <InfiniteScrollLoader sentinelRef={sentinelRef} hasMore={hasMore} colSpan={12} />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
 
       {/* ══ Call History Portal Tooltip ══ */}
@@ -846,7 +870,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
       {/* ══ Table Preference Manager Modal ══ */}
       {showPrefModal && (
-        <div className="event-modal-overlay" onClick={() => setShowPrefModal(false)}>
+        <div className="event-modal-overlay">
           <div className="event-modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
             <div className="admin-modal-header">
               <h3>Table Preferences</h3>
@@ -876,7 +900,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                         placeholder="Short description (shown to users)"
                         value={prefDescs[label] || ""}
                         onChange={e => {
-                          const v = e.target.value;
+                          const v = allowTextInput(prefDescs[label] || "", e.target.value, 100, 5);
                           setPrefDescs(p => ({ ...p, [label]: v }));
                           setPrefDbRecords(prev => prev.map(r => r.label === label ? { ...r, desc: v } : r));
                         }}
@@ -913,11 +937,11 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <input className="evt-res-form-input" style={{ flex: 1, minWidth: 120 }}
                     placeholder="Label e.g. Outdoor, Rooftop"
-                    value={newPrefInput} onChange={e => setNewPrefInput(e.target.value)}
+                    value={newPrefInput} onChange={e => setNewPrefInput(allowTextInput(newPrefInput, e.target.value, 100, 5))}
                     onKeyDown={e => e.key === "Enter" && handleAddPref()} />
                   <input className="evt-res-form-input" style={{ flex: 1.5, minWidth: 140 }}
                     placeholder="Description (optional)"
-                    value={newPrefDesc} onChange={e => setNewPrefDesc(e.target.value)}
+                    value={newPrefDesc} onChange={e => setNewPrefDesc(allowTextInput(newPrefDesc, e.target.value, 100, 5))}
                     onKeyDown={e => e.key === "Enter" && handleAddPref()} />
                   <input type="file" accept="image/*" ref={newPrefImgRef} style={{ display: "none" }}
                     onChange={async e => {
@@ -947,7 +971,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
       {/* ══ Create Reservation Modal ══ */}
       {showCreate && (
-        <div className="event-modal-overlay" onClick={() => setShowCreate(false)}>
+        <div className="event-modal-overlay">
           <div className="event-modal" style={{ width: 620 }} onClick={e => e.stopPropagation()}>
             <div className="admin-modal-header">
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -982,7 +1006,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                       <div className="mat">
                         <input className={`mat-input${formErrors.name ? " mat-error" : ""}`} placeholder=" "
                           value={form.name}
-                          onChange={e => { setF("name", e.target.value); setFormErrors(p => ({ ...p, name: false })); }} />
+                          onChange={e => { setF("name", allowTextInput(form.name, e.target.value, 100, 5)); setFormErrors(p => ({ ...p, name: false })); }} />
                         <label className={`mat-label${formErrors.name ? " mat-label-error" : ""}`}>Name <span className="evt-res-req">*</span></label>
                         <span className={`mat-bar${formErrors.name ? " mat-bar-error" : ""}`} />
                       </div>
@@ -1010,7 +1034,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     <div className="admin-form-group" style={{ flex: 1 }}>
                       <div className="mat">
                         <input className="mat-input" placeholder=" "
-                          value={form.email} onChange={e => setF("email", e.target.value)} />
+                          value={form.email} onChange={e => setF("email", allowTextInput(form.email, e.target.value, 100, 5))} />
                         <label className="mat-label">Email</label>
                         <span className="mat-bar" />
                       </div>
@@ -1054,7 +1078,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     ) : (
                       <div className="mat">
                         <input className="mat-input" placeholder=" " value={form.inchargePerson}
-                          onChange={e => setF("inchargePerson", e.target.value)} />
+                          onChange={e => setF("inchargePerson", allowTextInput(form.inchargePerson, e.target.value, 100, 5))} />
                         <label className="mat-label">Staff name</label>
                         <span className="mat-bar" />
                       </div>
@@ -1064,7 +1088,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                   <div className="admin-form-group">
                     <div className="mat-area">
                       <textarea className="mat-input mat-textarea" rows={2} placeholder=" "
-                        value={form.notes} onChange={e => setF("notes", e.target.value)} />
+                        value={form.notes} onChange={e => setF("notes", allowTextInput(form.notes, e.target.value, 500, 100000))} />
                       <label className="mat-area-label">Notes / Special requests</label>
                       <span className="mat-area-bar" />
                     </div>
@@ -1128,29 +1152,32 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                   </div>
 
                   <div className="horizontal-form-group">
-                    <div className="admin-form-group" style={{ flex: 1 }}>
-                      <label className={formErrors.time ? "mat-label-error" : ""}>
-                        Time <span className="evt-res-req">*</span>
-                        {!form.slotGroup
-                          ? <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(select slot first)</span>
-                          : (() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()
-                        }
-                      </label>
-                      <CustomTimePicker value={form.time}
-                        onChange={v => { setF("time", v); setFormErrors(p => ({ ...p, time: false })); }}
-                        slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
-                        slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
-                        disabled={!form.slotGroup}
-                        hasError={!!formErrors.time}
-                        isToday={form.reservedDate === todayStr()} />
-                    </div>
-                    <div className="admin-form-group" style={{ flex: 1 }}>
-                      <label>Table No. <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(available)</span></label>
-                      <CustomDropdown value={form.tableNo} onChange={v => setF("tableNo", v)}
-                        options={availableTablesForForm.map(t => ({ value: t, label: `Table ${t}` }))}
-                        placeholder="— No table —" />
-                    </div>
+                    {form.slotGroup && (
+                      <div className="admin-form-group" style={{ flex: 1 }}>
+                        <label className={formErrors.time ? "mat-label-error" : ""}>
+                          Time <span className="evt-res-req">*</span>
+                          {(() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()}
+                        </label>
+                        <CustomTimePicker value={form.time}
+                          onChange={v => { setF("time", v); setFormErrors(p => ({ ...p, time: false })); }}
+                          slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
+                          slotEnd={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.end}
+                          hasError={!!formErrors.time}
+                          isToday={form.reservedDate === todayStr()} />
+                      </div>
+                    )}
+                    {form.slotGroup && (
+                      <div className="admin-form-group" style={{ flex: 1 }}>
+                        <label>Table No. <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(available)</span></label>
+                        <CustomDropdown value={form.tableNo} onChange={v => setF("tableNo", v)}
+                          options={availableTablesForForm.map(t => ({ value: t, label: `Table ${t}` }))}
+                          placeholder="— No table —" />
+                      </div>
+                    )}
                   </div>
+                  {!form.slotGroup && (
+                    <div style={{ fontSize: 11, color: "#aaa", marginTop: -6, marginBottom: 4 }}>Select a dining slot above to choose a time and table</div>
+                  )}
 
                   <div className="admin-form-group">
                     <label>Table Preference</label>

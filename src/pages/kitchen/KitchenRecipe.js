@@ -11,7 +11,9 @@ import api from "../../api";
 import deleteIcon from "../../icon/delete-icon.png";
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
+import { allowTextInput } from "../../App";
 import Button3D from "../../components/Button3D";
+import CollapseChevron from "../../components/CollapseChevron";
 
 import "./KitchenRecipe.css";
 
@@ -21,6 +23,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
   const { toast } = useToast();
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [form, setForm] = useState({ name: "", description: "" });
   const [recipeSearch, setRecipeSearch] = useState("");
   const [formErrors, setFormErrors] = useState({});
@@ -92,7 +95,25 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
 
       {/* HEADER */}
       <div className="header">
-        <h2 className="title">Recipes</h2>
+        <div className="header-title-row">
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Recipes</h2>
+              <span className="result-count">{filteredRecipes.length} recipe(s)</span>
+            </div>
+          </div>
+        </div>
         <div className="header-btn-container">
           <Button3D onClick={exportRecipes}>Export</Button3D>
           <Button3D onClick={() => setShowForm(true)}>+ Add Recipe</Button3D>
@@ -100,20 +121,21 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
       </div>
 
       {/* FILTER BAR */}
-      <div className="filter-bar">
-        <div className="justify">
-          <input
-            className="search-input"
-            placeholder=" Search recipes…"
-            value={recipeSearch}
-            onChange={e => setRecipeSearch(e.target.value)}
-          />
-          {recipeSearch && (
-            <button className="ae-clear-filter" onClick={() => setRecipeSearch("")}>Clear</button>
-          )}
-          <span className="result-count">{filteredRecipes.length} recipe(s)</span>
+      {!headerCollapsed && (
+        <div className="filter-bar">
+          <div className="justify">
+            <input
+              className="search-input"
+              placeholder=" Search recipes…"
+              value={recipeSearch}
+              onChange={e => setRecipeSearch(allowTextInput(recipeSearch, e.target.value, 100, 5))}
+            />
+            {recipeSearch && (
+              <button className="ae-clear-filter" onClick={() => setRecipeSearch("")}>Clear</button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* EMPTY STATE */}
       {filteredRecipes.length === 0 && (
@@ -125,7 +147,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
       )}
 
       {/* CARD GRID */}
-      <div className="card-grid-wrapper">
+      <div className={`card-grid-wrapper${headerCollapsed ? " header-is-collapsed" : ""}`}>
         <div className="recipe-card-grid">
           {filteredRecipes.map(r => {
             const steps = countSteps(r.description);
@@ -170,7 +192,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
                     placeholder=" "
                     autoFocus
                     value={form.name}
-                    onChange={e => { setForm({ ...form, name: e.target.value }); setFormErrors(p => ({ ...p, name: false })); }}
+                    onChange={e => { setForm({ ...form, name: allowTextInput(form.name, e.target.value, 100, 5) }); setFormErrors(p => ({ ...p, name: false })); }}
                   />
                   <label className={`mat-label${formErrors.name ? " mat-label-error" : ""}`}>Recipe Name<span className="rf-req">*</span></label>
                   <span className={`mat-bar${formErrors.name ? " mat-bar-error" : ""}`} />
@@ -183,7 +205,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
                     className={`mat-input mat-textarea${formErrors.description ? " mat-error" : ""}`}
                     placeholder=" "
                     value={form.description}
-                    onChange={e => { setForm({ ...form, description: e.target.value }); setFormErrors(p => ({ ...p, description: false })); }}
+                    onChange={e => { setForm({ ...form, description: allowTextInput(form.description, e.target.value, 500, 100000) }); setFormErrors(p => ({ ...p, description: false })); }}
                     style={{ minHeight: 200 }}
                   />
                   <label className={`mat-label${formErrors.description ? " mat-label-error" : ""}`}>Steps — one per line<span className="rf-req">*</span></label>
@@ -202,7 +224,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
 
       {/* DETAIL MODAL */}
       {selected && (
-        <div className="modal-overlay" onClick={() => setSelected(null)}>
+        <div className="modal-overlay">
           <div className="admin-modal" onClick={e => e.stopPropagation()}>
             <div className="admin-modal-header">
               <div>

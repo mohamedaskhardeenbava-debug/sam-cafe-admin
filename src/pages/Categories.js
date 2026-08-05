@@ -16,13 +16,12 @@ import { allowTextInput } from "../App";
 import { sortArray } from "../App";
 import { EmptyRow } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
-import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
 
 import "./Categories.css";
 import "./ModalCSS.css";
-import PageLoader from "../components/PageLoader";
 
 const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }) => {
   // ── Hooks
@@ -79,9 +78,8 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
     [adminData.categories, sortConfig]
   );
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(sortedCategories.length, 30);
-  if (!adminData?.categories?.length) return <PageLoader label="Loading categories…" />;
 
   const generateCategoryId = (name) => {
     const base = name.toLowerCase().trim()
@@ -450,7 +448,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
   };
 
   const getMostAndLeastSelling = (dishes = []) => {
-    if (dishes.length === 0) return { most: "-", least: "-" };
+    if (dishes.length === 0) return { most: "—", least: "—" };
 
     let most = dishes[0];
     let least = dishes[0];
@@ -512,7 +510,10 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
   return (
     <div className="inner-page">
       <div className="header">
-        <h2 className="title">Categories</h2>
+        <div className="header-title-with-count">
+          <h2 className="title">Categories</h2>
+          <span className="result-count">{sortedCategories.length} categor{sortedCategories.length === 1 ? "y" : "ies"}</span>
+        </div>
         <Button3D onClick={() => setShowForm(true)}>+ Add Category</Button3D>
       </div>
 
@@ -686,6 +687,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
             />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
 
       {
@@ -757,7 +759,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                           type="text"
                           placeholder=" "
                           value={sizeName}
-                          onChange={(e) => setSizeName(e.target.value)}
+                          onChange={(e) => setSizeName(allowTextInput(sizeName, e.target.value, 100, 5))}
                         />
                         <label className="mat-label">Size Name</label>
                         <span className="mat-bar" />
@@ -786,7 +788,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                           type="text"
                           placeholder=" "
                           value={sizeDescription}
-                          onChange={(e) => setSizeDescription(e.target.value)}
+                          onChange={(e) => setSizeDescription(allowTextInput(sizeDescription, e.target.value, 100, 5))}
                         />
                         <label className="mat-label">Description</label>
                         <span className="mat-bar" />
@@ -856,7 +858,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                           onChange={(e) =>
                             setNewSubCategoryData(prev => ({
                               ...prev,
-                              name: e.target.value
+                              name: allowTextInput(prev.name, e.target.value, 100, 5)
                             }))
                           }
                         />
@@ -904,7 +906,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                             type="text"
                             placeholder=" "
                             value={subSizeName}
-                            onChange={(e) => setSubSizeName(e.target.value)}
+                            onChange={(e) => setSubSizeName(allowTextInput(subSizeName, e.target.value, 100, 5))}
                           />
                           <label className="mat-label">Size Name</label>
                           <span className="mat-bar" />
@@ -932,7 +934,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                             type="text"
                             placeholder=" "
                             value={subSizeDescription}
-                            onChange={(e) => setSubSizeDescription(e.target.value)}
+                            onChange={(e) => setSubSizeDescription(allowTextInput(subSizeDescription, e.target.value, 100, 5))}
                           />
                           <label className="mat-label">Descripion</label>
                           <span className="mat-bar" />
@@ -1167,14 +1169,14 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                               <td>
                                 <input
                                   value={sizeName}
-                                  onChange={(e) => setSizeName(e.target.value)}
+                                  onChange={(e) => setSizeName(allowTextInput(sizeName, e.target.value, 100, 5))}
                                 />
                               </td>
 
                               <td>
                                 <input
                                   value={sizeDescription}
-                                  onChange={(e) => setSizeDescription(e.target.value)}
+                                  onChange={(e) => setSizeDescription(allowTextInput(sizeDescription, e.target.value, 100, 5))}
                                 />
                               </td>
 
@@ -1203,7 +1205,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                                 }}>Save</Button3D>
                               </td>
 
-                              <td>-</td>
+                              <td>—</td>
                             </>
 
                           ) : (
@@ -1258,7 +1260,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                             type="text"
                             placeholder="Size"
                             value={sizeName}
-                            onChange={(e) => setSizeName(e.target.value)}
+                            onChange={(e) => setSizeName(allowTextInput(sizeName, e.target.value, 100, 5))}
                           />
                           <label className="mat-label">Size Name<span className="rf-req">*</span></label>
                           <span className="mat-bar" />
@@ -1286,7 +1288,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                             type="text"
                             placeholder="Description"
                             value={sizeDescription}
-                            onChange={(e) => setSizeDescription(e.target.value)}
+                            onChange={(e) => setSizeDescription(allowTextInput(sizeDescription, e.target.value, 100, 5))}
                           />
                           <label className="mat-label">Description<span className="rf-req">*</span></label>
                           <span className="mat-bar" />

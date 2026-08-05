@@ -1,0 +1,352 @@
+/* ═══════════════════════════════════════════════════════
+   Todo.css  —  Sam Cafe Admin  —  Todo page
+   Built on the shared details-page classes in Common.css.
+═══════════════════════════════════════════════════════ */
+
+/* ── Header "+ New Task" button, pushed to the right ─────── */
+.todo-new-btn {
+  margin-left: auto;
+}
+
+.todo-report {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.todo-report-card {
+  flex: 1;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  align-items: center;
+  gap: 12px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  will-change: transform;
+}
+
+.todo-report-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #888;
+  font-weight: 600;
+}
+
+.todo-report-count {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e63946;
+  margin: 4px 0;
+}
+
+.todo-report-sub {
+  font-size: 11px;
+  color: #999;
+}
+
+/* Compact CustomDropdown variant used for the inline period/status
+   filters in the "Your To-Dos" section header. */
+.todo-filter-dropdown .dishes-status-dropdown {
+  padding: 5px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+/* Light-theme mat-input, scoped to this page */
+.details-container .mat {
+  position: relative;
+  width: 100%;
+  padding-top: 14px;
+  margin-bottom: 0 !important;
+}
+
+.details-container .mat-input {
+  display: block;
+  width: 100%;
+  height: 36px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #111;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid #d1d5db;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  box-sizing: border-box;
+  padding: 0 2px;
+  caret-color: #111;
+  transition: border-color 0.25s ease;
+}
+
+.details-container .mat-input::placeholder {
+  color: transparent;
+}
+
+.details-container .mat-input:hover {
+  border-bottom: 1px solid #9ca3af;
+}
+
+.details-container .mat-input:focus {
+  border-bottom-color: transparent;
+}
+
+.details-container .mat-label {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: #9ca3af;
+  pointer-events: none;
+  transition: top 0.25s ease, font-size 0.25s ease, font-weight 0.25s ease, color 0.25s ease, letter-spacing 0.25s ease;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.details-container .mat-input:focus~.mat-label,
+.details-container .mat-input:not(:placeholder-shown)~.mat-label {
+  top: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #e63946;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.details-container .mat-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  width: 0;
+  background: #e63946;
+  border-radius: 1px;
+  transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.details-container .mat-input:focus~.mat-label~.mat-bar,
+.details-container .mat-input:focus~.mat-bar {
+  width: 100%;
+}
+
+/* ── List card wrapper (white panel with header bar + rows + quick add),
+   matching the reference "Upcoming Tasks" card design ────────────── */
+.todo-list-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  margin-top: 16px;
+}
+
+.todo-list-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #f4f7fb;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.todo-list-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+/* ── Filters (inline in section-title, top-right) ───────── */
+.todo-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.todo-empty {
+  color: #888;
+  font-size: 14px;
+  text-align: center;
+  padding: 24px 0;
+}
+
+.todo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.todo-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  padding: 16px 4px;
+  transition: background 0.15s ease;
+}
+
+.todo-item:last-child {
+  border-bottom: none;
+}
+
+.todo-item:hover {
+  background: #fafbfc;
+}
+
+/* Round checkbox — outline ring when pending, filled blue disc with
+   a checkmark when done, matching the reference design. */
+.todo-check {
+  margin-top: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #d5d8dc;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.todo-check:hover {
+  border-color: var(--color-blue);
+  transform: scale(1.05);
+}
+
+.todo-check-on {
+  border-color: var(--color-blue);
+  background: var(--color-blue);
+}
+
+.todo-item-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.todo-item-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.todo-done .todo-item-title {
+  text-decoration: line-through;
+  color: #999;
+}
+
+.todo-item-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.todo-item-meta {
+  font-size: 12px;
+  color: #9a9a9a;
+}
+
+.todo-item-notes {
+  font-size: 12px;
+  color: #888;
+}
+
+/* Status/period chips, styled like the HIGH PRIORITY / MARKETING /
+   DONE pills in the reference design. */
+.todo-chip {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef1f4;
+  color: #667;
+}
+
+.todo-chip-daily {
+  background: #fdeceb;
+  color: #e63946;
+}
+
+.todo-chip-weekly {
+  background: #eaf1ff;
+  color: var(--color-blue);
+}
+
+.todo-chip-monthly {
+  background: #f1ecfb;
+  color: #7c5cd6;
+}
+
+.todo-chip-done {
+  background: #e6f8ec;
+  color: #1e9e50;
+}
+
+/* ── Inline quick-add row at the bottom of the list card ──────────── */
+.todo-quick-add {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-top: 1px solid #eee;
+}
+
+.todo-quick-add-icon {
+  color: #bbb;
+  font-size: 15px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.todo-quick-add-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: #333;
+}
+
+.todo-quick-add-input::placeholder {
+  color: #b0b0b0;
+}
+
+.todo-quick-add-enter {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fafafa;
+  color: #999;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.todo-quick-add-enter:hover {
+  background: #f0f0f0;
+  color: #666;
+}

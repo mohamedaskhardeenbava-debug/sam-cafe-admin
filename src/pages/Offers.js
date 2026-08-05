@@ -14,20 +14,23 @@ import { todayStr, resolveDateRange } from "../utils/dateRangeUtils";
 
 import closeIcon from "../icon/close-icon.png";
 import { formatDisplayDate } from "../App";
+import { EmptyRow } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
-import InfiniteScrollLoader from "../components/InfiniteScrollLoader";
+import { allowTextInput } from "../App";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import CustomDropdown from "../components/CustomDropdown";
 import Button3D from "../components/Button3D";
+import CollapseChevron from "../components/CollapseChevron";
 
 import "./Offers.css";
-import PageLoader from "../components/PageLoader";
 
 const Offers = ({ adminData, setAdminData }) => {
   // ── Hooks
 
   const { toast } = useToast();
   const [showModal, setShowModal] = useState(false);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const navigate = useNavigate();
 
@@ -43,7 +46,9 @@ const Offers = ({ adminData, setAdminData }) => {
   const [newOffer, setNewOffer] = useState({
     dishId: "",
     categoryId: "",
+    discountType: "percentage", // "percentage" | "flat"
     percentage: "",
+    flatAmount: "",
     startDate: "",
     endDate: "",
     active: "yes"
@@ -60,11 +65,16 @@ const Offers = ({ adminData, setAdminData }) => {
 
   const selectedDish = allDishes.find(d => d.id === newOffer.dishId);
 
-  const originalPrice = selectedDish?.basePrice || 0;
-  const offerAmount = Math.floor((originalPrice * newOffer.percentage) / 100 || 0);
-  const offerPrice = Math.floor(originalPrice - offerAmount);
+  const originalPrice = Math.round(selectedDish?.basePrice || 0);
+  const isFlat = newOffer.discountType === "flat";
+  // Flat discounts are clamped to the dish's price so a mistyped flat
+  // amount can never push the offer price below zero.
+  const offerAmount = isFlat
+    ? Math.round(Math.min(Number(newOffer.flatAmount) || 0, originalPrice))
+    : Math.round((originalPrice * (Number(newOffer.percentage) || 0)) / 100);
+  const offerPrice = Math.round(originalPrice - offerAmount);
 
-  const EMPTY_OFFER = { dishId: "", categoryId: "", percentage: "", startDate: "", endDate: "", active: "yes" };
+  const EMPTY_OFFER = { dishId: "", categoryId: "", discountType: "percentage", percentage: "", flatAmount: "", startDate: "", endDate: "", active: "yes" };
 
   const applyOfferPreset = (preset) => {
     setOfferDatePreset(preset);
@@ -75,15 +85,28 @@ const Offers = ({ adminData, setAdminData }) => {
   const handleSave = async () => {
     const errs = {};
     if (!newOffer.dishId) errs.dishId = true;
-    if (!newOffer.percentage) errs.percentage = true;
+    if (isFlat) {
+      if (!newOffer.flatAmount) errs.flatAmount = true;
+    } else {
+      if (!newOffer.percentage) errs.percentage = true;
+    }
     if (!newOffer.startDate) errs.startDate = true;
     if (!newOffer.endDate) errs.endDate = true;
     if (!newOffer.active) errs.active = true;
     if (Object.keys(errs).length) { setFormErrors(errs); return; }
 
+    // Every offer always carries a `percentage`, even flat ones — it's
+    // derived from the flat amount so any code reading offer.percentage
+    // downstream (e.g. the user-panel pricing helpers) keeps working.
+    const derivedPercentage = isFlat
+      ? Math.round((offerAmount / (originalPrice || 1)) * 100)
+      : Number(newOffer.percentage) || 0;
+
     const payload = {
       id: `offer_${Date.now()}`,
       ...newOffer,
+      percentage: derivedPercentage,
+      ...(isFlat ? { flatAmount: Number(newOffer.flatAmount) || 0 } : {}),
       originalPrice,
       offerAmount,
       offerPrice
@@ -120,7 +143,7 @@ const Offers = ({ adminData, setAdminData }) => {
     });
   }, [adminData.offers, offerSearch, offerStatusFilters, offerFromDate, offerToDate]);
 
-  const { displayLimit, sentinelRef, containerRef, hasMore } =
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(filteredOffers.length, 30);
   // Gate on categories, not offers.length — an empty offers list is a
   // legitimate state (no active promotions), not a "still loading" state.
@@ -129,14 +152,13 @@ const Offers = ({ adminData, setAdminData }) => {
   // between "not loaded yet" and "loaded, zero offers" — checking
   // categories (which offers always depend on for the dish dropdown,
   // and which every seeded café has at least one of) gives a real signal.
-  if (!adminData?.categories?.length) return <PageLoader label="Loading offers…" />;
 
   const exportOffers = () => {
     if (!filteredOffers.length) { toast.warning("No offers to export"); return; }
     const rows = filteredOffers.map(o => ({
       Dish: o.dishId || "—",
       "Original Price (₹)": o.originalPrice ?? "—",
-      "Discount %": o.percentage ? `${o.percentage}%` : "—",
+      Discount: o.discountType === "flat" ? `₹${o.flatAmount ?? o.offerAmount ?? 0} flat` : (o.percentage ? `${o.percentage}%` : "—"),
       "Offer Amount (₹)": o.offerAmount ?? "—",
       "Offer Price (₹)": o.offerPrice ?? "—",
       "Start Date": formatDisplayDate(o.startDate) || "—",
@@ -153,7 +175,26 @@ const Offers = ({ adminData, setAdminData }) => {
     <div className="inner-page">
       {/* HEADER */}
       <div className="header">
-        <h2 className="title">Offers</h2>
+        <div className="header-title-row">
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed(prev => !prev)}
+              title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Offers</h2>
+              <span className="result-count">{filteredOffers.length} offer(s)</span>
+            </div>
+          </div>
+        </div>
+
         <div className="header-btn-container">
           <Button3D onClick={exportOffers}>Export</Button3D>
           <Button3D onClick={() => setShowModal(true)}>+ Add Offer</Button3D>
@@ -161,55 +202,55 @@ const Offers = ({ adminData, setAdminData }) => {
       </div>
 
       {/* FILTER BAR */}
-      <div className="filter-bar">
-        <div className="filter-groups">
-          <input
-            className="search-input"
-            placeholder=" Search dish…"
-            value={offerSearch}
-            onChange={e => setOfferSearch(e.target.value)}
-          />
-          <DateRangeGroup
-            from={offerFromDate}
-            to={offerToDate}
-            onChangeFrom={setOfferFromDate}
-            onChangeTo={setOfferToDate}
-            preset={offerDatePreset}
-            onChangePreset={applyOfferPreset}
-            presets={[["all", "All"], ["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
-            toggle={false}
-            noMax
-          />
+      {!headerCollapsed && (
+        <div className="filter-bar">
+          <div className="filter-groups">
+            <input
+              className="search-input"
+              placeholder=" Search dish…"
+              value={offerSearch}
+              onChange={e => setOfferSearch(allowTextInput(offerSearch, e.target.value, 100, 5))}
+            />
+            <DateRangeGroup
+              from={offerFromDate}
+              to={offerToDate}
+              onChangeFrom={setOfferFromDate}
+              onChangeTo={setOfferToDate}
+              preset={offerDatePreset}
+              onChangePreset={applyOfferPreset}
+              presets={[["all", "All"], ["today", "Today"], ["week", "This Week"], ["month", "This Month"], ["lastMonth", "Last Month"]]}
+              toggle={false}
+              noMax
+            />
 
-          <MultiPillGroup
-            label="Status"
-            options={[
-              ["yes", "Active", "offer-pill-active"],
-              ["no", "Inactive", "offer-pill-inactive"],
-            ]}
-            value={offerStatusFilters}
-            onToggle={(key) => toggleSet(setOfferStatusFilters, key)}
-          />
+            <MultiPillGroup
+              label="Status"
+              options={[
+                ["yes", "Active", "offer-pill-active"],
+                ["no", "Inactive", "offer-pill-inactive"],
+              ]}
+              value={offerStatusFilters}
+              onToggle={(key) => toggleSet(setOfferStatusFilters, key)}
+            />
 
-          {(offerSearch || offerStatusFilters.size > 0 || offerDatePreset !== "today") && (
-            <button className="ae-clear-filter" onClick={() => {
-              setOfferSearch("");
-              setOfferStatusFilters(new Set());
-              applyOfferPreset("today");
-            }}>Clear</button>
-          )}
-
-          <span className="result-count">{filteredOffers.length} offer(s)</span>
+            {(offerSearch || offerStatusFilters.size > 0 || offerDatePreset !== "today") && (
+              <button className="ae-clear-filter" onClick={() => {
+                setOfferSearch("");
+                setOfferStatusFilters(new Set());
+                applyOfferPreset("today");
+              }}>Clear</button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }} ref={containerRef}>
+      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 260px)" }} ref={containerRef}>
         <table >
           <thead>
             <tr>
               <th>Dish</th>
               <th>Original</th>
-              <th>%</th>
+              <th>Discount</th>
               <th>Offer Price</th>
               <th>Start Date</th>
               <th>End Date</th>
@@ -218,9 +259,10 @@ const Offers = ({ adminData, setAdminData }) => {
           </thead>
           <tbody>
             {filteredOffers.length === 0 ? (
-              <tr><td colSpan="7" style={{ textAlign: "center", color: "#aaa", padding: 20 }}>
-                {(adminData.offers || []).length === 0 ? "No offers yet" : "No offers match filters"}
-              </td></tr>
+              <EmptyRow
+                colSpan={7}
+                message={(adminData.offers || []).length === 0 ? "No offers yet" : "No offers match filters"}
+              />
             ) : filteredOffers.slice(0, displayLimit).map(o => (
               <tr key={o.id}>
                 <td>
@@ -232,7 +274,7 @@ const Offers = ({ adminData, setAdminData }) => {
                   </span>
                 </td>
                 <td>{o.originalPrice}</td>
-                <td>{o.percentage}%</td>
+                <td>{o.discountType === "flat" ? `₹${o.flatAmount ?? o.offerAmount} flat` : `${o.percentage}%`}</td>
                 <td>{o.offerPrice}</td>
                 <td>{formatDisplayDate(o.startDate)}</td>
                 <td>{formatDisplayDate(o.endDate)}</td>
@@ -250,6 +292,7 @@ const Offers = ({ adminData, setAdminData }) => {
             />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
 
       {/* MODAL */}
@@ -289,22 +332,56 @@ const Offers = ({ adminData, setAdminData }) => {
 
                 {/* OFFER % */}
                 <div className="admin-form-group">
-                  <div className="mat">
-                    <input
-                      className={`mat-input${formErrors.percentage ? " mat-error" : ""}`}
-                      placeholder=" "
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={newOffer.percentage}
-                      onChange={(e) => {
-                        setNewOffer({ ...newOffer, percentage: Number(e.target.value) });
-                        setFormErrors(p => ({ ...p, percentage: false }));
-                      }}
-                    />
-                    <label className={`mat-label${formErrors.percentage ? " mat-label-error" : ""}`}>Offer Percentage (%)<span className="rf-req">*</span></label>
-                    <span className={`mat-bar${formErrors.percentage ? " mat-bar-error" : ""}`} />
-                  </div>
+                  <CustomDropdown
+                    label="Discount Type"
+                    value={newOffer.discountType}
+                    onChange={val => {
+                      setNewOffer({ ...newOffer, discountType: val });
+                      setFormErrors(p => ({ ...p, percentage: false, flatAmount: false }));
+                    }}
+                    options={[
+                      { value: "percentage", label: "Percentage (%)" },
+                      { value: "flat", label: "Flat Amount (₹)" }
+                    ]}
+                    placeholder="Select Discount Type"
+                  />
+                </div>
+
+                <div className="admin-form-group">
+                  {isFlat ? (
+                    <div className="mat">
+                      <input
+                        className={`mat-input${formErrors.flatAmount ? " mat-error" : ""}`}
+                        placeholder=" "
+                        type="number"
+                        min="1"
+                        value={newOffer.flatAmount}
+                        onChange={(e) => {
+                          setNewOffer({ ...newOffer, flatAmount: Number(e.target.value) });
+                          setFormErrors(p => ({ ...p, flatAmount: false }));
+                        }}
+                      />
+                      <label className={`mat-label${formErrors.flatAmount ? " mat-label-error" : ""}`}>Flat Discount (₹)<span className="rf-req">*</span></label>
+                      <span className={`mat-bar${formErrors.flatAmount ? " mat-bar-error" : ""}`} />
+                    </div>
+                  ) : (
+                    <div className="mat">
+                      <input
+                        className={`mat-input${formErrors.percentage ? " mat-error" : ""}`}
+                        placeholder=" "
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={newOffer.percentage}
+                        onChange={(e) => {
+                          setNewOffer({ ...newOffer, percentage: Number(e.target.value) });
+                          setFormErrors(p => ({ ...p, percentage: false }));
+                        }}
+                      />
+                      <label className={`mat-label${formErrors.percentage ? " mat-label-error" : ""}`}>Offer Percentage (%)<span className="rf-req">*</span></label>
+                      <span className={`mat-bar${formErrors.percentage ? " mat-bar-error" : ""}`} />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -319,7 +396,7 @@ const Offers = ({ adminData, setAdminData }) => {
                   </div>
 
                   <div>
-                    <span>Discount</span>
+                    <span>{isFlat ? "Flat Discount" : "Discount"}</span>
                     <strong>₹{offerAmount}</strong>
                   </div>
 
