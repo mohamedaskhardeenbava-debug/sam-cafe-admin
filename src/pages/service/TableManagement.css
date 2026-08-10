@@ -306,6 +306,14 @@
   letter-spacing: -0.01em;
 }
 
+.qr-modal-branch {
+  margin: 2px 0 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted, #8a8a8a);
+  letter-spacing: 0.01em;
+}
+
 .qr-close-btn {
   width: 30px;
   height: 30px;

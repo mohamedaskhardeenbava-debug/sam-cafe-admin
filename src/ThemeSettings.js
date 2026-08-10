@@ -12,6 +12,9 @@ import { useToast } from "./useToast";
 import "./ThemeSettings.css";
 import PageLoader from "./components/PageLoader";
 import CustomColorPicker, { hslaToHex, hexToHsla, hslaToRgbaString } from "./components/CustomColorPicker";
+import Button3D from "./components/Button3D";
+import closeIcon from "./icon/close-icon.png";
+
 
 // ─── Color helpers ────────────────────────────────────────────────────────────
 
@@ -850,11 +853,11 @@ const ThemeSettings = () => {
       </div>
 
       {showPresetModal && (
-        <div className="modal-overlay" onClick={() => setShowPresetModal(false)}>
-          <div className="admin-modal ts-preset-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" >
+          <form className="admin-modal" onSubmit={(e) => e.preventDefault()}>
             <div className="admin-modal-header">
               <h3>{editingPresetId ? "Edit Theme" : "Add Theme"}</h3>
-              <button className="ts-modal-close" onClick={() => setShowPresetModal(false)}>×</button>
+              <Button3D iconOnly aria-label="Close" variant="cancel" onClick={() => setShowPresetModal(false)}><img src={closeIcon}/></Button3D>
             </div>
             <div className="admin-modal-body">
               <div className="ts-preset-modal-preview">
@@ -897,7 +900,7 @@ const ThemeSettings = () => {
                 <span className="front">{editingPresetId ? "Save Changes" : "Create Theme"}</span>
               </button>
             </div>
-          </div>
+          </form>
         </div>
       )}
 

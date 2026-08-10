@@ -1192,9 +1192,3 @@ th.sorted .sort-arrow {
 .filter-pill:hover {
   border-color: #bbb;
 }
-
-.filter-pill.active {
-  background: var(--color-green, #06d6a0);
-  border-color: var(--color-green, #06d6a0);
-  color: #fff;
-}

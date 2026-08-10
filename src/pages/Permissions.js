@@ -279,10 +279,10 @@ const Permissions = () => {
       )}
 
       <div
-        className="table-wrapper perm-table-wrapper"
+        className="table-wrapper"
         style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 230px)" }}
       >
-        <table className="perm-table">
+        <table>
           <thead>
             <tr>
               <th className="perm-module-col">Module</th>
@@ -504,7 +504,8 @@ const RolesPanel = () => {
         These role descriptions are shown to staff who create accounts for others, so they know what each role is responsible for.
       </p>
 
-      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }}>
+      <div className="table-wrapper">
+        
         <table>
           <thead>
             <tr>
@@ -618,10 +619,10 @@ const RolesAndResponsibilities = () => {
           this page is opened from the sidebar, instead of one panel's
           fetch waiting until its tab is actually clicked. Switching tabs
           is just a visibility toggle, not a re-fetch. */}
-      <div style={{ display: view === "permissions" ? "block" : "none" }}>
+      <div style={{ display: view === "permissions" ? "flex" : "none" }}>
         <Permissions />
       </div>
-      <div style={{ display: view === "roles" ? "block" : "none" }}>
+      <div style={{ display: view === "roles" ? "flex" : "none" }}>
         <RolesPanel />
       </div>
     </div>

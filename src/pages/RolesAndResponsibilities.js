@@ -245,8 +245,8 @@ const PermissionsTab = () => {
         )}
       </div>
 
-      <div className="table-wrapper perm-table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }}>
-        <table className="perm-table">
+      <div className="table-wrapper">
+        <table>
           <thead>
             <tr>
               <th className="perm-module-col">Module</th>
@@ -447,7 +447,7 @@ const RolesTab = () => {
       </div>
 
       <div className="table-wrapper">
-        <table className="perm-table roles-table">
+        <table>
           <thead>
             <tr>
               <th>Name</th>

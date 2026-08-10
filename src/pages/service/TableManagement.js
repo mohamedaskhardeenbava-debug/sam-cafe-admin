@@ -15,6 +15,7 @@ import deleteIcon from "../../icon/delete-icon.png";
 import qrIcon from "../../icon/qr-icon.png";
 import logo from "../../icon/logo.png";
 import { useToast } from "../../useToast";
+import { useVenue } from "../../context/VenueContext";
 import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
 
@@ -24,6 +25,7 @@ const TableManagement = ({ adminData, setAdminData }) => {
   // ── Hooks
 
   const { toast } = useToast();
+  const { currentVenue } = useVenue();
   const tables = adminData.tables?.[0]?.list || [];
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
@@ -71,8 +73,10 @@ const TableManagement = ({ adminData, setAdminData }) => {
 
   // ── Helpers
 
-  const getQRValue = (tableNo) =>
-    `${process.env.REACT_APP_USER_PANEL_URL || "https://samcafe.vercel.app"}/?table=${tableNo}`;
+  const getQRValue = (tableNo) => {
+    const base = `${process.env.REACT_APP_USER_PANEL_URL || "https://samcafe.vercel.app"}/?table=${tableNo}`;
+    return currentVenue?.id ? `${base}&branch=${currentVenue.id}` : base;
+  };
 
   const exportTables = () => {
     if (!tables.length) { toast.warning("No tables to export"); return; }
@@ -283,7 +287,10 @@ const TableManagement = ({ adminData, setAdminData }) => {
             onClick={e => e.stopPropagation()}
           >
             <div className="qr-modal-header">
-              <h3>Table {selectedTable}</h3>
+              <div>
+                <h3>Table {selectedTable}</h3>
+                {currentVenue?.name && <p className="qr-modal-branch">{currentVenue.name}</p>}
+              </div>
               <Button3D variant="cancel" iconOnly onClick={() => setShowQRModal(false)}><img src={closeIcon} /></Button3D>
             </div>
 
