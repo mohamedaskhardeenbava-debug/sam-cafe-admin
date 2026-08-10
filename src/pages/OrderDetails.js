@@ -36,6 +36,35 @@ const OrderDetails = ({ orders, menu }) => {
       0
     );
 
+  // For item-level ("bill") splits, per-bill totals aren't stored on the
+  // order — each item just carries a `billAssignment` (1..billBillCount).
+  // Derive the same per-bill subtotal/GST/total breakdown here that
+  // Orders.js's printBill() computes when it actually prints the split
+  // receipts, so this summary matches what gets printed.
+  const computeGSTFromSubtotal = (subTotal, discountPercent) => {
+    const discountAmount = +(subTotal * ((discountPercent || 0) / 100)).toFixed(2);
+    const taxable = +(subTotal - discountAmount).toFixed(2);
+    const cgst = +(taxable * 0.025).toFixed(2);
+    const sgst = +(taxable * 0.025).toFixed(2);
+    const total = +(taxable + cgst + sgst).toFixed(2);
+    return { subTotal: +subTotal.toFixed(2), discountPercent: discountPercent || 0, discountAmount, cgst, sgst, total };
+  };
+
+  const billSplitSummary = (() => {
+    if (order.splitType !== "bill" || !order.splitBillCount) return null;
+    const billCount = Number(order.splitBillCount);
+    const discountPercent = Math.max(0, Math.min(100, Number(order.discount?.percent) || 0));
+
+    const bills = [];
+    for (let billNo = 1; billNo <= billCount; billNo++) {
+      const billItems = order.items.filter(it => Number(it.billAssignment) === billNo);
+      if (billItems.length === 0) continue;
+      const subTotal = +billItems.reduce((sum, it) => sum + resolveItemTotal(it), 0).toFixed(2);
+      bills.push({ billNo, ...computeGSTFromSubtotal(subTotal, discountPercent) });
+    }
+    return bills;
+  })();
+
   const resolveDishRoute = (item) => {
     // Block combo
     if (item.categoryId === "combo") return null;
@@ -205,11 +234,15 @@ const OrderDetails = ({ orders, menu }) => {
 
               {order.splitType === "bill" && (
                 <div>
-                  {order.splitDetails?.map((bill, i) => (
-                    <p key={i}>
-                      Bill {i + 1}: ₹{bill.total}
-                    </p>
-                  ))}
+                  {billSplitSummary && billSplitSummary.length > 0 ? (
+                    billSplitSummary.map((bill) => (
+                      <p key={bill.billNo}>
+                        Bill {bill.billNo} of {order.splitBillCount}: ₹{bill.total}
+                      </p>
+                    ))
+                  ) : (
+                    <p>No items assigned to a bill yet</p>
+                  )}
                 </div>
               )}
             </div>
