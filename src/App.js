@@ -22,7 +22,6 @@ import DishDetails from "./pages/DishDetails";
 import Stocks from "./pages/Stocks";
 import ComboOffers from "./pages/ComboOffers";
 import Login from "./pages/Login";
-import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import ForcePasswordReset from "./pages/ForcePasswordReset";
 import Profile from "./pages/Profile";
@@ -180,7 +179,7 @@ function App() {
         "/serviceGrooming", "/serviceMise", "/serviceActivity",
         "/serviceSchedules", "/tables", "/reservations", "/celebrations",
         "/preBookings", "/cateringOrders", "/events", "/eventBookings",
-        "/tasks",
+        "/tasks", "/work-plan",
       ];
 
       const settled = await Promise.allSettled(
@@ -204,7 +203,7 @@ function App() {
         schedulesRes, serviceAssignRes, serviceGroomRes, serviceMiseRes,
         serviceActivityRes, serviceSchedulesRes, tablesRes, reservationsRes,
         celebrationsRes, preBookingsRes, cateringRes, eventsRes, bookingsRes,
-        tasksRes,
+        tasksRes, workPlanRes,
       ] = endpoints.map((_, i) => ({ data: dataOf(i) }));
 
       const anyFailed = settled.some((r) => r.status === "rejected");
@@ -239,6 +238,7 @@ function App() {
           kitchen: { mise: [], cleaning: [] },
           service: { mise: [], cleaning: [] }
         },
+        workPlan: workPlanRes.data || [],
       });
 
       // Show a non-blocking error banner if some endpoints failed, but
@@ -529,7 +529,6 @@ function App() {
   if (!isAuthenticated) {
     return (
       <Routes>
-        <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="*" element={<Login />} />
       </Routes>

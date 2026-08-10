@@ -15,6 +15,7 @@ import { allowTextInput } from "../../App";
 import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
 import { MultiPillGroup } from "../../components/FilterBar";
+import { fmtTime as sharedFmtTime } from "../../utils/dateUtils";
 
 import "./KitchenMise.css";
 
@@ -104,7 +105,7 @@ export default function KitchenMise({ adminData, setAdminData }) {
         [task]: {
           ...miseDay[task],
           verified: !isChecked,
-          time: !isChecked ? new Date().toLocaleTimeString() : ""
+          time: !isChecked ? sharedFmtTime(`${String(new Date().getHours()).padStart(2, "0")}:${String(new Date().getMinutes()).padStart(2, "0")}`) : ""
         }
       }
     };

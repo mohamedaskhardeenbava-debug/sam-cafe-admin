@@ -1078,3 +1078,123 @@ th.sorted .sort-arrow {
     min-width: unset;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   12. SHARED TAB PILLS — page-level tab switches (Dashboard,
+   Events, Staffs, Roles and Responsibilities). Was duplicated as
+   .db-tab-pills/.db-tab-pill (Dashboard) and .ae-tab-pills/.ae-tab-pill
+   (Events) — unified here so every page-level tab switch stays visually
+   consistent and only needs one place to restyle.
+
+   "Liquid" sliding-highlight style, light theme: a light-gray track
+   holding a white pill-shaped thumb (.app-tab-pill-liquid) that glides
+   to whichever tab is active. The thumb's position/width are measured
+   in JS (see hooks/useTabLiquid.js) rather than fixed at a 1/N split,
+   so this works for any number of pills and any label width — the
+   animation itself (easing, duration, inner sheen) mirrors the
+   reference "liquid" toggle, just re-themed light instead of dark.
+───────────────────────────────────────────────────────────── */
+.app-tab-pills {
+  position: relative;
+  display: flex;
+  background: #eeeeee;
+  border-radius: 999px;
+  padding: 4px;
+  gap: 4px;
+  border: 1px solid #e2e2e2;
+}
+
+.app-tab-pill-liquid {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.1),
+    inset 0 1px 1px rgba(255, 255, 255, 0.8),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.04);
+  pointer-events: none;
+  z-index: 1;
+  transition:
+    transform 0.55s cubic-bezier(0.22, 0.9, 0.25, 1),
+    width 0.55s cubic-bezier(0.22, 0.9, 0.25, 1),
+    opacity 0.2s ease;
+}
+
+.app-tab-pill {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  color: #666;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.35s ease, transform 0.2s ease;
+}
+
+.app-tab-pill:active {
+  transform: scale(0.97);
+}
+
+.app-tab-pill.active {
+  color: #111;
+}
+
+@media screen and (max-width: 578px) {
+  .app-tab-pills {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .app-tab-pill {
+    flex: 1;
+    justify-content: center;
+    white-space: nowrap;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FILTER PILLS — rounded, outlined toggle buttons used inside a
+   .filter-bar (e.g. Permissions module tabs, Recipe modal tabs).
+   Distinct from .app-tab-pills above (which is a filled track/
+   segmented-control look) — these sit directly on the page/modal
+   background with just a border until active.
+───────────────────────────────────────────────────────────── */
+.filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-pill {
+  border: 1px solid var(--color-offwhite, #e5e5e5);
+  background: var(--color-white);
+  padding: 7px 16px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+}
+
+.filter-pill:hover {
+  border-color: #bbb;
+}
+
+.filter-pill.active {
+  background: var(--color-green, #06d6a0);
+  border-color: var(--color-green, #06d6a0);
+  color: #fff;
+}

@@ -217,7 +217,8 @@
 .dashboard-linechart,
 .dashboard-barchart {
   width: 100%;
-  max-height: 420px;
+  min-width: 420px !important;
+  max-height: 420px !important;
   display: flex;
   flex-direction: column;
 }

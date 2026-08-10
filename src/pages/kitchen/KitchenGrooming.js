@@ -21,6 +21,7 @@ import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
 
 import "./KitchenGrooming.css";
+import { fmtDate as sharedFmtDate } from "../../utils/dateUtils";
 
 /*
   DATA SHAPE (grooming in db.json):
@@ -402,7 +403,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
               <div className="kgroom-detail-info">
                 <div className="kgroom-detail-name">{selected.staff}</div>
                 <div className="kgroom-detail-date">
-                  {new Date(selected.date).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                  {new Date(selected.date).toLocaleDateString("en-IN", { weekday: "long" })}, {sharedFmtDate(selected.date)}
                 </div>
               </div>
               <div className="kgroom-detail-checks">

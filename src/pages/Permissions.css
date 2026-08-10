@@ -10,6 +10,27 @@
   min-width: 180px;
 }
 
+/* ── Permissions/Roles top-level view switch ─────────────────────── */
+/* Base tab-pill styling now comes from .app-tab-pills/.app-tab-pill in
+   Common.css; this class is kept only as a layout hook for spacing. */
+.perm-view-switch {
+  margin-bottom: 4px;
+  width: fit-content;
+}
+
+.perm-roles-hint {
+  font-size: 13px;
+  color: #888;
+  margin: 0 0 14px;
+}
+
+/* ── Module tabs inside the filter bar ───────────────────────────── */
+.perm-filter-bar {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
 /* ── Table shell ─────────────────────────────────────────────────── */
 .perm-table-wrapper {
   overflow: auto;

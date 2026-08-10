@@ -16,10 +16,11 @@ import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
 import { MultiPillGroup } from "../../components/FilterBar";
 import { useVenue } from "../../context/VenueContext";
+import useRoleTitles from "./useRoleTitles";
 
 import "./StaffModules.css";
 
-const roles = ["Chef", "Waiter", "Supervisor", "Manager", "Cleaner"];
+
 
 const roleColors = {
   Chef: { bg: "#fef3c7", color: "#92400e" },
@@ -41,6 +42,7 @@ export default function StaffCareer() {
 
   const { toast } = useToast();
   const { venueParam, venueId: activeVenueId } = useVenue();
+  const { roleTitles: jobRoles } = useRoleTitles();
   const [jobs, setJobs] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
@@ -135,7 +137,7 @@ export default function StaffCareer() {
             />
             <MultiPillGroup
               label="Role"
-              options={roles.map(r => [r, r])}
+              options={jobRoles.map(r => [r, r])}
               value={careerRoleFilters}
               onToggle={(key) => toggleSet(setCareerRoleFilters, key)}
             />
@@ -208,7 +210,7 @@ export default function StaffCareer() {
                   label="Role"
                   value={form.role}
                   onChange={v => { setForm({ ...form, role: v }); setFormErrors(p => ({ ...p, role: false })); }}
-                  options={roles}
+                  options={jobRoles}
                   placeholder="Select role"
                   hasError={!!formErrors.role}
                 />

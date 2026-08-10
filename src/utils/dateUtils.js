@@ -54,33 +54,27 @@ export const fmtTime = (t) => {
 };
 
 /**
- * Format an ISO datetime string → "13 Jun 2026, 02:30 PM"
- * Returns "—" for falsy input.
+ * Format an ISO datetime string → "13-06-2026, 02:30 PM"
+ * (DD-MM-YYYY + Indian 12-hour time). Returns "—" for falsy input.
  */
 export const fmtDateTime = (iso) => {
   if (!iso) return "—";
   const d = new Date(iso);
-  return d.toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+  return `${fmtDate(iso)}, ${d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}`;
 };
 
 /**
- * Format an ISO date string → "13 Jun 2026"
- * Returns "—" for falsy input.
+ * Format an ISO date string (or "YYYY-MM-DD") → "31-07-2026" (DD-MM-YYYY).
+ * This is the standard display format used everywhere in the UI except
+ * the custom date/time pickers themselves and any value sent back to
+ * the database, which stay ISO — this only touches what's shown on
+ * screen. Returns "—" for falsy/unparseable input.
  */
 export const fmtDate = (iso) => {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`;
 };
 
 /**

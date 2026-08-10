@@ -12,6 +12,7 @@ import api from "../../api";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 import { DateRangeGroup, MultiPillGroup } from "../../components/FilterBar";
 import { todayStr } from "../../utils/dateRangeUtils";
+import { fmtTime, fmtDateTime } from "../../utils/dateUtils";
 
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
@@ -30,7 +31,6 @@ import "./EvtCommon.css";
 import "../ModalCSS.css";
 import "./PreviewModal.css";
 
-const pad = (n) => String(n).padStart(2, "0");
 
 const SLOT_GROUPS = [
   { label: "Breakfast", key: "BF", short: "BF", start: "07:00", end: "10:00" },
@@ -53,18 +53,6 @@ const timeToSlotKey = (time) => {
 
 const resolveSlotKey = (r) => r.slotGroup || timeToSlotKey(r.time);
 
-const fmtTime = (t) => {
-  if (!t) return "—";
-  const [h, m] = t.split(":").map(Number);
-  return `${h % 12 || 12}:${pad(m)} ${h >= 12 ? "PM" : "AM"}`;
-};
-
-const fmtDateTime = (iso) => {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
-    + " " + d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
-};
 
 /* ══════════════════════════════════════════════
    Add PreBooking Modal (admin)

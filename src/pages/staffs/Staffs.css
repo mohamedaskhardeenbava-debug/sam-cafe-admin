@@ -118,6 +118,11 @@
     letter-spacing: 0;
 }
 
+.st-avatar-photo {
+    object-fit: cover;
+    border: 1px solid #eee;
+}
+
 .st-name {
     font-size: 14px;
     font-weight: 700;
@@ -160,6 +165,13 @@
 .st-contact {
     font-size: 13px;
     color: #555;
+}
+
+/* Branch (Super Admin only column) */
+.st-branch {
+    font-size: 13px;
+    color: #555;
+    font-weight: 500;
 }
 
 /* Work type badge */

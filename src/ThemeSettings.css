@@ -187,12 +187,6 @@
     flex-shrink: 0;
 }
 
-.ts-preset-emoji {
-    font-size: 20px;
-    margin-top: -36px;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
-}
-
 .ts-preset-name {
     font-size: 12px;
     font-weight: 600;
@@ -215,6 +209,113 @@
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+/* ── Custom preset cards (add/edit/delete) ── */
+.ts-preset-card-custom {
+    padding: 0;
+    display: block;
+    cursor: default;
+}
+
+.ts-preset-card-main {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 12px 14px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.ts-preset-card-actions {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 10px 10px;
+}
+
+.ts-preset-action-btn {
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 8px;
+    font-size: 12px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.ts-preset-action-btn:hover {
+    border-color: var(--color-blue);
+    background: var(--color-paleblue);
+}
+
+.ts-preset-action-danger:hover {
+    border-color: #ef4444;
+    background: #fee2e2;
+}
+
+.ts-preset-card-add {
+    justify-content: center;
+    border-style: dashed;
+    color: var(--text-secondary);
+}
+
+.ts-preset-add-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px dashed #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 300;
+    color: #94a3b8;
+}
+
+/* ── Add/Edit theme modal ── */
+.ts-preset-modal {
+    max-width: 380px;
+}
+
+.ts-preset-modal-preview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 12px;
+    background: #fafafa;
+    border: 1px solid #e5e7eb;
+    margin-bottom: 18px;
+}
+
+.ts-preset-modal-preview-swatch {
+    width: 44px;
+    height: 44px;
+}
+
+.ts-preset-modal-preview-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+}
+
+.ts-preset-delete-modal {
+    max-width: 340px;
+}
+
+.ts-modal-close {
+    border: none;
+    background: transparent;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 4px 8px;
 }
 
 /* ── Mode tabs ── */
@@ -299,6 +400,20 @@
 
 .ts-token-row:hover {
     background: #fafafa;
+}
+
+.ts-token-row-readonly {
+    opacity: 0.65;
+}
+
+.ts-token-row-readonly:hover {
+    background: transparent;
+}
+
+.ts-color-input:disabled,
+.ts-text-input:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
 }
 
 .ts-token-info {

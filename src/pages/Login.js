@@ -31,15 +31,6 @@ const Login = () => {
 
   return (
     <AuthShell title="Welcome back!">
-      <div className="auth-tabs">
-        <button type="button" className="auth-tab" onClick={() => navigate("/signup")}>
-          SIGN UP
-        </button>
-        <button type="button" className="auth-tab active">
-          LOG IN
-        </button>
-      </div>
-
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="mat">
           <input
@@ -73,7 +64,7 @@ const Login = () => {
       </form>
 
       <p className="auth-switch-hint">
-        Don't have an account? <Link to="/signup">Create one</Link>
+        Staff accounts are created by your manager or Super Admin. Contact them if you need access.
       </p>
     </AuthShell>
   );

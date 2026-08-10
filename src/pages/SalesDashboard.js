@@ -15,6 +15,7 @@ import { exportMultiSheet } from "../utils/excelUtils";
 import ScheduleSection from './DashboardScheduleSection';
 import { useToast } from "../useToast";
 
+import "./Common.css";
 import "./SalesDashboard.css";
 import {
   PieChart, Pie, Cell, Sector,
@@ -25,10 +26,13 @@ import {
 } from "recharts";
 import { format } from "date-fns";
 import { CustomDatePicker } from "../components/CustomDatePicker";
+import { fmtDate as sharedFmtDateOnly } from "../utils/dateUtils";
 import { todayStr, getWeekRange as sharedWeekRange, getMonthRange as sharedMonthRange, getLastMonthRange as sharedLastMonthRange } from "../utils/dateRangeUtils";
 import Button3D from "../components/Button3D";
 import PageLoader from "../components/PageLoader";
 import CollapseChevron from "../components/CollapseChevron";
+import WorkPlan from "./WorkPlan";
+import { useTabLiquid } from "../hooks/useTabLiquid";
 
 const COLORS = ["#ff9f43", "#54a0ff", "#FFD700", "#1dd1a1", "#00FFFF", "#e93c3c", "#FFFF00", "#FF8AFF"];
 const STAFF_PALETTE = ["#4361ee", "#06d6a0", "#ffd166", "#ef476f", "#7209b7", "#4cc9f0", "#f72585", "#3a0ca3"];
@@ -70,6 +74,7 @@ const SalesDashboard = ({ adminData, setAdminData, orders = [] }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("sales");
+  const { containerRef: tabPillsRef, thumbStyle: tabThumbStyle } = useTabLiquid(activeTab);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
 
   const ingredients = adminData.ingredients || [];
@@ -252,8 +257,8 @@ const SalesDashboard = ({ adminData, setAdminData, orders = [] }) => {
         const isCustom = Array.isArray(item.ingredients) && item.ingredients.length > 0 || Boolean(item.notes);
         orderRows.push({
           OrderID: order.id,
-          Date: order.date,
-          Time: order.time ?? (order.createdAt ? new Date(order.createdAt).toLocaleTimeString() : "—"),
+          Date: sharedFmtDateOnly(order.date),
+          Time: order.time ?? (order.createdAt ? new Date(order.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }) : "—"),
           Customer: order.userName || "",
           Mode: order.mode || "",
           Category: item.categoryId,
@@ -328,19 +333,23 @@ const SalesDashboard = ({ adminData, setAdminData, orders = [] }) => {
                 <h2 className="dashboard-title">Dashboard</h2>
               </div>
 
-              <div className="db-tab-pills">
-                <button className={`db-tab-pill ${activeTab === "sales" ? "active" : ""}`} onClick={() => setActiveTab("sales")}>
+              <div className="app-tab-pills" ref={tabPillsRef}>
+                <span className="app-tab-pill-liquid" style={tabThumbStyle} />
+                <button className={`app-tab-pill ${activeTab === "sales" ? "active" : ""}`} onClick={() => setActiveTab("sales")}>
                   Sales
                 </button>
-                <button className={`db-tab-pill ${activeTab === "staff" ? "active" : ""}`} onClick={() => setActiveTab("staff")}>
+                <button className={`app-tab-pill ${activeTab === "staff" ? "active" : ""}`} onClick={() => setActiveTab("staff")}>
                   Staff
                 </button>
-                <button className={`db-tab-pill ${activeTab === "schedules" ? "active" : ""}`} onClick={() => setActiveTab("schedules")}>
+                <button className={`app-tab-pill ${activeTab === "schedules" ? "active" : ""}`} onClick={() => setActiveTab("schedules")}>
                   Schedules
+                </button>
+                <button className={`app-tab-pill ${activeTab === "workplan" ? "active" : ""}`} onClick={() => setActiveTab("workplan")}>
+                  Work Plan
                 </button>
               </div>
             </div>
-            {!headerCollapsed && <Button3D onClick={handleExport}>Export</Button3D>}
+            {!headerCollapsed && activeTab !== "workplan" && <Button3D onClick={handleExport}>Export</Button3D>}
           </div>
           {!headerCollapsed && (
             <div className="dashboard-filter-date">
@@ -599,6 +608,14 @@ const SalesDashboard = ({ adminData, setAdminData, orders = [] }) => {
               <ScheduleSection adminData={adminData} navigate={navigate} />
             </div>
           </div>
+        </div>
+      )}
+
+      {/* WORK PLAN TAB — Super Admin only (this whole component is only
+          reachable by Super Admin via Dashboard.js's routing) */}
+      {activeTab === "workplan" && (
+        <div className="dashboard-scroll">
+          <WorkPlan adminData={adminData} setAdminData={setAdminData} />
         </div>
       )}
     </div>

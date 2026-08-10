@@ -594,6 +594,18 @@
   border-radius: 12px;
 }
 
+.co-map-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.co-map-add-btn {
+  margin-top: 14px;
+  width: 100%;
+}
+
 .co-map-hint {
   font-size: 12px;
   color: #6b7280;

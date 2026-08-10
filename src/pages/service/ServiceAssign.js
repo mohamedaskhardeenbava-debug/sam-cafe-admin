@@ -18,8 +18,11 @@ import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
 import CustomDropdown from "../../components/CustomDropdown";
 import { MultiPillGroup } from "../../components/FilterBar";
+import { fmtTime as sharedFmtTime } from "../../utils/dateUtils";
 
 import "./ServiceAssign.css";
+
+const nowFmt = () => sharedFmtTime(`${String(new Date().getHours()).padStart(2, "0")}:${String(new Date().getMinutes()).padStart(2, "0")}`);
 
 /*
   DATA SHAPE (serviceAssign in db.json):
@@ -152,7 +155,7 @@ export default function ServiceAssign({ adminData, setAdminData }) {
         ...assignedDay,
         [task]: {
           staff: staffName,
-          assignedAt: new Date().toLocaleTimeString()
+          assignedAt: nowFmt()
         }
       }
     };

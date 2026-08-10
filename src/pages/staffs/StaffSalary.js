@@ -41,19 +41,28 @@ export default function StaffSalary({ adminData, setAdminData }) {
     setStaffList(adminData.staff);
   }, [adminData.staff]);
 
+  const currentMonth = () => new Date().toISOString().slice(0, 7); // "YYYY-MM"
+
   const openModal = (staff) => {
     setSelected(staff);
 
-    // Use the last saved record as the starting values (absolute, not cumulative)
+    // Use the last saved record as the starting values (absolute, not
+    // cumulative) — but only if it's from the current month. Advance,
+    // deduction, penalty, bonus, and overtime are per-month figures (the
+    // server also zeroes them out on the 1st of each month), so a record
+    // still carrying last month's stamp is treated as already reset here
+    // too, rather than showing stale numbers for the gap before the
+    // server's own periodic check catches up.
     const history = staff.remainingSalary || [];
     const latest = history.length > 0 ? history[history.length - 1] : null;
+    const isCurrentMonth = latest?.month === currentMonth();
 
     setForm({
-      advance: Number(latest?.advance || 0),
-      deduction: Number(latest?.deduction || 0),
-      penalty: Number(latest?.penalty || 0),
-      bonus: Number(latest?.bonus || 0),
-      overtime: Number(latest?.overtime || 0),
+      advance: isCurrentMonth ? Number(latest?.advance || 0) : 0,
+      deduction: isCurrentMonth ? Number(latest?.deduction || 0) : 0,
+      penalty: isCurrentMonth ? Number(latest?.penalty || 0) : 0,
+      bonus: isCurrentMonth ? Number(latest?.bonus || 0) : 0,
+      overtime: isCurrentMonth ? Number(latest?.overtime || 0) : 0,
     });
   };
 
@@ -76,7 +85,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
       deduction -
       penalty;
 
-    const record = { advance, deduction, penalty, bonus, overtime, remaining };
+    const record = { advance, deduction, penalty, bonus, overtime, remaining, month: currentMonth() };
 
     const updated = {
       ...selected,
@@ -110,6 +119,19 @@ export default function StaffSalary({ adminData, setAdminData }) {
     }
 
     closeModal();
+  };
+
+  // Reads a staff member's current salary add-on/deduction record, but
+  // treats one stamped with a past month as already reset to zero for
+  // display — the server clears these for real shortly after the month
+  // rolls over, but this keeps the table from showing stale figures in
+  // the meantime.
+  const effectiveRecord = (staff) => {
+    const rec = (staff.remainingSalary || [])[0] || {};
+    if (rec.month && rec.month !== currentMonth()) {
+      return { advance: 0, deduction: 0, penalty: 0, bonus: 0, overtime: 0 };
+    }
+    return rec;
   };
 
   const filteredList = salarySearch.trim()
@@ -146,7 +168,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
         </div>
         <Button3D onClick={() => {
           const rows = filteredList.map((s, i) => {
-            const rec = (s.remainingSalary || [])[0] || {};
+            const rec = effectiveRecord(s);
             const totalAdvance = Number(rec.advance || 0);
             const totalDeduction = Number(rec.deduction || 0);
             const totalPenalty = Number(rec.penalty || 0);
@@ -211,8 +233,9 @@ export default function StaffSalary({ adminData, setAdminData }) {
               const PALETTE = ["#4361ee", "#06d6a0", "#ffd166", "#ef476f", "#7209b7", "#4cc9f0", "#f72585", "#3a0ca3", "#fb8500", "#023e8a"];
               const avatarBg = PALETTE[i % PALETTE.length];
 
-              // Single record — read the latest (or only) entry directly
-              const rec = (s.remainingSalary || [])[0] || {};
+              // Single record — read the latest (or only) entry, zeroed
+              // out for display if it's stamped with a past month.
+              const rec = effectiveRecord(s);
               const totalAdvance = Number(rec.advance || 0);
               const totalDeduction = Number(rec.deduction || 0);
               const totalPenalty = Number(rec.penalty || 0);

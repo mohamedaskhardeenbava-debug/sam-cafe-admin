@@ -1,0 +1,150 @@
+/* CustomColorPicker.css — saturation/lightness square, hue + opacity sliders */
+
+.ccp-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.ccp-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* ── Saturation / Lightness square ─────────────────────────────── */
+.ccp-sv-square {
+  position: relative;
+  width: 100%;
+  height: 160px;
+  border-radius: 10px;
+  cursor: crosshair;
+  overflow: hidden;
+  touch-action: none;
+  border: 1px solid var(--color-offwhite, #e5e5e5);
+}
+
+.ccp-sv-white-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, #fff, rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+
+.ccp-sv-black-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, #000, rgba(0, 0, 0, 0));
+  pointer-events: none;
+}
+
+.ccp-sv-thumb {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 1px 4px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* ── Hue slider ─────────────────────────────────────────────────── */
+.ccp-hue-slider {
+  position: relative;
+  width: 100%;
+  height: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  touch-action: none;
+  background: linear-gradient(
+    to right,
+    #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%,
+    #0000ff 67%, #ff00ff 83%, #ff0000 100%
+  );
+}
+
+.ccp-hue-thumb {
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 1px 4px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* ── Opacity slider ─────────────────────────────────────────────── */
+.ccp-opacity-slider {
+  position: relative;
+  width: 100%;
+  height: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  touch-action: none;
+  background-color: #fff;
+}
+
+.ccp-opacity-thumb {
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 1px 4px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* ── Text inputs row ────────────────────────────────────────────── */
+.ccp-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ccp-swatch-preview {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--color-offwhite, #e5e5e5);
+  background-image: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%);
+  background-size: 10px 10px;
+  background-blend-mode: normal;
+}
+
+.ccp-hex-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--color-offwhite, #e5e5e5);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: monospace;
+}
+
+.ccp-opacity-input {
+  width: 48px;
+  padding: 8px 6px;
+  border: 1px solid var(--color-offwhite, #e5e5e5);
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: center;
+}
+
+.ccp-opacity-pct {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.ccp-hex-input:focus,
+.ccp-opacity-input:focus {
+  outline: none;
+  border-color: var(--color-green, #06d6a0);
+}

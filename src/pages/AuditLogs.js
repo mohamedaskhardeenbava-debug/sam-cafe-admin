@@ -20,6 +20,7 @@ import PageLoader from "../components/PageLoader";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import { FilterBar } from "../components/FilterBar";
+import { resolveDateRange } from "../utils/dateRangeUtils";
 import { allowTextInput, EmptyRow } from "../App";
 
 import "./AuditLogs.css";
@@ -45,10 +46,24 @@ const EMPTY_FILTERS = {
   status: "",
   who: "",
   target: "",
+  preset: "",
   from: "",
   to: "",
   fromTime: "",
   toTime: "",
+};
+
+// Default view on first load: "Today". Clearing filters (the Clear
+// button) resets to EMPTY_FILTERS (no period filter, i.e. "All"), which
+// matches how every other page's Clear button behaves — the "default to
+// Today" requirement only applies to the initial page load.
+const DEFAULT_FILTERS = {
+  ...EMPTY_FILTERS,
+  preset: "today",
+  ...(() => {
+    const [from, to] = resolveDateRange("today");
+    return { from, to };
+  })(),
 };
 
 // Who / Module / Target are combined into a single search box on the
@@ -68,7 +83,7 @@ const AuditLogs = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const patchFilters = (patch) => setFilters((p) => ({ ...p, ...patch }));
   const [filtersCollapsed, setFiltersCollapsed] = useState(false);
 
@@ -157,9 +172,10 @@ const AuditLogs = () => {
           dateRange={{
             from: filters.from,
             to: filters.to,
+            preset: filters.preset,
+            onChangePreset: (v) => patchFilters({ preset: v }),
             onChangeFrom: (v) => patchFilters({ from: v }),
             onChangeTo: (v) => patchFilters({ to: v }),
-            showPresets: false,
             noMax: true,
             fromLabel: "Start Date",
             toLabel: "End Date",

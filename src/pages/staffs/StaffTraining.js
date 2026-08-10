@@ -16,6 +16,7 @@ import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
 import { MultiPillGroup } from "../../components/FilterBar";
 import { useVenue } from "../../context/VenueContext";
+import useRoleTitles from "./useRoleTitles";
 
 import "./StaffModules.css";
 
@@ -31,6 +32,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
 
   const { toast } = useToast();
   const { venueParam, venueId: activeVenueId } = useVenue();
+  const { roleTitles: jobRoles } = useRoleTitles();
 
   const [trainings, setTrainings] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -257,7 +259,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
                     label="Role"
                     value={form.role}
                     onChange={v => { setForm({ ...form, role: v }); setFormErrors(p => ({ ...p, role: false })); }}
-                    options={["Chef", "Waiter", "Supervisor"]}
+                    options={jobRoles}
                     placeholder="Select role"
                     hasError={!!formErrors.role}
                   />

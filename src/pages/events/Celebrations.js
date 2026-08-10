@@ -27,8 +27,7 @@ import "./Celebrations.css";
 import "./EvtCommon.css";
 import "../ModalCSS.css";
 import "./PreviewModal.css";
-
-const pad = (n) => String(n).padStart(2, "0");
+import { fmtTime, fmtDateTime } from "../../utils/dateUtils";
 
 /* Get Together removed */
 const CELEBRATION_TYPES = [
@@ -43,13 +42,6 @@ const CELEBRATION_TYPE_MAP = {
   anniversary: "Anniversary",
   meeting: "Meeting",
   candlelightdinner: "Candle Light Dinner",
-};
-
-const fmtTime = (t) => {
-  if (!t) return "—";
-  const [h, m] = t.split(":").map(Number);
-  const ap = h >= 12 ? "PM" : "AM";
-  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${ap}`;
 };
 
 const DECORATION_TIERS = [
@@ -290,13 +282,6 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       }
       toast.error("Failed to log call");
     }
-  };
-
-  const fmtDateTime = (iso) => {
-    if (!iso) return "";
-    const d = new Date(iso);
-    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
-      + " " + d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
   };
 
   /* ─── Form helpers ─── */

@@ -30,9 +30,7 @@ import "./PreviewModal.css";
 import "../ModalCSS.css";
 import "./EvtCommon.css";
 
-/* ─── helpers ─── */
-const pad = (n) => String(n).padStart(2, "0");
-const fmtTime = (t) => { if (!t) return "—"; const [h, m] = t.split(":").map(Number); return `${h % 12 || 12}:${pad(m)} ${h >= 12 ? "PM" : "AM"}`; };
+import { fmtTime, fmtDateTime } from "../../utils/dateUtils";
 
 const SOURCE_OPTIONS = ["User App", "WhatsApp", "Phone", "In Person"];
 
@@ -359,13 +357,6 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
       }
       toast.error("Failed to log call");
     }
-  };
-
-  const fmtDateTime = (iso) => {
-    if (!iso) return "";
-    const d = new Date(iso);
-    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
-      + " " + d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
   };
 
   const setF = (key, val) => {

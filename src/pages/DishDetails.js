@@ -425,10 +425,16 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
         <div className="section">
           <div className="section-title"><span>Description</span></div>
           {isEditing ? (
-            <textarea
-              value={localDish.description}
-              onChange={e => setLocalDish({ ...localDish, description: allowTextInput(localDish.description, e.target.value, 500, 100000) })}
-            />
+            <div className="mat">
+              <textarea
+                className="mat-input mat-textarea"
+                placeholder=" "
+                value={localDish.description}
+                onChange={e => setLocalDish({ ...localDish, description: allowTextInput(localDish.description, e.target.value, 500, 100000) })}
+              />
+              <label className="mat-label">Description</label>
+              <span className="mat-bar" />
+            </div>
           ) : (
             <p>{localDish.description}</p>
           )}

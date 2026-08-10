@@ -321,15 +321,21 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
             </div>
 
             {isEditing ? (
-              <textarea
-                value={localIngredient.description}
-                onChange={(e) =>
-                  setLocalIngredient({
-                    ...localIngredient,
-                    description: allowTextInput(localIngredient.description, e.target.value, 500, 100000)
-                  })
-                }
-              />
+              <div className="mat">
+                <textarea
+                  className="mat-input mat-textarea"
+                  placeholder=" "
+                  value={localIngredient.description}
+                  onChange={(e) =>
+                    setLocalIngredient({
+                      ...localIngredient,
+                      description: allowTextInput(localIngredient.description, e.target.value, 500, 100000)
+                    })
+                  }
+                />
+                <label className="mat-label">Description</label>
+                <span className="mat-bar" />
+              </div>
             ) : (
               <p>{localIngredient.description}</p>
             )}
@@ -342,15 +348,21 @@ const IngredientDetails = ({ adminData, setAdminData, toCamelCase, generateIdFro
             </div>
 
             {isEditing ? (
-              <textarea
-                value={localIngredient.history}
-                onChange={(e) =>
-                  setLocalIngredient({
-                    ...localIngredient,
-                    history: allowTextInput(localIngredient.history, e.target.value, 500, 100000)
-                  })
-                }
-              />
+              <div className="mat">
+                <textarea
+                  className="mat-input mat-textarea"
+                  placeholder=" "
+                  value={localIngredient.history}
+                  onChange={(e) =>
+                    setLocalIngredient({
+                      ...localIngredient,
+                      history: allowTextInput(localIngredient.history, e.target.value, 500, 100000)
+                    })
+                  }
+                />
+                <label className="mat-label">History</label>
+                <span className="mat-bar" />
+              </div>
             ) : (
               <p>{localIngredient.history}</p>
             )}

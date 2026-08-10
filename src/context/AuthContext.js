@@ -21,6 +21,15 @@ export const ROLE_TREE = {
 };
 const ROLE_RANK = { Supervisor: 1, Manager: 2, "Super Admin": 3 };
 
+// Mirrors auth.js CREATABLE_TITLES on the backend — who can create/delete
+// a login account for whom, from the Staffs page. Super Admin bypasses
+// this (can create/delete any role) and isn't listed as a key.
+export const CREATABLE_TITLES = {
+  Chef: ["Sous Chef"],
+  "Service Manager": ["Captain", "Sous Chef"],
+  Captain: ["Sous Chef", "Captain"],
+};
+
 export function AuthProvider({ children }) {
   const [admin, setAdmin] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // true until /me resolves once
@@ -99,13 +108,6 @@ export function AuthProvider({ children }) {
     return res.data.admin;
   };
 
-  const signup = async (payload) => {
-    const res = await api.post("/staff-auth/signup", payload);
-    setAdmin(res.data.admin);
-    await loadPermissionsFor(res.data.admin);
-    return res.data.admin;
-  };
-
   const logout = async () => {
     try {
       await api.post("/staff-auth/logout");
@@ -126,12 +128,20 @@ export function AuthProvider({ children }) {
 
   const hasRole = (...groups) => !!admin && groups.includes(admin.roleGroup);
 
+  // Which roleTitles the logged-in admin is allowed to create/delete
+  // login accounts for, on the Staffs page. Super Admin can create any
+  // valid roleTitle (resolved by the caller from ROLE_TREE); everyone
+  // else gets their fixed slice of CREATABLE_TITLES, or none at all.
+  const creatableRoleTitles = isSuperAdmin
+    ? Object.values(ROLE_TREE).flat()
+    : CREATABLE_TITLES[admin?.roleTitle] || [];
+  const canManageStaffAccounts = isSuperAdmin || creatableRoleTitles.length > 0;
+
   const value = {
     admin,
     isAuthenticated: !!admin,
     isLoading,
     login,
-    signup,
     logout,
     updateProfile,
     refreshSession,
@@ -140,6 +150,8 @@ export function AuthProvider({ children }) {
     isSuperAdmin,
     hasModulePermission,
     setPermissions,
+    creatableRoleTitles,
+    canManageStaffAccounts,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

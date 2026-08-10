@@ -351,18 +351,23 @@ const StaffDetails = ({ adminData, setAdminData }) => {
           {isEditing ? (
             <>
               <div className="admin-form-group">
-                <label>Residential Address</label>
-                <textarea
-                  value={localStaff.residentialAddress}
-                  onChange={(e) => {
-                    const value = allowTextInput(localStaff.residentialAddress, e.target.value, 500, 100000);
-                    setLocalStaff(prev => ({
-                      ...prev,
-                      residentialAddress: value,
-                      permanentAddress: sameAddress ? value : prev.permanentAddress
-                    }));
-                  }}
-                />
+                <div className="mat">
+                  <textarea
+                    className="mat-input mat-textarea"
+                    placeholder=" "
+                    value={localStaff.residentialAddress}
+                    onChange={(e) => {
+                      const value = allowTextInput(localStaff.residentialAddress, e.target.value, 500, 100000);
+                      setLocalStaff(prev => ({
+                        ...prev,
+                        residentialAddress: value,
+                        permanentAddress: sameAddress ? value : prev.permanentAddress
+                      }));
+                    }}
+                  />
+                  <label className="mat-label">Residential Address</label>
+                  <span className="mat-bar" />
+                </div>
               </div>
 
               <div className="admin-form-group">
@@ -386,13 +391,18 @@ const StaffDetails = ({ adminData, setAdminData }) => {
               </div>
 
               <div className="admin-form-group">
-                <label>Permanent Address</label>
-                <textarea
-                  value={localStaff.permanentAddress}
-                  onChange={(e) =>
-                    setLocalStaff({ ...localStaff, permanentAddress: allowTextInput(localStaff.permanentAddress, e.target.value, 500, 100000) })
-                  }
-                />
+                <div className="mat">
+                  <textarea
+                    className="mat-input mat-textarea"
+                    placeholder=" "
+                    value={localStaff.permanentAddress}
+                    onChange={(e) =>
+                      setLocalStaff({ ...localStaff, permanentAddress: allowTextInput(localStaff.permanentAddress, e.target.value, 500, 100000) })
+                    }
+                  />
+                  <label className="mat-label">Permanent Address</label>
+                  <span className="mat-bar" />
+                </div>
               </div>
             </>
           ) : (

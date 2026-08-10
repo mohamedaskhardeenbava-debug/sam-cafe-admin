@@ -7,9 +7,11 @@ import React, { useState, useEffect } from "react";
 
 import api from "./api";
 import socket from "./socket";
+import { useToast } from "./useToast";
 
 import "./ThemeSettings.css";
 import PageLoader from "./components/PageLoader";
+import CustomColorPicker, { hslaToHex, hexToHsla, hslaToRgbaString } from "./components/CustomColorPicker";
 
 // ─── Color helpers ────────────────────────────────────────────────────────────
 
@@ -383,7 +385,7 @@ const TOKEN_GROUPS = [
     group: "Accent Colors",
     tokens: [
       { key: "--color-red", label: "Primary Accent (CTA / Add to Bag)", type: "color" },
-      { key: "--color-green", label: "Secondary Accent (auto-derived)", type: "color" },
+      { key: "--color-green", label: "Secondary Accent (auto-derived)", type: "color", readOnly: true },
       { key: "--color-pale-red", label: "Primary Accent Tint", type: "color" },
       { key: "--color-pale-green", label: "Secondary Accent Tint", type: "color" },
     ],
@@ -433,6 +435,7 @@ const applyTokensToDOM = (lightTk, darkTk) => {
 const ThemeSettings = () => {
   // ── Hooks
 
+  const { toast } = useToast();
   const [activeMode, setActiveMode] = useState("light");
   const [lightTokens, setLightTokens] = useState({ ...LIGHT_DEFAULTS });
   const [darkTokens, setDarkTokens] = useState({ ...DARK_DEFAULTS });
@@ -440,6 +443,16 @@ const ThemeSettings = () => {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // ── Custom (user-created) presets — stored alongside light/dark tokens
+  // in the same /theme singleton doc, as a plain array. Built-in PRESETS
+  // above stay hardcoded and immutable; only these can be added/edited/deleted.
+  const [customPresets, setCustomPresets] = useState([]);
+  const [showPresetModal, setShowPresetModal] = useState(false);
+  const [editingPresetId, setEditingPresetId] = useState(null); // null = creating
+  const [presetForm, setPresetForm] = useState({ name: "", color: { h: 0, s: 80, l: 50, a: 1 } });
+  const [presetFormError, setPresetFormError] = useState("");
+  const [deletePresetTarget, setDeletePresetTarget] = useState(null);
 
   const tokens = activeMode === "light" ? lightTokens : darkTokens;
   const setTokens = activeMode === "light" ? setLightTokens : setDarkTokens;
@@ -469,6 +482,7 @@ const ThemeSettings = () => {
           Object.assign(dk, deriveGreenEdgeColors(toHex(dk["--color-green"])));
         }
         if (data?.activePreset) setActivePreset(data.activePreset);
+        if (Array.isArray(data?.customPresets)) setCustomPresets(data.customPresets);
 
         setLightTokens(lt);
         setDarkTokens(dk);
@@ -539,25 +553,178 @@ const ThemeSettings = () => {
   const applyPreset = (preset) => {
     setActivePreset(preset.id);
 
-    // Always derive --home-btn-filter from the preset's --color-red;
-    // never rely on a hardcoded string stored inside the preset object.
-    const ltFilter = hexToFilter(toHex(preset.light["--color-red"]));
-    const dkFilter = hexToFilter(toHex(preset.dark["--color-red"]));
+    // Always derive --home-btn-filter AND --color-green from the preset's
+    // own --color-red — never trust a hardcoded --color-green string
+    // stored on the preset object (built-in PRESETS each hand-author
+    // one), so every preset's secondary accent is generated the same
+    // way a manual --color-red edit already generates it.
+    const ltRed = toHex(preset.light["--color-red"]);
+    const dkRed = toHex(preset.dark["--color-red"]);
+    const ltFilter = hexToFilter(ltRed);
+    const dkFilter = hexToFilter(dkRed);
+    const ltGreen = deriveGreenFromRed(ltRed, false);
+    const dkGreen = deriveGreenFromRed(dkRed, true);
 
     setLightTokens((prev) => {
-      const next = { ...prev, ...preset.light, "--home-btn-filter": ltFilter, ...deriveEdgeColors(toHex(preset.light["--color-red"])), ...deriveGreenEdgeColors(toHex(preset.light["--color-green"])) };
+      const next = {
+        ...prev,
+        ...preset.light,
+        "--color-green": ltGreen,
+        "--color-pale-green": derivePaleTint(ltGreen, false),
+        "--home-btn-filter": ltFilter,
+        ...deriveEdgeColors(ltRed),
+        ...deriveGreenEdgeColors(ltGreen),
+      };
       return next;
     });
     setDarkTokens((prev) => {
-      const next = { ...prev, ...preset.dark, "--home-btn-filter": dkFilter, ...deriveEdgeColors(toHex(preset.dark["--color-red"])), ...deriveGreenEdgeColors(toHex(preset.dark["--color-green"])) };
+      const next = {
+        ...prev,
+        ...preset.dark,
+        "--color-green": dkGreen,
+        "--color-pale-green": derivePaleTint(dkGreen, true),
+        "--home-btn-filter": dkFilter,
+        ...deriveEdgeColors(dkRed),
+        ...deriveGreenEdgeColors(dkGreen),
+      };
       return next;
     });
   };
 
+  // ── Build a full light or dark token set from one accent color ────────────
+  // Used when creating/editing a custom preset: the user picks a single
+  // color (with opacity), and both light and dark variants are derived
+  // from it the same way manual --color-red edits already work.
+  const buildTokensFromAccent = (hex, isDark) => {
+    const green = deriveGreenFromRed(hex, isDark);
+    return {
+      "--color-red": hex,
+      "--color-green": green,
+      "--bg-hover": deriveHoverColor(hex, isDark),
+      "--color-pale-red": derivePaleTint(hex, isDark),
+      "--color-pale-green": derivePaleTint(green, isDark),
+      "--shadow-card-red": buildShadowFromAccent(hex),
+      "--shadow-card-red-hover": buildShadowHoverFromAccent(hex),
+    };
+  };
+
+  // ── Custom preset CRUD ──────────────────────────────────────────────────
+  const openAddPresetModal = () => {
+    setEditingPresetId(null);
+    setPresetForm({ name: "", color: { h: 0, s: 80, l: 50, a: 1 } });
+    setPresetFormError("");
+    setShowPresetModal(true);
+  };
+
+  const openEditPresetModal = (preset) => {
+    setEditingPresetId(preset.id);
+    setPresetForm({ name: preset.name, color: hexToHsla(preset.baseColor, 1) });
+    setPresetFormError("");
+    setShowPresetModal(true);
+  };
+
+  const savePresetForm = async () => {
+    const trimmedName = presetForm.name.trim();
+    if (!trimmedName) { setPresetFormError("Enter a name for this theme."); return; }
+
+    const baseColorHex = hslaToHex(presetForm.color);
+    const preset = {
+      id: editingPresetId || `custom_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      name: trimmedName,
+      baseColor: baseColorHex,
+      baseColorAlpha: presetForm.color.a,
+      light: buildTokensFromAccent(baseColorHex, false),
+      dark: buildTokensFromAccent(baseColorHex, true),
+      isCustom: true,
+    };
+
+    const nextCustomPresets = editingPresetId
+      ? customPresets.map((p) => (p.id === editingPresetId ? preset : p))
+      : [...customPresets, preset];
+
+    setCustomPresets(nextCustomPresets);
+    // Apply it immediately, same as clicking any other preset card.
+    applyPreset(preset);
+    setShowPresetModal(false);
+
+    // Persist right away — adding/editing a theme shouldn't depend on the
+    // user remembering to also hit the page-level "Save & Apply" button.
+    // Reuses the same PATCH-upsert the top-level save button calls, with
+    // the just-applied tokens (preset.light/dark) so what's saved matches
+    // what's now showing.
+    try {
+      await api.patch("/theme", {
+        light: preset.light,
+        dark: preset.dark,
+        activePreset: preset.id,
+        customPresets: nextCustomPresets,
+        updatedAt: new Date().toISOString(),
+      });
+      socket.emit("theme-update", { light: preset.light, dark: preset.dark });
+    } catch (err) {
+      console.error("Failed to save custom theme:", err);
+      toast.error("Theme applied, but saving it failed — try Save & Apply.");
+    }
+  };
+
+  const confirmDeletePreset = async () => {
+    if (!deletePresetTarget) return;
+    const nextCustomPresets = customPresets.filter((p) => p.id !== deletePresetTarget.id);
+    setCustomPresets(nextCustomPresets);
+    const wasActive = activePreset === deletePresetTarget.id;
+    if (wasActive) resetToDefaults();
+    setDeletePresetTarget(null);
+
+    try {
+      const payload = { customPresets: nextCustomPresets, updatedAt: new Date().toISOString() };
+      if (wasActive) {
+        const ltGreen = deriveGreenFromRed("#f33716", false);
+        const dkGreen = deriveGreenFromRed("#ff3a18", true);
+        payload.light = {
+          ...LIGHT_DEFAULTS,
+          "--color-green": ltGreen,
+          "--color-pale-green": derivePaleTint(ltGreen, false),
+          "--home-btn-filter": hexToFilter("#f33716"),
+          ...deriveEdgeColors("#f33716"),
+          ...deriveGreenEdgeColors(ltGreen),
+        };
+        payload.dark = {
+          ...DARK_DEFAULTS,
+          "--color-green": dkGreen,
+          "--color-pale-green": derivePaleTint(dkGreen, true),
+          "--home-btn-filter": hexToFilter("#ff3a18"),
+          ...deriveEdgeColors("#ff3a18"),
+          ...deriveGreenEdgeColors(dkGreen),
+        };
+        payload.activePreset = "default";
+      }
+      await api.patch("/theme", payload);
+    } catch (err) {
+      console.error("Failed to delete custom theme:", err);
+      toast.error("Failed to delete theme from the server — try again.");
+    }
+  };
+
   // ── Reset to factory defaults ─────────────────────────────────────────────
   const resetToDefaults = () => {
-    const lt = { ...LIGHT_DEFAULTS, "--home-btn-filter": hexToFilter("#f33716"), ...deriveEdgeColors("#f33716"), ...deriveGreenEdgeColors("#0d9e3f") };
-    const dk = { ...DARK_DEFAULTS, "--home-btn-filter": hexToFilter("#ff3a18"), ...deriveEdgeColors("#ff3a18"), ...deriveGreenEdgeColors("#00f050") };
+    const ltGreen = deriveGreenFromRed("#f33716", false);
+    const dkGreen = deriveGreenFromRed("#ff3a18", true);
+    const lt = {
+      ...LIGHT_DEFAULTS,
+      "--color-green": ltGreen,
+      "--color-pale-green": derivePaleTint(ltGreen, false),
+      "--home-btn-filter": hexToFilter("#f33716"),
+      ...deriveEdgeColors("#f33716"),
+      ...deriveGreenEdgeColors(ltGreen),
+    };
+    const dk = {
+      ...DARK_DEFAULTS,
+      "--color-green": dkGreen,
+      "--color-pale-green": derivePaleTint(dkGreen, true),
+      "--home-btn-filter": hexToFilter("#ff3a18"),
+      ...deriveEdgeColors("#ff3a18"),
+      ...deriveGreenEdgeColors(dkGreen),
+    };
     setLightTokens(lt);
     setDarkTokens(dk);
     setActivePreset("default");
@@ -570,6 +737,7 @@ const ThemeSettings = () => {
       light: lightTokens,
       dark: darkTokens,
       activePreset,
+      customPresets,
       updatedAt: new Date().toISOString(),
     };
     try {
@@ -632,17 +800,127 @@ const ThemeSettings = () => {
             >
               <div
                 className="ts-preset-swatch"
-                style={{
-                  background: `linear-gradient(135deg, ${preset.light["--color-red"]} 0%, ${preset.light["--color-green"]} 100%)`,
-                }}
+                style={{ backgroundColor: preset.light["--color-red"] }}
               />
-              <span className="ts-preset-emoji">{preset.emoji}</span>
               <span className="ts-preset-name">{preset.name}</span>
               {activePreset === preset.id && <span className="ts-preset-check">✓</span>}
             </button>
           ))}
+
+          {customPresets.map((preset) => (
+            <div
+              key={preset.id}
+              className={`ts-preset-card ts-preset-card-custom${activePreset === preset.id ? " active" : ""}`}
+            >
+              <button className="ts-preset-card-main" onClick={() => applyPreset(preset)}>
+                {/* Custom presets are built from a single chosen colour, so
+                    the swatch shows that colour directly (with its own
+                    opacity) instead of the built-in red/green gradient. */}
+                <div
+                  className="ts-preset-swatch"
+                  style={{ backgroundColor: `rgba(${parseInt(preset.baseColor.slice(1, 3), 16)}, ${parseInt(preset.baseColor.slice(3, 5), 16)}, ${parseInt(preset.baseColor.slice(5, 7), 16)}, ${preset.baseColorAlpha ?? 1})` }}
+                />
+                <span className="ts-preset-name">{preset.name}</span>
+                {activePreset === preset.id && <span className="ts-preset-check">✓</span>}
+              </button>
+              <div className="ts-preset-card-actions">
+                <button
+                  className="ts-preset-action-btn"
+                  title="Edit theme"
+                  onClick={(e) => { e.stopPropagation(); openEditPresetModal(preset); }}
+                >
+                  ✎
+                </button>
+                <button
+                  className="ts-preset-action-btn ts-preset-action-danger"
+                  title="Delete theme"
+                  onClick={(e) => { e.stopPropagation(); setDeletePresetTarget(preset); }}
+                >
+                  🗑
+                </button>
+              </div>
+            </div>
+          ))}
+
+          <button className="ts-preset-card ts-preset-card-add" onClick={openAddPresetModal}>
+            <div className="ts-preset-add-icon">+</div>
+            <span className="ts-preset-name">Add Theme</span>
+          </button>
         </div>
       </div>
+
+      {showPresetModal && (
+        <div className="modal-overlay" onClick={() => setShowPresetModal(false)}>
+          <div className="admin-modal ts-preset-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <h3>{editingPresetId ? "Edit Theme" : "Add Theme"}</h3>
+              <button className="ts-modal-close" onClick={() => setShowPresetModal(false)}>×</button>
+            </div>
+            <div className="admin-modal-body">
+              <div className="ts-preset-modal-preview">
+                <div
+                  className="ts-preset-swatch ts-preset-modal-preview-swatch"
+                  style={{ backgroundColor: hslaToRgbaString(presetForm.color) }}
+                />
+                <span className="ts-preset-modal-preview-label">
+                  {presetForm.name.trim() || "Theme preview"}
+                </span>
+              </div>
+
+              <div className="admin-form-group">
+                <div className="mat">
+                  <input
+                    className={`mat-input${presetFormError ? " mat-error" : ""}`}
+                    placeholder=" "
+                    autoFocus
+                    value={presetForm.name}
+                    onChange={(e) => { setPresetForm((p) => ({ ...p, name: e.target.value })); setPresetFormError(""); }}
+                  />
+                  <label className={`mat-label${presetFormError ? " mat-label-error" : ""}`}>Theme Name<span className="rf-req">*</span></label>
+                  <span className={`mat-bar${presetFormError ? " mat-bar-error" : ""}`} />
+                </div>
+                {presetFormError && <span className="rf-error-text">{presetFormError}</span>}
+              </div>
+
+              <CustomColorPicker
+                label="Theme Colour"
+                value={presetForm.color}
+                onChange={(color) => setPresetForm((p) => ({ ...p, color }))}
+              />
+            </div>
+            <div className="admin-modal-footer">
+              <button className="modal-cancel-btn" onClick={() => setShowPresetModal(false)}>
+                <span className="shadow"></span><span className="edge"></span><span className="front">Cancel</span>
+              </button>
+              <button className="modal-save-btn" onClick={savePresetForm}>
+                <span className="shadow"></span><span className="edge"></span>
+                <span className="front">{editingPresetId ? "Save Changes" : "Create Theme"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deletePresetTarget && (
+        <div className="modal-overlay" onClick={() => setDeletePresetTarget(null)}>
+          <div className="admin-modal ts-preset-delete-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <h3>Delete Theme</h3>
+            </div>
+            <div className="admin-modal-body">
+              <p>Delete "{deletePresetTarget.name}"? This can't be undone.</p>
+            </div>
+            <div className="admin-modal-footer">
+              <button className="modal-cancel-btn" onClick={() => setDeletePresetTarget(null)}>
+                <span className="shadow"></span><span className="edge"></span><span className="front">Cancel</span>
+              </button>
+              <button className="modal-danger-btn" onClick={confirmDeletePreset}>
+                <span className="shadow"></span><span className="edge"></span><span className="front">Delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="ts-section">
         <div className="ts-mode-tabs">
@@ -659,8 +937,8 @@ const ThemeSettings = () => {
             <div key={group.group} className="ts-token-group">
               <div className="ts-group-title">{group.group}</div>
               <div className="ts-token-rows">
-                {group.tokens.map(({ key, label }) => (
-                  <div key={key} className="ts-token-row">
+                {group.tokens.map(({ key, label, readOnly }) => (
+                  <div key={key} className={`ts-token-row${readOnly ? " ts-token-row-readonly" : ""}`}>
                     <div className="ts-token-info">
                       <div className="ts-token-preview" style={{ background: tokens[key] || "#ccc" }} />
                       <div>
@@ -674,7 +952,8 @@ const ThemeSettings = () => {
                         value={toHex(tokens[key] || "#000000")}
                         onChange={(e) => handleTokenChange(key, e.target.value)}
                         className="ts-color-input"
-                        title={`Pick color for ${label}`}
+                        title={readOnly ? `${label} is generated automatically from Primary Accent` : `Pick color for ${label}`}
+                        disabled={readOnly}
                       />
                       <input
                         type="text"
@@ -683,6 +962,8 @@ const ThemeSettings = () => {
                         className="ts-text-input"
                         placeholder="e.g. #ff0000 or rgba(0,0,0,0.1)"
                         spellCheck={false}
+                        disabled={readOnly}
+                        title={readOnly ? `${label} is generated automatically from Primary Accent` : undefined}
                       />
                     </div>
                   </div>

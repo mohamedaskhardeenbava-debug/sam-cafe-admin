@@ -18,8 +18,13 @@ import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
 import CustomDropdown from "../../components/CustomDropdown";
 import { MultiPillGroup } from "../../components/FilterBar";
+import { fmtTime as sharedFmtTime } from "../../utils/dateUtils";
 
 import "./KitchenAssign.css";
+
+// Current wall-clock time, formatted like every other time display in
+// the app (Indian 12-hour "h:mm AM/PM").
+const nowFmt = () => sharedFmtTime(`${String(new Date().getHours()).padStart(2, "0")}:${String(new Date().getMinutes()).padStart(2, "0")}`);
 
 /*
   DATA SHAPE (kitchenAssign in db.json):
@@ -144,7 +149,7 @@ export default function KitchenAssign({ adminData, setAdminData }) {
         ...assignedDay,
         [task]: {
           staff: staffName,
-          assignedAt: new Date().toLocaleTimeString()
+          assignedAt: nowFmt()
         }
       }
     };

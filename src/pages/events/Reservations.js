@@ -29,9 +29,7 @@ import "./Reservations.css";
 import "./EvtCommon.css";
 import "../ModalCSS.css";
 import "./PreviewModal.css";
-
-/* ─── Helpers ─── */
-const pad = (n) => String(n).padStart(2, "0");
+import { fmtTime, fmtDateTime } from "../../utils/dateUtils";
 
 /* ─── All 5 slot groups ─── */
 const SLOT_GROUPS = [
@@ -56,20 +54,6 @@ const timeToSlotKey = (time) => {
 
 /* Also accept legacy slotGroup field */
 const resolveSlotKey = (r) => r.slotGroup || timeToSlotKey(r.time);
-
-const fmtTime = (t) => {
-  if (!t) return "—";
-  const [h, m] = t.split(":").map(Number);
-  const ap = h >= 12 ? "PM" : "AM";
-  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${ap}`;
-};
-
-const fmtDateTime = (iso) => {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
-    + " " + d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
-};
 
 const SOURCE_OPTIONS = [
   { label: "User App", icon: "App" },

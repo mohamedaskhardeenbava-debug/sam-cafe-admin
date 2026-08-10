@@ -4,11 +4,11 @@
  *
  * Rows are (roleTitle, module) pairs with canRead/canWrite toggles.
  * Edits are staged locally and sent as one bulk PATCH so a Super Admin
- * can adjust several cells before committing. Modules are grouped by
- * department (Kitchen / Service / Menu / Orders & Bookings / People /
- * Admin-only) purely for readability — the grouping is cosmetic and
- * mirrors the comments in the backend's MODULES registry, so a new
- * module added there should get a group entry added here too.
+ * can adjust several cells before committing. Modules are grouped into
+ * tabs (KMS / SMS / Security / Purchase / Menu / Orders & Booking /
+ * Admin Only / People) rendered in the filter bar, with a collapse
+ * button and a search box — replacing the old single long table that
+ * rendered every module/group at once.
  */
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -19,20 +19,24 @@ import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
 import CustomDropdown from "../components/CustomDropdown";
 import PageLoader from "../components/PageLoader";
-import { EmptyRow } from "../App";
+import CollapseChevron from "../components/CollapseChevron";
+import { EmptyRow, allowTextInput } from "../App";
+import { useTabLiquid } from "../hooks/useTabLiquid";
 
+import "./Common.css";
 import "./Permissions.css";
 
-// Cosmetic grouping only — matches the // comments in permissions.js's
-// MODULES registry on the backend. A module not listed here still
-// renders correctly; it just falls into "Other" instead of a named group.
-const MODULE_GROUPS = [
-  { label: "Kitchen (KMS)", keys: ["kitchenActivity", "kitchenSchedules", "kitchenAssign", "kitchenMise", "mise", "grooming", "recipes"] },
-  { label: "Service (SMS)", keys: ["serviceActivity", "serviceSchedules", "serviceAssign", "serviceMise", "serviceGrooming", "tables", "tablePreferences"] },
-  { label: "Menu & Catalog", keys: ["categories", "ingredients", "combo", "combo_offers", "comboSectionConfig", "favourites", "offers"] },
-  { label: "Orders & Bookings", keys: ["orders", "reservations", "events", "eventBookings", "cateringOrders", "preBookings", "celebrations"] },
-  { label: "People", keys: ["users", "staff", "careers", "holidays", "callHistory", "tasks"] },
-  { label: "Admin Only", keys: ["venues", "permissions", "auditLogs", "theme", "categoryCards"] },
+// Tabs shown in the filter bar. A module not listed here still renders
+// correctly; it just falls into "Other" instead of a named tab.
+const MODULE_TABS = [
+  { key: "kms", label: "KMS", keys: ["kitchenActivity", "kitchenSchedules", "kitchenAssign", "kitchenMise", "mise", "grooming", "recipes"] },
+  { key: "sms", label: "SMS", keys: ["serviceActivity", "serviceSchedules", "serviceAssign", "serviceMise", "serviceGrooming", "tables", "tablePreferences"] },
+  { key: "security", label: "Security", keys: ["permissions", "auditLogs"] },
+  { key: "purchase", label: "Purchase", keys: ["ingredients"] },
+  { key: "menu", label: "Menu", keys: ["categories", "combo", "combo_offers", "comboSectionConfig", "favourites", "offers"] },
+  { key: "orders", label: "Orders and Booking", keys: ["orders", "reservations", "events", "eventBookings", "cateringOrders", "preBookings", "celebrations"] },
+  { key: "admin", label: "Admin Only", keys: ["venues", "theme", "categoryCards"] },
+  { key: "people", label: "People", keys: ["users", "staff", "careers", "holidays", "callHistory", "tasks"] },
 ];
 
 const Permissions = () => {
@@ -46,6 +50,9 @@ const Permissions = () => {
   const [dirty, setDirty] = useState({}); // `${roleTitle}::${module}` -> { canRead, canWrite }
   const [saving, setSaving] = useState(false);
   const [selectedRole, setSelectedRole] = useState("all");
+  const [activeTab, setActiveTab] = useState("kms");
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const [search, setSearch] = useState("");
 
   const load = async () => {
     try {
@@ -149,26 +156,36 @@ const Permissions = () => {
   const visibleRoles = selectedRole === "all" ? roleTitles : [selectedRole];
   const moduleEntries = Object.entries(modules);
 
-  // Group modules for display, preserving MODULE_GROUPS order; anything
-  // not covered by a named group (e.g. a module added to the backend
-  // registry but not yet added to MODULE_GROUPS here) falls into "Other"
-  // at the end, so it's never silently hidden from the matrix.
-  const groupedModules = useMemo(() => {
+  // Tabs to render — named tabs first (only if they have at least one
+  // registered module), then "Other" for anything not covered above so
+  // a module added to the backend registry is never silently hidden.
+  const tabs = useMemo(() => {
     const used = new Set();
-    const groups = MODULE_GROUPS.map((g) => {
-      const entries = g.keys
-        .filter((k) => modules[k])
-        .map((k) => {
-          used.add(k);
-          return [k, modules[k]];
-        });
-      return { label: g.label, entries };
-    }).filter((g) => g.entries.length > 0);
-
-    const leftover = moduleEntries.filter(([k]) => !used.has(k));
-    if (leftover.length > 0) groups.push({ label: "Other", entries: leftover });
-    return groups;
+    const named = MODULE_TABS.map((t) => {
+      t.keys.forEach((k) => modules[k] && used.add(k));
+      return t;
+    }).filter((t) => t.keys.some((k) => modules[k]));
+    const leftoverKeys = moduleEntries.map(([k]) => k).filter((k) => !used.has(k));
+    return leftoverKeys.length > 0 ? [...named, { key: "other", label: "Other", keys: leftoverKeys }] : named;
   }, [modules, moduleEntries]);
+
+  // Modules for the active tab, filtered by search (matches module label).
+  const activeTabModules = useMemo(() => {
+    const tab = tabs.find((t) => t.key === activeTab) || tabs[0];
+    if (!tab) return [];
+    const q = search.trim().toLowerCase();
+    return tab.keys
+      .filter((k) => modules[k])
+      .filter((k) => !q || modules[k].toLowerCase().includes(q))
+      .map((k) => [k, modules[k]]);
+  }, [tabs, activeTab, modules, search]);
+
+  useEffect(() => {
+    if (tabs.length > 0 && !tabs.some((t) => t.key === activeTab)) {
+      setActiveTab(tabs[0].key);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabs]);
 
   if (!isSuperAdmin) {
     return (
@@ -192,9 +209,20 @@ const Permissions = () => {
     <div className="inner-page">
       <div className="header">
         <div className="header-title-row">
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setHeaderCollapsed((prev) => !prev)}
+              title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+              aria-expanded={!headerCollapsed}
+            >
+              <CollapseChevron collapsed={headerCollapsed} />
+            </button>
+          </div>
           <div className="header-title-col">
             <div className="header-title-with-count">
-              <h2 className="title">Permissions</h2>
+              <h2 className="title">Roles and Responsibilities</h2>
               <span className="result-count">
                 {dirtyCount > 0 ? `${dirtyCount} unsaved change(s)` : `${moduleEntries.length} module(s)`}
               </span>
@@ -203,13 +231,6 @@ const Permissions = () => {
         </div>
 
         <div className="header-btn-container">
-          <CustomDropdown
-            value={selectedRole}
-            onChange={setSelectedRole}
-            options={[{ value: "all", label: "All roles" }, ...roleTitles.map((rt) => ({ value: rt, label: rt }))]}
-            placeholder="All roles"
-            className="perm-role-filter"
-          />
           <Button3D variant="cancel" onClick={() => setShowResetConfirm(true)}>
             Reset Defaults
           </Button3D>
@@ -219,7 +240,48 @@ const Permissions = () => {
         </div>
       </div>
 
-      <div className="table-wrapper perm-table-wrapper" style={{ maxHeight: "calc(100vh - 180px)" }}>
+      {/* FILTER BAR — module tabs + search, collapsible */}
+      {!headerCollapsed && (
+        <div className="filter-bar perm-filter-bar">
+          <div className="filter-groups">
+            <input
+              className="search-input"
+              placeholder="Search modules…"
+              value={search}
+              onChange={(e) => setSearch(allowTextInput(search, e.target.value, 100, 5))}
+            />
+            {search && (
+              <button className="ae-clear-filter" onClick={() => setSearch("")}>
+                Clear
+              </button>
+            )}
+            <CustomDropdown
+              value={selectedRole}
+              onChange={setSelectedRole}
+              options={[{ value: "all", label: "All roles" }, ...roleTitles.map((rt) => ({ value: rt, label: rt }))]}
+              placeholder="All roles"
+              className="perm-role-filter"
+            />
+          </div>
+          <div className="filter-pills">
+            {tabs.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                className={`filter-pill${activeTab === t.key ? " active" : ""}`}
+                onClick={() => setActiveTab(t.key)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div
+        className="table-wrapper perm-table-wrapper"
+        style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 230px)" }}
+      >
         <table className="perm-table">
           <thead>
             <tr>
@@ -241,64 +303,57 @@ const Permissions = () => {
             </tr>
           </thead>
           <tbody>
-            {moduleEntries.length === 0 ? (
-              <EmptyRow colSpan={1 + visibleRoles.length * 2} message="No modules available" />
+            {activeTabModules.length === 0 ? (
+              <EmptyRow colSpan={1 + visibleRoles.length * 2} message={search ? "No modules match your search" : "No modules in this tab"} />
             ) : (
-              groupedModules.map((group) => (
-                <React.Fragment key={group.label}>
-                  <tr className="perm-group-row">
-                    <td colSpan={1 + visibleRoles.length * 2}>{group.label}</td>
-                  </tr>
-                  {group.entries.map(([moduleKey, moduleLabel]) => (
-                    <tr key={moduleKey} className="perm-row">
-                      <td className="perm-module-name">{moduleLabel}</td>
-                      {visibleRoles.map((rt) => {
-                        const key = `${rt}::${moduleKey}`;
-                        const isDirty = !!dirty[key];
-                        const canRead = cellValue(rt, moduleKey, "canRead");
-                        const canWrite = cellValue(rt, moduleKey, "canWrite");
-                        return (
-                          <React.Fragment key={rt}>
-                            <td className={`perm-cell${isDirty ? " perm-cell-dirty" : ""}`}>
-                              <span className="perm-toggle-wrapper">
-                                <input
-                                  type="checkbox"
-                                  className={`perm-toggle${canRead ? " on" : ""}`}
-                                  checked={canRead}
-                                  readOnly
-                                  role="switch"
-                                  aria-checked={canRead}
-                                  aria-label={`${rt} — ${moduleLabel} — Read`}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    requestToggle(rt, moduleKey, moduleLabel, "canRead");
-                                  }}
-                                />
-                              </span>
-                            </td>
-                            <td className={`perm-cell${isDirty ? " perm-cell-dirty" : ""}`}>
-                              <span className="perm-toggle-wrapper">
-                                <input
-                                  type="checkbox"
-                                  className={`perm-toggle${canWrite ? " on" : ""}`}
-                                  checked={canWrite}
-                                  readOnly
-                                  role="switch"
-                                  aria-checked={canWrite}
-                                  aria-label={`${rt} — ${moduleLabel} — Write`}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    requestToggle(rt, moduleKey, moduleLabel, "canWrite");
-                                  }}
-                                />
-                              </span>
-                            </td>
-                          </React.Fragment>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </React.Fragment>
+              activeTabModules.map(([moduleKey, moduleLabel]) => (
+                <tr key={moduleKey} className="perm-row">
+                  <td className="perm-module-name">{moduleLabel}</td>
+                  {visibleRoles.map((rt) => {
+                    const key = `${rt}::${moduleKey}`;
+                    const isDirty = !!dirty[key];
+                    const canRead = cellValue(rt, moduleKey, "canRead");
+                    const canWrite = cellValue(rt, moduleKey, "canWrite");
+                    return (
+                      <React.Fragment key={rt}>
+                        <td className={`perm-cell${isDirty ? " perm-cell-dirty" : ""}`}>
+                          <span className="perm-toggle-wrapper">
+                            <input
+                              type="checkbox"
+                              className={`perm-toggle${canRead ? " on" : ""}`}
+                              checked={canRead}
+                              readOnly
+                              role="switch"
+                              aria-checked={canRead}
+                              aria-label={`${rt} — ${moduleLabel} — Read`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                requestToggle(rt, moduleKey, moduleLabel, "canRead");
+                              }}
+                            />
+                          </span>
+                        </td>
+                        <td className={`perm-cell${isDirty ? " perm-cell-dirty" : ""}`}>
+                          <span className="perm-toggle-wrapper">
+                            <input
+                              type="checkbox"
+                              className={`perm-toggle${canWrite ? " on" : ""}`}
+                              checked={canWrite}
+                              readOnly
+                              role="switch"
+                              aria-checked={canWrite}
+                              aria-label={`${rt} — ${moduleLabel} — Write`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                requestToggle(rt, moduleKey, moduleLabel, "canWrite");
+                              }}
+                            />
+                          </span>
+                        </td>
+                      </React.Fragment>
+                    );
+                  })}
+                </tr>
               ))
             )}
           </tbody>
@@ -346,4 +401,231 @@ const Permissions = () => {
   );
 };
 
-export default Permissions;
+const RolesPanel = () => {
+  const { toast } = useToast();
+  const { isSuperAdmin } = useAuth();
+  const [entries, setEntries] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState({ title: "", responsibilities: "" });
+  const [formErrors, setFormErrors] = useState({});
+
+  const load = async () => {
+    try {
+      const res = await api.get("/roles");
+      setEntries(res.data || []);
+    } catch (err) {
+      console.error("Failed to load roles:", err);
+      toast.error("Failed to load roles");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const openCreate = () => {
+    setEditingId(null);
+    setForm({ title: "", responsibilities: "" });
+    setFormErrors({});
+    setShowModal(true);
+  };
+
+  const openEdit = (entry) => {
+    setEditingId(entry.id);
+    setForm({ title: entry.title, responsibilities: entry.responsibilities || "" });
+    setFormErrors({});
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.title.trim()) {
+      setFormErrors({ title: true });
+      return;
+    }
+    try {
+      if (editingId) {
+        const res = await api.patch(`/roles/${editingId}`, form);
+        setEntries((prev) => prev.map((r) => (r.id === editingId ? res.data : r)));
+        toast.success("Role updated.");
+      } else {
+        const res = await api.post("/roles", form);
+        setEntries((prev) => [...prev, res.data].sort((a, b) => a.title.localeCompare(b.title)));
+        toast.success("Role added.");
+      }
+      setShowModal(false);
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to save role");
+    }
+  };
+
+  const handleDelete = async (entry) => {
+    if (!window.confirm(`Delete role "${entry.title}"?`)) return;
+    try {
+      await api.delete(`/roles/${entry.id}`);
+      setEntries((prev) => prev.filter((r) => r.id !== entry.id));
+      toast.success("Role deleted.");
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to delete role");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="inner-page">
+        <PageLoader fill label="Loading roles…" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="inner-page">
+      <div className="header">
+        <div className="header-title-row">
+          <div className="header-title-col">
+            <div className="header-title-with-count">
+              <h2 className="title">Roles</h2>
+              <span className="result-count">{entries.length} role(s)</span>
+            </div>
+          </div>
+        </div>
+        {isSuperAdmin && (
+          <div className="header-btn-container">
+            <Button3D onClick={openCreate}>+ Add Role</Button3D>
+          </div>
+        )}
+      </div>
+
+      <p className="perm-roles-hint">
+        These role descriptions are shown to staff who create accounts for others, so they know what each role is responsible for.
+      </p>
+
+      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 260px)" }}>
+        <table>
+          <thead>
+            <tr>
+              <th>Role</th>
+              <th>Responsibilities</th>
+              {isSuperAdmin && <th style={{ width: 160 }}>Actions</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {entries.length === 0 ? (
+              <EmptyRow colSpan={isSuperAdmin ? 3 : 2} message="No roles defined yet" />
+            ) : (
+              entries.map((entry) => (
+                <tr key={entry.id}>
+                  <td><strong>{entry.title}</strong></td>
+                  <td>{entry.responsibilities || "—"}</td>
+                  {isSuperAdmin && (
+                    <td>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <Button3D onClick={() => openEdit(entry)}>Edit</Button3D>
+                        <Button3D variant="cancel" onClick={() => handleDelete(entry)}>Delete</Button3D>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {showModal && (
+        <div className="modal-overlay">
+          <form
+            className="admin-modal"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSave();
+            }}
+          >
+            <div className="admin-modal-header">
+              <h3>{editingId ? "Edit Role" : "Add Role"}</h3>
+              <Button3D variant="cancel" iconOnly onClick={() => setShowModal(false)}>×</Button3D>
+            </div>
+            <div className="admin-modal-body">
+              <div className={`admin-form-group${formErrors.title ? " mat-select-error" : ""}`}>
+                <div className="mat">
+                  <input
+                    className={`mat-input${formErrors.title ? " mat-error" : ""}`}
+                    placeholder=" "
+                    value={form.title}
+                    onChange={(e) => {
+                      setForm({ ...form, title: allowTextInput(form.title, e.target.value, 100, 5) });
+                      setFormErrors((p) => ({ ...p, title: false }));
+                    }}
+                  />
+                  <label className={`mat-label${formErrors.title ? " mat-label-error" : ""}`}>
+                    Role Title<span className="rf-req">*</span>
+                  </label>
+                  <span className={`mat-bar${formErrors.title ? " mat-bar-error" : ""}`} />
+                </div>
+              </div>
+              <div className="admin-form-group">
+                <div className="mat">
+                  <textarea
+                    className="mat-input mat-textarea"
+                    placeholder=" "
+                    value={form.responsibilities}
+                    onChange={(e) => setForm({ ...form, responsibilities: allowTextInput(form.responsibilities, e.target.value, 500, 100) })}
+                  />
+                  <label className="mat-label">Responsibilities (optional)</label>
+                  <span className="mat-bar" />
+                </div>
+              </div>
+            </div>
+            <div className="admin-modal-footer">
+              <Button3D variant="cancel" onClick={() => setShowModal(false)}>Cancel</Button3D>
+              <Button3D type="submit">{editingId ? "Save Changes" : "Add Role"}</Button3D>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const RolesAndResponsibilities = () => {
+  const [view, setView] = useState("permissions"); // "permissions" | "roles"
+  const { containerRef: viewTabPillsRef, thumbStyle: viewTabThumbStyle } = useTabLiquid(view);
+
+  return (
+    <div>
+      <div className="app-tab-pills perm-view-switch" ref={viewTabPillsRef}>
+        <span className="app-tab-pill-liquid" style={viewTabThumbStyle} />
+        <button
+          type="button"
+          className={`app-tab-pill${view === "permissions" ? " active" : ""}`}
+          onClick={() => setView("permissions")}
+        >
+          Permissions
+        </button>
+        <button
+          type="button"
+          className={`app-tab-pill${view === "roles" ? " active" : ""}`}
+          onClick={() => setView("roles")}
+        >
+          Roles
+        </button>
+      </div>
+      {/* Both panels stay mounted so their data loads together the moment
+          this page is opened from the sidebar, instead of one panel's
+          fetch waiting until its tab is actually clicked. Switching tabs
+          is just a visibility toggle, not a re-fetch. */}
+      <div style={{ display: view === "permissions" ? "block" : "none" }}>
+        <Permissions />
+      </div>
+      <div style={{ display: view === "roles" ? "block" : "none" }}>
+        <RolesPanel />
+      </div>
+    </div>
+  );
+};
+
+export default RolesAndResponsibilities;

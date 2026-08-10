@@ -218,3 +218,82 @@
     padding: 36px 14px;
   }
 }
+
+/* ── Add/Edit modal: ingredients/procedure tabs ─────────────────── */
+.recipe-modal-tabs {
+  padding: 4px 20px 0;
+}
+
+.filter-pill-error {
+  border-color: #ef476f !important;
+  color: #ef476f;
+}
+
+.recipe-ingredients-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recipe-ing-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recipe-ing-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recipe-ing-input {
+  flex: 2;
+  padding: 10px 12px;
+  border: 1px solid var(--color-offwhite, #e5e5e5);
+  border-radius: 8px;
+  font-size: 13.5px;
+  background: var(--color-white);
+}
+
+.recipe-ing-input.recipe-ing-qty {
+  flex: 1;
+}
+
+.recipe-ing-input:focus {
+  outline: none;
+  border-color: var(--color-green, #06d6a0);
+}
+
+/* ── Detail modal: ingredients section ──────────────────────────── */
+.recipe-detail-subhead {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.recipe-detail-ing-list {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.recipe-detail-ing-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #f8f8f8;
+  border-radius: 8px;
+  font-size: 13.5px;
+}
+
+.recipe-detail-ing-qty {
+  color: var(--text-secondary);
+  font-weight: 600;
+}

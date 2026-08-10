@@ -21,6 +21,7 @@ import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
 
 import "./ServiceGrooming.css";
+import { fmtDate as sharedFmtDate } from "../../utils/dateUtils";
 
 /*
   DATA SHAPE (serviceGrooming in db.json):
@@ -393,7 +394,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
               <div className="sgroom-detail-info">
                 <div className="sgroom-detail-name">{selected.staff}</div>
                 <div className="sgroom-detail-date">
-                  {new Date(selected.date).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                  {new Date(selected.date).toLocaleDateString("en-IN", { weekday: "long" })}, {sharedFmtDate(selected.date)}
                 </div>
               </div>
               <div className="sgroom-detail-checks">

@@ -9,6 +9,7 @@ import api from "../../api";
 import { useAuth } from "../../context/AuthContext";
 import { useVenue } from "../../context/VenueContext";
 import CustomDropdown from "../CustomDropdown";
+import { fmtDate as sharedFmtDate, fmtTime as sharedFmtTime } from "../../utils/dateUtils";
 
 /* ─────────────────────────────────────────────────────────────────────────────
    HELPERS
@@ -52,17 +53,12 @@ function formatCountdown(ms) {
 
 function formatDate(dateStr) {
   if (!dateStr) return "";
-  return new Date(dateStr).toLocaleDateString("en-IN", {
-    day: "2-digit", month: "short", year: "numeric"
-  });
+  return sharedFmtDate(dateStr);
 }
 
 function formatTime(timeStr) {
   if (!timeStr) return "";
-  const [h, m] = timeStr.split(":");
-  const d = new Date();
-  d.setHours(Number(h), Number(m));
-  return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+  return sharedFmtTime(timeStr);
 }
 
 const TYPE_META = {
@@ -170,12 +166,16 @@ function VenueIndicator() {
   if (isLoading) return null;
 
   if (isSuperAdmin) {
+    const mainBranch = venues.find((v) => v.isMainBranch);
     return (
       <CustomDropdown
         className="topbar-venue-switcher"
         value={selectedVenueId || ""}
         onChange={(val) => { if (val) setSelectedVenueId(val); }}
-        options={venues.map((v) => ({ value: v.id, label: v.name }))}
+        options={venues.map((v) => ({
+          value: v.id,
+          label: v.isMainBranch || !mainBranch || mainBranch.id === v.id ? v.name : `${v.name} (${mainBranch.name})`,
+        }))}
         placeholder={null}
       />
     );
@@ -183,6 +183,8 @@ function VenueIndicator() {
 
   const ownVenue = venues.find((v) => v.id === admin?.venueId);
   if (!ownVenue) return null;
+  const mainBranch = venues.find((v) => v.isMainBranch);
+  const showSuffix = mainBranch && !ownVenue.isMainBranch && mainBranch.id !== ownVenue.id;
 
   return (
     <span
@@ -200,6 +202,7 @@ function VenueIndicator() {
       }}
     >
       {ownVenue.name}
+      {showSuffix && <span style={{ opacity: 0.45 }}> ({mainBranch.name})</span>}
     </span>
   );
 }
@@ -733,9 +736,7 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
                             <span>{meta.label || log.type} ·  {log.phone}</span>
                           </div>
                           <span className="phone-list__phone-sm phone-list__phone-sm--time">
-                            {new Date(log.calledAt).toLocaleTimeString("en-IN", {
-                              hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short"
-                            })}
+                            {sharedFmtDate(log.calledAt)}, {new Date(log.calledAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
                           </span>
                         </li>
                       );

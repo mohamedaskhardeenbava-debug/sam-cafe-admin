@@ -21,6 +21,7 @@ import closeIcon from "../icon/close-icon.png";
 import { EmptyRow, allowTextInput } from "../App";
 
 import "./Offers.css"; // reuses the shared admin list/modal styling
+import "./Venues.css"; // main-branch badge
 
 const EMPTY_VENUE = { name: "", address: "", area: "" };
 
@@ -151,6 +152,28 @@ const Venues = () => {
     }
   };
 
+  const mainBranch = useMemo(() => venues.find((v) => v.isMainBranch) || null, [venues]);
+
+  // Display name per the spec: the main branch shows its own name only;
+  // every other branch shows "<Branch Name> (<Main Branch Name>)" with
+  // the parenthetical part rendered at lower opacity via a wrapping span.
+  const displayName = (venue) => {
+    if (venue.isMainBranch || !mainBranch || mainBranch.id === venue.id) return venue.name;
+    return { primary: venue.name, suffix: mainBranch.name };
+  };
+
+  const handleSetMain = async (venue) => {
+    if (venue.isMainBranch) return;
+    if (!window.confirm(`Set "${venue.name}" as the main branch? Every other branch will be shown relative to it.`)) return;
+    try {
+      const res = await api.patch(`/venues/${venue.id}/set-main`);
+      setVenues(res.data || []);
+      toast.success(`${venue.name} is now the main branch.`);
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to set main branch");
+    }
+  };
+
   if (!isSuperAdmin) {
     return (
       <div className="inner-page">
@@ -229,7 +252,7 @@ const Venues = () => {
               <th>Area</th>
               <th>Staff</th>
               <th>Status</th>
-              <th style={{ width: 160 }}>Actions</th>
+              <th style={{ width: 220 }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -239,10 +262,22 @@ const Venues = () => {
                 message={venues.length === 0 ? "No venues yet — add your first branch." : "No venues match your search"}
               />
             ) : (
-              filteredVenues.map((v) => (
+              filteredVenues.map((v) => {
+                const dn = displayName(v);
+                return (
                 <tr key={v.id}>
                   <td>
-                    <strong>{v.name}</strong>
+                    <strong>
+                      {typeof dn === "string" ? (
+                        dn
+                      ) : (
+                        <>
+                          {dn.primary}{" "}
+                          <span style={{ opacity: 0.45, fontWeight: 500 }}>({dn.suffix})</span>
+                        </>
+                      )}
+                    </strong>
+                    {v.isMainBranch && <span className="venue-main-badge">Main Branch</span>}
                   </td>
                   <td>{v.address}</td>
                   <td>{v.area}</td>
@@ -258,7 +293,7 @@ const Venues = () => {
                     </span>
                   </td>
                   <td>
-                    <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <Button3D onClick={() => openEditModal(v)}>Edit</Button3D>
                       <Button3D variant="cancel" onClick={() => handleDelete(v)}>
                         Delete
@@ -266,7 +301,8 @@ const Venues = () => {
                     </div>
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>
@@ -353,6 +389,14 @@ const Venues = () => {
             </div>
 
             <div className="admin-modal-footer">
+              {editingId && !venues.find((v) => v.id === editingId)?.isMainBranch && (
+                <Button3D
+                  type="button"
+                  onClick={() => handleSetMain(venues.find((v) => v.id === editingId))}
+                >
+                  Set as Main
+                </Button3D>
+              )}
               <Button3D
                 variant="cancel"
                 onClick={() => {

@@ -17,6 +17,7 @@ import closeIcon from "../icon/close-icon.png";
 import "./ModalCSS.css";
 import "./staffs/StaffDetails.css";
 import "./Profile.css";
+import { fmtDate } from "../utils/dateUtils";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -266,7 +267,7 @@ const Profile = () => {
 
             <div className="admin-modal-footer profile-edit-footer">
               <span className="profile-edit-updated">
-                {admin.updatedAt ? `Last updated: ${new Date(admin.updatedAt).toLocaleDateString()}` : ""}
+                {admin.updatedAt ? `Last updated: ${fmtDate(admin.updatedAt)}` : ""}
               </span>
               <div className="profile-edit-footer-actions">
                 <Button3D variant="cancel" onClick={cancelEditing}>Cancel</Button3D>

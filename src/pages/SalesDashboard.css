@@ -35,34 +35,8 @@
   margin: 0;
 }
 
-.db-tab-pills {
-  display: flex;
-  background: #d8d8d8;
-  border-radius: 999px;
-  padding: 4px;
-  gap: 4px;
-}
-
-.db-tab-pill {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 16px;
-  border-radius: 999px;
-  border: none;
-  background: transparent;
-  font-size: 13px;
-  font-weight: 500;
-  color: #555;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.db-tab-pill.active {
-  background: #fff;
-  color: #111;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
+/* .db-tab-pills / .db-tab-pill removed — replaced by the shared
+   .app-tab-pills / .app-tab-pill in Common.css (see SalesDashboard.js). */
 
 /* ── Filter bar ── */
 .dashboard-filter {
@@ -2288,7 +2262,7 @@
     min-height: 220px;
   }
 
-  .db-tab-pill {
+  .app-tab-pill {
     padding: 6px 10px;
     font-size: 12px;
   }

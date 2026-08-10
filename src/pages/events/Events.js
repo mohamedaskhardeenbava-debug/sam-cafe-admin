@@ -20,19 +20,15 @@ import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
 
+import "../Common.css";
 import "./Events.css";
 import "../ModalCSS.css";
+import { fmtDate as formatDate } from "../../utils/dateUtils";
+import { useTabLiquid } from "../../hooks/useTabLiquid";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const generateId = (name) =>
   `evt_${name.trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "")}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-
-const formatDate = (iso) => {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "2-digit", month: "short", year: "numeric",
-  });
-};
 
 const buildAddress = (f) => [
   f.addrDoorNo, f.addrStreet, f.addrArea,
@@ -167,6 +163,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
     setter(prev => { const next = new Set(prev); next.has(val) ? next.delete(val) : next.add(val); return next; });
 
   const setActiveTab = (v) => patchFilters({ activeTab: v });
+  const { containerRef: evtTabPillsRef, thumbStyle: evtTabThumbStyle } = useTabLiquid(activeTab);
   const setFilterEventId = (v) => patchFilters({ filterEventId: v });
   const setFilterStatuses = (v) => patchFilters({ filterStatuses: typeof v === "function" ? v(filterStatuses) : v });
   const setFilterFromDate = (v) => patchFilters({ filterFromDate: v });
@@ -772,12 +769,13 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
           </div>
         </div>
         <div className="ae-header-actions">
-          <div className="ae-tab-pills">
-            <button className={`ae-tab-pill ${activeTab === "events" ? "active" : ""}`} onClick={() => setActiveTab("events")}>
+          <div className="app-tab-pills" ref={evtTabPillsRef}>
+            <span className="app-tab-pill-liquid" style={evtTabThumbStyle} />
+            <button className={`app-tab-pill ${activeTab === "events" ? "active" : ""}`} onClick={() => setActiveTab("events")}>
               Events
               <span className="ae-badge">{filteredEvents.length}/{events.length}</span>
             </button>
-            <button className={`ae-tab-pill ${activeTab === "bookings" ? "active" : ""}`} onClick={() => setActiveTab("bookings")}>
+            <button className={`app-tab-pill ${activeTab === "bookings" ? "active" : ""}`} onClick={() => setActiveTab("bookings")}>
               Bookings
               <span className="ae-badge ae-badge-purple">{filteredBookings.length}/{bookings.length}</span>
             </button>
@@ -1245,7 +1243,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                 <>
                   <div className="admin-form-group">
                     <div className="mat-area">
-                      <textarea className={`mat-input${formErrors.description ? " mat-error" : ""}`} value={formData.description} rows={3} onChange={(e) => { setFormData((p) => ({ ...p, description: allowTextInput(p.description, e.target.value, 500, 100000) })); setFormErrors(p => ({ ...p, description: false })); }} placeholder=" " style={{ height: "auto", paddingTop: 4 }} />
+                      <textarea className={`mat-input mat-textarea${formErrors.description ? " mat-error" : ""}`} value={formData.description} rows={3} onChange={(e) => { setFormData((p) => ({ ...p, description: allowTextInput(p.description, e.target.value, 500, 100000) })); setFormErrors(p => ({ ...p, description: false })); }} placeholder=" " style={{ height: "auto", paddingTop: 4 }} />
                       <label className={`mat-area-label${formErrors.description ? " mat-label-error" : ""}`}>Description <span className="rf-req">*</span></label>
                       <span className={`mat-area-bar${formErrors.description ? " mat-bar-error" : ""}`} />
                     </div>
@@ -1515,7 +1513,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
 
                   <div className="admin-form-group">
                     <div className="mat-area">
-                      <textarea className="mat-input" value={specFormData.description} rows={3} onChange={(e) => setSpecFormData(p => ({ ...p, description: allowTextInput(p.description, e.target.value, 500, 100000) }))} placeholder=" " style={{ height: "auto", paddingTop: 4 }} />
+                      <textarea className="mat-input mat-textarea" value={specFormData.description} rows={3} onChange={(e) => setSpecFormData(p => ({ ...p, description: allowTextInput(p.description, e.target.value, 500, 100000) }))} placeholder=" " style={{ height: "auto", paddingTop: 4 }} />
                       <label className="mat-area-label">Description</label>
                       <span className="mat-area-bar" />
                     </div>

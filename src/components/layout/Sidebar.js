@@ -85,7 +85,7 @@ const BASE_MENU = [
   },
   { label: "Offers", path: "/offers", icon: offerIcon, module: "offers", cardKey: "offers" },
   { label: "Venues", path: "/venues", icon: staffIcon, superAdminOnly: true },
-  { label: "Permissions", path: "/permissions", icon: staffIcon, superAdminOnly: true },
+  { label: "Roles and Responsibilities", path: "/permissions", icon: staffIcon, superAdminOnly: true },
   { label: "Category Cards", path: "/category-cards", icon: categoryIcon, superAdminOnly: true },
   { label: "Audit Logs", path: "/audit-logs", icon: staffIcon, superAdminOnly: true },
   { label: "Theme Settings", path: "/theme-settings", icon: themeIcon, superAdminOnly: true },

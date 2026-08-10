@@ -1,0 +1,156 @@
+/* ═══════════════════════════════════════════════════════
+   WorkPlan.css  —  Sam Cafe Admin  —  Dashboard "Work Plan" tab
+   Depends on Common.css + ModalCSS.css for shared modal/button styling.
+═══════════════════════════════════════════════════════ */
+
+.wp-panel {
+  padding: 4px 2px;
+}
+
+.wp-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.wp-panel-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.wp-panel-title h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.wp-hint {
+  font-size: 13px;
+  color: #888;
+  margin: 0 0 18px;
+}
+
+.wp-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+  background: #f8fafc;
+  border-radius: 14px;
+  border: 1px dashed #e2e2e2;
+}
+
+.wp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 720px;
+}
+
+.wp-section-divider {
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #aaa;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed #eee;
+}
+
+.wp-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid #eef0f3;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.wp-item:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+  border-color: #e2e2e2;
+}
+
+.wp-item--past {
+  opacity: 0.6;
+}
+
+.wp-item-check {
+  flex-shrink: 0;
+  padding-top: 3px;
+}
+
+.wp-item-check input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-green, #06d6a0);
+  cursor: pointer;
+}
+
+.wp-item-body {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.wp-item-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.wp-type-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.wp-type-badge--meeting {
+  background: #e6f0ff;
+  color: #2b6cb0;
+}
+
+.wp-type-badge--task {
+  background: #fff4d6;
+  color: #a67c00;
+}
+
+.wp-item-date {
+  font-size: 12px;
+  color: #999;
+  font-weight: 600;
+}
+
+.wp-item-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #222;
+}
+
+.wp-item-title--done {
+  text-decoration: line-through;
+  color: #999;
+}
+
+.wp-item-location {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: #777;
+}
+
+.wp-item-notes {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: #999;
+  font-style: italic;
+}

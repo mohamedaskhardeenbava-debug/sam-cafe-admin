@@ -447,6 +447,31 @@ const ComboOffers = () => {
     setMapDraft(prev => prev.map(s => s.key === sectionKey ? { ...s, label: newLabel } : s));
   };
 
+  /* ── add / remove a combo category (section) — a section is just a
+     named bucket of menu categories, so "adding a category" here means
+     adding a new empty bucket the admin can then map menu categories
+     into via the chip grid above. Every admin-created menu category can
+     end up as (or feed into) its own combo section this way, instead of
+     being locked to the original Dishes/Desserts/Beverages triple. ── */
+  const mapAddSection = () => {
+    let n = mapDraft.length + 1;
+    let key = `section_${Date.now()}`;
+    let label = `New Category ${n}`;
+    while (mapDraft.some(s => s.label.toLowerCase() === label.toLowerCase())) {
+      n += 1;
+      label = `New Category ${n}`;
+    }
+    setMapDraft(prev => [...prev, { key, label, categoryIds: [] }]);
+  };
+
+  const mapRemoveSection = (sectionKey) => {
+    if (mapDraft.length <= 1) {
+      toast.error("At least one combo category is required.", "error");
+      return;
+    }
+    setMapDraft(prev => prev.filter(s => s.key !== sectionKey));
+  };
+
   const handleSaveMapping = async () => {
     setMapSaving(true);
     try {
@@ -770,10 +795,20 @@ const ComboOffers = () => {
               <div className="co-map-sections">
                 {mapDraft.map(s => (
                   <div className="co-map-section" key={s.key}>
-                    <MapSectionNameField
-                      label={s.label}
-                      onSave={(newLabel) => mapRenameSection(s.key, newLabel)}
-                    />
+                    <div className="co-map-section-head">
+                      <MapSectionNameField
+                        label={s.label}
+                        onSave={(newLabel) => mapRenameSection(s.key, newLabel)}
+                      />
+                      <Button3D
+                        variant="cancel"
+                        iconOnly
+                        title="Remove this combo category"
+                        onClick={() => mapRemoveSection(s.key)}
+                      >
+                        <img src={deleteIcon} alt="Remove" />
+                      </Button3D>
+                    </div>
 
                     <p className="co-map-hint">Mapped menu categories for "{s.label}"</p>
                     <div className="co-map-chip-grid">
@@ -798,6 +833,10 @@ const ComboOffers = () => {
                   </div>
                 ))}
               </div>
+
+              <Button3D onClick={mapAddSection} className="co-map-add-btn">
+                + Add Combo Category
+              </Button3D>
             </div>
 
             {/* footer */}
