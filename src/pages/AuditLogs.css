@@ -23,6 +23,42 @@
   color: #dc2626;
 }
 
+/* ── Per-action colours ──────────────────────────────────────────── */
+.audit-status-badge--login {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.audit-status-badge--logout {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.audit-status-badge--login_failed {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.audit-status-badge--create {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.audit-status-badge--update {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.audit-status-badge--delete {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.audit-status-badge--default {
+  background: #e5e7eb;
+  color: #374151;
+}
+
 /* ── Who column: name + role ─────────────────────────────────────── */
 .audit-who-role {
   color: #999;

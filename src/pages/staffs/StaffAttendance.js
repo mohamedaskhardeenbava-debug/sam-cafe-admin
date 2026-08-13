@@ -616,7 +616,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
 
             <div className="admin-modal-body">
               <div className="admin-form-group">
-                <label className={holidayErrors.date ? "mat-label-error" : ""} style={{ fontSize: 13, marginBottom: 4, display: "block" }}>Date<span style={{ color: "red" }}>*</span></label>
+                <label className={holidayErrors.date ? "mat-label-error" : ""} style={{ fontSize: 13, marginBottom: 4, display: "block" }}>Date<span className="rf-req">*</span></label>
                 <CustomDatePicker value={holidayForm.date} max={maxDateStr}
                   onChange={val => { setHolidayForm(prev => ({ ...prev, date: val })); setHolidayErrors(p => ({ ...p, date: false })); }}
                   placeholder="Select holiday date"

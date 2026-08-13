@@ -147,12 +147,209 @@ const StableQRCode = React.memo(({ value }) => {
   );
 });
 
+const PAYMENT_POLL_MS = 4000;
+const CASHFREE_SDK_URL = "https://sdk.cashfree.com/js/v3/cashfree.js";
+
+// Loads the Cashfree.js v3 SDK script once (shared across every
+// CashfreeQRSection instance on the page) and resolves with the global
+// `Cashfree` factory function it attaches to window.
+let cashfreeSdkPromise = null;
+function loadCashfreeSdk() {
+  if (window.Cashfree) return Promise.resolve(window.Cashfree);
+  if (cashfreeSdkPromise) return cashfreeSdkPromise;
+
+  cashfreeSdkPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${CASHFREE_SDK_URL}"]`);
+    if (existing) {
+      existing.addEventListener("load", () => resolve(window.Cashfree));
+      existing.addEventListener("error", reject);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = CASHFREE_SDK_URL;
+    script.async = true;
+    script.onload = () => resolve(window.Cashfree);
+    script.onerror = reject;
+    document.body.appendChild(script);
+  });
+
+  return cashfreeSdkPromise;
+}
+
+/**
+ * CashfreeQRSection — creates a Cashfree order for the current bill amount,
+ * then uses the Cashfree.js Web Element SDK to render a genuine UPI QR
+ * component (cashfree.create('upiQr')) tied to that order's payment
+ * session. This scans directly into the customer's UPI app (PhonePe/GPay/
+ * Paytm) — there's no Cashfree-hosted webpage involved, so there's no
+ * "session expired" redirect flow to break, and it doesn't require the
+ * S2S account flag that the raw Order Pay API needs.
+ *
+ * Falls back to the standalone /payments/orders/:id status endpoint for
+ * polling — cashfree.pay()'s own promise also resolves on completion for
+ * "if_required" redirect mode, but polling the order status independently
+ * keeps this consistent with how printed-receipt QR status is tracked.
+ */
+const CashfreeQRSection = React.memo(({ orderId, billNo, amount }) => {
+  const [payment, setPayment] = useState(null); // { id, paymentSessionId, status }
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState("");
+  const mountRef = useRef(null);
+  const qrComponentRef = useRef(null);
+
+  // Step 1: create the Cashfree order for this bill amount.
+  useEffect(() => {
+    let cancelled = false;
+
+    const createOrder = async () => {
+      if (!(Number(amount) > 0)) return;
+      setCreating(true);
+      setError("");
+      try {
+        const res = await api.post("/payments/orders", { orderId, billNo: billNo ?? null, amount: Number(amount) });
+        if (!cancelled) setPayment(res.data);
+      } catch (err) {
+        console.error("Failed to create Cashfree order", err);
+        if (!cancelled) setError(err?.response?.data?.error || "Payment gateway unavailable");
+      } finally {
+        if (!cancelled) setCreating(false);
+      }
+    };
+
+    createOrder();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId, billNo, amount]);
+
+  // Step 2: once we have a paymentSessionId, load the SDK and mount the
+  // real UPI QR component into this section — no hosted-page redirect.
+  useEffect(() => {
+    if (!payment?.paymentSessionId || payment.status === "PAID") return undefined;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const CashfreeFactory = await loadCashfreeSdk();
+        if (cancelled || !mountRef.current) return;
+
+        const cashfree = CashfreeFactory({
+          mode: (process.env.REACT_APP_CASHFREE_ENV || "sandbox").toLowerCase(),
+        });
+
+        const upiQr = cashfree.create("upiQr", { values: { size: "180px" } });
+        qrComponentRef.current = upiQr;
+
+        upiQr.on("loaderror", (data) => {
+          console.error("Cashfree UPI QR failed to load", data?.error);
+          if (!cancelled) setError(data?.error?.message || "Failed to load payment QR");
+        });
+
+        upiQr.mount(mountRef.current);
+
+        upiQr.on("ready", () => {
+          if (cancelled) return;
+          // Kick off the actual UPI QR payment flow tied to this order's
+          // session. redirectTarget: "_self" only matters if Cashfree ever
+          // needs a fallback redirect (e.g. an edge-case bank flow) — the
+          // QR itself renders and is scannable without any redirect.
+          cashfree
+            .pay({
+              paymentMethod: upiQr,
+              paymentSessionId: payment.paymentSessionId,
+              redirectTarget: "_self",
+            })
+            .then((result) => {
+              if (cancelled) return;
+              if (result?.error) {
+                console.error("Cashfree UPI QR pay() error", result.error);
+                setError(result.error.message || "Payment could not be started");
+              }
+              if (result?.paymentDetails) {
+                // Resolved without redirect — payment completed.
+                setPayment((p) => (p ? { ...p, status: "PAID" } : p));
+              }
+            })
+            .catch((err) => {
+              if (!cancelled) {
+                console.error("Cashfree UPI QR pay() threw", err);
+                setError("Payment could not be started");
+              }
+            });
+        });
+      } catch (err) {
+        console.error("Failed to load Cashfree SDK", err);
+        if (!cancelled) setError("Payment gateway unavailable");
+      }
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [payment?.paymentSessionId]);
+
+  // Step 3: poll our own backend for the order's status (backed by
+  // Cashfree's order-status API + webhook), independent of the SDK's own
+  // promise resolution, so a missed "ready"/redirect edge case still
+  // surfaces "Paid" within a few seconds.
+  useEffect(() => {
+    if (!payment?.id || payment.status === "PAID") return undefined;
+    let cancelled = false;
+
+    const poll = async () => {
+      try {
+        const res = await api.get(`/payments/orders/${payment.id}`);
+        if (!cancelled) setPayment(res.data);
+      } catch (err) {
+        console.warn("Payment status poll failed", err);
+      }
+    };
+
+    const interval = setInterval(poll, PAYMENT_POLL_MS);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [payment?.id, payment?.status]);
+
+  if (payment?.status === "PAID") {
+    return (
+      <div className="bill-qr-section bill-qr-paid">
+        <div className="bill-qr-title">Payment Received ✅</div>
+        <div className="bill-qr-amount">₹{Number(amount).toFixed(2)}</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bill-qr-section">
+        <div className="bill-qr-title">Scan To Pay</div>
+        <div className="bill-qr-error">{error}</div>
+      </div>
+    );
+  }
+
+  if (creating || !payment?.paymentSessionId) {
+    return (
+      <div className="bill-qr-section">
+        <div className="bill-qr-title">Scan To Pay</div>
+        <div className="bill-qr-loading">Generating payment QR…</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bill-qr-section">
+      <div className="bill-qr-title">Scan To Pay via UPI (Cashfree)</div>
+      <div ref={mountRef} className="bill-qr-upi-mount" />
+      <div className="bill-qr-status">
+        {payment.status === "PENDING" ? "Waiting for payment…" : payment.status}
+      </div>
+    </div>
+  );
+});
+
 const BillLayout = React.memo(({
   order,
   editable,
   onQtyChange,
   onBillAssign,
-  buildUpiUrl,
   onClose,
   splitPeople,
   setSplitPeople,
@@ -210,10 +407,7 @@ const BillLayout = React.memo(({
         ? billGroups?.groups?.[0]?.total
         : totals.total;
 
-  const qrValue = useMemo(
-    () => buildUpiUrl(finalAmount, order.id),
-    [finalAmount, order.id]
-  );
+  const finalBillNo = order.splitType === "bill" ? billGroups?.groups?.[0]?.billNo ?? null : null;
 
   return (
     <div className="bill-receipt">
@@ -372,10 +566,7 @@ const BillLayout = React.memo(({
         </div>
       )}
 
-      <div className="bill-qr-section">
-        <div className="bill-qr-title">Scan To Pay</div>
-        <StableQRCode value={qrValue} />
-      </div>
+      <CashfreeQRSection orderId={order.id} billNo={finalBillNo} amount={finalAmount} />
     </div>
   );
 });
@@ -796,7 +987,10 @@ const Orders = ({ adminData, setAdminData }) => {
     }
   }, [location.state]);
 
-  const buildUpiUrl = useCallback((amount, orderId) => {
+  // Static UPI-intent fallback — only used if a live Cashfree order can't
+  // be created (gateway down/misconfigured), so a printed bill still gets
+  // *some* scannable payment QR instead of none.
+  const buildStaticUpiFallback = useCallback((amount, orderId) => {
     const upiId = "9019081708@upi";
     const name = "Sam Cafe";
 
@@ -809,6 +1003,20 @@ const Orders = ({ adminData, setAdminData }) => {
       `&tr=ORDER_${orderId}`
     );
   }, []);
+
+  // Creates a Cashfree order for this bill and returns its hosted payment
+  // link (used for the printed-receipt QR — the on-screen bill preview
+  // uses CashfreeQRSection directly instead). Falls back to the static
+  // UPI string on any failure so printing is never blocked by the gateway.
+  const buildUpiUrl = useCallback(async (amount, orderId, billNo = null) => {
+    try {
+      const res = await api.post("/payments/orders", { orderId, billNo, amount: Number(amount) });
+      return res.data?.paymentLink || buildStaticUpiFallback(amount, orderId);
+    } catch (err) {
+      console.warn("Cashfree order creation failed for printed bill, falling back to static UPI QR", err);
+      return buildStaticUpiFallback(amount, orderId);
+    }
+  }, [buildStaticUpiFallback]);
 
   /* ---------------- SAFE TOTAL RESOLUTION ---------------- */
   const resolveItemTotal = useCallback(
@@ -1119,7 +1327,7 @@ const Orders = ({ adminData, setAdminData }) => {
   // Builds the printer-shaped payload for a single receipt. `overrides`
   // lets split-bill printing swap in a filtered item list / per-bill
   // totals without duplicating the base mapping logic.
-  const buildPrinterOrder = (order, overrides = {}) => {
+  const buildPrinterOrder = async (order, overrides = {}) => {
     const totalWithGST = overrides.totalWithGST || order.totalWithGST || (() => {
       const subTotal = Number(order.resolvedTotal || 0);
       const cgst = +(subTotal * 0.025).toFixed(2);
@@ -1145,7 +1353,7 @@ const Orders = ({ adminData, setAdminData }) => {
         spiciness: item.spiciness
       })),
       totalWithGST,
-      upiUrl: overrides.upiUrl || buildUpiUrl(totalWithGST.total, order.id),
+      upiUrl: overrides.upiUrl || await buildUpiUrl(totalWithGST.total, order.id, overrides.billNo ?? null),
       ...(overrides.splitLabel ? { splitLabel: overrides.splitLabel } : {}),
       ...(overrides.perHeadNote ? { perHeadNote: overrides.perHeadNote } : {})
     };
@@ -1165,7 +1373,7 @@ const Orders = ({ adminData, setAdminData }) => {
     //    printed at the bottom, not a change to what's billed.
     if (order.splitType === "amount" && order.splitDetails?.customers > 0) {
       const { customers, perHead } = order.splitDetails;
-      const printerOrder = buildPrinterOrder(order, {
+      const printerOrder = await buildPrinterOrder(order, {
         perHeadNote: `Split ${customers} ways — ₹${perHead} per head`
       });
 
@@ -1199,10 +1407,10 @@ const Orders = ({ adminData, setAdminData }) => {
         const subTotal = +billItems.reduce((sum, it) => sum + Number(it.totalPrice || 0), 0).toFixed(2);
         const totalWithGST = computeGSTFromSubtotal(subTotal, discountPercent);
 
-        const printerOrder = buildPrinterOrder(order, {
+        const printerOrder = await buildPrinterOrder(order, {
           items: billItems,
           totalWithGST,
-          upiUrl: buildUpiUrl(totalWithGST.total, order.id),
+          billNo,
           splitLabel: `Bill ${billNo} of ${billCount}`
         });
 
@@ -1516,124 +1724,126 @@ const Orders = ({ adminData, setAdminData }) => {
 
           {!headerCollapsed && (
             <>
-          <div className="orders-search-wrapper">
-            <input
-              className="search-input"
-              placeholder=" Search by order ID, customer, dish…"
-              value={orderSearch}
-              onChange={e => setOrderSearch(e.target.value)}
-            />
-            {orderSearch && (
-              <button className="orders-search-clear" onClick={() => setOrderSearch("")}>✕</button>
-            )}
-          </div>
+              <div className="orders-search-wrapper">
+                <input
+                  className="search-input"
+                  placeholder=" Search by order ID, customer, dish…"
+                  value={orderSearch}
+                  onChange={e => setOrderSearch(e.target.value)}
+                />
+                {orderSearch && (
+                  <button className="orders-search-clear" onClick={() => setOrderSearch("")}>✕</button>
+                )}
+              </div>
 
-          <Button3D onClick={() => exportOrders(filteredOrders, fromDate, toDate)}>Export</Button3D>
+              <Button3D style={{ marginLeft: "auto" }} onClick={() => exportOrders(filteredOrders, fromDate, toDate)}>
+                Export
+              </Button3D>
             </>
           )}
         </div>
 
         {!headerCollapsed && (
-        <div className="orders-header-div">
-          <button
-            type="button"
-            className={`filter-pill${datePreset === "today" ? " active" : ""}`}
-            onClick={() => applyPreset("today")}
-          >
-            Today
-          </button>
-          <button
-            type="button"
-            className={`filter-pill${datePreset === "week" ? " active" : ""}`}
-            onClick={() => applyPreset("week")}
-          >
-            This Week
-          </button>
-          <button
-            type="button"
-            className={`filter-pill${datePreset === "month" ? " active" : ""}`}
-            onClick={() => applyPreset("month")}
-          >
-            This Month
-          </button>
-          <button
-            type="button"
-            className={`filter-pill${datePreset === "lastMonth" ? " active" : ""}`}
-            onClick={() => applyPreset("lastMonth")}
-          >
-            Last Month
-          </button>
-
-          <CustomDatePicker
-            label="From"
-            value={fromDate}
-            max={toDate}
-            onChange={(s) => { setFromDate(s); setDatePreset("custom"); if (s > toDate) setToDate(s); }}
-          />
-          <CustomDatePicker
-            label="To"
-            value={toDate}
-            min={fromDate}
-            max={todayISO}
-            onChange={(s) => { setToDate(s); setDatePreset("custom"); }}
-          />
-
-          <div className="orders-dropdown-wrapper">
+          <div className="orders-header-div">
             <button
-              className="orders-status-dropdown"
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpenModeDropdown(prev => !prev);
-              }}
+              type="button"
+              className={`filter-pill${datePreset === "today" ? " active" : ""}`}
+              onClick={() => applyPreset("today")}
             >
-              {modeFilter === "all" ? "All Modes" : modeFilter}
+              Today
+            </button>
+            <button
+              type="button"
+              className={`filter-pill${datePreset === "week" ? " active" : ""}`}
+              onClick={() => applyPreset("week")}
+            >
+              This Week
+            </button>
+            <button
+              type="button"
+              className={`filter-pill${datePreset === "month" ? " active" : ""}`}
+              onClick={() => applyPreset("month")}
+            >
+              This Month
+            </button>
+            <button
+              type="button"
+              className={`filter-pill${datePreset === "lastMonth" ? " active" : ""}`}
+              onClick={() => applyPreset("lastMonth")}
+            >
+              Last Month
             </button>
 
-            {openModeDropdown && (
-              <div className="dropdown-menu">
-                {["all", "dine in", "take away"].map(mode => (
-                  <div
-                    key={mode}
-                    onClick={() => {
-                      setModeFilter(mode);
-                      setOpenModeDropdown(false);
-                    }}
-                  >
-                    {mode === "all" ? "All Modes" : mode}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+            <CustomDatePicker
+              label="From"
+              value={fromDate}
+              max={toDate}
+              onChange={(s) => { setFromDate(s); setDatePreset("custom"); if (s > toDate) setToDate(s); }}
+            />
+            <CustomDatePicker
+              label="To"
+              value={toDate}
+              min={fromDate}
+              max={todayISO}
+              onChange={(s) => { setToDate(s); setDatePreset("custom"); }}
+            />
 
-          <div className="orders-dropdown-wrapper">
-            <button
-              className="orders-status-dropdown"
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpenStatusDropdown(prev => !prev);
-              }}
-            >
-              {statusFilter === "all" ? "All Status" : statusFilter}
-            </button>
+            <div className="orders-dropdown-wrapper">
+              <button
+                className="orders-status-dropdown"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenModeDropdown(prev => !prev);
+                }}
+              >
+                {modeFilter === "all" ? "All Modes" : modeFilter}
+              </button>
 
-            {openStatusDropdown && (
-              <div className="dropdown-menu">
-                {["all", "placed", "preparing", "service pickup", "completed", "cancelled"].map(status => (
-                  <div
-                    key={status}
-                    onClick={() => {
-                      setStatusFilter(status);
-                      setOpenStatusDropdown(false);
-                    }}
-                  >
-                    {status === "all" ? "All Status" : status}
-                  </div>
-                ))}
-              </div>
-            )}
+              {openModeDropdown && (
+                <div className="dropdown-menu">
+                  {["all", "dine in", "take away"].map(mode => (
+                    <div
+                      key={mode}
+                      onClick={() => {
+                        setModeFilter(mode);
+                        setOpenModeDropdown(false);
+                      }}
+                    >
+                      {mode === "all" ? "All Modes" : mode}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="orders-dropdown-wrapper">
+              <button
+                className="orders-status-dropdown"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenStatusDropdown(prev => !prev);
+                }}
+              >
+                {statusFilter === "all" ? "All Status" : statusFilter}
+              </button>
+
+              {openStatusDropdown && (
+                <div className="dropdown-menu">
+                  {["all", "placed", "preparing", "service pickup", "completed", "cancelled"].map(status => (
+                    <div
+                      key={status}
+                      onClick={() => {
+                        setStatusFilter(status);
+                        setOpenStatusDropdown(false);
+                      }}
+                    >
+                      {status === "all" ? "All Status" : status}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
         )}
 
       </div>
@@ -2119,37 +2329,37 @@ const Orders = ({ adminData, setAdminData }) => {
             {normalizeStatus(
               orders.find(o => o.id === openMenuOrderId)?.status
             ) !== "cancelled" && (
-              <div
-                onClick={(e) => {
-                  closeOptionsMenu();
-                  e.stopPropagation();
-                  const order = orders.find(o => o.id === openMenuOrderId);
-                  setDiscountModalOrder(order);
-                  setDiscountPercent(order?.discount?.percent != null ? String(order.discount.percent) : "");
-                  setDiscountReason(order?.discount?.reason || "");
-                }}
-              >
-                Add Discount
-              </div>
-            )}
+                <div
+                  onClick={(e) => {
+                    closeOptionsMenu();
+                    e.stopPropagation();
+                    const order = orders.find(o => o.id === openMenuOrderId);
+                    setDiscountModalOrder(order);
+                    setDiscountPercent(order?.discount?.percent != null ? String(order.discount.percent) : "");
+                    setDiscountReason(order?.discount?.reason || "");
+                  }}
+                >
+                  Add Discount
+                </div>
+              )}
 
             {normalizeStatus(
               orders.find(o => o.id === openMenuOrderId)?.status
             ) !== "cancelled" && (
-              <div
-                className="danger-option"
-                style={{ color: "#c0392b", fontWeight: 600 }}
-                onClick={(e) => {
-                  closeOptionsMenu();
-                  e.stopPropagation();
-                  setCancelOrderConfirm(orders.find(o => o.id === openMenuOrderId));
-                  setCancelReason("");
-                  setCancelReasonOption("");
-                }}
-              >
-                Cancel Order
-              </div>
-            )}
+                <div
+                  className="danger-option"
+                  style={{ color: "#c0392b", fontWeight: 600 }}
+                  onClick={(e) => {
+                    closeOptionsMenu();
+                    e.stopPropagation();
+                    setCancelOrderConfirm(orders.find(o => o.id === openMenuOrderId));
+                    setCancelReason("");
+                    setCancelReasonOption("");
+                  }}
+                >
+                  Cancel Order
+                </div>
+              )}
           </div>,
           document.body
         )
@@ -2162,7 +2372,6 @@ const Orders = ({ adminData, setAdminData }) => {
               onClose={closeAllBillOverlays}
               order={editableBill}
               editable
-              buildUpiUrl={buildUpiUrl}
 
               splitPeople={splitPeople}
               setSplitPeople={setSplitPeople}
@@ -2241,7 +2450,6 @@ const Orders = ({ adminData, setAdminData }) => {
             <BillLayout
               onClose={closeAllBillOverlays}
               order={previewBillOrder}
-              buildUpiUrl={buildUpiUrl}
             />
 
             <div className="admin-modal-footer">

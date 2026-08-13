@@ -336,8 +336,14 @@ label {
    already stretches to fill whatever space its collapsed header
    leaves behind. Forcing a fixed height here would fight that flex
    sizing and reintroduce the overflow/clipping bug this rule was
-   meant to fix elsewhere. */
-.header-is-collapsed:not(.orders-table-wrapper) {
+   meant to fix elsewhere.
+
+   .kgroom-table-wrapper, .att-scroll-wrap, .card-grid-wrapper, and
+   .career-grid-wrapper are excluded for the same reason — their
+   page-specific CSS now uses flex: 1 1 auto; min-height: 0 as the
+   base rule (item 11 cleanup), so they already fill the remaining
+   space correctly in both collapsed and expanded states. */
+.header-is-collapsed:not(.orders-table-wrapper):not(.kgroom-table-wrapper):not(.att-scroll-wrap):not(.card-grid-wrapper):not(.career-grid-wrapper) {
   max-height: calc(100vh - 120px) !important;
   height: calc(100vh - 120px) !important;
 }
@@ -1332,7 +1338,52 @@ th.sorted .sort-arrow {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   16. RESPONSIVE
+   16. CONFIRM MODAL (shared across all pages)
+───────────────────────────────────────────────────────────── */
+
+/* ── Confirmation overlay (shown before a toggle click takes effect) ── */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.confirm-card {
+  background: var(--color-white);
+  border-radius: 12px;
+  padding: 24px 28px;
+  width: min(360px, 90vw);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+
+.confirm-card h4 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.confirm-card p {
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: #666;
+}
+
+.confirm-card p strong {
+  color: #222;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   17. RESPONSIVE
 ───────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .page {

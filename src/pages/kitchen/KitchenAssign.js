@@ -313,7 +313,7 @@ export default function KitchenAssign({ adminData, setAdminData }) {
 /* ─── TABLE LAYOUT ──────────────────────────────────────────── */
 function TableLayout({ filteredTasks, assignedDay, adminData, handleChange, handleDelete, headerCollapsed }) {
   return (
-    <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 260px)" }} >
+    <div className="table-wrapper" >
       <table >
         <thead>
           <tr>

@@ -27,7 +27,8 @@
 
 .card-grid-wrapper {
     width: 100%;
-    height: calc(100vh - 250px);
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
     box-sizing: border-box;
 }
@@ -188,17 +189,7 @@
 /* ═══════════════════════════════════════════
    RESPONSIVE — 1080 / 992 / 768 / 578 / 480
 ═══════════════════════════════════════════ */
-@media (max-width: 1080px) {
-  .card-grid-wrapper {
-    height: calc(100vh - 220px);
-  }
-}
-
 @media (max-width: 768px) {
-  .card-grid-wrapper {
-    height: calc(100vh - 260px);
-  }
-
   .recipe-card-grid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 10px;

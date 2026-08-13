@@ -740,7 +740,7 @@ const ComboOffers = () => {
                           }}
                         />
                         <label className={`mat-label${errors.discount ? " mat-label-error" : ""}`}>
-                          {offerType === "PERCENT" ? "Discount %" : "Flat Discount ₹"}
+                          {offerType === "PERCENT" ? "Discount %" : "Flat Discount ₹"}<span className="rf-req">*</span>
                         </label>
                         <span className={`mat-bar${errors.discount ? " mat-bar-error" : ""}`} />
                       </div>

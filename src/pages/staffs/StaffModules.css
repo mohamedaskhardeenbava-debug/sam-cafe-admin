@@ -94,7 +94,8 @@
 
 .career-grid-wrapper {
     width: 100%;
-    height: calc(100vh - 240px);
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 0 10px;

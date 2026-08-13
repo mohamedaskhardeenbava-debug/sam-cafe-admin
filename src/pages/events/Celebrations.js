@@ -513,7 +513,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       )}
 
       {/* TABLE */}
-      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 300px)" }} ref={containerRef}>
+      <div className="table-wrapper" ref={containerRef}>
         <table >
           <thead>
             <tr>

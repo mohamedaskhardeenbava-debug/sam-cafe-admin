@@ -2,10 +2,6 @@
    Dishes.css  —  Sam Cafe Admin  —  Dishes page
    Depends on Common.css + ModalCSS.css
 ═══════════════════════════════════════════════════════ */
-.dish-page-table {
-  height: calc(100vh - 240px) !important;
-}
-
 .dish-block {
   overflow: hidden;
 }
@@ -598,12 +594,6 @@
 /* ═══════════════════════════════════════════
    RESPONSIVE — 1080 / 992 / 768 / 578 / 480
 ═══════════════════════════════════════════ */
-@media (max-width: 1080px) {
-  .dish-page-table {
-    height: calc(100vh - 220px) !important;
-  }
-}
-
 @media (max-width: 992px) {
   .dish-header-search {
     margin-left: 0;
@@ -619,10 +609,6 @@
 }
 
 @media (max-width: 768px) {
-  .dish-page-table {
-    height: calc(100vh - 260px) !important;
-  }
-
   .dish-category-buttons {
     padding: 6px 8px;
     gap: 5px;

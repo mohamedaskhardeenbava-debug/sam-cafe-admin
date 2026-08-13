@@ -761,7 +761,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                           value={sizeName}
                           onChange={(e) => setSizeName(allowTextInput(sizeName, e.target.value, 100, 5))}
                         />
-                        <label className="mat-label">Size Name</label>
+                        <label className="mat-label">Size Name<span className="rf-req">*</span></label>
                         <span className="mat-bar" />
                       </div>
                     </div>
@@ -862,7 +862,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                             }))
                           }
                         />
-                        <label className="mat-label">Subcategory Name</label>
+                        <label className="mat-label">Subcategory Name<span className="rf-req">*</span></label>
                         <span className="mat-bar" />
                       </div>
                     </div>
@@ -908,7 +908,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                             value={subSizeName}
                             onChange={(e) => setSubSizeName(allowTextInput(subSizeName, e.target.value, 100, 5))}
                           />
-                          <label className="mat-label">Size Name</label>
+                          <label className="mat-label">Size Name<span className="rf-req">*</span></label>
                           <span className="mat-bar" />
                         </div>
                       </div>

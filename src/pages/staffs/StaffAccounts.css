@@ -97,6 +97,16 @@
   margin-top: 0;
   padding-top: 0;
   border-top: none;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.stacc-panel--standalone .stacc-table-wrapper {
+  max-height: none;
+  flex: 1;
+  min-height: 0;
 }
 
 /* ── Page-level tab card (Staff Records / Login Accounts) ───────── */

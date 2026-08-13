@@ -1,0 +1,69 @@
+/**
+ * BankAccount.css  —  Sam Cafe Admin Panel
+ * Built on the shared .inner-page/.header/.admin-form-group/.mat classes
+ * in Common.css. This file adds only the read-only summary card and
+ * form-action row specific to this single-record settings page.
+ */
+
+.ba-subtitle {
+  color: var(--text-secondary, #666);
+  font-size: 13px;
+  margin: -6px 0 16px;
+}
+
+.ba-card {
+  background: var(--bg-surface, #f7f7f7);
+  border: 1px solid var(--border-light, rgba(0, 0, 0, 0.12));
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 520px;
+}
+
+.ba-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-light, rgba(0, 0, 0, 0.08));
+}
+
+.ba-row:last-child {
+  border-bottom: none;
+}
+
+.ba-label {
+  color: var(--text-secondary, #666);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ba-value {
+  color: var(--text-primary, #111);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.ba-masked {
+  letter-spacing: 1px;
+  font-family: monospace;
+}
+
+.ba-empty {
+  color: var(--text-secondary, #888);
+  padding: 40px;
+  text-align: center;
+}
+
+.ba-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ba-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 12px;
+}

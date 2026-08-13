@@ -42,7 +42,7 @@ const Login = () => {
             required
             autoComplete="username"
           />
-          <label className="mat-label">Email</label>
+          <label className="mat-label">Email<span className="rf-req">*</span></label>
           <span className="mat-bar" />
         </div>
 

@@ -7,6 +7,7 @@ import bellSound from "../../assets/sounds/bell.mp3";
 import socket from "../../socket";
 import api from "../../api";
 import { useAuth } from "../../context/AuthContext";
+import { getAvatarColor } from "../../utils/avatarColor";
 import { useVenue } from "../../context/VenueContext";
 import CustomDropdown from "../CustomDropdown";
 import { fmtDate as sharedFmtDate, fmtTime as sharedFmtTime } from "../../utils/dateUtils";
@@ -147,6 +148,22 @@ function OdometerSeg({ value, unit }) {
   );
 }
 
+function TopbarTitle() {
+  const { admin } = useAuth();
+  const { venues, isLoading } = useVenue();
+
+  if (isLoading) return <h3 className="topbar-title">Admin</h3>;
+
+  const ownVenue = venues.find((v) => v.id === admin?.venueId);
+  const parts = [
+    ownVenue?.name,
+    admin?.department && admin.department.charAt(0).toUpperCase() + admin.department.slice(1),
+    admin?.roleTitle,
+  ].filter(Boolean);
+
+  return <h3 className="topbar-title">{parts.length > 0 ? parts.join(" - ") : "Admin"}</h3>;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
    TOPBAR COMPONENT
 ───────────────────────────────────────────────────────────────────────────── */
@@ -166,11 +183,43 @@ function VenueIndicator() {
   if (isLoading) return null;
 
   if (isSuperAdmin) {
+    if (venues.length === 0) {
+      // No venues exist yet (fresh install, or all venues were somehow
+      // removed) — show an explicit hint instead of a blank dropdown
+      // button, which otherwise looks exactly like "the venue isn't
+      // showing" even though nothing is actually broken.
+      return (
+        <span
+          className="topbar-venue-label topbar-venue-label--empty"
+          title="No venues yet — add one from the Venues page"
+          style={{
+            padding: "6px 10px",
+            borderRadius: 8,
+            border: "1px dashed #ccc",
+            fontSize: 13,
+            marginRight: 8,
+            background: "#fafafa",
+            color: "#999",
+            whiteSpace: "nowrap",
+          }}
+        >
+          No venues yet
+        </span>
+      );
+    }
+
     const mainBranch = venues.find((v) => v.isMainBranch);
+    // Guard against selectedVenueId momentarily pointing at a venue that
+    // no longer exists (e.g. right after a delete, before VenueContext's
+    // own re-selection effect has run) — falling back to the first venue
+    // here keeps the dropdown button showing a real name instead of
+    // rendering blank.
+    const resolvedValue = venues.some((v) => v.id === selectedVenueId) ? selectedVenueId : venues[0].id;
+
     return (
       <CustomDropdown
         className="topbar-venue-switcher"
-        value={selectedVenueId || ""}
+        value={resolvedValue}
         onChange={(val) => { if (val) setSelectedVenueId(val); }}
         options={venues.map((v) => ({
           value: v.id,
@@ -208,7 +257,7 @@ function VenueIndicator() {
 }
 
 const Topbar = ({ admin, adminData = {}, setAdminData }) => {
-  const { logout } = useAuth();
+  const { logout, isSuperAdmin } = useAuth();
   const orders = adminData.orders || [];
   const ingredients = adminData.ingredients || [];
   const navigate = useNavigate();
@@ -218,6 +267,11 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
+  // Tracks a failed <img> load for admin.photo so a broken/stale photo
+  // URL falls back to the initials avatar instead of rendering a
+  // broken-image icon. Reset whenever the photo URL itself changes.
+  const [profilePhotoFailed, setProfilePhotoFailed] = useState(false);
+  useEffect(() => { setProfilePhotoFailed(false); }, [admin?.photo]);
   const [readOrderIds, setReadOrderIds] = useState([]);
 
   /* ── Bell state ── */
@@ -520,7 +574,7 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
     <header className={`topbar ${scrolled ? "topbar-scrolled" : ""}`}>
       {/* ── LEFT ── */}
       <div className="topbar-left">
-        <h3 className="topbar-title">Admin</h3>
+        <TopbarTitle />
       </div>
 
       {/* ── CENTER: TODAY COUNTDOWN CHIPS ── */}
@@ -819,9 +873,12 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
               setShowPhone(false);
             }}
           >
-            <div className="profile-avatar">
-              {admin?.photo ? (
-                <img src={admin.photo} alt="" />
+            <div
+              className="profile-avatar"
+              style={{ background: admin?.photo && !profilePhotoFailed ? "#fff" : getAvatarColor(admin?.name) }}
+            >
+              {admin?.photo && !profilePhotoFailed ? (
+                <img src={admin.photo} alt="" onError={() => setProfilePhotoFailed(true)} />
               ) : (
                 <span className="profile-avatar-initial">{admin?.name?.charAt(0)?.toUpperCase() || "S"}</span>
               )}
@@ -832,9 +889,12 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
           {showProfile && (
             <div className="dropdown profile-dropdown" onClick={(e) => e.stopPropagation()}>
               <div className="profile-info">
-                <div className="profile-avatar large">
-                  {admin?.photo ? (
-                    <img src={admin.photo} alt="" />
+                <div
+                  className="profile-avatar large"
+                  style={{ background: admin?.photo && !profilePhotoFailed ? "#fff" : getAvatarColor(admin?.name) }}
+                >
+                  {admin?.photo && !profilePhotoFailed ? (
+                    <img src={admin.photo} alt="" onError={() => setProfilePhotoFailed(true)} />
                   ) : (
                     <span className="profile-avatar-initial">{admin?.name?.charAt(0)?.toUpperCase() || "S"}</span>
                   )}
@@ -865,6 +925,18 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
                 <span className="edge"></span>
                 <span className="front">To-Do List</span>
               </button>
+              {isSuperAdmin && (
+                <button
+                  type="button"
+                  style={{ width: "100%", marginBottom: "8px" }}
+                  className="modal-cancel-btn"
+                  onClick={(e) => { e.stopPropagation(); setShowProfile(false); navigate("/documents"); }}
+                >
+                  <span className="shadow"></span>
+                  <span className="edge"></span>
+                  <span className="front">Documents</span>
+                </button>
+              )}
               <button
                 type="button"
                 style={{ width: "100%" }}

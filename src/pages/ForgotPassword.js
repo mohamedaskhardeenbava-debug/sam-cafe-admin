@@ -83,7 +83,7 @@ const ForgotPassword = () => {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-            <label className="mat-label">Email</label>
+            <label className="mat-label">Email<span className="rf-req">*</span></label>
             <span className="mat-bar" />
           </div>
 
@@ -111,7 +111,7 @@ const ForgotPassword = () => {
                 onChange={(e) => setToken(e.target.value)}
                 required
               />
-              <label className="mat-label">Reset Token</label>
+              <label className="mat-label">Reset Token<span className="rf-req">*</span></label>
               <span className="mat-bar" />
             </div>
           )}

@@ -995,7 +995,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                             setFormErrors(p => ({ ...p, variantName: false }));
                           }}
                         />
-                        <label className={`mat-label${formErrors.variantName ? " mat-label-error" : ""}`}>Variant Name</label>
+                        <label className={`mat-label${formErrors.variantName ? " mat-label-error" : ""}`}>Variant Name<span className="rf-req">*</span></label>
                         <span className={`mat-bar${formErrors.variantName ? " mat-bar-error" : ""}`} />
                       </div>
                     </div>

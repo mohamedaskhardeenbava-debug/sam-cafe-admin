@@ -14,6 +14,7 @@ import { allowTextInput } from "../../App";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
+import PageLoader from "../../components/PageLoader";
 import { MultiPillGroup } from "../../components/FilterBar";
 import { useVenue } from "../../context/VenueContext";
 import useRoleTitles from "./useRoleTitles";
@@ -44,6 +45,7 @@ export default function StaffCareer() {
   const { venueParam, venueId: activeVenueId } = useVenue();
   const { roleTitles: jobRoles } = useRoleTitles();
   const [jobs, setJobs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -55,7 +57,10 @@ export default function StaffCareer() {
   const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
-    api.get("/careers", { params: venueParam() }).then(res => setJobs(res.data));
+    setIsLoading(true);
+    api.get("/careers", { params: venueParam() })
+      .then(res => setJobs(res.data))
+      .finally(() => setIsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeVenueId]);
 
@@ -94,6 +99,14 @@ export default function StaffCareer() {
     }));
     exportToExcel({ rows, sheetName: "Career Openings", fileName: `career_openings_${new Date().toISOString().slice(0, 10)}.xlsx` });
   };
+
+  if (isLoading) {
+    return (
+      <div className="inner-page">
+        <PageLoader fill label="Loading career openings…" />
+      </div>
+    );
+  }
 
   return (
     <div className="inner-page">

@@ -244,7 +244,7 @@ const Offers = ({ adminData, setAdminData }) => {
         </div>
       )}
 
-      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 260px)" }} ref={containerRef}>
+      <div className="table-wrapper" ref={containerRef}>
         <table >
           <thead>
             <tr>

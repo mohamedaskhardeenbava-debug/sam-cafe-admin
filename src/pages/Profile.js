@@ -8,7 +8,7 @@
  * The editable fields (name, phone) and role-specific sections are
  * unchanged; only the presentation moved from inline editing to a modal.
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useVenue } from "../context/VenueContext";
@@ -18,6 +18,7 @@ import "./ModalCSS.css";
 import "./staffs/StaffDetails.css";
 import "./Profile.css";
 import { fmtDate } from "../utils/dateUtils";
+import { getAvatarColor } from "../utils/avatarColor";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -29,6 +30,12 @@ const Profile = () => {
   const [photo, setPhoto] = useState(admin?.photo || "");
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  // Tracks a failed <img> load for the profile-card-avatar so a broken/
+  // stale photo URL falls back to the initials avatar instead of a
+  // broken-image icon.
+  const [cardPhotoFailed, setCardPhotoFailed] = useState(false);
+
+  useEffect(() => { setCardPhotoFailed(false); }, [admin?.photo]);
 
   if (!admin) return null;
 
@@ -86,11 +93,14 @@ const Profile = () => {
         {/* PROFILE CARD + ACCOUNT DETAILS — same row */}
         <div className="profile-top-row">
           <div className="profile-card">
-            <div className="profile-card-avatar">
-              {admin.photo ? (
-                <img src={admin.photo} alt={admin.name} />
+            <div
+              className="profile-card-avatar"
+              style={{ background: admin.photo && !cardPhotoFailed ? "#fff" : "transparent" }}
+            >
+              {admin.photo && !cardPhotoFailed ? (
+                <img src={admin.photo} alt={admin.name} onError={() => setCardPhotoFailed(true)} />
               ) : (
-                <div className="profile-avatar-fallback">
+                <div className="profile-avatar-fallback" style={{ background: getAvatarColor(admin.name) }}>
                   {admin.name?.charAt(0)?.toUpperCase() || "?"}
                 </div>
               )}

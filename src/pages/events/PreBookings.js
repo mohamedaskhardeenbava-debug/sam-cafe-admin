@@ -211,6 +211,7 @@ const PreDishPicker = ({ menuData, selectedItems, setSelectedItems, guests }) =>
 };
 
 const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
+  const { venueParam } = useVenue();
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -248,9 +249,20 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
     return err;
   };
 
+  // Dishes tab (tab 1) had no validation — Preview (tab 2) was reachable
+  // with zero dishes selected. Mirrors the Details-tab validate() pattern.
+  const validateDishesTab = () => {
+    if (selectedItems.length === 0) {
+      toast.error("Select at least one dish before continuing");
+      return false;
+    }
+    return true;
+  };
+
   const handleSave = async () => {
     const ve = validate();
     if (Object.keys(ve).length > 0) { setErrors(ve); setTab(0); return; }
+    if (!validateDishesTab()) { setTab(1); return; }
     setSaving(true);
     try {
       const newId = `pre_${Date.now()}`;
@@ -293,6 +305,9 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                       if (tab === 0) {
                         const ve = validate();
                         if (Object.keys(ve).length > 0) { setErrors(ve); return; }
+                      }
+                      if (tab === 1 && i > 1) {
+                        if (!validateDishesTab()) return;
                       }
                       setTab(i);
                     } else {
@@ -543,6 +558,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                   const ve = validate();
                   if (Object.keys(ve).length > 0) { setErrors(ve); return; }
                 }
+                if (tab === 1 && !validateDishesTab()) return;
                 setTab(t => t + 1);
               }}>
               <span className="shadow"></span><span className="edge"></span>
@@ -814,7 +830,7 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
       )}
 
       {/* TABLE */}
-      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 300px)" }} ref={containerRef}>
+      <div className="table-wrapper" ref={containerRef}>
         <table >
           <thead>
             <tr>

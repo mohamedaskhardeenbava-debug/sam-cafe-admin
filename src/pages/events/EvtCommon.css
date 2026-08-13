@@ -177,7 +177,6 @@
   flex-direction: column;
   gap: 6px;
   box-sizing: border-box;
-  max-height: 400px;
 }
 
 .event-modal-footer {

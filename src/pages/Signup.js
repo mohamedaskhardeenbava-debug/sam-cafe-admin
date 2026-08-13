@@ -103,7 +103,7 @@ const Signup = () => {
             required
             autoComplete="username"
           />
-          <label className="mat-label">Email (Login)</label>
+          <label className="mat-label">Email (Login)<span className="rf-req">*</span></label>
           <span className="mat-bar" />
           {email.length > 0 && <span className="auth-field-status ok">✓</span>}
         </div>
@@ -128,7 +128,7 @@ const Signup = () => {
               onChange={(e) => setName(allowTextInput(name, e.target.value, 100, 5))}
               required
             />
-            <label className="mat-label">First Name</label>
+            <label className="mat-label">First Name<span className="rf-req">*</span></label>
             <span className="mat-bar" />
           </div>
 

@@ -12,7 +12,9 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: #e63946;
+  /* background is set inline via getAvatarColor(admin.name) — vibrant,
+     deterministic per admin, so the color doesn't change on every
+     re-render but differs between people */
   color: #fff;
   display: flex;
   align-items: center;

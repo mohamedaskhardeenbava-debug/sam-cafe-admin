@@ -18,6 +18,7 @@ import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
+import ConfirmDialog from "../components/ConfirmDialog";
 import CustomDropdown from "../components/CustomDropdown";
 import CollapseChevron from "../components/CollapseChevron";
 import PageLoader from "../components/PageLoader";
@@ -317,15 +318,15 @@ const PermissionsTab = () => {
       </div>
 
       {pendingToggle && (
-        <div className="perm-confirm-overlay" onClick={() => setPendingToggle(null)}>
-          <div className="perm-confirm-card" onClick={(e) => e.stopPropagation()}>
+        <div className="confirm-overlay" onClick={() => setPendingToggle(null)}>
+          <div className="confirm-card" onClick={(e) => e.stopPropagation()}>
             <h4>Confirm permission change</h4>
             <p>
               {pendingToggle.nextValue ? "Grant" : "Revoke"}{" "}
               <strong>{pendingToggle.field === "canRead" ? "Read" : "Write"}</strong> access to{" "}
               <strong>{pendingToggle.moduleLabel}</strong> for <strong>{pendingToggle.roleTitle}</strong>?
             </p>
-            <div className="perm-confirm-actions">
+            <div className="confirm-actions">
               <Button3D variant="cancel" onClick={() => setPendingToggle(null)}>Cancel</Button3D>
               <Button3D onClick={confirmToggle}>Confirm</Button3D>
             </div>
@@ -334,11 +335,11 @@ const PermissionsTab = () => {
       )}
 
       {showResetConfirm && (
-        <div className="perm-confirm-overlay" onClick={() => setShowResetConfirm(false)}>
-          <div className="perm-confirm-card" onClick={(e) => e.stopPropagation()}>
+        <div className="confirm-overlay" onClick={() => setShowResetConfirm(false)}>
+          <div className="confirm-card" onClick={(e) => e.stopPropagation()}>
             <h4>Reset permission matrix</h4>
             <p>Reset the entire permission matrix to defaults? This discards all customizations.</p>
-            <div className="perm-confirm-actions">
+            <div className="confirm-actions">
               <Button3D variant="cancel" onClick={() => setShowResetConfirm(false)}>Cancel</Button3D>
               <Button3D onClick={confirmReset}>Reset Defaults</Button3D>
             </div>
@@ -415,8 +416,14 @@ const RolesTab = () => {
     }
   };
 
-  const handleDelete = async (role) => {
-    if (!window.confirm(`Delete role "${role.name}"?`)) return;
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const handleDelete = (role) => setDeleteTarget(role);
+
+  const confirmDelete = async () => {
+    const role = deleteTarget;
+    if (!role) return;
+    setDeleteTarget(null);
     try {
       await api.delete(`/roles/${role.id}`);
       toast.success("Role deleted");
@@ -532,6 +539,16 @@ const RolesTab = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete role"
+        message={<>Delete role <strong>{deleteTarget?.name}</strong>?</>}
+        confirmLabel="Delete"
+        danger
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+      />
     </>
   );
 };

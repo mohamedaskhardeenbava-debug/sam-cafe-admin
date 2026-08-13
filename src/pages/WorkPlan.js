@@ -12,6 +12,7 @@ import React, { useMemo, useState } from "react";
 import api from "../api";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
+import ConfirmDialog from "../components/ConfirmDialog";
 import CustomDropdown from "../components/CustomDropdown";
 import { CustomDatePicker } from "../components/CustomDatePicker";
 import { CustomTimePicker } from "../components/CustomTimePicker";
@@ -264,18 +265,15 @@ export default function WorkPlan({ adminData, setAdminData }) {
       )}
 
       {/* DELETE CONFIRM */}
-      {deleteTarget && (
-        <div className="perm-confirm-overlay" onClick={() => setDeleteTarget(null)}>
-          <div className="perm-confirm-card" onClick={(e) => e.stopPropagation()}>
-            <h4>Remove from work plan</h4>
-            <p>Remove "<strong>{deleteTarget.title}</strong>"? This cannot be undone.</p>
-            <div className="perm-confirm-actions">
-              <Button3D variant="cancel" onClick={() => setDeleteTarget(null)}>Cancel</Button3D>
-              <Button3D onClick={handleDelete}>Remove</Button3D>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Remove from work plan"
+        message={<>Remove "<strong>{deleteTarget?.title}</strong>"? This cannot be undone.</>}
+        confirmLabel="Remove"
+        danger
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

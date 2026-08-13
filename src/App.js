@@ -11,6 +11,7 @@ import socket from "./socket";
 
 import { useAuth } from "./context/AuthContext";
 import { useToast } from "./useToast";
+import useGlobalTooltips from "./hooks/useGlobalTooltips";
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
 import Dashboard from "./pages/Dashboard";
@@ -39,6 +40,9 @@ import Permissions from "./pages/Permissions";
 import CategoryCards from "./pages/CategoryCards";
 import AuditLogs from "./pages/AuditLogs";
 import AuditLogDetails from "./pages/AuditLogDetails";
+import Documents from "./pages/Documents";
+import BankAccount from "./pages/BankAccount";
+import DocumentDetails from "./pages/DocumentDetails";
 
 import { useVenue } from "./context/VenueContext";
 
@@ -111,7 +115,8 @@ export const allowTextInput = (
 function App() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading: isAuthLoading, admin } = useAuth();
+  useGlobalTooltips();
+  const { isAuthenticated, isLoading: isAuthLoading, admin, isSuperAdmin: isSuperAdminUser } = useAuth();
   const { venueParam, venueId: activeVenueId, isLoading: isVenueLoading } = useVenue();
   const [isAppLoading, setIsAppLoading] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
@@ -167,10 +172,23 @@ function App() {
     cateringOrders: [],
     events: [],
     kitchenAssign: {},
+    staffAccounts: [],
+    unlinkedStaff: [],
+    roles: [],
   });
 
   /* ---------------- FETCH DATA ---------------- */
+  // Guards against a race between two overlapping fetchAllData() calls —
+  // e.g. one firing while activeVenueId is still null (before the venue
+  // switcher/own-venue lookup has resolved) and a second firing right
+  // after with the real venueId. Without this, whichever response
+  // happens to arrive last wins, even if it's the stale/unscoped one —
+  // which is what made staff records (and everything else) sometimes
+  // come back empty or wrong right after landing on a page.
+  const fetchRequestIdRef = useRef(0);
+
   const fetchAllData = async () => {
+    const requestId = ++fetchRequestIdRef.current;
     try {
       const endpoints = [
         "/categories", "/ingredients", "/orders", "/users", "/favourites",
@@ -179,17 +197,30 @@ function App() {
         "/serviceGrooming", "/serviceMise", "/serviceActivity",
         "/serviceSchedules", "/tables", "/reservations", "/celebrations",
         "/preBookings", "/cateringOrders", "/events", "/eventBookings",
-        "/tasks", "/work-plan",
+        "/tasks", "/work-plan", "/staff-auth/admins",
+        "/staff-auth/unlinked-staff", "/roles",
       ];
 
       const settled = await Promise.allSettled(
         endpoints.map((path) => api.get(path, { params: venueParam() }))
       );
 
-      // Log each failure individually so a single bad route is visible
-      // in the console instead of silently killing every other endpoint.
+      // A newer fetchAllData() call has started since this one began —
+      // discard this response entirely instead of writing possibly
+      // stale/mis-scoped data over whatever the newer call already set.
+      if (requestId !== fetchRequestIdRef.current) return;
+
+      // Log each failure individually so a single bad route is visible in
+      // the console instead of silently killing every other endpoint. A
+      // 403 is an expected "this role can't read this module" outcome, not
+      // a bug — logged at info level without the stack trace so it doesn't
+      // read as a crash; anything else is a genuine failure worth a full
+      // console.error.
       settled.forEach((result, i) => {
-        if (result.status === "rejected") {
+        if (result.status !== "rejected") return;
+        if (result.reason?.response?.status === 403) {
+          console.info(`No permission to read ${endpoints[i]} (expected for this role)`);
+        } else {
           console.error(`Failed to fetch ${endpoints[i]}:`, result.reason);
         }
       });
@@ -203,10 +234,8 @@ function App() {
         schedulesRes, serviceAssignRes, serviceGroomRes, serviceMiseRes,
         serviceActivityRes, serviceSchedulesRes, tablesRes, reservationsRes,
         celebrationsRes, preBookingsRes, cateringRes, eventsRes, bookingsRes,
-        tasksRes, workPlanRes,
+        tasksRes, workPlanRes, staffAccountsRes, unlinkedStaffRes, rolesRes,
       ] = endpoints.map((_, i) => ({ data: dataOf(i) }));
-
-      const anyFailed = settled.some((r) => r.status === "rejected");
 
       setAdminData({
         categories: catRes.data || [],
@@ -239,14 +268,29 @@ function App() {
           service: { mise: [], cleaning: [] }
         },
         workPlan: workPlanRes.data || [],
+        staffAccounts: staffAccountsRes.data || [],
+        unlinkedStaff: unlinkedStaffRes.data || [],
+        roles: rolesRes.data || [],
       });
 
-      // Show a non-blocking error banner if some endpoints failed, but
+      // A 403 here means "this role isn't permitted to read this module" —
+      // an expected, per-endpoint outcome for anyone who isn't Super Admin,
+      // not a connection problem. Only count genuine failures (network
+      // errors, 5xx, etc.) toward the connection-error/retry path, or a
+      // role-restricted login would otherwise show a misleading "connection
+      // error" banner and burn through the retry budget hitting the same
+      // permission wall every time.
+      const anyGenuineFailure = settled.some(
+        (r) => r.status === "rejected" && r.reason?.response?.status !== 403
+      );
+
+      // Show a non-blocking error banner if something actually failed, but
       // never let a partial failure keep the app stuck on the loader —
       // the admin shell renders with whatever data did come back.
-      setConnectionError(anyFailed);
+      setConnectionError(anyGenuineFailure);
       setIsAppLoading(false);
     } catch (err) {
+      if (requestId !== fetchRequestIdRef.current) return;
       console.error("Failed to fetch admin data", err);
       setConnectionError(true);
       setIsAppLoading(false);
@@ -254,11 +298,19 @@ function App() {
   };
 
   useEffect(() => {
-    if (!isAuthenticated || isVenueLoading) return;
+    if (!isAuthenticated || isAuthLoading || isVenueLoading) return;
+    // For anyone pinned to their own venue (everyone except Super Admin),
+    // wait until that venue has actually resolved before fetching —
+    // isVenueLoading can flip to false a render before admin.venueId is
+    // reflected in activeVenueId, which previously let an unscoped (or
+    // wrongly-scoped) request slip through and race the correctly-scoped
+    // one that follows right after.
+    if (!isSuperAdminUser && admin?.venueId && !activeVenueId) return;
     setIsAppLoading(true);
     fetchAllData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, isVenueLoading, activeVenueId]);
+  }, [isAuthenticated, isAuthLoading, isVenueLoading, activeVenueId, admin?.venueId]);
+
 
   // Auto-retry the initial connection a bounded number of times if it
   // failed, so a genuinely down backend doesn't retry forever — but the
@@ -906,6 +958,10 @@ function App() {
             <Route path="/category-cards" element={<CategoryCards />} />
             <Route path="/audit-logs" element={<AuditLogs />} />
             <Route path="/audit-logs/:id" element={<AuditLogDetails />} />
+
+            <Route path="/documents" element={<Documents sortConfig={sortConfig} handleSort={handleSort} />} />
+            <Route path="/documents/:docId" element={<DocumentDetails />} />
+            <Route path="/bank-account" element={<BankAccount />} />
 
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

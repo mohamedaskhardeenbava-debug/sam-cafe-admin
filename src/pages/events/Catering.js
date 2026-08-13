@@ -22,6 +22,8 @@ import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 import Button3D from "../../components/Button3D";
 import { useVenue } from "../../context/VenueContext";
+import CurrentLocationToggle from "../../components/CurrentLocationToggle";
+import { venueToAddressFields } from "../../utils/resolveVenueAddress";
 import CollapseChevron from "../../components/CollapseChevron";
 import CustomDropdown from "../../components/CustomDropdown";
 
@@ -219,7 +221,7 @@ const EMPTY_FORM = {
 const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilters }) => {
   // ── State & Setup
 
-  const { venueParam } = useVenue();
+  const { venueParam, currentVenue } = useVenue();
   const { fromDate: filterFromDate, toDate: filterToDate, preset: filterDatePreset, statuses: filterStatuses, search } = filters;
 
   // ── Helpers
@@ -240,7 +242,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
   const [formErrors, setFormErrors] = useState({});
   const [selectedItems, setSelectedItems] = useState([]);
   const [saving, setSaving] = useState(false);
-  const [useRestaurantAddr, setUseRestaurantAddr] = useState(false);
+  const [useRestaurantAddr, setUseRestaurantAddr] = useState(true);
   const [menuData, setMenuData] = useState(null);
   const [itemsPopup, setItemsPopup] = useState(null);
   const [locTooltip, setLocTooltip] = useState(null);
@@ -373,8 +375,19 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
     setUseRestaurantAddr(checked);
     if (checked) {
       setForm(p => {
-        const updated = { ...p, ...RESTAURANT_ADDRESS };
-        updated.location = buildCatAddress(updated);
+        const venueFields = venueToAddressFields(currentVenue);
+        const updated = {
+          ...p,
+          addrDoorNo: venueFields.addrDoorNo,
+          addrStreet: venueFields.addrStreet,
+          addrArea: venueFields.addrArea,
+          addrLandmark: venueFields.addrLandmark,
+          addrCity: venueFields.addrCity,
+          addrDistrict: venueFields.addrDistrict,
+          addrState: venueFields.addrState,
+          addrPincode: venueFields.addrPincode,
+        };
+        updated.location = venueFields.venue || buildCatAddress(updated);
         return updated;
       });
       setFormErrors(e => ({
@@ -398,19 +411,39 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
     if (!form.mobile || form.mobile.replace(/\D/g, "").length !== 10) e.mobile = "Valid 10-digit number";
     if (!form.eventDate) e.eventDate = "Event date required";
     if (!form.time) e.time = "Time required";
-    if (!form.addrDoorNo.trim()) e.addrDoorNo = "Required";
-    if (!form.addrStreet.trim()) e.addrStreet = "Required";
-    if (!form.addrArea.trim()) e.addrArea = "Required";
-    if (!form.addrCity.trim()) e.addrCity = "Required";
-    if (!form.addrDistrict.trim()) e.addrDistrict = "Required";
-    if (!form.addrState.trim()) e.addrState = "Required";
-    if (!form.addrPincode || form.addrPincode.length !== 6) e.addrPincode = "Valid 6-digit pincode";
+    // Address fields are hidden (and never filled in) when
+    // useRestaurantAddr is true — the default — since the venue's own
+    // address is used instead. Validating them unconditionally meant
+    // this tab could never pass in the default state.
+    if (!useRestaurantAddr) {
+      if (!form.addrDoorNo.trim()) e.addrDoorNo = "Required";
+      if (!form.addrStreet.trim()) e.addrStreet = "Required";
+      if (!form.addrArea.trim()) e.addrArea = "Required";
+      if (!form.addrCity.trim()) e.addrCity = "Required";
+      if (!form.addrDistrict.trim()) e.addrDistrict = "Required";
+      if (!form.addrState.trim()) e.addrState = "Required";
+      if (!form.addrPincode || form.addrPincode.length !== 6) e.addrPincode = "Valid 6-digit pincode";
+    }
     setFormErrors(e);
     return Object.keys(e).length === 0;
   };
 
+  // A catering order genuinely can't have zero dishes — unlike a table
+  // pre-booking (where "order on arrival" is a valid state), catering is
+  // the food itself. Surfaced via a toast rather than a per-field error
+  // since the Dishes tab has no single input to attach an error message
+  // to (it's a picker, not a form field).
+  const validateDishesTab = () => {
+    if (selectedItems.length === 0) {
+      toast.warning("Select at least one dish for the catering order");
+      return false;
+    }
+    return true;
+  };
+
   const handleNext = () => {
     if (tab === 0 && !validateTab0()) return;
+    if (tab === 1 && !validateDishesTab()) return;
     setTab(t => Math.min(t + 1, 2));
   };
 
@@ -425,6 +458,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
 
   const handleCreate = async () => {
     if (!validateTab0()) { setTab(0); return; }
+    if (!validateDishesTab()) { setTab(1); return; }
     setSaving(true);
     try {
       const id = `cater_${Date.now()}`;
@@ -453,8 +487,22 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
   };
 
   const openCreate = () => {
-    setShowCreate(true); setForm({ ...EMPTY_FORM }); setSelectedItems([]);
-    setTab(0); setFormErrors({}); setUseRestaurantAddr(false);
+    const venueFields = venueToAddressFields(currentVenue);
+    setShowCreate(true);
+    setForm({
+      ...EMPTY_FORM,
+      addrDoorNo: venueFields.addrDoorNo,
+      addrStreet: venueFields.addrStreet,
+      addrArea: venueFields.addrArea,
+      addrLandmark: venueFields.addrLandmark,
+      addrCity: venueFields.addrCity,
+      addrDistrict: venueFields.addrDistrict,
+      addrState: venueFields.addrState,
+      addrPincode: venueFields.addrPincode,
+      location: venueFields.venue,
+    });
+    setSelectedItems([]);
+    setTab(0); setFormErrors({}); setUseRestaurantAddr(true);
   };
   const isDefaultFilter = filterFromDate === todayStr() && filterToDate === todayStr() && filterDatePreset === "today" && filterStatuses.size === 0 && !search.trim();
   const activeFilters = !isDefaultFilter;
@@ -563,7 +611,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
         </div>
       )}
 
-      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 300px)" }} ref={containerRef}>
+      <div className="table-wrapper" ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -876,7 +924,9 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                       className={`ebutton${tab === i ? " active" : ""}${tab > i ? " done" : ""}`}
                       onClick={() => {
                         if (i > tab) {
-                          if (!validateTab0()) return;
+                          if (tab === 0 && !validateTab0()) return;
+                          if (tab === 1 && !validateDishesTab()) return;
+                          setTab(i);
                         } else if (i < tab) {
                           setTab(i);
                         }
@@ -997,14 +1047,11 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                   {/* Address — all mandatory */}
                   <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>
                     Event Address <span style={{ fontSize: 11, color: "#888" }}>(all fields required)</span>
-                    <button
-                      type="button"
-                      className={`use-restaurant-loc-toggle${useRestaurantAddr ? " active" : ""}`}
-                      onClick={() => handleUseRestaurantAddr(!useRestaurantAddr)}
-                    >
-                      {useRestaurantAddr ? "✓ " : ""}Use restaurant location
-                    </button>
                   </div>
+                  <CurrentLocationToggle
+                    value={useRestaurantAddr}
+                    onChange={handleUseRestaurantAddr}
+                  />
 
                   {!useRestaurantAddr && <div className="ae-addr-grid">
                     {[

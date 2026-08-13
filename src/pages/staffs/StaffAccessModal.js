@@ -21,6 +21,7 @@ import api from "../../api";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../useToast";
 import Button3D from "../../components/Button3D";
+import ConfirmDialog from "../../components/ConfirmDialog";
 import CustomDropdown from "../../components/CustomDropdown";
 import closeIcon from "../../icon/close-icon.png";
 import { allowTextInput } from "../../App";
@@ -37,6 +38,7 @@ const StaffAccessModal = ({ staff, existingAccount, onClose, onChanged }) => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState(null); // { admin, tempPassword } after creation
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
 
   useEffect(() => {
     api
@@ -75,8 +77,10 @@ const StaffAccessModal = ({ staff, existingAccount, onClose, onChanged }) => {
     }
   };
 
-  const handleRemove = async () => {
-    if (!window.confirm(`Remove login access for ${existingAccount.name}? They will no longer be able to log in.`)) return;
+  const handleRemove = () => setShowRemoveConfirm(true);
+
+  const confirmRemove = async () => {
+    setShowRemoveConfirm(false);
     setIsSubmitting(true);
     try {
       await api.delete(`/staff-auth/staff/${existingAccount.id}`);
@@ -213,6 +217,16 @@ const StaffAccessModal = ({ staff, existingAccount, onClose, onChanged }) => {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={showRemoveConfirm}
+        title="Remove login access"
+        message={<>Remove login access for <strong>{existingAccount?.name}</strong>? They will no longer be able to log in.</>}
+        confirmLabel="Remove"
+        danger
+        onCancel={() => setShowRemoveConfirm(false)}
+        onConfirm={confirmRemove}
+      />
     </div>
   );
 };

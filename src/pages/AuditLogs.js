@@ -6,7 +6,7 @@
  * for the full before/after diff, rather than expanding inline.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 import api from "../api";
@@ -78,38 +78,67 @@ const AuditLogs = () => {
   const { venues } = useVenue();
   const navigate = useNavigate();
 
+  const PAGE_SIZE = 50;
+
   const [logs, setLogs] = useState([]);
   const [total, setTotal] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(true); // first page of a filter set
+  const [isLoadingMore, setIsLoadingMore] = useState(false); // subsequent pages
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const patchFilters = (patch) => setFilters((p) => ({ ...p, ...patch }));
   const [filtersCollapsed, setFiltersCollapsed] = useState(false);
 
+  const buildParams = (pageNum) => {
+    const params = { limit: PAGE_SIZE, page: pageNum };
+    if (filters.resource) params.resource = filters.resource;
+    if (filters.action) params.action = filters.action;
+    if (filters.venueId) params.venueId = filters.venueId;
+    if (filters.status) params.status = filters.status;
+    if (filters.who) params.who = filters.who;
+    if (filters.target) params.target = filters.target;
+    if (filters.from) params.from = filters.from;
+    if (filters.to) params.to = filters.to;
+    if (filters.fromTime) params.fromTime = filters.fromTime;
+    if (filters.toTime) params.toTime = filters.toTime;
+    return params;
+  };
+
+  // Loads page 1 fresh (on mount or whenever filters change) — small
+  // payload instead of the old flat limit:500 fetch, so the page paints
+  // almost immediately even on a large log collection.
   const load = async () => {
     setIsLoading(true);
     try {
-      const params = { limit: 500 };
-      if (filters.resource) params.resource = filters.resource;
-      if (filters.action) params.action = filters.action;
-      if (filters.venueId) params.venueId = filters.venueId;
-      if (filters.status) params.status = filters.status;
-      if (filters.who) params.who = filters.who;
-      if (filters.target) params.target = filters.target;
-      if (filters.from) params.from = filters.from;
-      if (filters.to) params.to = filters.to;
-      if (filters.fromTime) params.fromTime = filters.fromTime;
-      if (filters.toTime) params.toTime = filters.toTime;
-      const res = await api.get("/audit-logs", { params });
+      const res = await api.get("/audit-logs", { params: buildParams(1) });
       setLogs(res.data.logs || []);
       setTotal(res.data.total || 0);
+      setPage(1);
     } catch (err) {
       console.error("Failed to load audit logs:", err);
       toast.error("Failed to load audit logs");
     } finally {
       setIsLoading(false);
       setHasLoadedOnce(true);
+    }
+  };
+
+  // Appends the next page — called as the user scrolls near the bottom,
+  // so only as much data as is actually viewed is ever fetched.
+  const loadMore = async () => {
+    if (isLoadingMore || logs.length >= total) return;
+    setIsLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const res = await api.get("/audit-logs", { params: buildParams(nextPage) });
+      setLogs((prev) => [...prev, ...(res.data.logs || [])]);
+      setPage(nextPage);
+    } catch (err) {
+      console.error("Failed to load more audit logs:", err);
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
@@ -122,8 +151,16 @@ const AuditLogs = () => {
 
   const filtersActive = Object.values(filters).some(Boolean);
 
-  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
-    useInfiniteScroll(logs.length, 30);
+  // displayLimit increases by PAGE_SIZE each time the sentinel scrolls
+  // into view — each increment triggers one real server fetch for the
+  // next page, instead of revealing rows already sitting in memory.
+  const { displayLimit, sentinelRef, containerRef, hasMore } = useInfiniteScroll(total, PAGE_SIZE);
+  const isFirstRenderRef = useRef(true);
+  useEffect(() => {
+    if (isFirstRenderRef.current) { isFirstRenderRef.current = false; return; }
+    if (!isLoading) loadMore();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayLimit]);
 
   if (!isSuperAdmin) {
     return (
@@ -226,7 +263,6 @@ const AuditLogs = () => {
       <div
         className="table-wrapper"
         ref={containerRef}
-        style={{ maxHeight: filtersCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 260px)" }}
       >
         <table>
           <thead>
@@ -251,7 +287,7 @@ const AuditLogs = () => {
               <EmptyRow colSpan={7} message="No audit entries match your filters." />
             ) : (
               <>
-                {logs.slice(0, displayLimit).map((log) => (
+                {logs.map((log) => (
                   <tr key={log.id}>
                     <td>{new Date(log.createdAt).toLocaleString()}</td>
                     <td>
@@ -261,7 +297,7 @@ const AuditLogs = () => {
                     <td>{venueNameFor(log.venueId)}</td>
                     <td>
                       <span
-                        className={`audit-status-badge ${log.action === "delete" || log.action === "login_failed" ? "audit-status-negative" : "audit-status-positive"}`}
+                        className={`audit-status-badge audit-status-badge--${log.action || "default"}`}
                       >
                         {ACTION_LABELS[log.action] || log.action}
                       </span>
@@ -269,7 +305,7 @@ const AuditLogs = () => {
                     <td>{log.resource}</td>
                     <td>{log.targetId || "—"}</td>
                     <td>
-                      {(log.before || log.after) && (
+                      {log.hasDetails && (
                         <Button3D variant="cancel" onClick={() => navigate(`/audit-logs/${log.id}`)}>
                           Details
                         </Button3D>

@@ -284,7 +284,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
         </div>
       )}
 
-      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 290px)" }} >
+      <div className="table-wrapper" >
         <table >
           <thead>
             <tr>

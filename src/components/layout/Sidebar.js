@@ -88,6 +88,8 @@ const BASE_MENU = [
   { label: "Roles and Responsibilities", path: "/permissions", icon: staffIcon, superAdminOnly: true },
   { label: "Category Cards", path: "/category-cards", icon: categoryIcon, superAdminOnly: true },
   { label: "Audit Logs", path: "/audit-logs", icon: staffIcon, superAdminOnly: true },
+  { label: "Documents", path: "/documents", icon: staffIcon, superAdminOnly: true },
+  { label: "Bank Accounts", path: "/bank-account", icon: staffIcon, superAdminOnly: true },
   { label: "Theme Settings", path: "/theme-settings", icon: themeIcon, superAdminOnly: true },
 ];
 
@@ -252,6 +254,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 <div key={index} className="sidebar-group">
                   <button
                     className={`sidebar-link ${isAnyChildActive ? "sidebar-link-active" : ""}`}
+                    title={!isOpen ? item.label : undefined}
                     onClick={(e) => {
                       if (isOpen) {
                         setOpenMenu(isExpanded ? null : index);
@@ -375,6 +378,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 className={({ isActive }) =>
                   `sidebar-link ${isActive ? "sidebar-link-active" : ""}`
                 }
+                title={!isOpen ? item.label : undefined}
               >
                 <span className="sidebar-icon-wrap">
                   <img src={item.icon} alt="" className="sidebar-icon-img" />

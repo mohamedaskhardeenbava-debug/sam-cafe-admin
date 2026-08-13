@@ -19,6 +19,9 @@ import { CustomTimePicker } from "../../components/CustomTimePicker";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
+import CurrentLocationToggle from "../../components/CurrentLocationToggle";
+import { useVenue } from "../../context/VenueContext";
+import { venueToAddressFields, emptyAddressFields } from "../../utils/resolveVenueAddress";
 
 import "../Common.css";
 import "./Events.css";
@@ -40,12 +43,6 @@ const STATUS_COLORS = {
   ongoing: "#16a34a",
   completed: "#6b7280",
   cancelled: "#dc2626",
-};
-
-const RESTAURANT_ADDRESS = {
-  addrDoorNo: "12, Sam Cafe", addrStreet: "GR Nagar", addrArea: "GR Nagar",
-  addrLandmark: "Near Andavar Meat Shop", addrCity: "Madurai",
-  addrDistrict: "Madurai", addrState: "Tamil Nadu", addrPincode: "625001",
 };
 
 const SPECIALIZED_PACKAGES = [
@@ -130,6 +127,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
   // ── Hooks
 
   const { toast } = useToast();
+  const { currentVenue } = useVenue();
   const events = useMemo(
     () => adminData?.events ?? [],
     [adminData?.events]
@@ -197,7 +195,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
   const [viewBooking, setViewBooking] = useState(null);
   const [addGuestCount, setAddGuestCount] = useState(1);
   const [addGuestSaving, setAddGuestSaving] = useState(false);
-  const [useRestaurantAddrSpec, setUseRestaurantAddrSpec] = useState(false);
+  const [useRestaurantAddrSpec, setUseRestaurantAddrSpec] = useState(true);
 
   // Booking table sorting — local only, no need to persist
   const [bookSortKey, setBookSortKey] = useState("bookedAt");
@@ -346,18 +344,20 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
   const resetSpecForm = () => {
     setShowSpecForm(false);
     setIsSpecEditMode(false);
-    setSpecFormData(EMPTY_SPEC_FORM);
+    setSpecFormData({ ...EMPTY_SPEC_FORM, ...venueToAddressFields(currentVenue) });
     setSpecFormErrors({});
     setSpecFormStep(1);
     setSpecTagInput("");
     setSpecHighlightInput("");
-    setUseRestaurantAddrSpec(false);
+    setUseRestaurantAddrSpec(true);
   };
 
   const openSpecAdd = () => { resetSpecForm(); setShowSpecForm(true); };
 
   const openSpecEdit = (evt) => {
     setSpecFormData({ ...EMPTY_SPEC_FORM, ...evt, images: evt.images || (evt.image ? [evt.image] : []) });
+    const venueLine = venueToAddressFields(currentVenue).venue;
+    setUseRestaurantAddrSpec(!!venueLine && evt.venue === venueLine);
     setIsSpecEditMode(true);
     setSpecFormStep(1);
     setShowSpecForm(true);
@@ -426,6 +426,19 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
         if (!specFormData.addrPincode || specFormData.addrPincode.length !== 6) e.addrPincode = true;
       }
     }
+    // Steps 2 (package) and 3 (dishes) previously had no validation at
+    // all — forward-jumping the tab pill (or Next) could reach Preview
+    // with no package chosen and no dishes selected. toast is used
+    // instead of inline field errors here since these are selection
+    // grids, not text inputs with an error-state style.
+    if (step === 2 && !specFormData.selectedPackage) {
+      toast.error("Choose a package before continuing");
+      e.selectedPackage = true;
+    }
+    if (step === 3 && (!specFormData.dishes || specFormData.dishes.length === 0)) {
+      toast.error("Select at least one dish before continuing");
+      e.dishes = true;
+    }
     setSpecFormErrors(prev => ({ ...prev, ...e }));
     return Object.keys(e).length === 0;
   };
@@ -433,6 +446,21 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
   const handleSave = async () => {
     if (!formData.title.trim() || !formData.date) {
       toast.error("Title and Date are required.");
+      return;
+    }
+    if (!formData.venue?.trim() || !formData.maxCapacity || Number(formData.maxCapacity) < 1) {
+      toast.error("Venue and capacity are required.");
+      setEditFormStep(2);
+      return;
+    }
+    if (!formData.description?.trim()) {
+      toast.error("Description is required.");
+      setEditFormStep(3);
+      return;
+    }
+    if (!formData.dishes?.length) {
+      toast.error("Select at least one dish for the menu.");
+      setEditFormStep(4);
       return;
     }
     // FIX: always use string ID for new events to avoid lodash-id 500 errors
@@ -473,6 +501,17 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
   const handleSpecSave = async () => {
     if (!specFormData.title.trim() || !specFormData.date) {
       toast.error("Title and Date are required.");
+      setSpecFormStep(1);
+      return;
+    }
+    if (!specFormData.selectedPackage) {
+      toast.error("Choose a package before saving.");
+      setSpecFormStep(2);
+      return;
+    }
+    if (!specFormData.dishes?.length) {
+      toast.error("Select at least one dish for the menu.");
+      setSpecFormStep(3);
       return;
     }
     const cat = EVENT_CATEGORIES.find(c => c.id === specFormData.eventCategory);
@@ -1011,7 +1050,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
             </div>
           )}
 
-          <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 340px)" }}>
+          <div className="table-wrapper">
             {filteredBookings.length === 0 ? (
               <div className="ae-empty-state"><p>No bookings found.</p></div>
             ) : (
@@ -1419,36 +1458,19 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                     </div>
                   </div>
 
-                  <div className="admin-form-group">
-                    <label style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
-                      <span>Venue / Address</span>
-                      <button
-                        type="button"
-                        className={`use-restaurant-loc-toggle${useRestaurantAddrSpec ? " active" : ""}`}
-                        onClick={() => {
-                          const next = !useRestaurantAddrSpec;
-                          setUseRestaurantAddrSpec(next);
-                          if (next) {
-                            setSpecFormData(p => {
-                              const updated = { ...p, ...RESTAURANT_ADDRESS };
-                              updated.venue = buildAddress(updated);
-                              return updated;
-                            });
-                          } else {
-                            /* Unchecked — clear all address fields so user fills fresh */
-                            setSpecFormData(p => ({
-                              ...p,
-                              addrDoorNo: "", addrStreet: "", addrArea: "",
-                              addrLandmark: "", addrCity: "", addrDistrict: "",
-                              addrState: "", addrPincode: "", venue: "",
-                            }));
-                          }
-                        }}
-                      >
-                        {useRestaurantAddrSpec ? "✓ " : ""}Use restaurant location
-                      </button>
-                    </label>
+                  <CurrentLocationToggle
+                    value={useRestaurantAddrSpec}
+                    onChange={(next) => {
+                      setUseRestaurantAddrSpec(next);
+                      if (next) {
+                        setSpecFormData(p => ({ ...p, ...venueToAddressFields(currentVenue) }));
+                      } else {
+                        setSpecFormData(p => ({ ...p, ...emptyAddressFields() }));
+                      }
+                    }}
+                  />
 
+                  <div className="admin-form-group">
                     {!useRestaurantAddrSpec && <div className="ae-addr-grid">
                       {[
                         { key: "addrDoorNo", label: "Door No.", placeholder: "Door / Flat No.", req: true },

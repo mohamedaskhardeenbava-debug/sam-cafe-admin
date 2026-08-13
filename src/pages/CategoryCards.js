@@ -23,14 +23,15 @@ import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
+import ConfirmDialog from "../components/ConfirmDialog";
 import PageLoader from "../components/PageLoader";
+import CollapseChevron from "../components/CollapseChevron";
 import { allowTextInput } from "../App";
 
 import "../Common.css"; // shared page shell (.inner-page/.header/.table-wrapper) — Offers.css depends on this
 import "./Offers.css"; // reuses the shared admin list/modal + status-badge styling
 import "./ModalCSS.css"; // shared modal shell + form-field styling (.modal-overlay/.admin-modal/.mat)
 import "./staffs/StaffModules.css"; // shared file-upload styling (.file-wrap/.file-input/.file-label)
-import "./Permissions.css"; // shared confirmation-overlay styling (.perm-confirm-*)
 
 /**
  * DEFAULT_CARDS — the card set as it exists today, before any Super
@@ -99,6 +100,7 @@ const CategoryCards = () => {
 
   const [cards, setCards] = useState(DEFAULT_CARDS);
   const [isLoading, setIsLoading] = useState(true);
+  const [infoCollapsed, setInfoCollapsed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null); // card id currently open in the edit modal
   const [form, setForm] = useState({ name: "", image: "", enabled: true });
@@ -210,6 +212,17 @@ const CategoryCards = () => {
       {/* HEADER */}
       <div className="header">
         <div className="header-title-row">
+          <div className="header-collapse-col">
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setInfoCollapsed((prev) => !prev)}
+              title={infoCollapsed ? "Expand" : "Collapse"}
+              aria-expanded={!infoCollapsed}
+            >
+              <CollapseChevron collapsed={infoCollapsed} />
+            </button>
+          </div>
           <div className="header-title-col">
             <div className="header-title-with-count">
               <h2 className="title">Category Cards</h2>
@@ -219,17 +232,19 @@ const CategoryCards = () => {
         </div>
       </div>
 
-      <p style={{ padding: "0 4px 16px", color: "#777", fontSize: 14 }}>
-        These are the special cards shown at the top of the customer-facing Food
-        Category page. Disabling a card hides it from the user panel — its
-        underlying data (favourites, combos, offers, events) is kept untouched
-        and reappears as soon as it's re-enabled. Disabling My Favourites or
-        Crowd Picks also hides the wishlist (♥) button on dish pages. Disabling
-        Combos, Offers, or Events &amp; Booking hides those sections in the
-        admin panel too.
-      </p>
+      {!infoCollapsed && (
+        <p style={{ padding: "0 4px 16px", color: "#777", fontSize: 14 }}>
+          These are the special cards shown at the top of the customer-facing Food
+          Category page. Disabling a card hides it from the user panel — its
+          underlying data (favourites, combos, offers, events) is kept untouched
+          and reappears as soon as it's re-enabled. Disabling My Favourites or
+          Crowd Picks also hides the wishlist (♥) button on dish pages. Disabling
+          Combos, Offers, or Events &amp; Booking hides those sections in the
+          admin panel too.
+        </p>
+      )}
 
-      <div className="table-wrapper" style={{ maxHeight: "calc(100vh - 240px)" }}>
+      <div className="table-wrapper">
         <table>
           <thead>
             <tr>
@@ -355,28 +370,22 @@ const CategoryCards = () => {
         </div>
       )}
 
-      {pendingToggle && (
-        <div className="perm-confirm-overlay" onClick={() => setPendingToggle(null)}>
-          <div className="perm-confirm-card" onClick={(e) => e.stopPropagation()}>
-            <h4>Confirm card visibility change</h4>
-            <p>
-              {pendingToggle.nextValue ? "Enable" : "Disable"} the{" "}
-              <strong>{pendingToggle.cardName}</strong> card on the user panel?
-              {!pendingToggle.nextValue && (
-                <>
-                  {" "}Its data won't be deleted — it'll reappear as soon as you re-enable it.
-                </>
-              )}
-            </p>
-            <div className="perm-confirm-actions">
-              <Button3D variant="cancel" onClick={() => setPendingToggle(null)}>
-                Cancel
-              </Button3D>
-              <Button3D onClick={confirmToggle}>Confirm</Button3D>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!pendingToggle}
+        title="Confirm card visibility change"
+        message={
+          <>
+            {pendingToggle?.nextValue ? "Enable" : "Disable"} the{" "}
+            <strong>{pendingToggle?.cardName}</strong> card on the user panel?
+            {pendingToggle && !pendingToggle.nextValue && (
+              <> Its data won't be deleted — it'll reappear as soon as you re-enable it.</>
+            )}
+          </>
+        }
+        confirmLabel="Confirm"
+        onCancel={() => setPendingToggle(null)}
+        onConfirm={confirmToggle}
+      />
     </div>
   );
 };

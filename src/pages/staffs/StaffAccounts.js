@@ -26,6 +26,7 @@ import { useAuth, ROLE_TREE } from "../../context/AuthContext";
 import { useVenue } from "../../context/VenueContext";
 import { useToast } from "../../useToast";
 import Button3D from "../../components/Button3D";
+import ConfirmDialog from "../../components/ConfirmDialog";
 import CustomDropdown from "../../components/CustomDropdown";
 import PageLoader from "../../components/PageLoader";
 import closeIcon from "../../icon/close-icon.png";
@@ -52,23 +53,32 @@ const EMPTY_LINK_FORM = { staffId: "", email: "", roleTitle: "", venueId: "" };
 // form from submitting an obviously malformed address.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function StaffAccounts() {
+export default function StaffAccounts({
+  initialAccounts,
+  initialUnlinkedStaff,
+  initialRoles,
+} = {}) {
   const { toast } = useToast();
-  const { isSuperAdmin, creatableRoleTitles, canManageStaffAccounts } = useAuth();
+  const { isSuperAdmin, creatableRoleTitles, canManageStaffAccounts, isLoading: isAuthLoading } = useAuth();
   const { venues } = useVenue();
 
-  const [accounts, setAccounts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Seeded from the app-start preload (same fetchAllData pass that loads
+  // staff records/dishes/etc.) so the page has data the instant it mounts
+  // instead of showing a spinner while it re-fetches what App.js already
+  // has. Falls back to [] when rendered standalone (no props passed).
+  const hasPreloadedData = Boolean(initialAccounts?.length || initialUnlinkedStaff?.length || initialRoles?.length);
+  const [accounts, setAccounts] = useState(initialAccounts || []);
+  const [isLoading, setIsLoading] = useState(!hasPreloadedData);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const [unlinkedStaff, setUnlinkedStaff] = useState([]);
+  const [unlinkedStaff, setUnlinkedStaff] = useState(initialUnlinkedStaff || []);
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [linkForm, setLinkForm] = useState(EMPTY_LINK_FORM);
   const [linkErrors, setLinkErrors] = useState({});
   const [linking, setLinking] = useState(false);
   const [createdInfo, setCreatedInfo] = useState(null); // { email, tempPassword } shown once after linking
 
-  const [allRoles, setAllRoles] = useState([]); // Roles and Responsibilities registry — see roleTitleOptions below
+  const [allRoles, setAllRoles] = useState(initialRoles || []); // Roles and Responsibilities registry — see roleTitleOptions below
 
   const load = async () => {
     try {
@@ -89,10 +99,18 @@ export default function StaffAccounts() {
   };
 
   useEffect(() => {
+    // Wait for the auth check itself to finish resolving before deciding
+    // whether this admin can manage staff accounts — otherwise this can
+    // fire once while `admin` is still null (canManageStaffAccounts
+    // false by default), skip the fetch and flash a "no permission"
+    // state, then have to wait for a second effect run once auth
+    // actually resolves.
+    if (isAuthLoading) return;
+    if (hasPreloadedData) return; // App.js's fetchAllData already supplied this data
     if (canManageStaffAccounts) load();
     else setIsLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canManageStaffAccounts]);
+  }, [canManageStaffAccounts, isAuthLoading]);
 
   // Role titles for the Link Account dropdown, sourced from the Roles
   // and Responsibilities registry, intersected with creatableRoleTitles
@@ -367,18 +385,19 @@ export default function StaffAccounts() {
       )}
 
       {/* DELETE CONFIRM */}
-      {deleteTarget && (
-        <div className="perm-confirm-overlay" onClick={() => setDeleteTarget(null)}>
-          <div className="perm-confirm-card" onClick={(e) => e.stopPropagation()}>
-            <h4>Delete staff account</h4>
-            <p>Delete the login account for <strong>{deleteTarget.staffName || deleteTarget.name}</strong> ({deleteTarget.email})? This cannot be undone.</p>
-            <div className="perm-confirm-actions">
-              <Button3D variant="cancel" onClick={() => setDeleteTarget(null)}>Cancel</Button3D>
-              <Button3D onClick={handleDelete}>Delete</Button3D>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete staff account"
+        message={
+          <>
+            Delete the login account for <strong>{deleteTarget?.staffName || deleteTarget?.name}</strong> ({deleteTarget?.email})? This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete"
+        danger
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

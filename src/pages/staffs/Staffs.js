@@ -116,11 +116,19 @@ export default function Staffs({
   // there reflects here immediately) intersected with creatableRoleTitles
   // (the fixed auth hierarchy — only these titles have a valid
   // ROLE_TREE mapping and can actually be used to create a login).
-  const [allRoles, setAllRoles] = useState([]); // [{ id, title, responsibilities }]
+  // Seeded from the app-start preload (adminData.roles) so it's already
+  // populated the moment this page mounts, same as staff records/dishes;
+  // still re-fetched after a mutation (accountsRefreshKey bump) so a
+  // newly-added role shows up without a full page reload.
+  const [allRoles, setAllRoles] = useState(adminData.roles || []);
   useEffect(() => {
     if (!canManageStaffAccounts) return;
+    if (accountsRefreshKey === 0) return; // already seeded from adminData.roles
     api.get("/roles").then((res) => setAllRoles(res.data || [])).catch(() => {});
   }, [canManageStaffAccounts, accountsRefreshKey]);
+  useEffect(() => {
+    if (adminData.roles?.length) setAllRoles(adminData.roles);
+  }, [adminData.roles]);
 
   const roleTitleOptions = useMemo(() => {
     const creatableSet = new Set(creatableRoleTitles);
@@ -150,7 +158,9 @@ export default function Staffs({
     setter(prev => { const next = new Set(prev); next.has(val) ? next.delete(val) : next.add(val); return next; });
   const [staffSearch, setStaffSearch] = useState("");
   const [roleFilters, setRoleFilters] = useState(new Set());
-  const [branchFilters, setBranchFilters] = useState(new Set());
+  const [branchFilters, setBranchFilters] = useState(() =>
+    location.state?.venueId ? new Set([location.state.venueId]) : new Set()
+  );
 
   const staffs = useMemo(() => {
     let sorted = sortArray(adminData.staff || [], sortConfig);
@@ -311,7 +321,12 @@ export default function Staffs({
       )}
 
       {pageTab === "accounts" ? (
-        <StaffAccountsList key={accountsRefreshKey} />
+        <StaffAccountsList
+          key={accountsRefreshKey}
+          initialAccounts={adminData.staffAccounts}
+          initialUnlinkedStaff={adminData.unlinkedStaff}
+          initialRoles={adminData.roles}
+        />
       ) : (
       <>
       {/* HEADER */}
@@ -380,7 +395,7 @@ export default function Staffs({
       )}
 
       {/* TABLE */}
-      <div className="table-wrapper" style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 260px)" }} ref={containerRef}>
+      <div className="table-wrapper" ref={containerRef}>
         <table >
           <thead>
             <tr>

@@ -17,6 +17,7 @@ import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
+import ConfirmDialog from "../components/ConfirmDialog";
 import CustomDropdown from "../components/CustomDropdown";
 import PageLoader from "../components/PageLoader";
 import CollapseChevron from "../components/CollapseChevron";
@@ -280,7 +281,6 @@ const Permissions = () => {
 
       <div
         className="table-wrapper"
-        style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 230px)" }}
       >
         <table>
           <thead>
@@ -361,15 +361,15 @@ const Permissions = () => {
       </div>
 
       {pendingToggle && (
-        <div className="perm-confirm-overlay" onClick={() => setPendingToggle(null)}>
-          <div className="perm-confirm-card" onClick={(e) => e.stopPropagation()}>
+        <div className="confirm-overlay" onClick={() => setPendingToggle(null)}>
+          <div className="confirm-card" onClick={(e) => e.stopPropagation()}>
             <h4>Confirm permission change</h4>
             <p>
               {pendingToggle.nextValue ? "Grant" : "Revoke"}{" "}
               <strong>{pendingToggle.field === "canRead" ? "Read" : "Write"}</strong> access to{" "}
               <strong>{pendingToggle.moduleLabel}</strong> for <strong>{pendingToggle.roleTitle}</strong>?
             </p>
-            <div className="perm-confirm-actions">
+            <div className="confirm-actions">
               <Button3D variant="cancel" onClick={() => setPendingToggle(null)}>
                 Cancel
               </Button3D>
@@ -380,13 +380,13 @@ const Permissions = () => {
       )}
 
       {showResetConfirm && (
-        <div className="perm-confirm-overlay" onClick={() => setShowResetConfirm(false)}>
-          <div className="perm-confirm-card" onClick={(e) => e.stopPropagation()}>
+        <div className="confirm-overlay" onClick={() => setShowResetConfirm(false)}>
+          <div className="confirm-card" onClick={(e) => e.stopPropagation()}>
             <h4>Reset permission matrix</h4>
             <p>
               Reset the entire permission matrix to defaults? This discards all customizations.
             </p>
-            <div className="perm-confirm-actions">
+            <div className="confirm-actions">
               <Button3D variant="cancel" onClick={() => setShowResetConfirm(false)}>
                 Cancel
               </Button3D>
@@ -463,8 +463,14 @@ const RolesPanel = () => {
     }
   };
 
-  const handleDelete = async (entry) => {
-    if (!window.confirm(`Delete role "${entry.title}"?`)) return;
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const handleDelete = (entry) => setDeleteTarget(entry);
+
+  const confirmDelete = async () => {
+    const entry = deleteTarget;
+    if (!entry) return;
+    setDeleteTarget(null);
     try {
       await api.delete(`/roles/${entry.id}`);
       setEntries((prev) => prev.filter((r) => r.id !== entry.id));
@@ -499,10 +505,6 @@ const RolesPanel = () => {
           </div>
         )}
       </div>
-
-      <p className="perm-roles-hint">
-        These role descriptions are shown to staff who create accounts for others, so they know what each role is responsible for.
-      </p>
 
       <div className="table-wrapper">
         
@@ -588,6 +590,16 @@ const RolesPanel = () => {
           </form>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete role"
+        message={<>Delete role <strong>{deleteTarget?.title}</strong>?</>}
+        confirmLabel="Delete"
+        danger
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };
@@ -597,7 +609,7 @@ const RolesAndResponsibilities = () => {
   const { containerRef: viewTabPillsRef, thumbStyle: viewTabThumbStyle } = useTabLiquid(view);
 
   return (
-    <div>
+    <div className="inner-page perm-view-page">
       <div className="app-tab-pills perm-view-switch" ref={viewTabPillsRef}>
         <span className="app-tab-pill-liquid" style={viewTabThumbStyle} />
         <button
@@ -619,10 +631,10 @@ const RolesAndResponsibilities = () => {
           this page is opened from the sidebar, instead of one panel's
           fetch waiting until its tab is actually clicked. Switching tabs
           is just a visibility toggle, not a re-fetch. */}
-      <div style={{ display: view === "permissions" ? "flex" : "none" }}>
+      <div className="perm-view-panel" style={{ display: view === "permissions" ? "flex" : "none" }}>
         <Permissions />
       </div>
-      <div style={{ display: view === "roles" ? "flex" : "none" }}>
+      <div className="perm-view-panel" style={{ display: view === "roles" ? "flex" : "none" }}>
         <RolesPanel />
       </div>
     </div>

@@ -14,6 +14,7 @@ import { allowTextInput } from "../../App";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
+import PageLoader from "../../components/PageLoader";
 import { MultiPillGroup } from "../../components/FilterBar";
 import { useVenue } from "../../context/VenueContext";
 import useRoleTitles from "./useRoleTitles";
@@ -35,6 +36,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
   const { roleTitles: jobRoles } = useRoleTitles();
 
   const [trainings, setTrainings] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -49,6 +51,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
 
   useEffect(() => {
     const load = async () => {
+      setIsLoading(true);
       try {
         const res = await api.get("/staff", { params: venueParam() });
         const all = res.data.flatMap(s =>
@@ -58,6 +61,8 @@ export default function StaffTraining({ adminData, setAdminData }) {
       } catch (err) {
         console.error("Failed to load staff training data:", err);
         toast.error("Failed to load training data. Please reload the page.");
+      } finally {
+        setIsLoading(false);
       }
     };
     load();
@@ -118,6 +123,14 @@ export default function StaffTraining({ adminData, setAdminData }) {
     }));
     exportToExcel({ rows, sheetName: "Training", fileName: `training_${new Date().toISOString().slice(0, 10)}.xlsx` });
   };
+
+  if (isLoading) {
+    return (
+      <div className="inner-page">
+        <PageLoader fill label="Loading training records…" />
+      </div>
+    );
+  }
 
   return (
     <div className="inner-page">

@@ -9,12 +9,14 @@
  */
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 
 import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useVenue } from "../context/VenueContext";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
+import ConfirmDialog from "../components/ConfirmDialog";
 import CollapseChevron from "../components/CollapseChevron";
 import PageLoader from "../components/PageLoader";
 import closeIcon from "../icon/close-icon.png";
@@ -29,6 +31,7 @@ const Venues = () => {
   const { toast } = useToast();
   const { isSuperAdmin } = useAuth();
   const { refreshVenues } = useVenue();
+  const navigate = useNavigate();
 
   const [venues, setVenues] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -140,8 +143,15 @@ const Venues = () => {
     }
   };
 
-  const handleDelete = async (venue) => {
-    if (!window.confirm(`Delete "${venue.name}"? This cannot be undone.`)) return;
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [setMainTarget, setSetMainTarget] = useState(null);
+
+  const handleDelete = (venue) => setDeleteTarget(venue);
+
+  const confirmDelete = async () => {
+    const venue = deleteTarget;
+    if (!venue) return;
+    setDeleteTarget(null);
     try {
       await api.delete(`/venues/${venue.id}`);
       setVenues((prev) => prev.filter((v) => v.id !== venue.id));
@@ -162,9 +172,15 @@ const Venues = () => {
     return { primary: venue.name, suffix: mainBranch.name };
   };
 
-  const handleSetMain = async (venue) => {
+  const handleSetMain = (venue) => {
     if (venue.isMainBranch) return;
-    if (!window.confirm(`Set "${venue.name}" as the main branch? Every other branch will be shown relative to it.`)) return;
+    setSetMainTarget(venue);
+  };
+
+  const confirmSetMain = async () => {
+    const venue = setMainTarget;
+    if (!venue) return;
+    setSetMainTarget(null);
     try {
       const res = await api.patch(`/venues/${venue.id}/set-main`);
       setVenues(res.data || []);
@@ -242,7 +258,6 @@ const Venues = () => {
 
       <div
         className="table-wrapper"
-        style={{ maxHeight: headerCollapsed ? "calc(100vh - 120px)" : "calc(100vh - 260px)" }}
       >
         <table>
           <thead>
@@ -281,7 +296,16 @@ const Venues = () => {
                   </td>
                   <td>{v.address}</td>
                   <td>{v.area}</td>
-                  <td>{staffCounts[v.id] || 0}</td>
+                  <td>
+                    <span
+                      className="venue-staff-count-link"
+                      style={{ cursor: "pointer", textDecoration: "underline", fontWeight: 600 }}
+                      onClick={() => navigate("/staffs", { state: { venueId: v.id } })}
+                      title={`View staff at ${v.name}`}
+                    >
+                      {staffCounts[v.id] || 0}
+                    </span>
+                  </td>
                   <td>
                     <span
                       className={`offer-status-badge ${v.status === "active" ? "offer-active" : "offer-inactive"}`}
@@ -411,6 +435,25 @@ const Venues = () => {
           </form>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete venue"
+        message={<>Delete <strong>{deleteTarget?.name}</strong>? This cannot be undone.</>}
+        confirmLabel="Delete"
+        danger
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+      />
+
+      <ConfirmDialog
+        open={!!setMainTarget}
+        title="Set main branch"
+        message={<>Set <strong>{setMainTarget?.name}</strong> as the main branch? Every other branch will be shown relative to it.</>}
+        confirmLabel="Set as Main"
+        onCancel={() => setSetMainTarget(null)}
+        onConfirm={confirmSetMain}
+      />
     </div>
   );
 };

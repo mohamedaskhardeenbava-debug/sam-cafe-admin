@@ -16,6 +16,8 @@ import api from "../api";
 import Button3D from "../components/Button3D";
 import CustomDropdown from "../components/CustomDropdown";
 import CustomDatePicker, { todayStr } from "../components/CustomDatePicker";
+import { FilterBar } from "../components/FilterBar";
+import CollapseChevron from "../components/CollapseChevron";
 import { allowTextInput } from "../App";
 import closeIcon from "../icon/close-icon.png";
 import "./ModalCSS.css";
@@ -29,6 +31,7 @@ const Todo = () => {
   const [todos, setTodos] = useState([]);
   const [periodFilter, setPeriodFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   const [showModal, setShowModal] = useState(false);
@@ -87,11 +90,42 @@ const Todo = () => {
     return counts;
   }, [todos]);
 
+  const filteredTodos = useMemo(() => {
+    if (!search.trim()) return todos;
+    const q = search.trim().toLowerCase();
+    return todos.filter(
+      (t) => t.title?.toLowerCase().includes(q) || t.notes?.toLowerCase().includes(q)
+    );
+  }, [todos, search]);
+
+  const isFilterActive = periodFilter !== "all" || statusFilter !== "all" || !!search.trim();
+  const clearFilters = () => {
+    setPeriodFilter("all");
+    setStatusFilter("all");
+    setSearch("");
+  };
+
+  const [reportCollapsed, setReportCollapsed] = useState(false);
+  const [filtersCollapsed, setFiltersCollapsed] = useState(false);
+
   return (
     <div className="details-container">
       {/* HEADER */}
       <div className="details-header">
         <button className="back-btn" onClick={() => navigate(-1)} />
+        <button
+          type="button"
+          className="header-collapse-btn"
+          onClick={() => {
+            const next = !(reportCollapsed && filtersCollapsed);
+            setReportCollapsed(next);
+            setFiltersCollapsed(next);
+          }}
+          title={reportCollapsed && filtersCollapsed ? "Expand" : "Collapse"}
+          aria-expanded={!(reportCollapsed && filtersCollapsed)}
+        >
+          <CollapseChevron collapsed={reportCollapsed && filtersCollapsed} />
+        </button>
         <h2>To-Do List</h2>
         <Button3D onClick={openCreateModal} className="todo-new-btn">
           + New Task
@@ -103,54 +137,89 @@ const Todo = () => {
         <div className="section">
           <div className="section-title">
             <span>Completion by Period</span>
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setReportCollapsed((prev) => !prev)}
+              title={reportCollapsed ? "Expand" : "Collapse"}
+              aria-expanded={!reportCollapsed}
+            >
+              <CollapseChevron collapsed={reportCollapsed} />
+            </button>
           </div>
-          <div className="todo-report">
-            {PERIODS.map((p) => (
-              <div key={p} className="todo-report-card">
-                <span className="todo-report-label">{p}</span>
-                <span className="todo-report-count">{report[p].done}/{report[p].total}</span>
-                <span className="todo-report-sub">completed</span>
-              </div>
-            ))}
-          </div>
+          {!reportCollapsed && (
+            <div className="todo-report">
+              {PERIODS.map((p) => (
+                <div key={p} className="todo-report-card">
+                  <span className="todo-report-label">{p}</span>
+                  <span className="todo-report-count">{report[p].done}/{report[p].total}</span>
+                  <span className="todo-report-sub">completed</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
+        {/* FILTER BAR */}
+        <div className="section todo-filter-section">
+          <div className="section-title">
+            <span>Filters</span>
+            <button
+              type="button"
+              className="header-collapse-btn"
+              onClick={() => setFiltersCollapsed((prev) => !prev)}
+              title={filtersCollapsed ? "Expand filters" : "Collapse filters"}
+              aria-expanded={!filtersCollapsed}
+            >
+              <CollapseChevron collapsed={filtersCollapsed} />
+            </button>
+          </div>
+          {!filtersCollapsed && (
+            <FilterBar
+              search={search}
+              onSearchChange={setSearch}
+              searchPlaceholder="Search tasks or notes…"
+              groups={[
+                {
+                  label: "Period",
+                  options: [
+                    { value: "all", label: "All" },
+                    ...PERIODS.map((p) => ({ value: p, label: p })),
+                  ],
+                  value: periodFilter,
+                  onChange: setPeriodFilter,
+                  toggle: false,
+                },
+                {
+                  label: "Status",
+                  options: [
+                    { value: "all", label: "All" },
+                    { value: "pending", label: "Pending" },
+                    { value: "done", label: "Done" },
+                  ],
+                  value: statusFilter,
+                  onChange: setStatusFilter,
+                  toggle: false,
+                },
+              ]}
+              onClear={clearFilters}
+              active={isFilterActive}
+            />
+          )}
+        </div>
         {/* LIST */}
         <div className="todo-list-card">
           <div className="todo-list-card-header">
             <span className="todo-list-card-title">Upcoming Tasks</span>
-            <div className="todo-filters">
-              <CustomDropdown
-                value={periodFilter}
-                onChange={setPeriodFilter}
-                options={[
-                  { value: "all", label: "All Periods" },
-                  ...PERIODS.map((p) => ({ value: p, label: p })),
-                ]}
-                placeholder={null}
-                className="todo-filter-dropdown"
-              />
-              <CustomDropdown
-                value={statusFilter}
-                onChange={setStatusFilter}
-                options={[
-                  { value: "all", label: "All Status" },
-                  { value: "pending", label: "Pending" },
-                  { value: "done", label: "Done" },
-                ]}
-                placeholder={null}
-                className="todo-filter-dropdown"
-              />
-            </div>
           </div>
 
           {isLoading ? (
             <p className="todo-empty">Loading...</p>
-          ) : todos.length === 0 ? (
+          ) : filteredTodos.length === 0 ? (
             <p className="todo-empty">No to-dos for this filter.</p>
           ) : (
             <ul className="todo-list">
-              {todos.map((t) => (
+              {filteredTodos.map((t) => (
                 <li key={t.id} className={`todo-item ${t.status === "done" ? "todo-done" : ""}`}>
                   <button
                     type="button"
@@ -222,7 +291,7 @@ const Todo = () => {
                     required
                     autoFocus
                   />
-                  <label className="mat-label">What needs to be done?</label>
+                  <label className="mat-label">What needs to be done?<span className="rf-req">*</span></label>
                   <span className="mat-bar" />
                 </div>
               </div>
@@ -249,11 +318,11 @@ const Todo = () => {
 
               <div className="admin-form-group">
                 <div className="mat">
-                  <input
-                    className="mat-input"
+                  <textarea
+                    className="mat-input mat-textarea"
                     placeholder=" "
                     value={form.notes}
-                    onChange={(e) => patchForm({ notes: allowTextInput(form.notes, e.target.value, 100, 5) })}
+                    onChange={(e) => patchForm({ notes: allowTextInput(form.notes, e.target.value, 500, 100000) })}
                   />
                   <label className="mat-label">Notes (optional)</label>
                   <span className="mat-bar" />

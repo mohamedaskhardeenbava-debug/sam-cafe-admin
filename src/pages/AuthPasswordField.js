@@ -55,7 +55,7 @@ const AuthPasswordField = ({
         autoComplete={autoComplete}
         minLength={minLength}
       />
-      <label className="mat-label">{label}</label>
+      <label className="mat-label">{label}{required && <span className="rf-req">*</span>}</label>
       <span className="mat-bar" />
 
       <button
