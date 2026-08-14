@@ -194,23 +194,47 @@ const CashfreeQRSection = React.memo(({ orderId, billNo, amount }) => {
   const [payment, setPayment] = useState(null); // { id, paymentSessionId, status }
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+  const [retryToken, setRetryToken] = useState(0); // bumped to force a fresh order when a session expires
   const mountRef = useRef(null);
   const qrComponentRef = useRef(null);
+  const lastOrderedRef = useRef(null); // { orderId, billNo, amountPaise } for the last order actually created
+  const hasRetriedRef = useRef(false); // ensures payment_session_id_invalid triggers at most one retry, not a loop
 
-  // Step 1: create the Cashfree order for this bill amount.
+  // Round to paise once so downstream float noise (e.g. a parent re-render
+  // recomputing totals via slightly different summation order) can't be
+  // mistaken for a real amount change and trigger a spurious re-create.
+  const amountPaise = Math.round(Number(amount) * 100);
+
+  // Step 1: create the Cashfree order for this bill amount. Guarded against
+  // both (a) unchanged (orderId, billNo, amount) not re-creating a session,
+  // and (b) a burst of renders before the first POST resolves — the ref is
+  // set synchronously before the await, not after, so an in-flight request
+  // is never duplicated even if the effect re-fires several times in a row.
   useEffect(() => {
+    if (!(amountPaise > 0)) return undefined;
+
+    const requestKey = `${orderId}|${billNo ?? ""}|${amountPaise}|${retryToken}`;
+    if (lastOrderedRef.current === requestKey) return undefined;
+    lastOrderedRef.current = requestKey; // claim this request immediately, before any await
+
     let cancelled = false;
 
     const createOrder = async () => {
-      if (!(Number(amount) > 0)) return;
       setCreating(true);
       setError("");
       try {
-        const res = await api.post("/payments/orders", { orderId, billNo: billNo ?? null, amount: Number(amount) });
+        const res = await api.post("/payments/orders", {
+          orderId,
+          billNo: billNo ?? null,
+          amount: amountPaise / 100,
+        });
         if (!cancelled) setPayment(res.data);
       } catch (err) {
         console.error("Failed to create Cashfree order", err);
-        if (!cancelled) setError(err?.response?.data?.error || "Payment gateway unavailable");
+        if (!cancelled) {
+          setError(err?.response?.data?.error || "Payment gateway unavailable");
+          lastOrderedRef.current = null; // allow a genuine retry after a failure
+        }
       } finally {
         if (!cancelled) setCreating(false);
       }
@@ -219,7 +243,7 @@ const CashfreeQRSection = React.memo(({ orderId, billNo, amount }) => {
     createOrder();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId, billNo, amount]);
+  }, [orderId, billNo, amountPaise, retryToken]);
 
   // Step 2: once we have a paymentSessionId, load the SDK and mount the
   // real UPI QR component into this section — no hosted-page redirect.
@@ -256,13 +280,31 @@ const CashfreeQRSection = React.memo(({ orderId, billNo, amount }) => {
             .pay({
               paymentMethod: upiQr,
               paymentSessionId: payment.paymentSessionId,
+              returnUrl: `${window.location.origin}/orders`,
               redirectTarget: "_self",
             })
             .then((result) => {
               if (cancelled) return;
               if (result?.error) {
                 console.error("Cashfree UPI QR pay() error", result.error);
-                setError(result.error.message || "Payment could not be started");
+                // "payment_session_id is not present or is invalid" means the
+                // session expired (UPI QR sessions are short-lived, ~5 min) —
+                // recreate the order from scratch rather than showing a dead
+                // error state forever, so the QR stays scannable for the
+                // customer even if they took a while to pull out their phone.
+                if (result.error.code === "payment_session_id_invalid" && !hasRetriedRef.current) {
+                  // Retry ONCE — a session can legitimately go stale if the
+                  // customer takes several minutes to scan. If it's still
+                  // invalid immediately after a fresh order, the problem is
+                  // upstream (Cashfree/SDK), not a normal expiry — don't
+                  // loop forever creating orders against a broken endpoint.
+                  hasRetriedRef.current = true;
+                  setPayment(null);
+                  setError("");
+                  setRetryToken((n) => n + 1);
+                } else {
+                  setError(result.error.message || "Payment could not be started");
+                }
               }
               if (result?.paymentDetails) {
                 // Resolved without redirect — payment completed.

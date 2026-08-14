@@ -660,10 +660,10 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                 const status = item.status || "pending";
                 const date = item.date || item.eventDate || "—";
                 return (
-                  <tr className="act-row">
+                  <tr className="act-row" key={item.id}>
                     <td>
                       <span>
-                        <span key={item.id}
+                        <span
                           onClick={() => navigate(`/catering/${item.id}`, { state: { fromDetail: true } })}
                           className="act-name clickable"
                         >
