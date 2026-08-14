@@ -1,10 +1,24 @@
 import axios from "axios";
 import { getVenueIdForRequest } from "./venueStore";
 
+// In production, calls go through the /api/* rewrite defined in
+// vercel.json, which proxies to the Render backend server-side. This
+// makes every request same-origin from the browser's point of view
+// (still sam-cafe-admin-testing.vercel.app), so the session cookie is
+// never treated as third-party — avoiding Chrome's third-party cookie
+// blocking (and Safari's ITP) entirely, regardless of the visitor's
+// browser settings. Locally, Vercel's rewrite doesn't exist, so dev
+// still talks directly to localhost:4000 as before.
+const baseURL =
+  process.env.NODE_ENV === "production"
+    ? "/api"
+    : process.env.REACT_APP_SERVER_URL || "http://localhost:4000";
+
 const api = axios.create({
-  baseURL: process.env.REACT_APP_SERVER_URL || "http://localhost:4000",
-  // Required for the httpOnly session cookie (Phase-4 role auth) to be
-  // sent/received across the Vercel <-> Render origin split.
+  baseURL,
+  // withCredentials is still required: even same-origin-from-the-browser's-
+  // view requests need this for the httpOnly cookie to be included, and it's
+  // a harmless no-op difference locally where the cookie is same-site anyway.
   withCredentials: true,
 });
 
