@@ -326,7 +326,7 @@ const SalesDashboard = ({ adminData, setAdminData, orders = [] }) => {
                   type="button"
                   className="header-collapse-btn"
                   onClick={() => setHeaderCollapsed(prev => !prev)}
-                  title={headerCollapsed ? "Expand header" : "Collapse header"}
+                  data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand header" : "Collapse header"}
                 >
                   <CollapseChevron collapsed={headerCollapsed} />
                 </button>

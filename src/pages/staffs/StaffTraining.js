@@ -13,6 +13,7 @@ import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
+import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
 import PageLoader from "../../components/PageLoader";
 import { MultiPillGroup } from "../../components/FilterBar";
@@ -38,8 +39,10 @@ export default function StaffTraining({ adminData, setAdminData }) {
   const [trainings, setTrainings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const addTrainingModal = useAnimatedModal("staffTraining-add");
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [selected, setSelected] = useState(null);
+  const trainingDetailModal = useAnimatedModal("staffTraining-detail");
   const [trainingSearch, setTrainingSearch] = useState("");
   const [trainingTypeFilters, setTrainingTypeFilters] = useState(new Set());
   const toggleSet = (setter, val) =>
@@ -87,7 +90,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
         staff: prev.staff.map(s => s.id === form.staffId ? res.data : s)
       }));
       setForm({ staffId: "", role: "", duration: "", type: "", certificate: "" });
-      setShowForm(false);
+      addTrainingModal.close(() => setShowForm(false));
       toast.success("Training record saved");
     } catch (err) {
       toast.error("Failed to save training record");
@@ -143,7 +146,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand header" : "Collapse header"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />
@@ -158,7 +161,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
         </div>
         <div className="header-btn-container">
           <Button3D onClick={exportTrainings}>Export</Button3D>
-          <Button3D onClick={() => setShowForm(true)}>+ Add Training</Button3D>
+          <Button3D onClick={() => { setShowForm(true); addTrainingModal.open(); }}>+ Add Training</Button3D>
         </div>
       </div>
 
@@ -199,7 +202,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
           {filteredTrainings.map((t, i) => {
             const colors = typeColors[t.type] || { bg: "#f5f4f1", color: "#3a3a3a" };
             return (
-              <div className="card st-card" key={i} onClick={() => setSelected(t)}>
+              <div className="card st-card" key={i} onClick={() => { setSelected(t); trainingDetailModal.open(); }}>
                 {/* accent bar coloured by type */}
                 <div className="st-card-accent" style={{ background: colors.color }} />
 
@@ -246,12 +249,12 @@ export default function StaffTraining({ adminData, setAdminData }) {
       </div>
 
       {/* ADD MODAL */}
-      {showForm && (
-        <div className="modal-overlay">
-          <form className="admin-modal" onSubmit={addTraining}>
+      {addTrainingModal.shouldRender && (
+        <div className={`modal-overlay ${addTrainingModal.overlayClass}`}>
+          <form className={`admin-modal ${addTrainingModal.modalClass}`} onSubmit={addTraining}>
             <div className="admin-modal-header">
               <h3>Add Training Record</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => { setShowForm(false); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => { addTrainingModal.close(() => setShowForm(false)); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="admin-modal-body">
@@ -322,7 +325,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
             </div>
 
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => { setShowForm(false); setFormErrors({}); }}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={() => { addTrainingModal.close(() => setShowForm(false)); setFormErrors({}); }}>Cancel</Button3D>
               <Button3D type="submit">Save Training</Button3D>
             </div>
           </form>
@@ -330,15 +333,15 @@ export default function StaffTraining({ adminData, setAdminData }) {
       )}
 
       {/* DETAIL MODAL */}
-      {selected && (
-        <div className="modal-overlay">
-          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+      {trainingDetailModal.shouldRender && (
+        <div className={`modal-overlay ${trainingDetailModal.overlayClass}`} onClick={() => trainingDetailModal.close(() => setSelected(null))}>
+          <div className={`admin-modal ${trainingDetailModal.modalClass}`} onClick={e => e.stopPropagation()}>
             <div className="admin-modal-header">
               <div>
                 <h3>{selected.role}</h3>
                 <span className="sc-modal-sub">Training Record</span>
               </div>
-              <Button3D variant="cancel" iconOnly onClick={() => setSelected(null)}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => trainingDetailModal.close(() => setSelected(null))}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="admin-modal-body">
@@ -369,7 +372,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
             </div>
 
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => setSelected(null)}>Close</Button3D>
+              <Button3D variant="cancel" onClick={() => trainingDetailModal.close(() => setSelected(null))}>Close</Button3D>
             </div>
           </div>
         </div>

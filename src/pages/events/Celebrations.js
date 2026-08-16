@@ -21,6 +21,7 @@ import { CustomTimePicker } from "../../components/CustomTimePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 import Button3D from "../../components/Button3D";
+import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
 
 import "./Celebrations.css";
@@ -152,6 +153,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
   const navigate = useNavigate();
 
   const [showCreate, setShowCreate] = useState(false);
+  const createModal = useAnimatedModal("celebrations-create");
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [formErrors, setFormErrors] = useState({});
@@ -374,7 +376,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       };
       await api.post("/celebrations", payload);
       toast.success("Celebration created successfully.");
-      setShowCreate(false);
+      createModal.close(() => setShowCreate(false));
       setForm({ ...EMPTY_FORM });
     } catch {
       toast.error("Failed to create celebration.");
@@ -418,7 +420,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand header" : "Collapse header"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />
@@ -453,7 +455,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
             <div className="header-btn-container">
               <Button3D onClick={handleExport}>Export</Button3D>
-              <Button3D onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setCreateTab(0); }}>+ Add Celebration</Button3D>
+              <Button3D onClick={() => { setShowCreate(true); createModal.open(); setForm({ ...EMPTY_FORM }); setCreateTab(0); }}>+ Add Celebration</Button3D>
             </div>
           </>
         )}
@@ -481,7 +483,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
               noMax
             />
             {(filterFromDate || filterToDate) && (
-              <button className="filter-pill" title="Clear dates" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }}>✕</button>
+              <button className="filter-pill" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Clear dates" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }}>✕</button>
             )}
 
           </div>
@@ -630,7 +632,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     <td onClick={e => e.stopPropagation()}>
                       <div className="evt-res-inline-status">
                         {["pending", "confirmed", "completed", "cancelled"].map(s => (
-                          <button key={s} title={s}
+                          <button key={s} data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={s}
                             className={`evt-res-istatus-btn evt-res-istatus-${s}${status === s ? " active" : ""}`}
                             onClick={e => updateStatus(e, item.id, s)}>
                             {s === "pending" ? "P" : s === "confirmed" ? "C" : s === "completed" ? "D" : "X"}
@@ -704,9 +706,9 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
         document.body
       )}
 
-      {showCreate && (
-        <div className="event-modal-overlay">
-          <div className="event-modal" style={{ width: 640 }} onClick={e => e.stopPropagation()}>
+      {createModal.shouldRender && (
+        <div className={`event-modal-overlay ${createModal.overlayClass}`}>
+          <div className={`event-modal ${createModal.modalClass}`} style={{ width: 640 }} onClick={e => e.stopPropagation()}>
             <div className="admin-modal-header">
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 <h3>Add Celebration</h3>
@@ -724,7 +726,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                   ))}
                 </div>
               </div>
-              <Button3D variant="cancel" iconOnly onClick={() => { setShowCreate(false); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => { createModal.close(() => setShowCreate(false)); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="event-modal-body" style={{ padding: "8px 0" }}>
@@ -923,7 +925,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                         return (
                           <button key={d.value} type="button"
                             className={`evt-res-source-chip${form.decoration === d.value ? " active" : ""}${disabled ? " chip-disabled" : ""}`}
-                            title={disabled ? "Only for Candle Light Dinner" : ""}
+                            {...(disabled ? { "data-bs-toggle": "tooltip", "data-bs-placement": "top", "data-bs-title": "Only for Candle Light Dinner" } : {})}
                             onClick={() => !disabled && setF("decoration", d.value)}>
                             {d.label} ₹{d.price.toLocaleString()}
                             {disabled && " 🔒"}
@@ -1055,7 +1057,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
             </div>
 
             <div className="event-modal-footer">
-              <Button3D variant="cancel" onClick={() => { setShowCreate(false); setFormErrors({}); }}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={() => { createModal.close(() => setShowCreate(false)); setFormErrors({}); }}>Cancel</Button3D>
               {createTab === 0 ? (
                 <button type="button" className="modal-next-btn" onClick={() => {
                   if (validateCelebTab0()) handleCreateNext();

@@ -19,6 +19,7 @@ import { useToast } from "../useToast";
 import CustomDropdown from "../components/CustomDropdown";
 import Button3D from "../components/Button3D";
 import CollapseChevron from "../components/CollapseChevron";
+import useAnimatedModal from "../hooks/useAnimatedModal";
 
 import "./Dishes.css";
 import "./ModalCSS.css";
@@ -36,6 +37,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
   const [editingDishId, setEditingDishId] = useState(null);
   const [editedPrice, setEditedPrice] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const dishFormModal = useAnimatedModal("dishes-addEdit");
   const [formErrors, setFormErrors] = useState({});
   const [ingErrors, setIngErrors] = useState({});
 
@@ -67,7 +69,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const resetDishForm = () => {
-    setShowForm(false);
+    dishFormModal.close(() => setShowForm(false));
     setEditingDish(null);
     setEditingDishId(null);
     setEditedPrice("");
@@ -556,7 +558,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
             type="button"
             className="header-collapse-btn"
             onClick={() => setCategoryBarCollapsed(prev => !prev)}
-            title={categoryBarCollapsed ? "Expand categories" : "Collapse categories"}
+            data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={categoryBarCollapsed ? "Expand categories" : "Collapse categories"}
             aria-expanded={!categoryBarCollapsed}
           >
             <CollapseChevron collapsed={categoryBarCollapsed} />
@@ -577,7 +579,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
             )}
           </div>
         </div>
-        <Button3D onClick={() => setShowForm(true)}>+ Add Dish</Button3D>
+        <Button3D onClick={() => { setShowForm(true); dishFormModal.open(); }}>+ Add Dish</Button3D>
       </div>
 
       {!categoryBarCollapsed && adminData.categories.length > 0 && (
@@ -715,10 +717,10 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
         <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
 
-      {showForm && (
-        <div className="modal-overlay">
+      {dishFormModal.shouldRender && (
+        <div className={`modal-overlay ${dishFormModal.overlayClass}`}>
           <form
-            className="admin-modal"
+            className={`admin-modal ${dishFormModal.modalClass}`}
             onSubmit={(e) => {
               e.preventDefault();
               handleSaveDish();

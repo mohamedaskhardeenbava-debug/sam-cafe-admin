@@ -18,6 +18,7 @@ import { EmptyState } from "../../App";
 import { CustomTimePicker } from "../../components/CustomTimePicker";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
+import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
 import CurrentLocationToggle from "../../components/CurrentLocationToggle";
 import { useVenue } from "../../context/VenueContext";
@@ -178,8 +179,10 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
 
 
   const [showForm, setShowForm] = useState(false);
+  const formModal = useAnimatedModal("events-createEdit");
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [showSpecForm, setShowSpecForm] = useState(false);
+  const specModal = useAnimatedModal("events-specCreateEdit");
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSpecEditMode, setIsSpecEditMode] = useState(false);
   const [editFormStep, setEditFormStep] = useState(1);
@@ -193,6 +196,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
   const [specTagInput, setSpecTagInput] = useState("");
   const [specHighlightInput, setSpecHighlightInput] = useState("");
   const [viewBooking, setViewBooking] = useState(null);
+  const bookingDetailModal = useAnimatedModal("events-bookingDetail");
   const [addGuestCount, setAddGuestCount] = useState(1);
   const [addGuestSaving, setAddGuestSaving] = useState(false);
   const [useRestaurantAddrSpec, setUseRestaurantAddrSpec] = useState(true);
@@ -329,10 +333,11 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
   }, [specFormData.eventCategory, specFormData.selectedPackage, specFormData.selectedAddons, specFormData.guests]);
 
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const deleteConfirmModal = useAnimatedModal("events-deleteConfirm");
 
 
   const resetForm = () => {
-    setShowForm(false);
+    formModal.close(() => setShowForm(false));
     setIsEditMode(false);
     setFormData(EMPTY_FORM);
     setFormErrors({});
@@ -341,8 +346,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
     setEditFormStep(1);
   };
 
-  const resetSpecForm = () => {
-    setShowSpecForm(false);
+  const clearSpecFormFields = () => {
     setIsSpecEditMode(false);
     setSpecFormData({ ...EMPTY_SPEC_FORM, ...venueToAddressFields(currentVenue) });
     setSpecFormErrors({});
@@ -352,7 +356,12 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
     setUseRestaurantAddrSpec(true);
   };
 
-  const openSpecAdd = () => { resetSpecForm(); setShowSpecForm(true); };
+  const resetSpecForm = () => {
+    specModal.close(() => setShowSpecForm(false));
+    clearSpecFormFields();
+  };
+
+  const openSpecAdd = () => { clearSpecFormFields(); setShowSpecForm(true); specModal.open(); };
 
   const openSpecEdit = (evt) => {
     setSpecFormData({ ...EMPTY_SPEC_FORM, ...evt, images: evt.images || (evt.image ? [evt.image] : []) });
@@ -361,6 +370,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
     setIsSpecEditMode(true);
     setSpecFormStep(1);
     setShowSpecForm(true);
+    specModal.open();
   };
 
   const openEdit = (evt) => {
@@ -368,6 +378,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
     setIsEditMode(true);
     setEditFormStep(1);
     setShowForm(true);
+    formModal.open();
   };
 
   const handleImagesUpload = (e, isSpec = false) => {
@@ -553,7 +564,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
 
   const confirmDelete = async () => {
     const id = confirmDeleteId;
-    setConfirmDeleteId(null);
+    deleteConfirmModal.close(() => setConfirmDeleteId(null));
     // Optimistic update first — remove from UI immediately
     const snapshot = adminData.events || [];
     const bookingsSnapshot = adminData.eventBookings || [];
@@ -749,7 +760,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                     <td className="ae-sdt-cat">{d.subCat || d.cat || "—"}</td>
                     <td style={{ textAlign: "center" }}>{effectiveQty(d.id)}</td>
                     <td className="ae-sdt-price">₹{(Number(d.basePrice || 0) * effectiveQty(d.id)).toLocaleString("en-IN")}</td>
-                    <td><button type="button" className="ae-sdt-remove" onClick={() => onToggle(d.id)} title="Remove">×</button></td>
+                    <td><button type="button" className="ae-sdt-remove" onClick={() => onToggle(d.id)} data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Remove">×</button></td>
                   </tr>
                 ))}
                 <tr className="ae-sdt-total-row">
@@ -789,7 +800,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand filters" : "Collapse filters"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />
@@ -979,7 +990,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                         <button className={`ae-card-btn ae-publish-btn ${evt.isPublished ? "unpublish" : "publish"}`} onClick={() => handleTogglePublish(evt)}>
                           {evt.isPublished ? "Unpublish" : "Publish"}
                         </button>
-                        <button className="ae-card-btn ae-delete-btn" onClick={() => setConfirmDeleteId(evt.id)}>Delete</button>
+                        <button className="ae-card-btn ae-delete-btn" onClick={() => { setConfirmDeleteId(evt.id); deleteConfirmModal.open(); }}>Delete</button>
                       </div>
                     </div>
                   );
@@ -1114,7 +1125,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                         <td>
                           <div className="evt-res-inline-status">
                             {["pending", "confirmed", "cancelled"].map(s => (
-                              <button key={s} title={s}
+                              <button key={s} data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={s}
                                 className={`evt-res-istatus-btn evt-res-istatus-${s}${b.status === s ? " active" : ""}`}
                                 onClick={() => handleBookingStatus(b.id, s)}>
                                 {s === "pending" ? "P" : s === "confirmed" ? "C" : "X"}
@@ -1124,7 +1135,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                         </td>
                         <td>
                           <div className="ae-booking-actions">
-                            <Button3D variant="cancel" iconOnly onClick={() => setViewBooking(b)}>View</Button3D>
+                            <Button3D variant="cancel" iconOnly onClick={() => { setViewBooking(b); bookingDetailModal.open(); }}>View</Button3D>
                           </div>
                         </td>
                       </tr>
@@ -1138,9 +1149,9 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
       )}
 
       {/* CREATE / EDIT MODAL */}
-      {showForm && (
-        <div className="event-modal-overlay">
-          <div className="event-modal ae-event-modal">
+      {formModal.shouldRender && (
+        <div className={`event-modal-overlay ${formModal.overlayClass}`}>
+          <div className={`event-modal ae-event-modal ${formModal.modalClass}`}>
             <div className="admin-modal-header">
               <div style={{ display: "flex", flexDirection: "column", gap: "10px", justifyContent: "flex-start" }}>
                 <h3>{isEditMode ? "Edit Event" : "Create New Event"}</h3>
@@ -1392,9 +1403,9 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
       )}
 
       {/* SPECIALIZED EVENT MODAL */}
-      {showSpecForm && (
-        <div className="event-modal-overlay">
-          <div className="event-modal">
+      {specModal.shouldRender && (
+        <div className={`event-modal-overlay ${specModal.overlayClass}`}>
+          <div className={`event-modal ${specModal.modalClass}`}>
             <div className="admin-modal-header">
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 <h3>{isSpecEditMode ? "Edit Specialized Event" : "Create Event"}</h3>
@@ -1708,7 +1719,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                                   <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>{d.subCat || d.cat || "—"} · qty: {Number(specFormData.guests) || 1} (guests)</div>
                                 </div>
                                 <div style={{ fontWeight: 700, fontSize: 13, color: "#2563eb", flexShrink: 0 }}>₹{(Number(d.basePrice || 0) * qty).toLocaleString("en-IN")}</div>
-                                <button type="button" className="ae-sdt-remove" onClick={() => toggleDish(id, true)} title="Remove">×</button>
+                                <button type="button" className="ae-sdt-remove" onClick={() => toggleDish(id, true)} data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Remove">×</button>
                               </div>
                             );
                           })}
@@ -1778,12 +1789,12 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
       )}
 
       {/* BOOKING DETAIL MODAL */}
-      {viewBooking && (
-        <div className="event-modal-overlay">
-          <div className="event-modal ae-booking-detail-modal">
+      {bookingDetailModal.shouldRender && (
+        <div className={`event-modal-overlay ${bookingDetailModal.overlayClass}`}>
+          <div className={`event-modal ae-booking-detail-modal ${bookingDetailModal.modalClass}`}>
             <div className="admin-modal-header">
               <h3>Booking Details</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => setViewBooking(null)} aria-label="Close"><img src={closeIcon} alt="" /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => bookingDetailModal.close(() => setViewBooking(null))} aria-label="Close"><img src={closeIcon} alt="" /></Button3D>
             </div>
             <div className="event-modal-body ae-booking-detail-body">
               {(() => {
@@ -1862,7 +1873,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               {viewBooking.status !== "cancelled" && (
                 <Button3D variant="danger" onClick={() => handleBookingStatus(viewBooking.id, "cancelled")}>Cancel Booking</Button3D>
               )}
-              <Button3D variant="cancel" onClick={() => { setViewBooking(null); setAddGuestCount(1); }}>Close</Button3D>
+              <Button3D variant="cancel" onClick={() => { bookingDetailModal.close(() => setViewBooking(null)); setAddGuestCount(1); }}>Close</Button3D>
 
             </div>
           </div>
@@ -1870,12 +1881,12 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
       )}
 
       {/* DELETE CONFIRM MODAL */}
-      {confirmDeleteId && (
-        <div className="event-modal-overlay">
-          <div className="event-modal ae-confirm-modal">
+      {deleteConfirmModal.shouldRender && (
+        <div className={`event-modal-overlay ${deleteConfirmModal.overlayClass}`}>
+          <div className={`event-modal ae-confirm-modal ${deleteConfirmModal.modalClass}`}>
             <div className="admin-modal-header">
               <h3>Delete Event</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => setConfirmDeleteId(null)} aria-label="Close"><img src={closeIcon} alt="" /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => deleteConfirmModal.close(() => setConfirmDeleteId(null))} aria-label="Close"><img src={closeIcon} alt="" /></Button3D>
             </div>
             <div className="event-modal-body">
               <p style={{ margin: "8px 0 20px", color: "#444", fontSize: 14, lineHeight: 1.6 }}>
@@ -1883,7 +1894,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
               </p>
             </div>
             <div className="event-modal-footer">
-              <Button3D variant="cancel" onClick={() => setConfirmDeleteId(null)}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={() => deleteConfirmModal.close(() => setConfirmDeleteId(null))}>Cancel</Button3D>
               <Button3D variant="danger" onClick={confirmDelete}>Delete Event</Button3D>
 
             </div>

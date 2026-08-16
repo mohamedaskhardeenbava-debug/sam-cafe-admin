@@ -684,7 +684,7 @@ th.sorted .sort-arrow {
 ───────────────────────────────────────────────────────────── */
 .filter-pill {
   padding: 5px 12px;
-  border-radius: 999px;
+  border-radius: 999px !important;
   background-image: linear-gradient(to top, #D8D9DB 0%, #fff 80%, #FDFDFD 100%);
   border: 1px solid #b1b1b1;
   font-size: 12px;
@@ -696,6 +696,8 @@ th.sorted .sort-arrow {
   transition: all 10ms ease;
   color: #606060;
   text-shadow: 0 1px #fff;
+  height: stretch;
+  max-height: 30px;
 }
 
 .filter-pill:hover {

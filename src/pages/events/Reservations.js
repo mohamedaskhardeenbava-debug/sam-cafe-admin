@@ -21,6 +21,7 @@ import { CustomTimePicker } from "../../components/CustomTimePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 import Button3D from "../../components/Button3D";
+import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
 import CustomDropdown from "../../components/CustomDropdown";
 import { useVenue } from "../../context/VenueContext";
@@ -193,6 +194,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
   /* ── Table preference management ── */
   const [showPrefModal, setShowPrefModal] = useState(false);
+  const prefModal = useAnimatedModal("reservations-tablePrefs");
   const [prefList, setPrefList] = useState(DEFAULT_PREF_OPTIONS.map(p => p.label));
   const [prefImages, setPrefImages] = useState({});
   const [prefDescs, setPrefDescs] = useState({});
@@ -229,6 +231,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
 
   /* ── Create modal ── */
   const [showCreate, setShowCreate] = useState(false);
+  const createModal = useAnimatedModal("reservations-create");
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [formErrors, setFormErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -425,7 +428,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       };
       await api.post("/reservations", payload);
       toast.success("Reservation created successfully.");
-      setShowCreate(false);
+      createModal.close(() => setShowCreate(false));
       setForm({ ...EMPTY_FORM });
       setTablePrefImageFile(null);
     } catch {
@@ -494,7 +497,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       }
       setPrefDbRecords(finalRecords);
       toast.success("Table preferences saved!");
-      setShowPrefModal(false);
+      prefModal.close(() => setShowPrefModal(false));
     } catch { toast.error("Failed to save preferences"); }
     finally { setPrefSaving(false); }
   };
@@ -557,7 +560,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand header" : "Collapse header"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />
@@ -591,9 +594,9 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
             </div>
 
             <div className="header-btn-container">
-              <Button3D variant="save" onClick={() => setShowPrefModal(true)}>Table Preferences</Button3D>
+              <Button3D variant="save" onClick={() => { setShowPrefModal(true); prefModal.open(); }}>Table Preferences</Button3D>
               <Button3D onClick={handleExport}>Export</Button3D>
-              <Button3D onClick={() => { setShowCreate(true); setForm({ ...EMPTY_FORM }); setTablePrefImageFile(null); setCreateTab(0); }}>+ Add Reservation</Button3D>
+              <Button3D onClick={() => { setShowCreate(true); createModal.open(); setForm({ ...EMPTY_FORM }); setTablePrefImageFile(null); setCreateTab(0); }}>+ Add Reservation</Button3D>
             </div>
           </>
         )}
@@ -620,7 +623,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
             {(filterFromDate || filterToDate) && (
               <button className="filter-pill"
                 onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); setFilterDate(""); }}
-                title="Clear dates">✕</button>
+                data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Clear dates">✕</button>
             )}
           </div>
 
@@ -786,7 +789,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     <td onClick={e => e.stopPropagation()}>
                       <div className="evt-res-inline-status">
                         {["pending", "confirmed", "completed", "cancelled"].map(s => (
-                          <button key={s} title={s}
+                          <button key={s} data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={s}
                             className={`evt-res-istatus-btn evt-res-istatus-${s}${status === s ? " active" : ""}`}
                             onClick={e => updateStatus(e, item.id, s)}>
                             {s === "pending" ? "P" : s === "confirmed" ? "C" : s === "completed" ? "D" : "X"}
@@ -853,12 +856,12 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       )}
 
       {/* ══ Table Preference Manager Modal ══ */}
-      {showPrefModal && (
-        <div className="event-modal-overlay">
-          <div className="event-modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
+      {prefModal.shouldRender && (
+        <div className={`event-modal-overlay ${prefModal.overlayClass}`}>
+          <div className={`event-modal ${prefModal.modalClass}`} style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
             <div className="admin-modal-header">
               <h3>Table Preferences</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => setShowPrefModal(false)}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => prefModal.close(() => setShowPrefModal(false))}><img src={closeIcon} /></Button3D>
             </div>
             <div className="event-modal-body" style={{ padding: "16px 0" }}>
               <p style={{ fontSize: 13, color: "#666", margin: "0 0 14px" }}>
@@ -902,14 +905,14 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                       📷 {prefImages[label] ? "Change" : "Add Image"}
                     </button>
                     {prefImages[label] && (
-                      <button className="evt-res-pref-remove-btn" title="Remove image"
+                      <button className="evt-res-pref-remove-btn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Remove image"
                         onClick={() => {
                           setPrefImages(p => { const n = { ...p }; delete n[label]; return n; });
                           setPrefDbRecords(prev => prev.map(r => r.label === label ? { ...r, image: null } : r));
                         }}>🗑</button>
                     )}
                     {label !== "Any" && (
-                      <button className="evt-res-pref-remove-btn" title="Remove preference"
+                      <button className="evt-res-pref-remove-btn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Remove preference"
                         onClick={() => handleRemovePref(label)}>✕</button>
                     )}
                   </div>
@@ -944,7 +947,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
               </div>
             </div>
             <div className="event-modal-footer">
-              <Button3D variant="cancel" onClick={() => setShowPrefModal(false)}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={() => prefModal.close(() => setShowPrefModal(false))}>Cancel</Button3D>
               <Button3D variant="save" onClick={handleSavePrefs} disabled={prefSaving}>
                 {prefSaving ? "Saving..." : "Save & Close"}
               </Button3D>
@@ -954,9 +957,9 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       )}
 
       {/* ══ Create Reservation Modal ══ */}
-      {showCreate && (
-        <div className="event-modal-overlay">
-          <div className="event-modal" style={{ width: 620 }} onClick={e => e.stopPropagation()}>
+      {createModal.shouldRender && (
+        <div className={`event-modal-overlay ${createModal.overlayClass}`}>
+          <div className={`event-modal ${createModal.modalClass}`} style={{ width: 620 }} onClick={e => e.stopPropagation()}>
             <div className="admin-modal-header">
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 <h3>Add Reservation</h3>
@@ -974,7 +977,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                   ))}
                 </div>
               </div>
-              <Button3D variant="cancel" iconOnly onClick={() => { setShowCreate(false); setFormErrors({}); }}>
+              <Button3D variant="cancel" iconOnly onClick={() => { createModal.close(() => setShowCreate(false)); setFormErrors({}); }}>
                 <img src={closeIcon} />
               </Button3D>
             </div>
@@ -1246,7 +1249,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
             </div>
 
             <div className="event-modal-footer">
-              <Button3D variant="cancel" onClick={() => { setShowCreate(false); setFormErrors({}); }}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={() => { createModal.close(() => setShowCreate(false)); setFormErrors({}); }}>Cancel</Button3D>
               {createTab === 0 ? (
                 <button type="button" className="modal-next-btn" onClick={() => { if (validateResTab()) handleResNext(); }}>
                   <span className="shadow"></span><span className="edge"></span>

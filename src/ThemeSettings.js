@@ -13,6 +13,7 @@ import "./ThemeSettings.css";
 import PageLoader from "./components/PageLoader";
 import CustomColorPicker, { hslaToHex, hexToHsla, hslaToRgbaString } from "./components/CustomColorPicker";
 import Button3D from "./components/Button3D";
+import useAnimatedModal from "./hooks/useAnimatedModal";
 import closeIcon from "./icon/close-icon.png";
 
 
@@ -452,10 +453,12 @@ const ThemeSettings = () => {
   // above stay hardcoded and immutable; only these can be added/edited/deleted.
   const [customPresets, setCustomPresets] = useState([]);
   const [showPresetModal, setShowPresetModal] = useState(false);
+  const presetModal = useAnimatedModal("theme-presetAddEdit");
   const [editingPresetId, setEditingPresetId] = useState(null); // null = creating
   const [presetForm, setPresetForm] = useState({ name: "", color: { h: 0, s: 80, l: 50, a: 1 } });
   const [presetFormError, setPresetFormError] = useState("");
   const [deletePresetTarget, setDeletePresetTarget] = useState(null);
+  const deletePresetModal = useAnimatedModal("theme-presetDelete");
 
   const tokens = activeMode === "light" ? lightTokens : darkTokens;
   const setTokens = activeMode === "light" ? setLightTokens : setDarkTokens;
@@ -617,6 +620,7 @@ const ThemeSettings = () => {
     setPresetForm({ name: "", color: { h: 0, s: 80, l: 50, a: 1 } });
     setPresetFormError("");
     setShowPresetModal(true);
+    presetModal.open();
   };
 
   const openEditPresetModal = (preset) => {
@@ -624,6 +628,7 @@ const ThemeSettings = () => {
     setPresetForm({ name: preset.name, color: hexToHsla(preset.baseColor, 1) });
     setPresetFormError("");
     setShowPresetModal(true);
+    presetModal.open();
   };
 
   const savePresetForm = async () => {
@@ -648,7 +653,7 @@ const ThemeSettings = () => {
     setCustomPresets(nextCustomPresets);
     // Apply it immediately, same as clicking any other preset card.
     applyPreset(preset);
-    setShowPresetModal(false);
+    presetModal.close(() => setShowPresetModal(false));
 
     // Persist right away — adding/editing a theme shouldn't depend on the
     // user remembering to also hit the page-level "Save & Apply" button.
@@ -676,7 +681,7 @@ const ThemeSettings = () => {
     setCustomPresets(nextCustomPresets);
     const wasActive = activePreset === deletePresetTarget.id;
     if (wasActive) resetToDefaults();
-    setDeletePresetTarget(null);
+    deletePresetModal.close(() => setDeletePresetTarget(null));
 
     try {
       const payload = { customPresets: nextCustomPresets, updatedAt: new Date().toISOString() };
@@ -829,15 +834,19 @@ const ThemeSettings = () => {
               <div className="ts-preset-card-actions">
                 <button
                   className="ts-preset-action-btn"
-                  title="Edit theme"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  data-bs-title="Edit theme"
                   onClick={(e) => { e.stopPropagation(); openEditPresetModal(preset); }}
                 >
                   ✎
                 </button>
                 <button
                   className="ts-preset-action-btn ts-preset-action-danger"
-                  title="Delete theme"
-                  onClick={(e) => { e.stopPropagation(); setDeletePresetTarget(preset); }}
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  data-bs-title="Delete theme"
+                  onClick={(e) => { e.stopPropagation(); setDeletePresetTarget(preset); deletePresetModal.open(); }}
                 >
                   🗑
                 </button>
@@ -852,12 +861,12 @@ const ThemeSettings = () => {
         </div>
       </div>
 
-      {showPresetModal && (
-        <div className="modal-overlay" >
-          <form className="admin-modal" onSubmit={(e) => e.preventDefault()}>
+      {presetModal.shouldRender && (
+        <div className={`modal-overlay ${presetModal.overlayClass}`} >
+          <form className={`admin-modal ${presetModal.modalClass}`} onSubmit={(e) => e.preventDefault()}>
             <div className="admin-modal-header">
               <h3>{editingPresetId ? "Edit Theme" : "Add Theme"}</h3>
-              <Button3D iconOnly aria-label="Close" variant="cancel" onClick={() => setShowPresetModal(false)}><img src={closeIcon}/></Button3D>
+              <Button3D iconOnly aria-label="Close" variant="cancel" onClick={() => presetModal.close(() => setShowPresetModal(false))}><img src={closeIcon}/></Button3D>
             </div>
             <div className="admin-modal-body">
               <div className="ts-preset-modal-preview">
@@ -892,7 +901,7 @@ const ThemeSettings = () => {
               />
             </div>
             <div className="admin-modal-footer">
-              <button className="modal-cancel-btn" onClick={() => setShowPresetModal(false)}>
+              <button className="modal-cancel-btn" onClick={() => presetModal.close(() => setShowPresetModal(false))}>
                 <span className="shadow"></span><span className="edge"></span><span className="front">Cancel</span>
               </button>
               <button className="modal-save-btn" onClick={savePresetForm}>
@@ -904,17 +913,17 @@ const ThemeSettings = () => {
         </div>
       )}
 
-      {deletePresetTarget && (
-        <div className="modal-overlay" onClick={() => setDeletePresetTarget(null)}>
-          <div className="admin-modal ts-preset-delete-modal" onClick={(e) => e.stopPropagation()}>
+      {deletePresetModal.shouldRender && (
+        <div className={`modal-overlay ${deletePresetModal.overlayClass}`} onClick={() => deletePresetModal.close(() => setDeletePresetTarget(null))}>
+          <div className={`admin-modal ts-preset-delete-modal ${deletePresetModal.modalClass}`} onClick={(e) => e.stopPropagation()}>
             <div className="admin-modal-header">
               <h3>Delete Theme</h3>
             </div>
             <div className="admin-modal-body">
-              <p>Delete "{deletePresetTarget.name}"? This can't be undone.</p>
+              <p>Delete "{deletePresetTarget?.name}"? This can't be undone.</p>
             </div>
             <div className="admin-modal-footer">
-              <button className="modal-cancel-btn" onClick={() => setDeletePresetTarget(null)}>
+              <button className="modal-cancel-btn" onClick={() => deletePresetModal.close(() => setDeletePresetTarget(null))}>
                 <span className="shadow"></span><span className="edge"></span><span className="front">Cancel</span>
               </button>
               <button className="modal-danger-btn" onClick={confirmDeletePreset}>

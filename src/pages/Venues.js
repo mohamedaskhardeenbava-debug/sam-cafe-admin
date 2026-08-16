@@ -16,6 +16,7 @@ import { useAuth } from "../context/AuthContext";
 import { useVenue } from "../context/VenueContext";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
+import useAnimatedModal from "../hooks/useAnimatedModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import CollapseChevron from "../components/CollapseChevron";
 import PageLoader from "../components/PageLoader";
@@ -39,6 +40,7 @@ const Venues = () => {
   const [search, setSearch] = useState("");
 
   const [showModal, setShowModal] = useState(false);
+  const venueModal = useAnimatedModal("venues-addEdit");
   const [editingId, setEditingId] = useState(null); // null = creating
   const [form, setForm] = useState(EMPTY_VENUE);
   const [formErrors, setFormErrors] = useState({});
@@ -92,6 +94,7 @@ const Venues = () => {
     setForm(EMPTY_VENUE);
     setFormErrors({});
     setShowModal(true);
+    venueModal.open();
   };
 
   const openEditModal = (venue) => {
@@ -99,6 +102,7 @@ const Venues = () => {
     setForm({ name: venue.name, address: venue.address, area: venue.area });
     setFormErrors({});
     setShowModal(true);
+    venueModal.open();
   };
 
   const validate = () => {
@@ -123,7 +127,7 @@ const Venues = () => {
         toast.success("Venue added successfully.");
       }
       await refreshVenues(); // keep the switcher/context in sync
-      setShowModal(false);
+      venueModal.close(() => setShowModal(false));
       setForm(EMPTY_VENUE);
       setEditingId(null);
     } catch (err) {
@@ -218,7 +222,7 @@ const Venues = () => {
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed((prev) => !prev)}
-              title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand filters" : "Collapse filters"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />
@@ -301,7 +305,9 @@ const Venues = () => {
                       className="venue-staff-count-link"
                       style={{ cursor: "pointer", textDecoration: "underline", fontWeight: 600 }}
                       onClick={() => navigate("/staffs", { state: { venueId: v.id } })}
-                      title={`View staff at ${v.name}`}
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="top"
+                      data-bs-title={`View staff at ${v.name}`}
                     >
                       {staffCounts[v.id] || 0}
                     </span>
@@ -311,7 +317,9 @@ const Venues = () => {
                       className={`offer-status-badge ${v.status === "active" ? "offer-active" : "offer-inactive"}`}
                       style={{ cursor: "pointer" }}
                       onClick={() => handleToggleStatus(v)}
-                      title="Click to toggle status"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="top"
+                      data-bs-title="Click to toggle status"
                     >
                       {v.status === "active" ? "Active" : "Inactive"}
                     </span>
@@ -333,10 +341,10 @@ const Venues = () => {
       </div>
 
       {/* MODAL */}
-      {showModal && (
-        <div className="modal-overlay">
+      {venueModal.shouldRender && (
+        <div className={`modal-overlay ${venueModal.overlayClass}`}>
           <form
-            className="admin-modal"
+            className={`admin-modal ${venueModal.modalClass}`}
             onSubmit={(e) => {
               e.preventDefault();
               handleSave();
@@ -348,7 +356,7 @@ const Venues = () => {
                 variant="cancel"
                 iconOnly
                 onClick={() => {
-                  setShowModal(false);
+                  venueModal.close(() => setShowModal(false));
                   setFormErrors({});
                 }}
               >
@@ -424,7 +432,7 @@ const Venues = () => {
               <Button3D
                 variant="cancel"
                 onClick={() => {
-                  setShowModal(false);
+                  venueModal.close(() => setShowModal(false));
                   setFormErrors({});
                 }}
               >

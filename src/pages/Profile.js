@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useVenue } from "../context/VenueContext";
 import Button3D from "../components/Button3D";
+import useAnimatedModal from "../hooks/useAnimatedModal";
 import closeIcon from "../icon/close-icon.png";
 import "./ModalCSS.css";
 import "./staffs/StaffDetails.css";
@@ -25,6 +26,7 @@ const Profile = () => {
   const { admin, updateProfile, logout } = useAuth();
   const { venues, isSuperAdmin } = useVenue();
   const [isEditing, setIsEditing] = useState(false);
+  const profileEditModal = useAnimatedModal("profile-edit");
   const [name, setName] = useState(admin?.name || "");
   const [phone, setPhone] = useState(admin?.phone || "");
   const [photo, setPhoto] = useState(admin?.photo || "");
@@ -50,10 +52,11 @@ const Profile = () => {
     setPhoto(admin.photo || "");
     setError("");
     setIsEditing(true);
+    profileEditModal.open();
   };
 
   const cancelEditing = () => {
-    setIsEditing(false);
+    profileEditModal.close(() => setIsEditing(false));
     setName(admin.name || "");
     setPhone(admin.phone || "");
     setPhoto(admin.photo || "");
@@ -73,7 +76,7 @@ const Profile = () => {
     setIsSaving(true);
     try {
       await updateProfile({ name, phone, photo });
-      setIsEditing(false);
+      profileEditModal.close(() => setIsEditing(false));
     } catch (err) {
       setError(err.response?.data?.error || "Could not update profile");
     } finally {
@@ -85,7 +88,7 @@ const Profile = () => {
     <div className="details-container">
       {/* HEADER */}
       <div className="details-header">
-        <button className="back-btn" onClick={() => navigate("/")} title="Back to Dashboard" />
+        <button className="back-btn" onClick={() => navigate("/")} data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Back to Dashboard" />
         <h2>Profile</h2>
       </div>
 
@@ -190,9 +193,9 @@ const Profile = () => {
       </div>
 
       {/* EDIT PROFILE MODAL */}
-      {isEditing && (
-        <div className="modal-overlay">
-          <div className="admin-modal profile-edit-modal">
+      {profileEditModal.shouldRender && (
+        <div className={`modal-overlay ${profileEditModal.overlayClass}`}>
+          <div className={`admin-modal profile-edit-modal ${profileEditModal.modalClass}`}>
             <div className="admin-modal-header">
               <h3>Edit your profile</h3>
               <Button3D variant="cancel" iconOnly onClick={cancelEditing}>
@@ -249,7 +252,7 @@ const Profile = () => {
               {/* PREVIEW (right) — reflects the fields above live as they're typed */}
               <div className="profile-edit-preview">
                 <span className="profile-edit-preview-label">Preview</span>
-                <label className="profile-preview-avatar profile-preview-avatar-editable" title="Change profile picture">
+                <label className="profile-preview-avatar profile-preview-avatar-editable" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Change profile picture">
                   {photo ? (
                     <img src={photo} alt={name} />
                   ) : (

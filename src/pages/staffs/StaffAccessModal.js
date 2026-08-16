@@ -25,11 +25,20 @@ import ConfirmDialog from "../../components/ConfirmDialog";
 import CustomDropdown from "../../components/CustomDropdown";
 import closeIcon from "../../icon/close-icon.png";
 import { allowTextInput } from "../../App";
+import useAnimatedModal from "../../hooks/useAnimatedModal";
 import "../ModalCSS.css";
 
 const StaffAccessModal = ({ staff, existingAccount, onClose, onChanged }) => {
   const { toast } = useToast();
   const { creatableRoleTitles } = useAuth();
+  const accessModal = useAnimatedModal("staffAccess-modal");
+
+  useEffect(() => {
+    accessModal.open();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const closeAnimated = () => accessModal.close(onClose);
 
   const [email, setEmail] = useState("");
   const [roleTitle, setRoleTitle] = useState("");
@@ -86,7 +95,7 @@ const StaffAccessModal = ({ staff, existingAccount, onClose, onChanged }) => {
       await api.delete(`/staff-auth/staff/${existingAccount.id}`);
       toast.success("Login access removed");
       onChanged?.();
-      onClose();
+      closeAnimated();
     } catch (err) {
       toast.error(err.response?.data?.error || "Failed to remove login access");
     } finally {
@@ -101,11 +110,11 @@ const StaffAccessModal = ({ staff, existingAccount, onClose, onChanged }) => {
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="admin-modal">
+    <div className={`modal-overlay ${accessModal.overlayClass}`}>
+      <div className={`admin-modal ${accessModal.modalClass}`}>
         <div className="admin-modal-header">
           <h3>{existingAccount ? "Login Access" : "Grant Login Access"}</h3>
-          <Button3D variant="cancel" iconOnly onClick={onClose}>
+          <Button3D variant="cancel" iconOnly onClick={closeAnimated}>
             <img src={closeIcon} alt="Close" />
           </Button3D>
         </div>
@@ -198,16 +207,16 @@ const StaffAccessModal = ({ staff, existingAccount, onClose, onChanged }) => {
         <div className="admin-modal-footer">
           {existingAccount ? (
             <>
-              <Button3D variant="cancel" onClick={onClose}>Close</Button3D>
+              <Button3D variant="cancel" onClick={closeAnimated}>Close</Button3D>
               <Button3D variant="danger" onClick={handleRemove} disabled={isSubmitting}>
                 {isSubmitting ? "Removing…" : "Remove Access"}
               </Button3D>
             </>
           ) : result ? (
-            <Button3D onClick={onClose}>Done</Button3D>
+            <Button3D onClick={closeAnimated}>Done</Button3D>
           ) : (
             <>
-              <Button3D variant="cancel" onClick={onClose}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={closeAnimated}>Cancel</Button3D>
               {creatableRoleTitles.length > 0 && (
                 <Button3D onClick={handleCreate} disabled={isSubmitting}>
                   {isSubmitting ? "Creating…" : "Create Access"}

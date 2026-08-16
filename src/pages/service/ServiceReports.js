@@ -262,7 +262,7 @@ const ServiceReports = ({ adminData = {} }) => {
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand filters" : "Collapse filters"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />

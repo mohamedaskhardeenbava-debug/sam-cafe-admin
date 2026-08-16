@@ -19,6 +19,7 @@ import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import { EmptyRow } from "../../App";
 import Button3D from "../../components/Button3D";
+import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
 import { useVenue } from "../../context/VenueContext";
 
@@ -71,6 +72,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
   const [holidays, setHolidays] = useState({});
   const [loadingHolidays, setLoadingHolidays] = useState(true);
   const [showHolidayModal, setShowHolidayModal] = useState(false);
+  const holidayModal = useAnimatedModal("staffAttendance-holiday");
   const [holidayForm, setHolidayForm] = useState({ date: "", reason: "" });
   const [holidayErrors, setHolidayErrors] = useState({});
   const [savingCells, setSavingCells] = useState({});
@@ -246,7 +248,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
     try {
       const res = await api.post("/holidays", { date: normalizeDate(holidayForm.date), reason: holidayForm.reason });
       setHolidays(prev => ({ ...prev, [normalizeDate(holidayForm.date)]: holidayForm.reason }));
-      setShowHolidayModal(false); setHolidayForm({ date: "", reason: "" });
+      holidayModal.close(() => setShowHolidayModal(false)); setHolidayForm({ date: "", reason: "" });
       toast.success("Holiday added");
     } catch (err) {
       toast.error("Failed to add holiday");
@@ -304,7 +306,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                 type="button"
                 className="header-collapse-btn"
                 onClick={() => setHeaderCollapsed(prev => !prev)}
-                title={headerCollapsed ? "Expand header" : "Collapse header"}
+                data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand header" : "Collapse header"}
                 aria-expanded={!headerCollapsed}
               >
                 <CollapseChevron collapsed={headerCollapsed} />
@@ -323,7 +325,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
         </div>
         <div className="header-btn-container">
           <Button3D onClick={exportAttendance}>Export</Button3D>
-          <Button3D onClick={() => setShowHolidayModal(true)}>+ Add Holiday</Button3D>
+          <Button3D onClick={() => { setShowHolidayModal(true); holidayModal.open(); }}>+ Add Holiday</Button3D>
         </div>
       </div>
 
@@ -429,7 +431,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                         <span className="att-date-num">{dObj.getDate()}</span>
                         <span className="att-date-wd">{WEEKDAY_NAMES[dObj.getDay()]}</span>
                         {isToday && <span className="att-today-badge">Today</span>}
-                        {isHol && <span className="att-hol-badge" title={holidays[d]}>🎉</span>}
+                        {isHol && <span className="att-hol-badge" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={holidays[d]}>🎉</span>}
                       </div>
                       {/* Column-level edit toggle */}
                       {!isHol && (
@@ -477,7 +479,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                       if (isHol) {
                         return (
                           <td key={date} className="att-td att-holiday-td">
-                            <span className="att-hol-text" title={holidays[date]}>🎉</span>
+                            <span className="att-hol-text" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={holidays[date]}>🎉</span>
                           </td>
                         );
                       }
@@ -535,7 +537,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                           <td key={date} className={`att-td att-absent-td${isToday ? " att-today-td" : ""}`}>
                             <div className="att-absent-cell">
                               <span className="att-absent-icon">✕</span>
-                              <button className="att-edit-btn" title="Override"
+                              <button className="att-edit-btn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Override"
                                 onClick={() => setEditMode(prev => ({ ...prev, [staff.id]: { ...prev[staff.id], [date]: true } }))}>
                                 <img src={editIcon} alt="edit" />
                               </button>
@@ -574,7 +576,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
                         <td key={date} className="att-td att-absent-td">
                           <div className="att-absent-cell">
                             <span className="att-absent-icon">✕</span>
-                            <button className="att-edit-btn" title="Override"
+                            <button className="att-edit-btn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Override"
                               onClick={() => setEditMode(prev => ({ ...prev, [staff.id]: { ...prev[staff.id], [date]: true } }))}>
                               <img src={editIcon} alt="edit" />
                             </button>
@@ -606,12 +608,12 @@ export default function StaffAttendance({ adminData, setAdminData }) {
       </div>
 
       {/* HOLIDAY MODAL */}
-      {showHolidayModal && (
-        <div className="modal-overlay">
-          <div className="admin-modal">
+      {holidayModal.shouldRender && (
+        <div className={`modal-overlay ${holidayModal.overlayClass}`}>
+          <div className={`admin-modal ${holidayModal.modalClass}`}>
             <div className="admin-modal-header">
               <h3>Add Holiday</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => { setShowHolidayModal(false); setHolidayErrors({}); setHolidayForm({ date: "", reason: "" }); }}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => { holidayModal.close(() => setShowHolidayModal(false)); setHolidayErrors({}); setHolidayForm({ date: "", reason: "" }); }}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="admin-modal-body">
@@ -638,7 +640,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
             </div>
 
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => { setShowHolidayModal(false); setHolidayErrors({}); setHolidayForm({ date: "", reason: "" }); }}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={() => { holidayModal.close(() => setShowHolidayModal(false)); setHolidayErrors({}); setHolidayForm({ date: "", reason: "" }); }}>Cancel</Button3D>
               <Button3D onClick={addHoliday}>Save Holiday</Button3D>
             </div>
           </div>

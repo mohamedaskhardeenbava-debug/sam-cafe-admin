@@ -21,6 +21,7 @@ import { CustomTimePicker } from "../../components/CustomTimePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 import Button3D from "../../components/Button3D";
+import useAnimatedModal from "../../hooks/useAnimatedModal";
 import { useVenue } from "../../context/VenueContext";
 import CurrentLocationToggle from "../../components/CurrentLocationToggle";
 import { venueToAddressFields } from "../../utils/resolveVenueAddress";
@@ -237,6 +238,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
   const navigate = useNavigate();
 
   const [showCreate, setShowCreate] = useState(false);
+  const createModal = useAnimatedModal("catering-create");
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [formErrors, setFormErrors] = useState({});
@@ -245,6 +247,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
   const [useRestaurantAddr, setUseRestaurantAddr] = useState(true);
   const [menuData, setMenuData] = useState(null);
   const [itemsPopup, setItemsPopup] = useState(null);
+  const itemsPopupModal = useAnimatedModal("catering-itemsPopup");
   const [locTooltip, setLocTooltip] = useState(null);
   const [locTooltipPos, setLocTooltipPos] = useState({ top: 0, left: 0 });
   const [itemsTooltip, setItemsTooltip] = useState(null);
@@ -475,7 +478,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
       };
       await api.post("/cateringOrders", payload);
       toast.success("Catering order created.");
-      setShowCreate(false);
+      createModal.close(() => setShowCreate(false));
       setForm({ ...EMPTY_FORM });
       setSelectedItems([]);
       setTab(0);
@@ -489,6 +492,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
   const openCreate = () => {
     const venueFields = venueToAddressFields(currentVenue);
     setShowCreate(true);
+    createModal.open();
     setForm({
       ...EMPTY_FORM,
       addrDoorNo: venueFields.addrDoorNo,
@@ -533,7 +537,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand header" : "Collapse header"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />
@@ -588,7 +592,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
               showPresets
             />
             {(filterFromDate || filterToDate) && (
-              <button className="filter-pill" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
+              <button className="filter-pill" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Clear dates">✕</button>
             )}
           </div>
           <div className="filter-groups">
@@ -734,7 +738,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                     <td onClick={e => e.stopPropagation()}>
                       <div className="evt-res-inline-status">
                         {["pending", "confirmed", "completed", "cancelled"].map(s => (
-                          <button key={s} title={s}
+                          <button key={s} data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={s}
                             className={`evt-res-istatus-btn evt-res-istatus-${s}${status === s ? " active" : ""}`}
                             onClick={e => updateStatus(e, item.id, s)}>
                             {s === "pending" ? "P" : s === "confirmed" ? "C" : s === "completed" ? "D" : "X"}
@@ -866,12 +870,12 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
       )}
 
       {/* Items popup */}
-      {itemsPopup && (
-        <div className="ingredient-modal-overlay">
-          <div className="ingredient-modal" style={{ width: 520, maxWidth: "95vw" }} onClick={e => e.stopPropagation()}>
+      {itemsPopupModal.shouldRender && (
+        <div className={`ingredient-modal-overlay ${itemsPopupModal.overlayClass}`} onClick={() => itemsPopupModal.close(() => setItemsPopup(null))}>
+          <div className={`ingredient-modal ${itemsPopupModal.modalClass}`} style={{ width: 520, maxWidth: "95vw" }} onClick={e => e.stopPropagation()}>
             <div className="ingredient-modal-header">
               <h3>Dishes — {itemsPopup.name} <span style={{ fontSize: 12, fontWeight: 400, color: "#888", marginLeft: 8 }}>#{(itemsPopup.id || "").slice(-6)}</span></h3>
-              <Button3D variant="cancel" iconOnly onClick={() => setItemsPopup(null)}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => itemsPopupModal.close(() => setItemsPopup(null))}><img src={closeIcon} /></Button3D>
             </div>
             <div className="ingredient-modal-body" style={{ padding: "12px 20px 20px" }}>
               {(!itemsPopup.items || itemsPopup.items.length === 0) ? (
@@ -911,9 +915,9 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
       )}
 
       {/* ══ CREATE MODAL ══ */}
-      {showCreate && (
-        <div className="event-modal-overlay">
-          <div className="event-modal act-modal" onClick={e => e.stopPropagation()}>
+      {createModal.shouldRender && (
+        <div className={`event-modal-overlay ${createModal.overlayClass}`}>
+          <div className={`event-modal act-modal ${createModal.modalClass}`} onClick={e => e.stopPropagation()}>
 
             <div className="admin-modal-header">
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -937,7 +941,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                   ))}
                 </div>
               </div>
-              <Button3D variant="cancel" iconOnly onClick={() => setShowCreate(false)}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => createModal.close(() => setShowCreate(false))}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className={`event-modal-body act-modal-body${tab === 1 ? " act-modal-body--split" : ""}`}>
@@ -1207,7 +1211,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                               </div>
                               <button type="button" className="ae-sdt-remove"
                                 onClick={() => setSelectedItems(p => p.filter(x => x.id !== item.id))}
-                                title="Remove">×</button>
+                                data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Remove">×</button>
                             </div>
                           ))}
                         </div>
@@ -1321,7 +1325,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
             </div>
 
             <div className="event-modal-footer">
-              <Button3D variant="cancel" onClick={() => setShowCreate(false)}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={() => createModal.close(() => setShowCreate(false))}>Cancel</Button3D>
               {tab > 0 && (
                 <button type="button" className="modal-prev-btn" onClick={() => setTab(t => t - 1)}>
                   <span className="shadow"></span><span className="edge"></span>

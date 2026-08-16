@@ -19,6 +19,7 @@ import useInfiniteScroll from "../components/useInfiniteScroll";
 import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
+import useAnimatedModal from "../hooks/useAnimatedModal";
 
 import "./Categories.css";
 import "./ModalCSS.css";
@@ -38,8 +39,10 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
 
   React.useEffect(() => { adminDataRef.current = adminData; }, [adminData]);
   const [showForm, setShowForm] = useState(false);
+  const addCategoryModal = useAnimatedModal("categories-add");
   const [imagePreview, setImagePreview] = useState("")
   const [showEditModal, setShowEditModal] = useState(false);
+  const editCategoryModal = useAnimatedModal("categories-edit");
   const [editCategoryId, setEditCategoryId] = useState(null);
   const [editName, setEditName] = useState("");
   const [editImage, setEditImage] = useState("");
@@ -305,7 +308,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
     setSizeMultiplier("");
     setEditingSizeIndex(null);
 
-    setShowEditModal(true);
+    setShowEditModal(true); editCategoryModal.open();
   };
 
   const handleDeleteCategory = (categoryId) => {
@@ -492,7 +495,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
     });
     setImagePreview("");
     setFormErrors({});
-    setShowForm(false);
+    addCategoryModal.close(() => setShowForm(false));
   };
 
   // Reset Edit Category form
@@ -504,7 +507,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
     setIsEditingSubCategory(false);
     setEditingParentCategoryId(null);
     setEditFormErrors({});
-    setShowEditModal(false);
+    editCategoryModal.close(() => setShowEditModal(false));
   };
 
   return (
@@ -514,7 +517,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
           <h2 className="title">Categories</h2>
           <span className="result-count">{sortedCategories.length} categor{sortedCategories.length === 1 ? "y" : "ies"}</span>
         </div>
-        <Button3D onClick={() => setShowForm(true)}>+ Add Category</Button3D>
+        <Button3D onClick={() => { setShowForm(true); addCategoryModal.open(); }}>+ Add Category</Button3D>
       </div>
 
       <div className="table-wrapper" ref={containerRef}>
@@ -649,7 +652,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                                           setEditImage(sub.image);
                                           setEditSizes(sub.sizes || []);
 
-                                          setShowEditModal(true);
+                                          setShowEditModal(true); editCategoryModal.open();
                                         }}><img src={editIcon} /></Button3D>
 
                                       </td>
@@ -691,12 +694,12 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
       </div>
 
       {
-        showForm && (
-          <div className="modal-overlay">
+        addCategoryModal.shouldRender && (
+          <div className={`modal-overlay ${addCategoryModal.overlayClass}`}>
             <form onSubmit={(e) => {
               e.preventDefault();
               handleAddCategory();
-            }} className="admin-modal">
+            }} className={`admin-modal ${addCategoryModal.modalClass}`}>
               <div className="admin-modal-header">
                 <h3>Add New Category</h3>
                 <Button3D variant="cancel" iconOnly aria-label="Close"
@@ -1062,7 +1065,7 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
                                 setEditSizes(sub.sizes || []);
 
                                 setEditingSubCategory(sub);
-                                setShowEditModal(true);
+                                setShowEditModal(true); editCategoryModal.open();
                               }}><img src={editIcon} /></Button3D>
 
                               <button
@@ -1099,9 +1102,9 @@ const Categories = ({ adminData, setAdminData, toCamelCase, handleSort, sortConf
       }
 
       {
-        showEditModal && (
-          <div className="modal-overlay">
-            <div className="admin-modal">
+        editCategoryModal.shouldRender && (
+          <div className={`modal-overlay ${editCategoryModal.overlayClass}`}>
+            <div className={`admin-modal ${editCategoryModal.modalClass}`}>
               <div className="admin-modal-header">
                 <h3>{isEditingSubCategory ? "Edit Subcategory" : "Edit Category"}</h3>
                 <Button3D variant="cancel" iconOnly aria-label="Close"

@@ -21,6 +21,7 @@ import { allowTextInput } from "../App";
 import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import CustomDropdown from "../components/CustomDropdown";
 import Button3D from "../components/Button3D";
+import useAnimatedModal from "../hooks/useAnimatedModal";
 import CollapseChevron from "../components/CollapseChevron";
 
 import "./Offers.css";
@@ -30,6 +31,7 @@ const Offers = ({ adminData, setAdminData }) => {
 
   const { toast } = useToast();
   const [showModal, setShowModal] = useState(false);
+  const offerModal = useAnimatedModal("offers-add");
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const navigate = useNavigate();
@@ -125,7 +127,7 @@ const Offers = ({ adminData, setAdminData }) => {
       toast.success("Offer added successfully.");
       setNewOffer(EMPTY_OFFER);
       setFormErrors({});
-      setShowModal(false);
+      offerModal.close(() => setShowModal(false));
     } catch (err) {
       console.error("Failed to add offer:", err);
       toast.error("Failed to add offer");
@@ -181,7 +183,7 @@ const Offers = ({ adminData, setAdminData }) => {
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand filters" : "Collapse filters"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />
@@ -197,7 +199,7 @@ const Offers = ({ adminData, setAdminData }) => {
 
         <div className="header-btn-container">
           <Button3D onClick={exportOffers}>Export</Button3D>
-          <Button3D onClick={() => setShowModal(true)}>+ Add Offer</Button3D>
+          <Button3D onClick={() => { setShowModal(true); offerModal.open(); }}>+ Add Offer</Button3D>
         </div>
       </div>
 
@@ -296,10 +298,10 @@ const Offers = ({ adminData, setAdminData }) => {
       </div>
 
       {/* MODAL */}
-      {showModal && (
-        <div className="modal-overlay">
+      {offerModal.shouldRender && (
+        <div className={`modal-overlay ${offerModal.overlayClass}`}>
           <form
-            className="admin-modal"
+            className={`admin-modal ${offerModal.modalClass}`}
             onSubmit={(e) => {
               e.preventDefault();
               handleSave();
@@ -309,7 +311,7 @@ const Offers = ({ adminData, setAdminData }) => {
             {/* HEADER */}
             <div className="admin-modal-header">
               <h3>Add Offer</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => { setShowModal(false); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => { offerModal.close(() => setShowModal(false)); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
 
             {/* BODY */}
@@ -449,7 +451,7 @@ const Offers = ({ adminData, setAdminData }) => {
 
             {/* FOOTER */}
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => { setShowModal(false); setFormErrors({}); }}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={() => { offerModal.close(() => setShowModal(false)); setFormErrors({}); }}>Cancel</Button3D>
               <Button3D type="submit">Save</Button3D>
             </div>
 

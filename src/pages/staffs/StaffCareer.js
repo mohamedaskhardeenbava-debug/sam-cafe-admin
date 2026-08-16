@@ -13,6 +13,7 @@ import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
+import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
 import PageLoader from "../../components/PageLoader";
 import { MultiPillGroup } from "../../components/FilterBar";
@@ -47,8 +48,10 @@ export default function StaffCareer() {
   const [jobs, setJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const addJobModal = useAnimatedModal("staffCareer-add");
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [selected, setSelected] = useState(null);
+  const jobDetailModal = useAnimatedModal("staffCareer-detail");
   const [careerSearch, setCareerSearch] = useState("");
   const [careerRoleFilters, setCareerRoleFilters] = useState(new Set());
   const toggleSet = (setter, val) =>
@@ -75,7 +78,7 @@ export default function StaffCareer() {
       setJobs(prev => [...prev, res.data]);
       setForm({ role: "", description: "", experience: "" });
       setFormErrors({});
-      setShowForm(false);
+      addJobModal.close(() => setShowForm(false));
       toast.success("Career record saved");
     } catch (err) {
       toast.error("Failed to save career record");
@@ -119,7 +122,7 @@ export default function StaffCareer() {
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand header" : "Collapse header"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />
@@ -134,7 +137,7 @@ export default function StaffCareer() {
         </div>
         <div className="header-btn-container">
           <Button3D onClick={exportJobs}>Export</Button3D>
-          <Button3D onClick={() => setShowForm(true)}>+ Add Job Vacancy</Button3D>
+          <Button3D onClick={() => { setShowForm(true); addJobModal.open(); }}>+ Add Job Vacancy</Button3D>
         </div>
       </div>
 
@@ -177,7 +180,7 @@ export default function StaffCareer() {
           {filteredJobs.map((job, i) => {
             const colors = roleColors[job.role] || { bg: "#f5f4f1", color: "#3a3a3a" };
             return (
-              <div className="card sc-card" key={job.id} onClick={() => setSelected(job)}>
+              <div className="card sc-card" key={job.id} onClick={() => { setSelected(job); jobDetailModal.open(); }}>
                 <div className="st-card-accent" style={{ background: colors.color }} />
 
                 <div className="sc-card-body">
@@ -209,12 +212,12 @@ export default function StaffCareer() {
       </div>
 
       {/* ADD MODAL */}
-      {showForm && (
-        <div className="modal-overlay">
-          <form className="admin-modal" onSubmit={addJob}>
+      {addJobModal.shouldRender && (
+        <div className={`modal-overlay ${addJobModal.overlayClass}`}>
+          <form className={`admin-modal ${addJobModal.modalClass}`} onSubmit={addJob}>
             <div className="admin-modal-header">
               <h3>Add Job Vacancy</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => { setShowForm(false); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => { addJobModal.close(() => setShowForm(false)); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="admin-modal-body">
@@ -259,7 +262,7 @@ export default function StaffCareer() {
             </div>
 
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => { setShowForm(false); setFormErrors({}); }}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={() => { addJobModal.close(() => setShowForm(false)); setFormErrors({}); }}>Cancel</Button3D>
               <Button3D type="submit">Save Vacancy</Button3D>
             </div>
           </form>
@@ -267,15 +270,15 @@ export default function StaffCareer() {
       )}
 
       {/* DETAIL MODAL */}
-      {selected && (
-        <div className="modal-overlay">
-          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+      {jobDetailModal.shouldRender && (
+        <div className={`modal-overlay ${jobDetailModal.overlayClass}`} onClick={() => jobDetailModal.close(() => setSelected(null))}>
+          <div className={`admin-modal ${jobDetailModal.modalClass}`} onClick={e => e.stopPropagation()}>
             <div className="admin-modal-header">
               <div>
                 <h3>{selected.role}</h3>
                 <span className="sc-modal-sub">Job Vacancy</span>
               </div>
-              <Button3D variant="cancel" iconOnly onClick={() => setSelected(null)}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => jobDetailModal.close(() => setSelected(null))}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="admin-modal-body">
@@ -289,7 +292,7 @@ export default function StaffCareer() {
             </div>
 
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => setSelected(null)}>Close</Button3D>
+              <Button3D variant="cancel" onClick={() => jobDetailModal.close(() => setSelected(null))}>Close</Button3D>
             </div>
           </div>
         </div>

@@ -18,6 +18,7 @@ import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
+import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
 
 import "./ServiceGrooming.css";
@@ -63,8 +64,10 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
   }, []);
 
   const [selected, setSelected] = useState(null);
+  const detailModal = useAnimatedModal("serviceGrooming-detail");
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [showMemo, setShowMemo] = useState(false);
+  const memoModal = useAnimatedModal("serviceGrooming-memo");
   const [memo, setMemo] = useState({ staffId: "", text: "" });
   const [memoErrors, setMemoErrors] = useState({});
   const [saving, setSaving] = useState({});
@@ -178,7 +181,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
       await api.put("/serviceGrooming", updated);
       setAdminData(prev => ({ ...prev, serviceGrooming: updated }));
     } catch (err) { toast.error("Failed to save memo. Please try again."); }
-    setShowMemo(false); setMemo({ staffId: "", text: "" }); setMemoErrors({});
+    memoModal.close(() => setShowMemo(false)); setMemo({ staffId: "", text: "" }); setMemoErrors({});
   };
 
   return (
@@ -192,7 +195,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand header" : "Collapse header"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />
@@ -208,7 +211,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
         </div>
         <div className="header-btn-container">
           <Button3D onClick={exportGrooming}>Export</Button3D>
-          <Button3D onClick={() => setShowMemo(true)}>+ Add Memo</Button3D>
+          <Button3D onClick={() => { setShowMemo(true); memoModal.open(); }}>+ Add Memo</Button3D>
         </div>
       </div>
 
@@ -359,7 +362,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
                   return (
                     <td key={d}
                       className={`sgroom-td sgroom-hist-td${allGood ? " sgroom-good" : partial ? " sgroom-partial" : " sgroom-bad"}`}
-                      onClick={() => setSelected({ staff: s.name, date: d, entry })}>
+                      onClick={() => { setSelected({ staff: s.name, date: d, entry }); detailModal.open(); }}>
                       <div className="sgroom-hist-cell">
                         {allGood ? <span className="sgroom-tick good">✔</span>
                           : partial ? <span className="sgroom-tick partial">{Object.values(entry || {}).filter(Boolean).length}/3</span>
@@ -383,12 +386,12 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
       </div>
 
       {/* DETAIL MODAL */}
-      {selected && (
-        <div className="modal-overlay">
-          <div className="admin-modal">
+      {detailModal.shouldRender && (
+        <div className={`modal-overlay ${detailModal.overlayClass}`}>
+          <div className={`admin-modal ${detailModal.modalClass}`}>
             <div className="admin-modal-header">
               <h3>Grooming Details</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => setSelected(null)}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => detailModal.close(() => setSelected(null))}><img src={closeIcon} /></Button3D>
             </div>
             <div className="admin-modal-body">
               <div className="sgroom-detail-info">
@@ -412,12 +415,12 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
       )}
 
       {/* MEMO MODAL */}
-      {showMemo && (
-        <div className="modal-overlay">
-          <div className="admin-modal">
+      {memoModal.shouldRender && (
+        <div className={`modal-overlay ${memoModal.overlayClass}`}>
+          <div className={`admin-modal ${memoModal.modalClass}`}>
             <div className="admin-modal-header">
               <h3>Add Memo</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => { setShowMemo(false); setMemoErrors({}); }}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => { memoModal.close(() => setShowMemo(false)); setMemoErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
             <div className="admin-modal-body">
               <div className={`admin-form-group${memoErrors.staffId ? " mat-select-error" : ""}`}>
@@ -444,7 +447,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
               </div>
             </div>
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => { setShowMemo(false); setMemoErrors({}); }}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={() => { memoModal.close(() => setShowMemo(false)); setMemoErrors({}); }}>Cancel</Button3D>
               <Button3D onClick={saveMemo}>Save Memo</Button3D>
             </div>
           </div>

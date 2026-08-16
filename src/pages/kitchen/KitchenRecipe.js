@@ -17,6 +17,7 @@ import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import Button3D from "../../components/Button3D";
+import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
 import CustomDropdown from "../../components/CustomDropdown";
 
@@ -30,7 +31,9 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
 
   const { toast } = useToast();
   const [selected, setSelected] = useState(null);
+  const recipeDetailModal = useAnimatedModal("kitchenRecipe-detail");
   const [showForm, setShowForm] = useState(false);
+  const addRecipeModal = useAnimatedModal("kitchenRecipe-add");
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [recipeSearch, setRecipeSearch] = useState("");
@@ -136,7 +139,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
       });
       toast.success("Recipe added successfully.");
       resetForm();
-      setShowForm(false);
+      addRecipeModal.close(() => setShowForm(false));
     } catch (err) {
       console.error("Failed to add recipe:", err);
       toast.error("Failed to add recipe");
@@ -172,7 +175,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand header" : "Collapse header"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />
@@ -187,7 +190,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
         </div>
         <div className="header-btn-container">
           <Button3D onClick={exportRecipes}>Export</Button3D>
-          <Button3D onClick={() => setShowForm(true)}>+ Add Recipe</Button3D>
+          <Button3D onClick={() => { setShowForm(true); addRecipeModal.open(); }}>+ Add Recipe</Button3D>
         </div>
       </div>
 
@@ -227,7 +230,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
               <div
                 key={r.id}
                 className="recipe-card"
-                onClick={() => setSelected(r)}
+                onClick={() => { setSelected(r); recipeDetailModal.open(); }}
               >
                 <div className="recipe-card-content">
                   <h3>{r.name}</h3>
@@ -250,12 +253,12 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
       </div>
 
       {/* ADD MODAL */}
-      {showForm && (
-        <div className="modal-overlay">
-          <form className="admin-modal" onSubmit={addRecipe}>
+      {addRecipeModal.shouldRender && (
+        <div className={`modal-overlay ${addRecipeModal.overlayClass}`}>
+          <form className={`admin-modal ${addRecipeModal.modalClass}`} onSubmit={addRecipe}>
             <div className="admin-modal-header">
               <h3>Add Recipe</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => { resetForm(); setShowForm(false); }}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => { resetForm(); addRecipeModal.close(() => setShowForm(false)); }}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="admin-form-group" style={{ padding: "0 20px" }}>
@@ -346,7 +349,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
             </div>
 
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => { resetForm(); setShowForm(false); }}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={() => { resetForm(); addRecipeModal.close(() => setShowForm(false)); }}>Cancel</Button3D>
               <Button3D type="submit">Save Recipe</Button3D>
             </div>
           </form>
@@ -354,9 +357,9 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
       )}
 
       {/* DETAIL MODAL */}
-      {selected && (
-        <div className="modal-overlay">
-          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+      {recipeDetailModal.shouldRender && (
+        <div className={`modal-overlay ${recipeDetailModal.overlayClass}`} onClick={() => recipeDetailModal.close(() => setSelected(null))}>
+          <div className={`admin-modal ${recipeDetailModal.modalClass}`} onClick={e => e.stopPropagation()}>
             <div className="admin-modal-header">
               <div>
                 <h3>{selected.name}</h3>
@@ -364,7 +367,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
                   {countSteps(selected.description)} step{countSteps(selected.description) !== 1 ? "s" : ""}
                 </span>
               </div>
-              <Button3D variant="cancel" iconOnly onClick={() => setSelected(null)}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => recipeDetailModal.close(() => setSelected(null))}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="admin-modal-body">
@@ -390,7 +393,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
             </div>
 
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => setSelected(null)}>Close</Button3D>
+              <Button3D variant="cancel" onClick={() => recipeDetailModal.close(() => setSelected(null))}>Close</Button3D>
             </div>
           </div>
         </div>

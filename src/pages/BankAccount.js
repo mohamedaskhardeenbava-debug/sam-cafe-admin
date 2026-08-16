@@ -16,8 +16,11 @@ import { useToast } from "../useToast";
 import { useAuth } from "../context/AuthContext";
 import Button3D from "../components/Button3D";
 import PageLoader from "../components/PageLoader";
+import useAnimatedModal from "../hooks/useAnimatedModal";
+import closeIcon from "../icon/close-icon.png";
 
 import "./BankAccount.css";
+import "./ModalCSS.css";
 
 const EMPTY_FORM = {
   accountHolderName: "",
@@ -37,6 +40,7 @@ const BankAccount = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [saved, setSaved] = useState(null); // masked record as last saved/loaded
   const [isEditing, setIsEditing] = useState(false);
+  const editModal = useAnimatedModal("bankAccount-edit");
   const [form, setForm] = useState(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -72,10 +76,11 @@ const BankAccount = () => {
       return;
     }
     setIsEditing(true);
+    editModal.open();
   };
 
   const cancelEdit = () => {
-    setIsEditing(false);
+    editModal.close(() => setIsEditing(false));
     setForm(EMPTY_FORM);
     setFormErrors({});
   };
@@ -100,7 +105,7 @@ const BankAccount = () => {
         ifscCode: form.ifscCode.trim().toUpperCase(),
       });
       setSaved(res.data);
-      setIsEditing(false);
+      editModal.close(() => setIsEditing(false));
       setForm(EMPTY_FORM);
       toast.success("Bank account details saved");
     } catch (err) {
@@ -139,34 +144,42 @@ const BankAccount = () => {
             </div>
           </div>
         </div>
-        {!isEditing && (
-          <Button3D onClick={startEdit}>{saved ? "Edit Details" : "+ Add Bank Account"}</Button3D>
-        )}
+        <Button3D onClick={startEdit}>{saved ? "Edit Details" : "+ Add Bank Account"}</Button3D>
       </div>
 
       <p className="ba-subtitle">
         Where customer payments (Cashfree) settle. Visible to Super Admin only.
       </p>
 
-      {!isEditing ? (
-        saved ? (
-          <div className="ba-card">
-            <div className="ba-row"><span className="ba-label">Account Holder Name</span><span className="ba-value">{saved.accountHolderName}</span></div>
-            <div className="ba-row"><span className="ba-label">Account Number</span><span className="ba-value ba-masked">{saved.accountNumber}</span></div>
-            <div className="ba-row"><span className="ba-label">IFSC Code</span><span className="ba-value">{saved.ifscCode}</span></div>
-            <div className="ba-row"><span className="ba-label">Bank Name</span><span className="ba-value">{saved.bankName}</span></div>
-            {saved.branchName && (
-              <div className="ba-row"><span className="ba-label">Branch</span><span className="ba-value">{saved.branchName}</span></div>
-            )}
-            {saved.upiVpa && (
-              <div className="ba-row"><span className="ba-label">UPI VPA</span><span className="ba-value">{saved.upiVpa}</span></div>
-            )}
-          </div>
-        ) : (
-          <div className="ba-empty">No bank account on file yet.</div>
-        )
+      {saved ? (
+        <div className="ba-card">
+          <div className="ba-row"><span className="ba-label">Account Holder Name</span><span className="ba-value">{saved.accountHolderName}</span></div>
+          <div className="ba-row"><span className="ba-label">Account Number</span><span className="ba-value ba-masked">{saved.accountNumber}</span></div>
+          <div className="ba-row"><span className="ba-label">IFSC Code</span><span className="ba-value">{saved.ifscCode}</span></div>
+          <div className="ba-row"><span className="ba-label">Bank Name</span><span className="ba-value">{saved.bankName}</span></div>
+          {saved.branchName && (
+            <div className="ba-row"><span className="ba-label">Branch</span><span className="ba-value">{saved.branchName}</span></div>
+          )}
+          {saved.upiVpa && (
+            <div className="ba-row"><span className="ba-label">UPI VPA</span><span className="ba-value">{saved.upiVpa}</span></div>
+          )}
+        </div>
       ) : (
-        <form className="ba-card ba-form" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
+        <div className="ba-empty">No bank account on file yet.</div>
+      )}
+
+      {editModal.shouldRender && (
+        <div className={`modal-overlay ${editModal.overlayClass}`}>
+          <form
+            className={`admin-modal ${editModal.modalClass}`}
+            onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+          >
+            <div className="admin-modal-header">
+              <h3>{saved ? "Edit Bank Account" : "Add Bank Account"}</h3>
+              <Button3D variant="cancel" iconOnly aria-label="Close"
+                onClick={cancelEdit}><img src={closeIcon} /></Button3D>
+            </div>
+            <div className="admin-modal-body">
           <div className="admin-form-group">
             <div className="mat">
               <input
@@ -280,12 +293,14 @@ const BankAccount = () => {
               <span className="mat-bar" />
             </div>
           </div>
+            </div>
 
-          <div className="ba-form-actions">
-            <Button3D variant="cancel" onClick={cancelEdit}>Cancel</Button3D>
-            <Button3D type="submit" disabled={saving}>{saving ? "Saving…" : "Save Bank Account"}</Button3D>
-          </div>
-        </form>
+            <div className="admin-modal-footer">
+              <Button3D variant="cancel" onClick={cancelEdit}>Cancel</Button3D>
+              <Button3D type="submit" disabled={saving}>{saving ? "Saving…" : "Save Bank Account"}</Button3D>
+            </div>
+          </form>
+        </div>
       )}
     </div>
   );

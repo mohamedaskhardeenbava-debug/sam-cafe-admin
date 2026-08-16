@@ -22,6 +22,7 @@ import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/In
 import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import Button3D from "../../components/Button3D";
+import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
 import CustomDropdown from "../../components/CustomDropdown";
 import { MultiPillGroup } from "../../components/FilterBar";
@@ -93,6 +94,7 @@ export default function Staffs({
   const [pageTab, setPageTab] = useState("records"); // "records" | "accounts"
   const { containerRef: pageTabPillsRef, thumbStyle: pageTabThumbStyle } = useTabLiquid(pageTab);
   const [showModal, setShowModal] = useState(false);
+  const staffModal = useAnimatedModal("staffs-addEdit");
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [createStep, setCreateStep] = useState(0); // 0 = Staff Details, 1 = Login Account, 2 = Preview
@@ -206,7 +208,7 @@ export default function Staffs({
     setFormData(EMPTY_FORM);
     setPreviewMode(false);
     setIsEditMode(false);
-    setShowModal(false);
+    staffModal.close(() => setShowModal(false));
     setFormErrors({});
     setCreateStep(0);
     setAccountForm(EMPTY_ACCOUNT_FORM);
@@ -337,7 +339,7 @@ export default function Staffs({
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand header" : "Collapse header"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />
@@ -352,7 +354,7 @@ export default function Staffs({
         </div>
         <div className="header-btn-container">
           <Button3D onClick={exportStaffs}>Export</Button3D>
-          <Button3D onClick={() => { setFormData({ ...EMPTY_FORM, venueId: activeVenueId || "" }); setShowModal(true); }}>+ Add Staff</Button3D>
+          <Button3D onClick={() => { setFormData({ ...EMPTY_FORM, venueId: activeVenueId || "" }); setShowModal(true); staffModal.open(); }}>+ Add Staff</Button3D>
         </div>
       </div>
 
@@ -487,7 +489,7 @@ export default function Staffs({
                     </span>
                   </td>
                   <td className="icon-width" onClick={e => e.stopPropagation()}>
-                    <Button3D variant="cancel" iconOnly onClick={() => { setFormData(staff); setIsEditMode(true); setShowModal(true); }}
+                    <Button3D variant="cancel" iconOnly onClick={() => { setFormData(staff); setIsEditMode(true); setShowModal(true); staffModal.open(); }}
                       title="Edit"><img src={editIcon} alt="" /></Button3D>
                   </td>
 
@@ -525,9 +527,9 @@ export default function Staffs({
       )}
 
       {/* MODAL */}
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="admin-modal">
+      {staffModal.shouldRender && (
+        <div className={`modal-overlay ${staffModal.overlayClass}`}>
+          <div className={`admin-modal ${staffModal.modalClass}`}>
             {/* HEADER */}
             <div className="admin-modal-header">
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>

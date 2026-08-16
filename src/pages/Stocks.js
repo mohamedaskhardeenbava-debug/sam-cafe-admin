@@ -20,6 +20,7 @@ import { useToast } from "../useToast";
 import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import CustomDropdown from "../components/CustomDropdown";
 import Button3D from "../components/Button3D";
+import useAnimatedModal from "../hooks/useAnimatedModal";
 import CollapseChevron from "../components/CollapseChevron";
 import { FilterBar } from "../components/FilterBar";
 
@@ -42,6 +43,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
   const [openFrom, setOpenFrom] = useState(false);
   const [openTo, setOpenTo] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const stockEditModal = useAnimatedModal("stocks-edit");
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [selectedIngredient, setSelectedIngredient] = useState(null);
   const [addStock, setAddStock] = useState("");
@@ -176,14 +178,17 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
     setStockMax(ingredient.stockMax ?? "");
     setExpiryDate(ingredient.expiryDate || "");
     setShowEditModal(true);
+    stockEditModal.open();
   };
 
   const closeModal = () => {
-    setShowEditModal(false);
-    setSelectedIngredient(null);
-    setAddStock("");
-    setPricePer100g("");
-    setStockMax("");
+    stockEditModal.close(() => {
+      setShowEditModal(false);
+      setSelectedIngredient(null);
+      setAddStock("");
+      setPricePer100g("");
+      setStockMax("");
+    });
   };
 
   const handleSave = async () => {
@@ -301,7 +306,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand filters" : "Collapse filters"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />
@@ -500,9 +505,9 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
         </table>
         <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
-      {showEditModal && selectedIngredient && (
-        <div className="modal-overlay">
-          <div className="admin-modal">
+      {stockEditModal.shouldRender && selectedIngredient && (
+        <div className={`modal-overlay ${stockEditModal.overlayClass}`}>
+          <div className={`admin-modal ${stockEditModal.modalClass}`}>
             <div className="admin-modal-header">
               <h3>Edit Stock & Price for {selectedIngredient.name}</h3>
               <Button3D variant="cancel" iconOnly onClick={closeModal}><img src={closeIcon} /></Button3D>

@@ -23,6 +23,7 @@ import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
+import useAnimatedModal from "../hooks/useAnimatedModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import PageLoader from "../components/PageLoader";
 import CollapseChevron from "../components/CollapseChevron";
@@ -76,7 +77,9 @@ const ImageFallback = ({ label }) => (
       color: "#aaa",
       fontSize: 18,
     }}
-    title={label}
+    data-bs-toggle="tooltip"
+    data-bs-placement="top"
+    data-bs-title={label}
   >
     🖼️
   </div>
@@ -103,6 +106,7 @@ const CategoryCards = () => {
   const [infoCollapsed, setInfoCollapsed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null); // card id currently open in the edit modal
+  const cardEditModal = useAnimatedModal("categoryCards-edit");
   const [form, setForm] = useState({ name: "", image: "", enabled: true });
   // Pending enable/disable awaiting confirmation via the overlay, rather
   // than applying instantly — same pattern as the Permissions page.
@@ -150,11 +154,14 @@ const CategoryCards = () => {
   const openEditModal = (card) => {
     setEditingId(card.id);
     setForm({ name: card.name, image: card.image, enabled: card.enabled !== false });
+    cardEditModal.open();
   };
 
   const closeEditModal = () => {
-    setEditingId(null);
-    setForm({ name: "", image: "", enabled: true });
+    cardEditModal.close(() => {
+      setEditingId(null);
+      setForm({ name: "", image: "", enabled: true });
+    });
   };
 
   const handleImageUpload = (e) => {
@@ -217,7 +224,7 @@ const CategoryCards = () => {
               type="button"
               className="header-collapse-btn"
               onClick={() => setInfoCollapsed((prev) => !prev)}
-              title={infoCollapsed ? "Expand" : "Collapse"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={infoCollapsed ? "Expand" : "Collapse"}
               aria-expanded={!infoCollapsed}
             >
               <CollapseChevron collapsed={infoCollapsed} />
@@ -282,10 +289,10 @@ const CategoryCards = () => {
       </div>
 
       {/* EDIT MODAL */}
-      {editingId && (
-        <div className="modal-overlay">
+      {cardEditModal.shouldRender && (
+        <div className={`modal-overlay ${cardEditModal.overlayClass}`}>
           <form
-            className="admin-modal"
+            className={`admin-modal ${cardEditModal.modalClass}`}
             onSubmit={(e) => {
               e.preventDefault();
               handleSaveEdit();

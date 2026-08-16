@@ -18,6 +18,7 @@ import { allowTextInput } from "../../App";
 import { EmptyRow } from "../../App";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
+import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
 
 import "./KitchenSchedules.css";
@@ -59,6 +60,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
   const [toDate, setToDate] = useState(today);
   const [activePreset, setActivePreset] = useState("today");
   const [show, setShow] = useState(false);
+  const scheduleModal = useAnimatedModal("kitchenSchedules-add");
   const [form, setForm] = useState(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState({});
 
@@ -98,14 +100,14 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
       setAdminData(prev => ({ ...prev, kitchenSchedules: [...(prev.kitchenSchedules || []), newItem] }));
       setForm(EMPTY_FORM);
       setFormErrors({});
-      setShow(false);
+      scheduleModal.close(() => setShow(false));
       toast.success("Schedule added successfully.");
     } catch (err) { toast.error("Failed to add schedule. Please try again."); }
   };
 
   // ── Helpers
 
-  const cancel = () => { setForm(EMPTY_FORM); setFormErrors({}); setShow(false); };
+  const cancel = () => { setForm(EMPTY_FORM); setFormErrors({}); scheduleModal.close(() => setShow(false)); };
 
   const moveExpiredSchedules = async () => {
     const expired = list.filter(item => item.date < today);
@@ -187,7 +189,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand header" : "Collapse header"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />
@@ -202,7 +204,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
         </div>
         <div className="header-btn-container">
           <Button3D onClick={handleExport}>Export</Button3D>
-          <Button3D onClick={() => setShow(true)}>+ Add Schedule</Button3D>
+          <Button3D onClick={() => { setShow(true); scheduleModal.open(); }}>+ Add Schedule</Button3D>
         </div>
       </div>
 
@@ -272,7 +274,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                       ? <span style={{ color: "#2e7d32", fontSize: 18 }}>✔</span>
                       : <button
                         onClick={() => markCompleted(i)}
-                        title="Mark as Completed"
+                        data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Mark as Completed"
                         style={{ background: "none", border: "1.5px solid #2e7d32", borderRadius: "50%", width: 28, height: 28, cursor: "pointer", color: "#2e7d32", fontSize: 14, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                       >✓</button>
                     }
@@ -284,9 +286,9 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
         </table>
       </div>
 
-      {show && (
-        <div className="modal-overlay">
-          <form className="admin-modal" onSubmit={e => { e.preventDefault(); add(); }}>
+      {scheduleModal.shouldRender && (
+        <div className={`modal-overlay ${scheduleModal.overlayClass}`}>
+          <form className={`admin-modal ${scheduleModal.modalClass}`} onSubmit={e => { e.preventDefault(); add(); }}>
             <div className="admin-modal-header">
               <h3>Add Schedule</h3>
               <Button3D variant="cancel" iconOnly onClick={cancel}><img src={closeIcon} /></Button3D>

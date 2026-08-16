@@ -13,6 +13,7 @@ import editIcon from "../icon/edit-icon.png";
 import doubleArrowIcon from "../icon/double-arrow-icon.png";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
+import useAnimatedModal from "../hooks/useAnimatedModal";
 import { useVenue } from "../context/VenueContext";
 import { EmptyRow } from "../App";
 
@@ -59,7 +60,7 @@ const DishList = ({ items, sectionKey, usedDishNames, selectedId, onSelect }) =>
             key={`${sectionKey}__${dish.id}__${idx}`}
             className={`co-dish-row ${isUsed ? "co-dish-row--used" : ""} ${isSelected ? "co-dish-row--selected" : ""}`}
             onClick={!isUsed ? () => onSelect(dish) : undefined}
-            title={isUsed ? "Already used in another combo offer" : undefined}
+            {...(isUsed ? { "data-bs-toggle": "tooltip", "data-bs-placement": "top", "data-bs-title": "Already used in another combo offer" } : {})}
           >
             <div className="co-dish-row-left">
               <span className="co-dish-row-name">{dish.name}</span>
@@ -106,7 +107,9 @@ const MapSectionNameField = ({ label, onSave }) => {
         <button
           type="button"
           className="co-map-name-edit-btn"
-          title="Rename this category"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          data-bs-title="Rename this category"
           onClick={() => setEditing(true)}
         >
           <img src={editIcon} alt="Edit" />
@@ -127,8 +130,8 @@ const MapSectionNameField = ({ label, onSave }) => {
           if (e.key === "Escape") cancel();
         }}
       />
-      <button type="button" className="co-map-name-save-btn" title="Save name" onClick={commit}>✓</button>
-      <button type="button" className="co-map-name-cancel-btn" title="Cancel" onClick={cancel}>✕</button>
+      <button type="button" className="co-map-name-save-btn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Save name" onClick={commit}>✓</button>
+      <button type="button" className="co-map-name-cancel-btn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Cancel" onClick={cancel}>✕</button>
     </div>
   );
 };
@@ -147,6 +150,7 @@ const ComboOffers = () => {
 
   /* ── offer modal state ── */
   const [modalOpen, setModalOpen] = useState(false);
+  const offerModal = useAnimatedModal("comboOffers-addEdit");
   const [editOffer, setEditOffer] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -163,6 +167,7 @@ const ComboOffers = () => {
 
   /* ── category-mapping modal state ── */
   const [mapModalOpen, setMapModalOpen] = useState(false);
+  const mapModal = useAnimatedModal("comboOffers-categoryMap");
   const [mapDraft, setMapDraft] = useState([]);
   const [mapSaving, setMapSaving] = useState(false);
 
@@ -266,6 +271,7 @@ const ComboOffers = () => {
     setSelectedSlotKey(null);
     setErrors({});
     setModalOpen(true);
+    offerModal.open();
   };
 
   /* ── open modal (edit) ──
@@ -307,6 +313,7 @@ const ComboOffers = () => {
     setSelectedSlotKey(null);
     setErrors({});
     setModalOpen(true);
+    offerModal.open();
   };
 
   /* ── pricing ── */
@@ -356,7 +363,7 @@ const ComboOffers = () => {
         setOffers(prev => [...prev, res.data]);
         toast.success("Offer created!");
       }
-      setModalOpen(false);
+      offerModal.close(() => setModalOpen(false));
     } catch {
       toast.error("Save failed", "error");
     } finally {
@@ -425,6 +432,7 @@ const ComboOffers = () => {
     // deep-clone current config so edits are a draft until saved
     setMapDraft(sectionConfig.map(s => ({ ...s, categoryIds: [...s.categoryIds] })));
     setMapModalOpen(true);
+    mapModal.open();
   };
 
   /* which section (if any) currently claims this category — used to block duplicates */
@@ -486,7 +494,7 @@ const ComboOffers = () => {
       });
       setActiveTab(mapDraft[0]?.key || "dishes");
       toast.success("Combo categories updated!");
-      setMapModalOpen(false);
+      mapModal.close(() => setMapModalOpen(false));
     } catch {
       toast.error("Failed to save category mapping", "error");
     } finally {
@@ -596,14 +604,14 @@ const ComboOffers = () => {
       </div>
 
       {/* ═══ OFFER MODAL ══════════════════════════════════════════ */}
-      {modalOpen && (
-        <div className="modal-overlay">
-          <div className="admin-modal co-modal-wide">
+      {offerModal.shouldRender && (
+        <div className={`modal-overlay ${offerModal.overlayClass}`}>
+          <div className={`admin-modal co-modal-wide ${offerModal.modalClass}`}>
 
             {/* header */}
             <div className="admin-modal-header">
               <h3>{editOffer ? "Edit Combo Offer" : "Add Combo Offer"}</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => setModalOpen(false)}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => offerModal.close(() => setModalOpen(false))}><img src={closeIcon} /></Button3D>
             </div>
 
             {/* two-column body */}
@@ -766,7 +774,7 @@ const ComboOffers = () => {
 
             {/* footer */}
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => setModalOpen(false)}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={() => offerModal.close(() => setModalOpen(false))}>Cancel</Button3D>
               <Button3D onClick={handleSave} disabled={saving}>
                 {saving ? "Saving…" : editOffer ? "Update Offer" : "Create Offer"}
               </Button3D>
@@ -776,14 +784,14 @@ const ComboOffers = () => {
       )}
 
       {/* ═══ CATEGORY-MAPPING MODAL ═══════════════════════════════ */}
-      {mapModalOpen && (
-        <div className="modal-overlay">
-          <div className="admin-modal co-modal-wide">
+      {mapModal.shouldRender && (
+        <div className={`modal-overlay ${mapModal.overlayClass}`}>
+          <div className={`admin-modal co-modal-wide ${mapModal.modalClass}`}>
 
             {/* header */}
             <div className="admin-modal-header">
               <h3>Manage Combo Categories</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => setMapModalOpen(false)}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => mapModal.close(() => setMapModalOpen(false))}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="admin-modal-body co-map-body">
@@ -822,7 +830,7 @@ const ComboOffers = () => {
                             key={cat.id}
                             className={`co-map-chip ${checked ? "active" : ""} ${takenElsewhere ? "disabled" : ""}`}
                             onClick={() => mapToggleCategory(s.key, cat.id)}
-                            title={takenElsewhere ? `Already mapped to "${owner.label}"` : undefined}
+                            {...(takenElsewhere ? { "data-bs-toggle": "tooltip", "data-bs-placement": "top", "data-bs-title": `Already mapped to "${owner.label}"` } : {})}
                           >
                             {cat.name}
                             {takenElsewhere && <span className="co-map-chip-owner"> · {owner.label}</span>}
@@ -841,7 +849,7 @@ const ComboOffers = () => {
 
             {/* footer */}
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => setMapModalOpen(false)}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={() => mapModal.close(() => setMapModalOpen(false))}>Cancel</Button3D>
               <Button3D onClick={handleSaveMapping} disabled={mapSaving}>
                 {mapSaving ? "Saving…" : "Save Mapping"}
               </Button3D>

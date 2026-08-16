@@ -54,9 +54,9 @@ export const MultiPillGroup = ({ label, options = [], value, onToggle, labelClas
           <button
             key={String(opt.value)}
             type="button"
-            title={opt.title}
             className={cls}
             onClick={() => onToggle(opt.value)}
+            {...(opt.title ? { "data-bs-toggle": "tooltip", "data-bs-placement": "top", "data-bs-title": opt.title } : {})}
           >
             {opt.label}
           </button>
@@ -106,12 +106,12 @@ export const PillGroup = ({ label, options = [], value, onChange, toggle = true,
           <button
             key={String(opt.value)}
             type="button"
-            title={opt.title}
             className={cls}
             onClick={() => {
               if (toggle && isActive) onChange("");
               else onChange(opt.value);
             }}
+            {...(opt.title ? { "data-bs-toggle": "tooltip", "data-bs-placement": "top", "data-bs-title": opt.title } : {})}
           >
             {opt.label}
           </button>

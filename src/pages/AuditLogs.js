@@ -189,7 +189,7 @@ const AuditLogs = () => {
               type="button"
               className="header-collapse-btn"
               onClick={() => setFiltersCollapsed((c) => !c)}
-              title={filtersCollapsed ? "Show filters" : "Hide filters"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={filtersCollapsed ? "Show filters" : "Hide filters"}
               aria-expanded={!filtersCollapsed}
             >
               <CollapseChevron collapsed={filtersCollapsed} />

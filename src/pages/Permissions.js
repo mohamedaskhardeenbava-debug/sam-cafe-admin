@@ -17,6 +17,7 @@ import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
+import useAnimatedModal from "../hooks/useAnimatedModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import CustomDropdown from "../components/CustomDropdown";
 import PageLoader from "../components/PageLoader";
@@ -215,7 +216,7 @@ const Permissions = () => {
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed((prev) => !prev)}
-              title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand filters" : "Collapse filters"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />
@@ -407,6 +408,7 @@ const RolesPanel = () => {
   const [entries, setEntries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const roleModal = useAnimatedModal("rolesPanel-addEdit");
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ title: "", responsibilities: "" });
   const [formErrors, setFormErrors] = useState({});
@@ -433,6 +435,7 @@ const RolesPanel = () => {
     setForm({ title: "", responsibilities: "" });
     setFormErrors({});
     setShowModal(true);
+    roleModal.open();
   };
 
   const openEdit = (entry) => {
@@ -440,6 +443,7 @@ const RolesPanel = () => {
     setForm({ title: entry.title, responsibilities: entry.responsibilities || "" });
     setFormErrors({});
     setShowModal(true);
+    roleModal.open();
   };
 
   const handleSave = async () => {
@@ -457,7 +461,7 @@ const RolesPanel = () => {
         setEntries((prev) => [...prev, res.data].sort((a, b) => a.title.localeCompare(b.title)));
         toast.success("Role added.");
       }
-      setShowModal(false);
+      roleModal.close(() => setShowModal(false));
     } catch (err) {
       toast.error(err.response?.data?.error || "Failed to save role");
     }
@@ -539,10 +543,10 @@ const RolesPanel = () => {
         </table>
       </div>
 
-      {showModal && (
-        <div className="modal-overlay">
+      {roleModal.shouldRender && (
+        <div className={`modal-overlay ${roleModal.overlayClass}`}>
           <form
-            className="admin-modal"
+            className={`admin-modal ${roleModal.modalClass}`}
             onSubmit={(e) => {
               e.preventDefault();
               handleSave();
@@ -550,7 +554,7 @@ const RolesPanel = () => {
           >
             <div className="admin-modal-header">
               <h3>{editingId ? "Edit Role" : "Add Role"}</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => setShowModal(false)}>×</Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => roleModal.close(() => setShowModal(false))}>×</Button3D>
             </div>
             <div className="admin-modal-body">
               <div className={`admin-form-group${formErrors.title ? " mat-select-error" : ""}`}>
@@ -584,7 +588,7 @@ const RolesPanel = () => {
               </div>
             </div>
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => setShowModal(false)}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={() => roleModal.close(() => setShowModal(false))}>Cancel</Button3D>
               <Button3D type="submit">{editingId ? "Save Changes" : "Add Role"}</Button3D>
             </div>
           </form>

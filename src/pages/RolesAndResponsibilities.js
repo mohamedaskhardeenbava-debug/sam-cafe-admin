@@ -18,6 +18,7 @@ import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
+import useAnimatedModal from "../hooks/useAnimatedModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import CustomDropdown from "../components/CustomDropdown";
 import CollapseChevron from "../components/CollapseChevron";
@@ -216,7 +217,9 @@ const PermissionsTab = () => {
           type="button"
           className="header-collapse-btn perm-filter-collapse-btn"
           onClick={() => setFiltersCollapsed((p) => !p)}
-          title={filtersCollapsed ? "Expand filters" : "Collapse filters"}
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          data-bs-title={filtersCollapsed ? "Expand filters" : "Collapse filters"}
           aria-expanded={!filtersCollapsed}
         >
           <CollapseChevron collapsed={filtersCollapsed} />
@@ -361,6 +364,7 @@ const RolesTab = () => {
   const [roles, setRoles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const rarModal = useAnimatedModal("rolesAndResponsibilities-addEdit");
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: "", description: "", roleTitle: "" });
   const [search, setSearch] = useState("");
@@ -391,12 +395,14 @@ const RolesTab = () => {
     setEditing(null);
     setForm({ name: "", description: "", roleTitle: "" });
     setShowModal(true);
+    rarModal.open();
   };
 
   const openEdit = (role) => {
     setEditing(role);
     setForm({ name: role.name, description: role.description || "", roleTitle: role.roleTitle || "" });
     setShowModal(true);
+    rarModal.open();
   };
 
   const handleSave = async () => {
@@ -409,7 +415,7 @@ const RolesTab = () => {
         await api.post("/roles", form);
         toast.success("Role created");
       }
-      setShowModal(false);
+      rarModal.close(() => setShowModal(false));
       load();
     } catch (err) {
       toast.error(err.response?.data?.error || "Failed to save role");
@@ -490,12 +496,12 @@ const RolesTab = () => {
         </table>
       </div>
 
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="admin-modal">
+      {rarModal.shouldRender && (
+        <div className={`modal-overlay ${rarModal.overlayClass}`}>
+          <div className={`admin-modal ${rarModal.modalClass}`}>
             <div className="admin-modal-header">
               <h3>{editing ? "Edit Role" : "Add Role"}</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => setShowModal(false)}>✕</Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => rarModal.close(() => setShowModal(false))}>✕</Button3D>
             </div>
             <div className="admin-modal-body">
               <div className="admin-form-group">
@@ -533,7 +539,7 @@ const RolesTab = () => {
               </div>
             </div>
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => setShowModal(false)}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={() => rarModal.close(() => setShowModal(false))}>Cancel</Button3D>
               <Button3D onClick={handleSave}>Save</Button3D>
             </div>
           </div>

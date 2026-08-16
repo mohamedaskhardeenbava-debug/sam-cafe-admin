@@ -12,6 +12,7 @@ import React, { useMemo, useState } from "react";
 import api from "../api";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
+import useAnimatedModal from "../hooks/useAnimatedModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import CustomDropdown from "../components/CustomDropdown";
 import { CustomDatePicker } from "../components/CustomDatePicker";
@@ -39,6 +40,7 @@ export default function WorkPlan({ adminData, setAdminData }) {
   const items = adminData?.workPlan || [];
 
   const [showModal, setShowModal] = useState(false);
+  const workPlanModal = useAnimatedModal("workPlan-addEdit");
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState({});
@@ -59,6 +61,7 @@ export default function WorkPlan({ adminData, setAdminData }) {
     setForm({ ...EMPTY_FORM, date: todayStr() });
     setFormErrors({});
     setShowModal(true);
+    workPlanModal.open();
   };
 
   const openEdit = (item) => {
@@ -66,6 +69,7 @@ export default function WorkPlan({ adminData, setAdminData }) {
     setForm({ title: item.title, notes: item.notes || "", type: item.type, date: item.date, time: item.time || "", location: item.location || "" });
     setFormErrors({});
     setShowModal(true);
+    workPlanModal.open();
   };
 
   const validate = () => {
@@ -89,7 +93,7 @@ export default function WorkPlan({ adminData, setAdminData }) {
         setAdminData((prev) => ({ ...prev, workPlan: [...(prev.workPlan || []), res.data] }));
         toast.success("Added to work plan.");
       }
-      setShowModal(false);
+      workPlanModal.close(() => setShowModal(false));
     } catch (err) {
       toast.error(err.response?.data?.error || "Failed to save work plan item");
     } finally {
@@ -176,15 +180,15 @@ export default function WorkPlan({ adminData, setAdminData }) {
       </div>
 
       {/* CREATE/EDIT MODAL */}
-      {showModal && (
-        <div className="modal-overlay">
+      {workPlanModal.shouldRender && (
+        <div className={`modal-overlay ${workPlanModal.overlayClass}`}>
           <form
-            className="admin-modal"
+            className={`admin-modal ${workPlanModal.modalClass}`}
             onSubmit={(e) => { e.preventDefault(); handleSave(); }}
           >
             <div className="admin-modal-header">
               <h3>{editingId ? "Edit Work Plan Item" : "Add to Work Plan"}</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => setShowModal(false)}>×</Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => workPlanModal.close(() => setShowModal(false))}>×</Button3D>
             </div>
 
             <div className="admin-modal-body">
@@ -257,7 +261,7 @@ export default function WorkPlan({ adminData, setAdminData }) {
             </div>
 
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => setShowModal(false)}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={() => workPlanModal.close(() => setShowModal(false))}>Cancel</Button3D>
               <Button3D type="submit" disabled={saving}>{saving ? "Saving…" : editingId ? "Save Changes" : "Add"}</Button3D>
             </div>
           </form>

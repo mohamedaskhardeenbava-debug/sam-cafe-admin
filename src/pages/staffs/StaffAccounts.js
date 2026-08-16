@@ -26,6 +26,7 @@ import { useAuth, ROLE_TREE } from "../../context/AuthContext";
 import { useVenue } from "../../context/VenueContext";
 import { useToast } from "../../useToast";
 import Button3D from "../../components/Button3D";
+import useAnimatedModal from "../../hooks/useAnimatedModal";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import CustomDropdown from "../../components/CustomDropdown";
 import PageLoader from "../../components/PageLoader";
@@ -73,6 +74,7 @@ export default function StaffAccounts({
 
   const [unlinkedStaff, setUnlinkedStaff] = useState(initialUnlinkedStaff || []);
   const [showLinkModal, setShowLinkModal] = useState(false);
+  const linkModal = useAnimatedModal("staffAccounts-link");
   const [linkForm, setLinkForm] = useState(EMPTY_LINK_FORM);
   const [linkErrors, setLinkErrors] = useState({});
   const [linking, setLinking] = useState(false);
@@ -128,6 +130,7 @@ export default function StaffAccounts({
     setLinkErrors({});
     setCreatedInfo(null);
     setShowLinkModal(true);
+    linkModal.open();
   };
 
   const selectedStaff = unlinkedStaff.find((s) => s.id === linkForm.staffId) || null;
@@ -265,12 +268,12 @@ export default function StaffAccounts({
       )}
 
       {/* LINK ACCOUNT MODAL */}
-      {showLinkModal && (
-        <div className="modal-overlay">
-          <div className="admin-modal">
+      {linkModal.shouldRender && (
+        <div className={`modal-overlay ${linkModal.overlayClass}`}>
+          <div className={`admin-modal ${linkModal.modalClass}`}>
             <div className="admin-modal-header">
               <h3>{createdInfo ? "Account Linked" : "Link Login Account"}</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => setShowLinkModal(false)}>
+              <Button3D variant="cancel" iconOnly onClick={() => linkModal.close(() => setShowLinkModal(false))}>
                 <img src={closeIcon} alt="Close" />
               </Button3D>
             </div>
@@ -372,10 +375,10 @@ export default function StaffAccounts({
 
             <div className="admin-modal-footer">
               {createdInfo ? (
-                <Button3D onClick={() => setShowLinkModal(false)}>Done</Button3D>
+                <Button3D onClick={() => linkModal.close(() => setShowLinkModal(false))}>Done</Button3D>
               ) : (
                 <>
-                  <Button3D variant="cancel" onClick={() => setShowLinkModal(false)}>Cancel</Button3D>
+                  <Button3D variant="cancel" onClick={() => linkModal.close(() => setShowLinkModal(false))}>Cancel</Button3D>
                   <Button3D onClick={handleLink} disabled={linking}>{linking ? "Linking…" : "Link Account"}</Button3D>
                 </>
               )}

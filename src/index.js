@@ -8,9 +8,17 @@ import { ToastProvider } from "./useToast";
 import { AuthProvider } from "./context/AuthContext";
 import { VenueProvider } from "./context/VenueContext";
 import { CategoryCardsProvider } from "./context/CategoryCardsContext";
+import { ModalProvider } from "./context/ModalContext";
 
 import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import * as bootstrap from 'bootstrap/dist/js/bootstrap.bundle.min.js';
+// bootstrap's UMD bundle attaches itself to `window.bootstrap` in a plain
+// <script> tag, but under a bundler (webpack/CRA) it's imported as an ES
+// module instead — so nothing sets window.bootstrap automatically. Every
+// tooltip in the app (see useGlobalTooltips.js and any manual
+// data-bs-toggle="tooltip" markup) initializes via window.bootstrap.Tooltip,
+// so without this line tooltips silently never appear.
+window.bootstrap = bootstrap;
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -19,7 +27,9 @@ root.render(
       <VenueProvider>
         <CategoryCardsProvider>
           <ToastProvider>
-            <App />
+            <ModalProvider>
+              <App />
+            </ModalProvider>
           </ToastProvider>
         </CategoryCardsProvider>
       </VenueProvider>

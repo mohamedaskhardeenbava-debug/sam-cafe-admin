@@ -18,6 +18,7 @@ import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
+import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
 
 import "./KitchenGrooming.css";
@@ -66,8 +67,10 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
   }, []);
 
   const [selected, setSelected] = useState(null);
+  const detailModal = useAnimatedModal("kitchenGrooming-detail");
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [showMemo, setShowMemo] = useState(false);
+  const memoModal = useAnimatedModal("kitchenGrooming-memo");
   const [memo, setMemo] = useState({ staffId: "", text: "" });
   const [memoErrors, setMemoErrors] = useState({});
   const [saving, setSaving] = useState({});
@@ -187,7 +190,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
       await api.put("/grooming", updated);
       setAdminData(prev => ({ ...prev, grooming: updated }));
     } catch (err) { toast.error("Failed to save memo. Please try again."); }
-    setShowMemo(false); setMemo({ staffId: "", text: "" }); setMemoErrors({});
+    memoModal.close(() => setShowMemo(false)); setMemo({ staffId: "", text: "" }); setMemoErrors({});
   };
 
   return (
@@ -201,7 +204,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand header" : "Collapse header"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />
@@ -217,7 +220,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
         </div>
         <div className="header-btn-container">
           <Button3D onClick={exportGrooming}>Export</Button3D>
-          <Button3D onClick={() => setShowMemo(true)}>+ Add Memo</Button3D>
+          <Button3D onClick={() => { setShowMemo(true); memoModal.open(); }}>+ Add Memo</Button3D>
         </div>
       </div>
 
@@ -368,7 +371,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
                   return (
                     <td key={d}
                       className={`kgroom-td kgroom-hist-td${allGood ? " kgroom-good" : partial ? " kgroom-partial" : " kgroom-bad"}`}
-                      onClick={() => setSelected({ staff: s.name, date: d, entry })}>
+                      onClick={() => { setSelected({ staff: s.name, date: d, entry }); detailModal.open(); }}>
                       <div className="kgroom-hist-cell">
                         {allGood ? <span className="kgroom-tick good">✔</span>
                           : partial ? <span className="kgroom-tick partial">{Object.values(entry || {}).filter(Boolean).length}/3</span>
@@ -392,12 +395,12 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
       </div>
 
       {/* DETAIL MODAL */}
-      {selected && (
-        <div className="modal-overlay">
-          <div className="admin-modal">
+      {detailModal.shouldRender && (
+        <div className={`modal-overlay ${detailModal.overlayClass}`}>
+          <div className={`admin-modal ${detailModal.modalClass}`}>
             <div className="admin-modal-header">
               <h3>Grooming Details</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => setSelected(null)}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => detailModal.close(() => setSelected(null))}><img src={closeIcon} /></Button3D>
             </div>
             <div className="admin-modal-body">
               <div className="kgroom-detail-info">
@@ -421,12 +424,12 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
       )}
 
       {/* MEMO MODAL */}
-      {showMemo && (
-        <div className="modal-overlay">
-          <div className="admin-modal">
+      {memoModal.shouldRender && (
+        <div className={`modal-overlay ${memoModal.overlayClass}`}>
+          <div className={`admin-modal ${memoModal.modalClass}`}>
             <div className="admin-modal-header">
               <h3>Add Memo</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => { setShowMemo(false); setMemoErrors({}); }}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => { memoModal.close(() => setShowMemo(false)); setMemoErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
             <div className="admin-modal-body">
               <div className={`admin-form-group${memoErrors.staffId ? " mat-select-error" : ""}`}>
@@ -453,7 +456,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
               </div>
             </div>
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => { setShowMemo(false); setMemoErrors({}); }}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={() => { memoModal.close(() => setShowMemo(false)); setMemoErrors({}); }}>Cancel</Button3D>
               <Button3D onClick={saveMemo}>Save Memo</Button3D>
             </div>
           </div>

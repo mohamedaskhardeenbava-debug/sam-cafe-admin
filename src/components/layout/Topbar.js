@@ -191,7 +191,9 @@ function VenueIndicator() {
       return (
         <span
           className="topbar-venue-label topbar-venue-label--empty"
-          title="No venues yet — add one from the Venues page"
+          data-bs-toggle="tooltip"
+          data-bs-placement="bottom"
+          data-bs-title="No venues yet — add one from the Venues page"
           style={{
             padding: "6px 10px",
             borderRadius: 8,
@@ -238,7 +240,9 @@ function VenueIndicator() {
   return (
     <span
       className="topbar-venue-label"
-      title="Your branch"
+      data-bs-toggle="tooltip"
+      data-bs-placement="bottom"
+      data-bs-title="Your branch"
       style={{
         padding: "6px 10px",
         borderRadius: 8,
@@ -586,7 +590,9 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
             type="button"
             className="bell-call-btn blinking"
             onClick={(e) => { e.stopPropagation(); handleDismissBell(tableNo); }}
-            title={`Table ${tableNo} is calling. Click to dismiss.`}
+            data-bs-toggle="tooltip"
+            data-bs-placement="bottom"
+            data-bs-title={`Table ${tableNo} is calling. Click to dismiss.`}
           >
             Table {tableNo}
           </button>

@@ -22,6 +22,7 @@ import { CustomTimePicker } from "../../components/CustomTimePicker";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 import Button3D from "../../components/Button3D";
+import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CustomDropdown from "../../components/CustomDropdown";
 import CollapseChevron from "../../components/CollapseChevron";
 import { useVenue } from "../../context/VenueContext";
@@ -185,7 +186,7 @@ const PreDishPicker = ({ menuData, selectedItems, setSelectedItems, guests }) =>
                   </div>
                   <button type="button" className="ae-sdt-remove"
                     onClick={() => setSelectedItems(p => p.filter(x => x.id !== item.id))}
-                    title="Remove">×</button>
+                    data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Remove">×</button>
                 </div>
               ))}
             </div>
@@ -212,6 +213,12 @@ const PreDishPicker = ({ menuData, selectedItems, setSelectedItems, guests }) =>
 
 const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
   const { venueParam } = useVenue();
+  const addPreBookingModal = useAnimatedModal("preBookings-add");
+  useEffect(() => {
+    addPreBookingModal.open();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const closeAnimated = () => addPreBookingModal.close(onClose);
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -279,7 +286,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
       await api.post("/preBookings", body);
       toast.success("PreBooking added!");
       onSaved(body);
-      onClose();
+      closeAnimated();
     } catch {
       toast.error("Failed to add pre-booking.");
     } finally {
@@ -290,8 +297,8 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
   const slotLabel = SLOT_GROUPS.find(s => s.key === form.slotGroup)?.label || "—";
 
   return (
-    <div className="modal-overlay">
-      <div className="event-modal" onClick={e => e.stopPropagation()}>
+    <div className={`modal-overlay ${addPreBookingModal.overlayClass}`}>
+      <div className={`event-modal ${addPreBookingModal.modalClass}`} onClick={e => e.stopPropagation()}>
 
         <div className="admin-modal-header">
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -320,7 +327,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
               ))}
             </div>
           </div>
-          <Button3D variant="cancel" iconOnly onClick={() => { onClose(); setErrors({}); }}><img src={closeIcon} /></Button3D>
+          <Button3D variant="cancel" iconOnly onClick={() => { closeAnimated(); setErrors({}); }}><img src={closeIcon} /></Button3D>
         </div>
 
         <div className="event-modal-body">
@@ -385,7 +392,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                       return (
                         <button key={sg.key} type="button"
                           className={`evt-res-pref-card${form.slotGroup === sg.key ? " active" : ""}${isPast ? " chip-disabled" : ""}`}
-                          title={isPast ? "This slot has passed today" : ""}
+                          {...(isPast ? { "data-bs-toggle": "tooltip", "data-bs-placement": "top", "data-bs-title": "This slot has passed today" } : {})}
                           onClick={() => {
                             if (isPast) return;
                             const next = form.slotGroup === sg.key ? "" : sg.key;
@@ -544,7 +551,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
         </div>
 
         <div className="admin-modal-footer">
-          <Button3D variant="cancel" onClick={() => { onClose(); setErrors({}); }}>Cancel</Button3D>
+          <Button3D variant="cancel" onClick={() => { closeAnimated(); setErrors({}); }}>Cancel</Button3D>
           {tab > 0 && (
             <button type="button" className="modal-prev-btn" onClick={() => setTab(t => t - 1)}>
               <span className="shadow"></span><span className="edge"></span>
@@ -737,7 +744,7 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand header" : "Collapse header"}
             >
               <CollapseChevron collapsed={headerCollapsed} />
             </button>
@@ -796,7 +803,7 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
               noMax
             />
             {(filterFromDate || filterToDate) && (
-              <button className="filter-pill" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} title="Clear dates">✕</button>
+              <button className="filter-pill" onClick={() => { setFilterFromDate(""); setFilterToDate(""); setFilterDatePreset(""); }} data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Clear dates">✕</button>
             )}
           </div>
 
@@ -939,7 +946,7 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
                         {["pending", "confirmed", "completed", "cancelled"].map(s => (
                           <button key={s}
                             className={`evt-res-istatus-btn evt-res-istatus-${s}${status === s ? " active" : ""}`}
-                            title={s}
+                            data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={s}
                             onClick={e => updateStatus(e, item.id, s)}>
                             {s === "pending" ? "P" : s === "confirmed" ? "C" : s === "completed" ? "D" : "X"}
                           </button>

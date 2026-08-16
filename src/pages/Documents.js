@@ -18,6 +18,7 @@ import { allowTextInput, EmptyRow, sortArray, formatDisplayDate } from "../App";
 import { useToast } from "../useToast";
 import { useAuth } from "../context/AuthContext";
 import Button3D from "../components/Button3D";
+import useAnimatedModal from "../hooks/useAnimatedModal";
 import CollapseChevron from "../components/CollapseChevron";
 import CustomDropdown from "../components/CustomDropdown";
 import { CustomDatePicker, todayStr } from "../components/CustomDatePicker";
@@ -61,6 +62,7 @@ const Documents = ({ sortConfig, handleSort }) => {
   const [departmentFilter, setDepartmentFilter] = useState("");
 
   const [showForm, setShowForm] = useState(false);
+  const docFormModal = useAnimatedModal("documents-add");
   const [form, setForm] = useState(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState({});
   const [fileLabel, setFileLabel] = useState("");
@@ -85,11 +87,15 @@ const Documents = ({ sortConfig, handleSort }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSuperAdmin]);
 
-  const resetForm = () => {
-    setShowForm(false);
+  const clearDocFormFields = () => {
     setForm(EMPTY_FORM);
     setFormErrors({});
     setFileLabel("");
+  };
+
+  const resetForm = () => {
+    docFormModal.close(() => setShowForm(false));
+    clearDocFormFields();
   };
 
   const handleFilePick = (e) => {
@@ -178,7 +184,7 @@ const Documents = ({ sortConfig, handleSort }) => {
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed((prev) => !prev)}
-              title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand filters" : "Collapse filters"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />
@@ -192,7 +198,7 @@ const Documents = ({ sortConfig, handleSort }) => {
           </div>
         </div>
 
-        <Button3D onClick={() => { resetForm(); setShowForm(true); }}>+ Add Doc</Button3D>
+        <Button3D onClick={() => { clearDocFormFields(); setShowForm(true); docFormModal.open(); }}>+ Add Doc</Button3D>
       </div>
 
       {/* FILTER BAR */}
@@ -216,10 +222,10 @@ const Documents = ({ sortConfig, handleSort }) => {
       )}
 
       {/* ADD DOC MODAL */}
-      {showForm && (
-        <div className="modal-overlay">
+      {docFormModal.shouldRender && (
+        <div className={`modal-overlay ${docFormModal.overlayClass}`}>
           <form
-            className="admin-modal"
+            className={`admin-modal ${docFormModal.modalClass}`}
             onSubmit={(e) => { e.preventDefault(); handleSave(); }}
           >
             <div className="admin-modal-header">

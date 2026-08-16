@@ -58,6 +58,85 @@
     z-index: 999;
 }
 
+/* ── Shared enter/exit animation ──────────────────────────────────────
+   Driven by useAnimatedModal.js + ModalContext.js. Every modal in the
+   app gets `modal-anim-in` while opening/open and `modal-anim-out`
+   while closing (JS unmounts it MODAL_EXIT_DURATION ms later, matching
+   the timings below, so the exit transition always finishes on screen). */
+@keyframes modalOverlayIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes modalOverlayOut {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}
+
+@keyframes modalCardIn {
+    from { opacity: 0; transform: translateY(18px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes modalCardOut {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to   { opacity: 0; transform: translateY(12px) scale(0.97); }
+}
+
+.modal-overlay.modal-anim-in,
+.event-modal-overlay.modal-anim-in,
+.ingredient-modal-overlay.modal-anim-in {
+    animation: modalOverlayIn 0.22s ease-out both;
+}
+
+.modal-overlay.modal-anim-out,
+.event-modal-overlay.modal-anim-out,
+.ingredient-modal-overlay.modal-anim-out {
+    animation: modalOverlayOut 0.2s ease-in both;
+    pointer-events: none;
+}
+
+.admin-modal.modal-anim-in,
+.modal-overlay.modal-anim-in > form,
+.modal-overlay.modal-anim-in > div.admin-modal,
+.qr-modal.modal-anim-in,
+.event-modal.modal-anim-in,
+.ingredient-modal.modal-anim-in {
+    animation: modalCardIn 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.admin-modal.modal-anim-out,
+.modal-overlay.modal-anim-out > form,
+.modal-overlay.modal-anim-out > div.admin-modal,
+.qr-modal.modal-anim-out,
+.event-modal.modal-anim-out,
+.ingredient-modal.modal-anim-out {
+    animation: modalCardOut 0.2s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .modal-overlay.modal-anim-in,
+    .modal-overlay.modal-anim-out,
+    .event-modal-overlay.modal-anim-in,
+    .event-modal-overlay.modal-anim-out,
+    .ingredient-modal-overlay.modal-anim-in,
+    .ingredient-modal-overlay.modal-anim-out,
+    .admin-modal.modal-anim-in,
+    .admin-modal.modal-anim-out,
+    .qr-modal.modal-anim-in,
+    .qr-modal.modal-anim-out,
+    .event-modal.modal-anim-in,
+    .event-modal.modal-anim-out,
+    .ingredient-modal.modal-anim-in,
+    .ingredient-modal.modal-anim-out,
+    .modal-overlay.modal-anim-in > form,
+    .modal-overlay.modal-anim-out > form,
+    .modal-overlay.modal-anim-in > div.admin-modal,
+    .modal-overlay.modal-anim-out > div.admin-modal {
+        animation: none !important;
+    }
+}
+
 
 /* ── Modal card ── */
 .admin-modal {

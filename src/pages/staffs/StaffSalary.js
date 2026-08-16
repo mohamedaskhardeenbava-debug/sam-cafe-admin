@@ -16,6 +16,7 @@ import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import { EmptyRow } from "../../App";
 import Button3D from "../../components/Button3D";
+import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
 
 import "./StaffModules.css";
@@ -26,6 +27,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
   const { toast } = useToast();
 
   const [selected, setSelected] = useState(null);
+  const salaryModal = useAnimatedModal("staffSalary-detail");
   const [staffList, setStaffList] = useState(adminData.staff);
   const [salarySearch, setSalarySearch] = useState("");
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
@@ -45,6 +47,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
 
   const openModal = (staff) => {
     setSelected(staff);
+    salaryModal.open();
 
     // Use the last saved record as the starting values (absolute, not
     // cumulative) — but only if it's from the current month. Advance,
@@ -68,7 +71,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
 
   // ── Handlers
 
-  const closeModal = () => setSelected(null);
+  const closeModal = () => salaryModal.close(() => setSelected(null));
 
   const handleSave = async () => {
     const advance = Number(form.advance || 0);
@@ -153,7 +156,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand header" : "Collapse header"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />
@@ -292,9 +295,9 @@ export default function StaffSalary({ adminData, setAdminData }) {
         </table>
         <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
-      {selected && (
-        <div className="modal-overlay">
-          <div className="admin-modal">
+      {salaryModal.shouldRender && (
+        <div className={`modal-overlay ${salaryModal.overlayClass}`}>
+          <div className={`admin-modal ${salaryModal.modalClass}`}>
 
             <div className="admin-modal-header">
               <h3>{selected.name}</h3>

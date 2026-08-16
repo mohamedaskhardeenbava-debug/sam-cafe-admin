@@ -67,7 +67,12 @@
  *   Inline styles applied to the button element.
  *
  * @prop {string}   [title]
- *   Tooltip / aria-label.
+ *   Tooltip / aria-label. Rendered as a Bootstrap tooltip via
+ *   data-bs-toggle="tooltip" (see the `tooltipPlacement` prop below),
+ *   not a plain browser title attribute.
+ *
+ * @prop {"top"|"right"|"bottom"|"left"} [tooltipPlacement="top"]
+ *   Bootstrap tooltip placement, only used when `title` is set.
  *
  * @prop {function} [onClick]
  *
@@ -91,6 +96,7 @@ export default function Button3D({
   className = "",
   style,
   title,
+  tooltipPlacement = "top",
   onClick,
   children,
 }) {
@@ -104,8 +110,10 @@ export default function Button3D({
       className={fullClass}
       style={style}
       disabled={disabled}
-      title={title}
       onClick={onClick}
+      {...(title
+        ? { "data-bs-toggle": "tooltip", "data-bs-placement": tooltipPlacement, "data-bs-title": title }
+        : {})}
     >
       <span className="shadow" />
       <span className="edge" />

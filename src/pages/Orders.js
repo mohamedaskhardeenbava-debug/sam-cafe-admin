@@ -1750,7 +1750,7 @@ const Orders = ({ adminData, setAdminData }) => {
                 type="button"
                 className="header-collapse-btn"
                 onClick={() => setHeaderCollapsed(prev => !prev)}
-                title={headerCollapsed ? "Expand header" : "Collapse header"}
+                data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand header" : "Collapse header"}
                 aria-expanded={!headerCollapsed}
               >
                 <CollapseChevron collapsed={headerCollapsed} />
@@ -1787,34 +1787,37 @@ const Orders = ({ adminData, setAdminData }) => {
 
         {!headerCollapsed && (
           <div className="orders-header-div">
-            <button
-              type="button"
-              className={`filter-pill${datePreset === "today" ? " active" : ""}`}
-              onClick={() => applyPreset("today")}
-            >
-              Today
-            </button>
-            <button
-              type="button"
-              className={`filter-pill${datePreset === "week" ? " active" : ""}`}
-              onClick={() => applyPreset("week")}
-            >
-              This Week
-            </button>
-            <button
-              type="button"
-              className={`filter-pill${datePreset === "month" ? " active" : ""}`}
-              onClick={() => applyPreset("month")}
-            >
-              This Month
-            </button>
-            <button
-              type="button"
-              className={`filter-pill${datePreset === "lastMonth" ? " active" : ""}`}
-              onClick={() => applyPreset("lastMonth")}
-            >
-              Last Month
-            </button>
+            <div className="filter-group">
+
+              <button
+                type="button"
+                className={`filter-pill${datePreset === "today" ? " active" : ""}`}
+                onClick={() => applyPreset("today")}
+              >
+                Today
+              </button>
+              <button
+                type="button"
+                className={`filter-pill${datePreset === "week" ? " active" : ""}`}
+                onClick={() => applyPreset("week")}
+              >
+                This Week
+              </button>
+              <button
+                type="button"
+                className={`filter-pill${datePreset === "month" ? " active" : ""}`}
+                onClick={() => applyPreset("month")}
+              >
+                This Month
+              </button>
+              <button
+                type="button"
+                className={`filter-pill${datePreset === "lastMonth" ? " active" : ""}`}
+                onClick={() => applyPreset("lastMonth")}
+              >
+                Last Month
+              </button>
+            </div>
 
             <CustomDatePicker
               label="From"

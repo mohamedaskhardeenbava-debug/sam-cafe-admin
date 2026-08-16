@@ -17,9 +17,11 @@ import logo from "../../icon/logo.png";
 import { useToast } from "../../useToast";
 import { useVenue } from "../../context/VenueContext";
 import Button3D from "../../components/Button3D";
+import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
 
 import "./TableManagement.css";
+import "../ModalCSS.css";
 
 const TableManagement = ({ adminData, setAdminData }) => {
   // ── Hooks
@@ -29,6 +31,7 @@ const TableManagement = ({ adminData, setAdminData }) => {
   const tables = adminData.tables?.[0]?.list || [];
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const qrModal = useAnimatedModal("tableManagement-qr");
   const [selectedTable, setSelectedTable] = useState(null);
   const [newlyAddedTable, setNewlyAddedTable] = useState(null);
 
@@ -200,7 +203,7 @@ const TableManagement = ({ adminData, setAdminData }) => {
                 type="button"
                 className="header-collapse-btn"
                 onClick={() => setHeaderCollapsed(prev => !prev)}
-                title={headerCollapsed ? "Expand header" : "Collapse header"}
+                data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand header" : "Collapse header"}
                 aria-expanded={!headerCollapsed}
               >
                 <CollapseChevron collapsed={headerCollapsed} />
@@ -252,6 +255,7 @@ const TableManagement = ({ adminData, setAdminData }) => {
                       e.stopPropagation();
                       setSelectedTable(t);
                       setShowQRModal(true);
+                      qrModal.open();
                     }}><img src={qrIcon} alt="QR" className="qr-icon" /></Button3D>
 
                   <Button3D variant="cancel" iconOnly title="Remove table"
@@ -278,12 +282,12 @@ const TableManagement = ({ adminData, setAdminData }) => {
       </div>
 
       {/* QR MODAL */}
-      {showQRModal && (
+      {qrModal.shouldRender && (
         <div
-          className="modal-overlay"
+          className={`modal-overlay ${qrModal.overlayClass}`}
         >
           <div
-            className="qr-modal"
+            className={`qr-modal ${qrModal.modalClass}`}
             onClick={e => e.stopPropagation()}
           >
             <div className="qr-modal-header">
@@ -291,7 +295,7 @@ const TableManagement = ({ adminData, setAdminData }) => {
                 <h3>Table {selectedTable}</h3>
                 {currentVenue?.name && <p className="qr-modal-branch">{currentVenue.name}</p>}
               </div>
-              <Button3D variant="cancel" iconOnly onClick={() => setShowQRModal(false)}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => qrModal.close(() => setShowQRModal(false))}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="qr-modal-body">

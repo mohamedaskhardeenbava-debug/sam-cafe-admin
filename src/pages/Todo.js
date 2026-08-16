@@ -14,6 +14,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 import Button3D from "../components/Button3D";
+import useAnimatedModal from "../hooks/useAnimatedModal";
 import CustomDropdown from "../components/CustomDropdown";
 import CustomDatePicker, { todayStr } from "../components/CustomDatePicker";
 import { FilterBar } from "../components/FilterBar";
@@ -35,6 +36,7 @@ const Todo = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   const [showModal, setShowModal] = useState(false);
+  const todoModal = useAnimatedModal("todo-add");
   const [form, setForm] = useState(EMPTY_FORM);
   const patchForm = (patch) => setForm((p) => ({ ...p, ...patch }));
 
@@ -56,16 +58,17 @@ const Todo = () => {
   const openCreateModal = () => {
     setForm(EMPTY_FORM);
     setShowModal(true);
+    todoModal.open();
   };
 
-  const closeModal = () => setShowModal(false);
+  const closeModal = () => todoModal.close(() => setShowModal(false));
 
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!form.title.trim()) return;
     await api.post("/todos", form);
     setForm(EMPTY_FORM);
-    setShowModal(false);
+    todoModal.close(() => setShowModal(false));
     load();
   };
 
@@ -121,7 +124,7 @@ const Todo = () => {
             setReportCollapsed(next);
             setFiltersCollapsed(next);
           }}
-          title={reportCollapsed && filtersCollapsed ? "Expand" : "Collapse"}
+          data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={reportCollapsed && filtersCollapsed ? "Expand" : "Collapse"}
           aria-expanded={!(reportCollapsed && filtersCollapsed)}
         >
           <CollapseChevron collapsed={reportCollapsed && filtersCollapsed} />
@@ -141,7 +144,7 @@ const Todo = () => {
               type="button"
               className="header-collapse-btn"
               onClick={() => setReportCollapsed((prev) => !prev)}
-              title={reportCollapsed ? "Expand" : "Collapse"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={reportCollapsed ? "Expand" : "Collapse"}
               aria-expanded={!reportCollapsed}
             >
               <CollapseChevron collapsed={reportCollapsed} />
@@ -168,7 +171,7 @@ const Todo = () => {
               type="button"
               className="header-collapse-btn"
               onClick={() => setFiltersCollapsed((prev) => !prev)}
-              title={filtersCollapsed ? "Expand filters" : "Collapse filters"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={filtersCollapsed ? "Expand filters" : "Collapse filters"}
               aria-expanded={!filtersCollapsed}
             >
               <CollapseChevron collapsed={filtersCollapsed} />
@@ -225,7 +228,9 @@ const Todo = () => {
                     type="button"
                     className={`todo-check${t.status === "done" ? " todo-check-on" : ""}`}
                     onClick={() => toggleDone(t)}
-                    title={t.status === "done" ? "Mark as pending" : "Mark as done"}
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    data-bs-title={t.status === "done" ? "Mark as pending" : "Mark as done"}
                   >
                     {t.status === "done" && (
                       <svg viewBox="0 0 16 16" width="10" height="10">
@@ -270,9 +275,9 @@ const Todo = () => {
       </div>
 
       {/* NEW TODO MODAL */}
-      {showModal && (
-        <div className="modal-overlay">
-          <form className="admin-modal" onSubmit={handleAdd}>
+      {todoModal.shouldRender && (
+        <div className={`modal-overlay ${todoModal.overlayClass}`}>
+          <form className={`admin-modal ${todoModal.modalClass}`} onSubmit={handleAdd}>
             <div className="admin-modal-header">
               <h3>New To-Do</h3>
               <Button3D variant="cancel" iconOnly onClick={closeModal}>

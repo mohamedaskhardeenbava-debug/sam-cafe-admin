@@ -208,7 +208,9 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       <div
         className="sidebar-brand"
         onClick={() => setIsOpen((prev) => !prev)}
-        title={isOpen ? "Collapse sidebar" : "Expand sidebar"}
+        data-bs-toggle="tooltip"
+        data-bs-placement="right"
+        data-bs-title={isOpen ? "Collapse sidebar" : "Expand sidebar"}
       >
         <div className="brand-icon-wrap">
           <img src={logoShrink} alt="Sam Cafe" className="brand-icon-img" />
@@ -254,7 +256,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 <div key={index} className="sidebar-group">
                   <button
                     className={`sidebar-link ${isAnyChildActive ? "sidebar-link-active" : ""}`}
-                    title={!isOpen ? item.label : undefined}
+                    {...(!isOpen ? { "data-bs-toggle": "tooltip", "data-bs-placement": "right", "data-bs-title": item.label } : {})}
                     onClick={(e) => {
                       if (isOpen) {
                         setOpenMenu(isExpanded ? null : index);
@@ -378,7 +380,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 className={({ isActive }) =>
                   `sidebar-link ${isActive ? "sidebar-link-active" : ""}`
                 }
-                title={!isOpen ? item.label : undefined}
+                {...(!isOpen ? { "data-bs-toggle": "tooltip", "data-bs-placement": "right", "data-bs-title": item.label } : {})}
               >
                 <span className="sidebar-icon-wrap">
                   <img src={item.icon} alt="" className="sidebar-icon-img" />

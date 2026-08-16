@@ -20,6 +20,7 @@ import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
 import CollapseChevron from "../components/CollapseChevron";
 import { FilterBar } from "../components/FilterBar";
+import useAnimatedModal from "../hooks/useAnimatedModal";
 
 import "./Ingredients.css";
 import "./ModalCSS.css";
@@ -53,6 +54,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
   const { toast } = useToast();
 
   const [showForm, setShowForm] = useState(false);
+  const ingredientFormModal = useAnimatedModal("ingredients-addEdit");
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [imagePreview, setImagePreview] = useState("");
@@ -62,12 +64,16 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
   const [brandInput, setBrandInput] = useState("");
 
   const navigate = useNavigate();
-  const resetIngredientForm = () => {
-    setShowForm(false);
+  const clearIngredientFormFields = () => {
     setIsEditMode(false);
     setFormData(EMPTY_FORM);
     setImagePreview("");
     setFormErrors({});
+  };
+
+  const resetIngredientForm = () => {
+    ingredientFormModal.close(() => setShowForm(false));
+    clearIngredientFormFields();
   };
 
   const [ingredientSearch, setIngredientSearch] = useState("");
@@ -176,8 +182,9 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
   };
 
   const openAddForm = () => {
-    resetIngredientForm();
+    clearIngredientFormFields();
     setShowForm(true);
+    ingredientFormModal.open();
   };
 
   return (
@@ -190,7 +197,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand filters" : "Collapse filters"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand filters" : "Collapse filters"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />
@@ -218,10 +225,10 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
         />
       )}
 
-      {showForm && (
-        <div className="modal-overlay">
+      {ingredientFormModal.shouldRender && (
+        <div className={`modal-overlay ${ingredientFormModal.overlayClass}`}>
           <form
-            className="admin-modal"
+            className={`admin-modal ${ingredientFormModal.modalClass}`}
             onSubmit={(e) => {
               e.preventDefault();
               handleSave();

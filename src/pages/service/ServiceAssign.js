@@ -15,6 +15,7 @@ import { allowTextInput } from "../../App";
 import deleteIcon from "../../icon/delete-icon.png";
 import closeIcon from "../../icon/close-icon.png";
 import Button3D from "../../components/Button3D";
+import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
 import CustomDropdown from "../../components/CustomDropdown";
 import { MultiPillGroup } from "../../components/FilterBar";
@@ -55,6 +56,7 @@ export default function ServiceAssign({ adminData, setAdminData }) {
   const [newTask, setNewTask] = useState("");
   const [section, setSection] = useState("mise");
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const taskModal = useAnimatedModal("serviceAssign-addTask");
   const [taskErrors, setTaskErrors] = useState({});
   const [openDropdown, setOpenDropdown] = useState(null);
 
@@ -194,7 +196,7 @@ export default function ServiceAssign({ adminData, setAdminData }) {
               type="button"
               className="header-collapse-btn"
               onClick={() => setHeaderCollapsed(prev => !prev)}
-              title={headerCollapsed ? "Expand header" : "Collapse header"}
+              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand header" : "Collapse header"}
               aria-expanded={!headerCollapsed}
             >
               <CollapseChevron collapsed={headerCollapsed} />
@@ -216,7 +218,9 @@ export default function ServiceAssign({ adminData, setAdminData }) {
           <button
             className="modal-confirm-btn"
             onClick={() => setListView(v => !v)}
-            title={listView ? "Table view" : "List view"}
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            data-bs-title={listView ? "Table view" : "List view"}
           >
             <span className="shadow"></span>
             <span className="edge"></span>
@@ -225,7 +229,7 @@ export default function ServiceAssign({ adminData, setAdminData }) {
             </span>
           </button>
           <Button3D onClick={exportAssign}>Export</Button3D>
-          <Button3D onClick={() => setShowTaskModal(true)}>+ Task</Button3D>
+          <Button3D onClick={() => { setShowTaskModal(true); taskModal.open(); }}>+ Task</Button3D>
         </div>
       </div>
 
@@ -273,14 +277,14 @@ export default function ServiceAssign({ adminData, setAdminData }) {
       }
 
       {/* ADD TASK MODAL */}
-      {showTaskModal && (
-        <div className="modal-overlay">
-          <form className="admin-modal" onSubmit={e => {
+      {taskModal.shouldRender && (
+        <div className={`modal-overlay ${taskModal.overlayClass}`}>
+          <form className={`admin-modal ${taskModal.modalClass}`} onSubmit={e => {
             e.preventDefault(); handleAddTask();
           }}>
             <div className="admin-modal-header">
               <h3>Add Task</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => { setShowTaskModal(false); setNewTask(""); setTaskErrors({}); }}><img src={closeIcon} /></Button3D>
+              <Button3D variant="cancel" iconOnly onClick={() => { taskModal.close(() => setShowTaskModal(false)); setNewTask(""); setTaskErrors({}); }}><img src={closeIcon} /></Button3D>
             </div>
             <div className="admin-modal-body">
               <div className="admin-form-group">
@@ -305,7 +309,7 @@ export default function ServiceAssign({ adminData, setAdminData }) {
               </div>
             </div>
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => { setShowTaskModal(false); setNewTask(""); setTaskErrors({}); }}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={() => { taskModal.close(() => setShowTaskModal(false)); setNewTask(""); setTaskErrors({}); }}>Cancel</Button3D>
               <Button3D type="submit">Add Task</Button3D>
             </div>
           </form>
