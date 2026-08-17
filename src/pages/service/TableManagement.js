@@ -19,6 +19,7 @@ import { useVenue } from "../../context/VenueContext";
 import Button3D from "../../components/Button3D";
 import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
+import CollapseSection from "../../components/CollapseSection";
 
 import "./TableManagement.css";
 import "../ModalCSS.css";
@@ -225,7 +226,8 @@ const TableManagement = ({ adminData, setAdminData }) => {
       </div>
 
       {/* GRID */}
-      <div className={`table-mgmt-grid-wrapper${headerCollapsed ? " header-is-collapsed" : ""}`}>
+      <div className="table-mgmt-grid-wrapper">
+        <CollapseSection collapsed={headerCollapsed}>
         {tables.length > 0 ? (
           <div className="table-mgmt-grid">
             <Button3D style={{ width: "100%" }} onClick={addTable} role="button" tabIndex={0}>
@@ -279,6 +281,7 @@ const TableManagement = ({ adminData, setAdminData }) => {
             </div>
           </div>
         )}
+        </CollapseSection>
       </div>
 
       {/* QR MODAL */}

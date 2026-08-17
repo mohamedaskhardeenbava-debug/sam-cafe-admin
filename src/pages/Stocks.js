@@ -22,6 +22,7 @@ import CustomDropdown from "../components/CustomDropdown";
 import Button3D from "../components/Button3D";
 import useAnimatedModal from "../hooks/useAnimatedModal";
 import CollapseChevron from "../components/CollapseChevron";
+import CollapseSection from "../components/CollapseSection";
 import { FilterBar } from "../components/FilterBar";
 
 import "./Stocks.css";
@@ -324,7 +325,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
       </div>
 
       {/* FILTER BAR */}
-      {!headerCollapsed && (
+      <CollapseSection collapsed={headerCollapsed}>
         <FilterBar
           search={stockSearch}
           onSearchChange={setStockSearch}
@@ -332,7 +333,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
           onClear={() => setStockSearch("")}
           active={!!stockSearch}
         />
-      )}
+      </CollapseSection>
 
       {/* TABLE */}
       <div className="table-wrapper" ref={containerRef}>

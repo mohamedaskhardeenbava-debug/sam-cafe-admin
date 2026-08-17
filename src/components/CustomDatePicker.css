@@ -103,6 +103,29 @@
     animation: cdpFadeIn 0.18s ease;
 }
 
+.cdp-close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1.5px solid #dedede;
+    background: #f0f0f0;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    color: #555;
+}
+
+.cdp-close-btn:hover {
+    background: #e8e8e8;
+    color: #222;
+}
+
 @keyframes cdpFadeIn {
     from {
         opacity: 0;
@@ -118,6 +141,8 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 12px;
+    /* Room for the absolutely-positioned close button in the corner */
+    padding-right: 30px;
 }
 
 .cdp-nav-btn {

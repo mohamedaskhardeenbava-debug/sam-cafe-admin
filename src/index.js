@@ -9,6 +9,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { VenueProvider } from "./context/VenueContext";
 import { CategoryCardsProvider } from "./context/CategoryCardsContext";
 import { ModalProvider } from "./context/ModalContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import * as bootstrap from 'bootstrap/dist/js/bootstrap.bundle.min.js';
@@ -22,19 +23,21 @@ window.bootstrap = bootstrap;
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <BrowserRouter>
-    <AuthProvider>
-      <VenueProvider>
-        <CategoryCardsProvider>
-          <ToastProvider>
-            <ModalProvider>
-              <App />
-            </ModalProvider>
-          </ToastProvider>
-        </CategoryCardsProvider>
-      </VenueProvider>
-    </AuthProvider>
-  </BrowserRouter>
+  <ErrorBoundary>
+    <BrowserRouter>
+      <AuthProvider>
+        <VenueProvider>
+          <CategoryCardsProvider>
+            <ToastProvider>
+              <ModalProvider>
+                <App />
+              </ModalProvider>
+            </ToastProvider>
+          </CategoryCardsProvider>
+        </VenueProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  </ErrorBoundary>
 );
 
 // If you want to start measuring performance in your app, pass a function

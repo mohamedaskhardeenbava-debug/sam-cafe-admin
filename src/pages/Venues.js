@@ -19,6 +19,7 @@ import Button3D from "../components/Button3D";
 import useAnimatedModal from "../hooks/useAnimatedModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import CollapseChevron from "../components/CollapseChevron";
+import CollapseSection from "../components/CollapseSection";
 import PageLoader from "../components/PageLoader";
 import closeIcon from "../icon/close-icon.png";
 import { EmptyRow, allowTextInput } from "../App";
@@ -242,7 +243,7 @@ const Venues = () => {
       </div>
 
       {/* FILTER BAR */}
-      {!headerCollapsed && (
+      <CollapseSection collapsed={headerCollapsed}>
         <div className="filter-bar">
           <div className="filter-groups">
             <input
@@ -258,7 +259,7 @@ const Venues = () => {
             )}
           </div>
         </div>
-      )}
+      </CollapseSection>
 
       <div
         className="table-wrapper"

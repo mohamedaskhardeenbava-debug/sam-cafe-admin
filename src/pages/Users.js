@@ -21,6 +21,7 @@ import { useToast } from "../useToast";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import Button3D from "../components/Button3D";
+import CollapseSection from "../components/CollapseSection";
 import { FilterBar } from "../components/FilterBar";
 
 import "./Users.css";
@@ -124,7 +125,7 @@ const Users = ({ handleSort, sortConfig, users }) => {
       </div>
 
       {/* FILTER BAR */}
-      {!headerCollapsed && (
+      <CollapseSection collapsed={headerCollapsed}>
         <FilterBar
           search={userSearch}
           onSearchChange={setUserSearch}
@@ -132,7 +133,7 @@ const Users = ({ handleSort, sortConfig, users }) => {
           onClear={() => setUserSearch("")}
           active={!!userSearch}
         />
-      )}
+      </CollapseSection>
 
       <div className="table-wrapper" ref={containerRef}>
         <table >

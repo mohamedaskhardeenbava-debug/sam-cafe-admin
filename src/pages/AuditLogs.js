@@ -16,6 +16,7 @@ import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
 import CustomDropdown from "../components/CustomDropdown";
 import CollapseChevron from "../components/CollapseChevron";
+import CollapseSection from "../components/CollapseSection";
 import PageLoader from "../components/PageLoader";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
@@ -204,7 +205,7 @@ const AuditLogs = () => {
         </div>
       </div>
 
-      {!filtersCollapsed && (
+      <CollapseSection collapsed={filtersCollapsed}>
         <FilterBar
           dateRange={{
             from: filters.from,
@@ -258,7 +259,7 @@ const AuditLogs = () => {
             </>
           }
         />
-      )}
+      </CollapseSection>
 
       <div
         className="table-wrapper"

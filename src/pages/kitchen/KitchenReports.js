@@ -11,6 +11,7 @@ import { todayStr } from "../../utils/dateRangeUtils";
 
 import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
+import CollapseSection from "../../components/CollapseSection";
 
 import "./KitchenReports.css";
 import {
@@ -267,7 +268,7 @@ const KitchenReports = ({ adminData = {} }) => {
               <p className="k-subtitle">Operations &amp; Performance Report</p>
             </div>
           </div>
-          {!headerCollapsed && (
+          <CollapseSection collapsed={headerCollapsed}>
             <div className="k-header-filters">
               <DateRangeGroup
                 from={reportFrom}
@@ -285,7 +286,7 @@ const KitchenReports = ({ adminData = {} }) => {
                 <button className="ae-clear-filter" onClick={() => { setReportPreset("all"); setReportFrom(""); setReportTo(""); }}>Clear</button>
               )}
             </div>
-          )}
+          </CollapseSection>
         </div>
 
         <Button3D onClick={exportReport}>Export</Button3D>

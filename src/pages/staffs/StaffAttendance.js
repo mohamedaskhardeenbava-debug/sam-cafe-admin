@@ -21,6 +21,7 @@ import { EmptyRow } from "../../App";
 import Button3D from "../../components/Button3D";
 import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
+import CollapseSection from "../../components/CollapseSection";
 import { useVenue } from "../../context/VenueContext";
 
 import "./StaffAttendance.css";
@@ -330,7 +331,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
       </div>
 
       {/* FILTER BAR */}
-      {!headerCollapsed && (
+      <CollapseSection collapsed={headerCollapsed}>
         <div className="filter-bar">
           {/* SEARCH WITH STATS DROPDOWN */}
           <div className="filter-groups">
@@ -412,7 +413,7 @@ export default function StaffAttendance({ adminData, setAdminData }) {
             </Button3D>
           </div>
         </div>
-      )}
+      </CollapseSection>
 
       {/* TABLE WRAPPER */}
       <div className={`att-scroll-wrap${headerCollapsed ? " header-is-collapsed" : ""}`}>

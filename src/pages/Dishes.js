@@ -19,6 +19,7 @@ import { useToast } from "../useToast";
 import CustomDropdown from "../components/CustomDropdown";
 import Button3D from "../components/Button3D";
 import CollapseChevron from "../components/CollapseChevron";
+import CollapseSection from "../components/CollapseSection";
 import useAnimatedModal from "../hooks/useAnimatedModal";
 
 import "./Dishes.css";
@@ -582,7 +583,8 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
         <Button3D onClick={() => { setShowForm(true); dishFormModal.open(); }}>+ Add Dish</Button3D>
       </div>
 
-      {!categoryBarCollapsed && adminData.categories.length > 0 && (
+      {adminData.categories.length > 0 && (
+        <CollapseSection collapsed={categoryBarCollapsed}>
         <div className="dish-category-buttons">
           {adminData.categories.flatMap(cat => {
 
@@ -630,6 +632,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
             );
           })}
         </div>
+        </CollapseSection>
       )}
 
       <div

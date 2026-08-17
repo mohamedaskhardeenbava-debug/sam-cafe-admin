@@ -20,6 +20,7 @@ import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
 import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
+import CollapseSection from "../../components/CollapseSection";
 
 import "./KitchenGrooming.css";
 import { fmtDate as sharedFmtDate } from "../../utils/dateUtils";
@@ -225,7 +226,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
       </div>
 
       {/* FILTER BAR */}
-      {!headerCollapsed && (
+      <CollapseSection collapsed={headerCollapsed}>
         <div className="filter-bar">
           <div className="filter-groups">
             {/* SEARCH WITH DROPDOWN */}
@@ -301,7 +302,7 @@ export default function KitchenGrooming({ adminData, setAdminData }) {
             )}
           </div>
         </div>
-      )}
+      </CollapseSection>
 
       {/* SUMMARY CARDS REMOVED — now shown in search dropdown */}
 

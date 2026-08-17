@@ -9,7 +9,7 @@
  * refresh like the old `useState(true)` stub did.
  */
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import api from "../api";
+import api, { onSessionExpired, markAuthConfirmed } from "../api";
 
 const AuthContext = createContext(null);
 
@@ -37,11 +37,34 @@ export function AuthProvider({ children }) {
   // fetched once per session so the sidebar/pages can gate UI without a
   // round-trip per module. Super Admin never needs this (always allowed).
   const [permissions, setPermissions] = useState(null); // { [module]: { canRead, canWrite } }
+  // Set when api.js's response interceptor sees a 401 on some data
+  // endpoint after the session was already confirmed once (see api.js —
+  // AuthContext previously only checked auth on mount, so a session that
+  // expired mid-use left `admin` set while every request silently 401'd
+  // in the background with no explanation shown to the person). Login.js
+  // reads this to show a "please log in again" message instead of the
+  // person just landing back on a blank login form with no context.
+  const [sessionExpired, setSessionExpired] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onSessionExpired(() => {
+      setAdmin((current) => {
+        // Only treat this as a real session-expiry event if we actually
+        // thought we were logged in — avoids flashing the "session
+        // expired" message if a 401 arrives while already logged out.
+        if (current) setSessionExpired(true);
+        return null;
+      });
+      setPermissions(null);
+    });
+    return unsubscribe;
+  }, []);
 
   const refreshSession = useCallback(async () => {
     try {
       const res = await api.get("/staff-auth/me");
       setAdmin(res.data.admin);
+      markAuthConfirmed();
       if (res.data.admin?.roleGroup !== "Super Admin") {
         try {
           const permRes = await api.get("/staff-auth/my-permissions");
@@ -104,6 +127,8 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     const res = await api.post("/staff-auth/login", { email, password });
     setAdmin(res.data.admin);
+    setSessionExpired(false);
+    markAuthConfirmed();
     await loadPermissionsFor(res.data.admin);
     return res.data.admin;
   };
@@ -140,6 +165,7 @@ export function AuthProvider({ children }) {
   const value = {
     admin,
     isAuthenticated: !!admin,
+    sessionExpired,
     isLoading,
     login,
     logout,

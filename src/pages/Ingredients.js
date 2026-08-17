@@ -19,6 +19,7 @@ import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/Infin
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
 import CollapseChevron from "../components/CollapseChevron";
+import CollapseSection from "../components/CollapseSection";
 import { FilterBar } from "../components/FilterBar";
 import useAnimatedModal from "../hooks/useAnimatedModal";
 
@@ -215,7 +216,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
       </div>
 
       {/* FILTER BAR */}
-      {!headerCollapsed && (
+      <CollapseSection collapsed={headerCollapsed}>
         <FilterBar
           search={ingredientSearch}
           onSearchChange={setIngredientSearch}
@@ -223,7 +224,7 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
           onClear={() => setIngredientSearch("")}
           active={!!ingredientSearch}
         />
-      )}
+      </CollapseSection>
 
       {ingredientFormModal.shouldRender && (
         <div className={`modal-overlay ${ingredientFormModal.overlayClass}`}>

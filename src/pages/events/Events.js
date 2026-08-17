@@ -20,6 +20,7 @@ import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
 import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
+import CollapseSection from "../../components/CollapseSection";
 import CurrentLocationToggle from "../../components/CurrentLocationToggle";
 import { useVenue } from "../../context/VenueContext";
 import { venueToAddressFields, emptyAddressFields } from "../../utils/resolveVenueAddress";
@@ -842,7 +843,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
       {activeTab === "events" && (
         <>
           {/* EVENTS FILTER BAR */}
-          {!headerCollapsed && (
+          <CollapseSection collapsed={headerCollapsed}>
             <div className="filter-bar">
               <div className="ae-events-filter-top">
                 <input
@@ -912,7 +913,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                 )}
               </div>
             </div>
-          )}
+          </CollapseSection>
 
           <div className="ae-events-scroll">
             {filteredEvents.length === 0 ? (

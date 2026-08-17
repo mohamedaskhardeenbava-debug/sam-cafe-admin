@@ -24,6 +24,7 @@ import { allowTextInput } from "../../App";
 import Button3D from "../../components/Button3D";
 import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
+import CollapseSection from "../../components/CollapseSection";
 import CustomDropdown from "../../components/CustomDropdown";
 import { MultiPillGroup } from "../../components/FilterBar";
 import StaffAccountsList, { genTempPassword, roleGroupOf } from "./StaffAccounts";
@@ -359,7 +360,7 @@ export default function Staffs({
       </div>
 
       {/* FILTER BAR */}
-      {!headerCollapsed && (
+      <CollapseSection collapsed={headerCollapsed}>
         <div className="filter-bar">
           <div className="filter-groups">
             <input
@@ -394,7 +395,7 @@ export default function Staffs({
             )}
           </div>
         </div>
-      )}
+      </CollapseSection>
 
       {/* TABLE */}
       <div className="table-wrapper" ref={containerRef}>

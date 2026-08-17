@@ -22,6 +22,7 @@ import useAnimatedModal from "../hooks/useAnimatedModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import CustomDropdown from "../components/CustomDropdown";
 import CollapseChevron from "../components/CollapseChevron";
+import CollapseSection from "../components/CollapseSection";
 import PageLoader from "../components/PageLoader";
 import { EmptyRow, allowTextInput } from "../App";
 
@@ -225,7 +226,7 @@ const PermissionsTab = () => {
           <CollapseChevron collapsed={filtersCollapsed} />
         </button>
 
-        {!filtersCollapsed && (
+        <CollapseSection collapsed={filtersCollapsed}>
           <div className="filter-groups perm-filter-groups">
             <input
               className="search-input"
@@ -246,7 +247,7 @@ const PermissionsTab = () => {
               ))}
             </div>
           </div>
-        )}
+        </CollapseSection>
       </div>
 
       <div className="table-wrapper">

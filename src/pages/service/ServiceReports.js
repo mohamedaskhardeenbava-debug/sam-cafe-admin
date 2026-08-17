@@ -12,6 +12,7 @@ import { todayStr } from "../../utils/dateRangeUtils";
 
 import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
+import CollapseSection from "../../components/CollapseSection";
 
 import "./ServiceReports.css";
 import {
@@ -273,7 +274,7 @@ const ServiceReports = ({ adminData = {} }) => {
             <p className="s-subtitle">Operations &amp; Guest Experience Report</p>
           </div>
         </div>
-        {!headerCollapsed && (
+        <CollapseSection collapsed={headerCollapsed}>
           <div className="s-header-filters">
             <DateRangeGroup
               from={reportFrom}
@@ -294,7 +295,7 @@ const ServiceReports = ({ adminData = {} }) => {
               <Button3D onClick={exportReport}>Export</Button3D>
             </span>
           </div>
-        )}
+        </CollapseSection>
         {headerCollapsed && (
           <span className="s-export-btn">
             <Button3D onClick={exportReport}>Export</Button3D>

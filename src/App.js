@@ -305,6 +305,7 @@ function App() {
     // reflected in activeVenueId, which previously let an unscoped (or
     // wrongly-scoped) request slip through and race the correctly-scoped
     // one that follows right after.
+    if (isSuperAdminUser && !activeVenueId) return;
     if (!isSuperAdminUser && admin?.venueId && !activeVenueId) return;
     setIsAppLoading(true);
     fetchAllData();

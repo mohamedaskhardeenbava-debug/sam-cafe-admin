@@ -31,6 +31,7 @@ import { todayStr, getWeekRange as sharedWeekRange, getMonthRange as sharedMonth
 import Button3D from "../components/Button3D";
 import PageLoader from "../components/PageLoader";
 import CollapseChevron from "../components/CollapseChevron";
+import CollapseSection from "../components/CollapseSection";
 import WorkPlan from "./WorkPlan";
 import { useTabLiquid } from "../hooks/useTabLiquid";
 
@@ -351,7 +352,7 @@ const SalesDashboard = ({ adminData, setAdminData, orders = [] }) => {
             </div>
             {!headerCollapsed && activeTab !== "workplan" && <Button3D onClick={handleExport}>Export</Button3D>}
           </div>
-          {!headerCollapsed && (
+          <CollapseSection collapsed={headerCollapsed}>
             <div className="dashboard-filter-date">
               <div className="dash-preset-btns">
                 {[["today", "Today"], ["weekly", "This Week"], ["monthly", "This Month"], ["lastMonth", "Last Month"]].map(([k, lbl]) => (
@@ -363,7 +364,7 @@ const SalesDashboard = ({ adminData, setAdminData, orders = [] }) => {
                 <CustomDatePicker label="To" value={toDate} min={fromDate} max={today} onChange={(s) => { setToDate(s); setDatePreset("custom"); }} />
               </div>
             </div>
-          )}
+          </CollapseSection>
         </div>
 
         {/* DATE FILTER */}

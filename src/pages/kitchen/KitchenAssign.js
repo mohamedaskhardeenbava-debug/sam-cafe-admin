@@ -17,6 +17,7 @@ import closeIcon from "../../icon/close-icon.png";
 import Button3D from "../../components/Button3D";
 import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
+import CollapseSection from "../../components/CollapseSection";
 import CustomDropdown from "../../components/CustomDropdown";
 import { MultiPillGroup } from "../../components/FilterBar";
 import { fmtTime as sharedFmtTime } from "../../utils/dateUtils";
@@ -229,7 +230,7 @@ export default function KitchenAssign({ adminData, setAdminData }) {
       </div>
 
       {/* FILTER BAR */}
-      {!headerCollapsed && (
+      <CollapseSection collapsed={headerCollapsed}>
         <div className="filter-bar">
           <div className="filter-groups">
             <input
@@ -250,7 +251,7 @@ export default function KitchenAssign({ adminData, setAdminData }) {
             )}
           </div>
         </div>
-      )}
+      </CollapseSection>
 
       {/* CONTENT — Table or List */}
       {listView

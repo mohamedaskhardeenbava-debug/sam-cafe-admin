@@ -22,6 +22,7 @@ import ConfirmDialog from "../components/ConfirmDialog";
 import CustomDropdown from "../components/CustomDropdown";
 import PageLoader from "../components/PageLoader";
 import CollapseChevron from "../components/CollapseChevron";
+import CollapseSection from "../components/CollapseSection";
 import { EmptyRow, allowTextInput } from "../App";
 import { useTabLiquid } from "../hooks/useTabLiquid";
 
@@ -243,7 +244,7 @@ const Permissions = () => {
       </div>
 
       {/* FILTER BAR — module tabs + search, collapsible */}
-      {!headerCollapsed && (
+      <CollapseSection collapsed={headerCollapsed}>
         <div className="filter-bar perm-filter-bar">
           <div className="filter-groups">
             <input
@@ -278,7 +279,7 @@ const Permissions = () => {
             ))}
           </div>
         </div>
-      )}
+      </CollapseSection>
 
       <div
         className="table-wrapper"

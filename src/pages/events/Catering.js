@@ -26,6 +26,7 @@ import { useVenue } from "../../context/VenueContext";
 import CurrentLocationToggle from "../../components/CurrentLocationToggle";
 import { venueToAddressFields } from "../../utils/resolveVenueAddress";
 import CollapseChevron from "../../components/CollapseChevron";
+import CollapseSection from "../../components/CollapseSection";
 import CustomDropdown from "../../components/CustomDropdown";
 
 import "./Catering.css";
@@ -551,7 +552,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
             <p className="evt-subtitle">Manage catering & event food orders</p>
           </div>
         </div>
-        {!headerCollapsed && (
+        <CollapseSection collapsed={headerCollapsed}>
           <>
             <div className="evt-kpi-row">
               {[
@@ -572,7 +573,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
               <Button3D onClick={openCreate}>+ Add Catering Order</Button3D>
             </div>
           </>
-        )}
+        </CollapseSection>
       </div>
 
       {!headerCollapsed && (

@@ -20,6 +20,7 @@ import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
 import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
+import CollapseSection from "../../components/CollapseSection";
 
 import "./ServiceSchedules.css";
 
@@ -251,7 +252,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
         </div>
       </div>
 
-      {!headerCollapsed && (
+      <CollapseSection collapsed={headerCollapsed}>
         <div className="filter-bar">
           <div className="filter-groups">
             <input className="search-input" placeholder="Search work / staff…" value={searchText} onChange={e => setSearchText(allowTextInput(searchText, e.target.value, 100, 5))} />
@@ -284,7 +285,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
             </div>
           </div>
         </div>
-      )}
+      </CollapseSection>
 
       <div className="table-wrapper" >
         <table >

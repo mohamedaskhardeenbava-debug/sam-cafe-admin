@@ -27,6 +27,7 @@ import useAnimatedModal from "../hooks/useAnimatedModal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import PageLoader from "../components/PageLoader";
 import CollapseChevron from "../components/CollapseChevron";
+import CollapseSection from "../components/CollapseSection";
 import { allowTextInput } from "../App";
 
 import "../Common.css"; // shared page shell (.inner-page/.header/.table-wrapper) — Offers.css depends on this
@@ -46,6 +47,7 @@ const DEFAULT_CARDS = [
   { id: "others", name: "Crowd Picks", image: "/assets/category-assets/crowd.png", enabled: true },
   { id: "my-orders", name: "My Orders", image: "/assets/category-assets/offers.png", enabled: true },
   { id: "combo", name: "Combos", image: "/assets/category-assets/combo.png", enabled: true },
+  { id: "best-sellers", name: "Best Sellers", image: "/assets/category-assets/offers.png", enabled: true },
   { id: "offers", name: "Offers", image: "/assets/category-assets/offers.png", enabled: true },
   { id: "events", name: "Events & Booking", image: "/assets/category-assets/events.png", enabled: true },
 ];
@@ -239,7 +241,7 @@ const CategoryCards = () => {
         </div>
       </div>
 
-      {!infoCollapsed && (
+      <CollapseSection collapsed={infoCollapsed}>
         <p style={{ padding: "0 4px 16px", color: "#777", fontSize: 14 }}>
           These are the special cards shown at the top of the customer-facing Food
           Category page. Disabling a card hides it from the user panel — its
@@ -249,7 +251,7 @@ const CategoryCards = () => {
           Combos, Offers, or Events &amp; Booking hides those sections in the
           admin panel too.
         </p>
-      )}
+      </CollapseSection>
 
       <div className="table-wrapper">
         <table>

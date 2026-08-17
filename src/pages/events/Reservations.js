@@ -23,6 +23,7 @@ import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/In
 import Button3D from "../../components/Button3D";
 import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
+import CollapseSection from "../../components/CollapseSection";
 import CustomDropdown from "../../components/CustomDropdown";
 import { useVenue } from "../../context/VenueContext";
 
@@ -575,7 +576,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
           </div>
         </div>
 
-        {!headerCollapsed && (
+        <CollapseSection collapsed={headerCollapsed}>
           <>
             {/* KPI strip */}
             <div className="evt-kpi-row">
@@ -599,7 +600,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
               <Button3D onClick={() => { setShowCreate(true); createModal.open(); setForm({ ...EMPTY_FORM }); setTablePrefImageFile(null); setCreateTab(0); }}>+ Add Reservation</Button3D>
             </div>
           </>
-        )}
+        </CollapseSection>
       </div>
 
       {/* ── FILTER BAR ── */}

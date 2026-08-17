@@ -83,6 +83,18 @@ export const CustomDatePicker = ({ value, onChange, label, min, max, placeholder
   const yearRange = Array.from({ length: 20 }, (_, i) => calYear - 10 + i);
   const today = todayStr();
 
+  // Escape closes the popup, same as the close button / backdrop click —
+  // there was previously no way to dismiss the calendar without picking
+  // a date.
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open]);
+
   const displayVal = value
     ? new Date(value).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
     : placeholder;
@@ -108,8 +120,16 @@ export const CustomDatePicker = ({ value, onChange, label, min, max, placeholder
       </button>
 
       {open && (
-        <div className="cdp-overlay">
+        <div className="cdp-overlay" onMouseDown={() => setOpen(false)}>
           <div className="cdp-popup" onMouseDown={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="cdp-close-btn"
+              aria-label="Close"
+              onClick={() => setOpen(false)}
+            >
+              ×
+            </button>
             {/* Navigation */}
             <div className="cdp-nav">
               <button type="button" className="cdp-nav-btn" onClick={prevNav}>‹</button>

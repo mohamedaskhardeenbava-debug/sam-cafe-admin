@@ -20,6 +20,7 @@ import { useAuth } from "../context/AuthContext";
 import Button3D from "../components/Button3D";
 import useAnimatedModal from "../hooks/useAnimatedModal";
 import CollapseChevron from "../components/CollapseChevron";
+import CollapseSection from "../components/CollapseSection";
 import CustomDropdown from "../components/CustomDropdown";
 import { CustomDatePicker, todayStr } from "../components/CustomDatePicker";
 import { FilterBar } from "../components/FilterBar";
@@ -202,7 +203,7 @@ const Documents = ({ sortConfig, handleSort }) => {
       </div>
 
       {/* FILTER BAR */}
-      {!headerCollapsed && (
+      <CollapseSection collapsed={headerCollapsed}>
         <FilterBar
           search={search}
           onSearchChange={setSearch}
@@ -219,7 +220,7 @@ const Documents = ({ sortConfig, handleSort }) => {
             />
           }
         />
-      )}
+      </CollapseSection>
 
       {/* ADD DOC MODAL */}
       {docFormModal.shouldRender && (

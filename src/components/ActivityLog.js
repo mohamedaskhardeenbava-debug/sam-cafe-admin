@@ -42,6 +42,7 @@ import { exportToExcel } from "../utils/excelUtils";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
 import CollapseChevron from "../components/CollapseChevron";
+import CollapseSection from "../components/CollapseSection";
 import { allowTextInput } from "../App";
 
 /* Period presets: [key, label]. "all" resolves to a wide-open range
@@ -134,7 +135,7 @@ const ActivityLog = ({ title, items = [], exportFilePrefix }) => {
         <Button3D onClick={handleExport}>Export</Button3D>
       </div>
 
-      {!headerCollapsed && (
+      <CollapseSection collapsed={headerCollapsed}>
         <div className="filter-bar">
           <div className="filter-group">
             <input
@@ -172,7 +173,7 @@ const ActivityLog = ({ title, items = [], exportFilePrefix }) => {
             />
           </div>
         </div>
-      )}
+      </CollapseSection>
 
       <div className="table-wrapper" >
         <table className="table">

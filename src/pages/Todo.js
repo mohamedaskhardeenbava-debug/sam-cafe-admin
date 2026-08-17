@@ -19,6 +19,8 @@ import CustomDropdown from "../components/CustomDropdown";
 import CustomDatePicker, { todayStr } from "../components/CustomDatePicker";
 import { FilterBar } from "../components/FilterBar";
 import CollapseChevron from "../components/CollapseChevron";
+import CollapseSection from "../components/CollapseSection";
+import ConfirmDialog from "../components/ConfirmDialog";
 import { allowTextInput } from "../App";
 import closeIcon from "../icon/close-icon.png";
 import "./ModalCSS.css";
@@ -77,9 +79,17 @@ const Todo = () => {
     load();
   };
 
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
   const remove = async (id) => {
     await api.delete(`/todos/${id}`);
     load();
+  };
+
+  const confirmDelete = async () => {
+    const target = deleteTarget;
+    setDeleteTarget(null);
+    if (target) await remove(target.id);
   };
 
   // Simple report: counts per period, for the "time period report" requirement
@@ -138,19 +148,7 @@ const Todo = () => {
       <div className="details-body">
         {/* REPORT */}
         <div className="section">
-          <div className="section-title">
-            <span>Completion by Period</span>
-            <button
-              type="button"
-              className="header-collapse-btn"
-              onClick={() => setReportCollapsed((prev) => !prev)}
-              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={reportCollapsed ? "Expand" : "Collapse"}
-              aria-expanded={!reportCollapsed}
-            >
-              <CollapseChevron collapsed={reportCollapsed} />
-            </button>
-          </div>
-          {!reportCollapsed && (
+          <CollapseSection collapsed={reportCollapsed}>
             <div className="todo-report">
               {PERIODS.map((p) => (
                 <div key={p} className="todo-report-card">
@@ -160,24 +158,12 @@ const Todo = () => {
                 </div>
               ))}
             </div>
-          )}
+          </CollapseSection>
         </div>
 
         {/* FILTER BAR */}
         <div className="section todo-filter-section">
-          <div className="section-title">
-            <span>Filters</span>
-            <button
-              type="button"
-              className="header-collapse-btn"
-              onClick={() => setFiltersCollapsed((prev) => !prev)}
-              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={filtersCollapsed ? "Expand filters" : "Collapse filters"}
-              aria-expanded={!filtersCollapsed}
-            >
-              <CollapseChevron collapsed={filtersCollapsed} />
-            </button>
-          </div>
-          {!filtersCollapsed && (
+          <CollapseSection collapsed={filtersCollapsed}>
             <FilterBar
               search={search}
               onSearchChange={setSearch}
@@ -208,7 +194,7 @@ const Todo = () => {
               onClear={clearFilters}
               active={isFilterActive}
             />
-          )}
+          </CollapseSection>
         </div>
         {/* LIST */}
         <div className="todo-list-card">
@@ -239,6 +225,7 @@ const Todo = () => {
                     )}
                   </button>
 
+                  <div className="horizontal-todo-item-body">
                   <div className="todo-item-body">
                     <span className="todo-item-title">{t.title}</span>
                     <span className="todo-item-meta-row">
@@ -249,10 +236,11 @@ const Todo = () => {
                       <span className={`todo-chip todo-chip-${t.period}`}>{t.period}</span>
                       {t.status === "done" && <span className="todo-chip todo-chip-done">DONE</span>}
                     </span>
+                  </div>
                     {t.notes && <span className="todo-item-notes">{t.notes}</span>}
                   </div>
 
-                  <Button3D variant="cancel" iconOnly title="Delete" onClick={() => remove(t.id)}>
+                  <Button3D variant="cancel" iconOnly title="Delete" onClick={() => setDeleteTarget(t)}>
                     <img src={closeIcon} alt="Delete" />
                   </Button3D>
                 </li>
@@ -344,6 +332,17 @@ const Todo = () => {
           </form>
         </div>
       )}
+
+      {/* DELETE CONFIRM */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete task"
+        message={<>Delete <strong>{deleteTarget?.title}</strong>? This cannot be undone.</>}
+        confirmLabel="Delete"
+        danger
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };

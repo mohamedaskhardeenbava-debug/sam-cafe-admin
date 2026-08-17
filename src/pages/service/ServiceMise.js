@@ -14,6 +14,7 @@ import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import Button3D from "../../components/Button3D";
 import CollapseChevron from "../../components/CollapseChevron";
+import CollapseSection from "../../components/CollapseSection";
 import { MultiPillGroup } from "../../components/FilterBar";
 import { fmtTime as sharedFmtTime } from "../../utils/dateUtils";
 
@@ -147,7 +148,7 @@ export default function ServiceMise({ adminData, setAdminData }) {
         </div>
       </div>
 
-      {!headerCollapsed && (
+      <CollapseSection collapsed={headerCollapsed}>
         <>
           {/* PROGRESS BAR */}
           <div className="service-mise-progress-wrap">
@@ -179,7 +180,7 @@ export default function ServiceMise({ adminData, setAdminData }) {
             </div>
           </div>
         </>
-      )}
+      </CollapseSection>
 
       {/* UNIFIED TABLE */}
       <div className="table-wrapper" >

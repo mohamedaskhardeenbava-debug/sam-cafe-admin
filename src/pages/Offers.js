@@ -23,6 +23,7 @@ import CustomDropdown from "../components/CustomDropdown";
 import Button3D from "../components/Button3D";
 import useAnimatedModal from "../hooks/useAnimatedModal";
 import CollapseChevron from "../components/CollapseChevron";
+import CollapseSection from "../components/CollapseSection";
 
 import "./Offers.css";
 
@@ -204,7 +205,7 @@ const Offers = ({ adminData, setAdminData }) => {
       </div>
 
       {/* FILTER BAR */}
-      {!headerCollapsed && (
+      <CollapseSection collapsed={headerCollapsed}>
         <div className="filter-bar">
           <div className="filter-groups">
             <input
@@ -244,7 +245,7 @@ const Offers = ({ adminData, setAdminData }) => {
             )}
           </div>
         </div>
-      )}
+      </CollapseSection>
 
       <div className="table-wrapper" ref={containerRef}>
         <table >

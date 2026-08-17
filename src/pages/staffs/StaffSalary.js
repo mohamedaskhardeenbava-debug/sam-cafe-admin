@@ -18,6 +18,7 @@ import { EmptyRow } from "../../App";
 import Button3D from "../../components/Button3D";
 import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
+import CollapseSection from "../../components/CollapseSection";
 
 import "./StaffModules.css";
 
@@ -196,7 +197,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
       </div>
 
       {/* FILTER BAR */}
-      {!headerCollapsed && (
+      <CollapseSection collapsed={headerCollapsed}>
         <div className="filter-bar">
           <div className="justify">
             <input
@@ -210,7 +211,7 @@ export default function StaffSalary({ adminData, setAdminData }) {
             )}
           </div>
         </div>
-      )}
+      </CollapseSection>
 
       <div className="table-wrapper" ref={containerRef}>
         <table >

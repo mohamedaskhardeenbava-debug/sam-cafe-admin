@@ -25,6 +25,7 @@ import Button3D from "../../components/Button3D";
 import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CustomDropdown from "../../components/CustomDropdown";
 import CollapseChevron from "../../components/CollapseChevron";
+import CollapseSection from "../../components/CollapseSection";
 import { useVenue } from "../../context/VenueContext";
 
 import "./PreBookings.css";
@@ -757,7 +758,7 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
             <p className="evt-subtitle">Manage pre-orders &amp; advance bookings</p>
           </div>
         </div>
-        {!headerCollapsed && (
+        <CollapseSection collapsed={headerCollapsed}>
           <>
             {/* KPI STRIP */}
             <div className="evt-kpi-row">
@@ -779,7 +780,7 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
               <Button3D onClick={() => setShowAddModal(true)}>+ Add PreBooking</Button3D>
             </div>
           </>
-        )}
+        </CollapseSection>
       </div>
 
       {/* FILTER BAR */}

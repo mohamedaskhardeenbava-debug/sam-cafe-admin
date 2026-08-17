@@ -25,6 +25,7 @@ import { useToast } from "../useToast";
 import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import Button3D from "../components/Button3D";
 import CollapseChevron from "../components/CollapseChevron";
+import CollapseSection from "../components/CollapseSection";
 import { printBill as sendBillToPrinter, printKot as sendKotToPrinter } from "../printUtils";
 
 import "./Orders.css";
@@ -1764,7 +1765,7 @@ const Orders = ({ adminData, setAdminData }) => {
             </div>
           </div>
 
-          {!headerCollapsed && (
+          <CollapseSection collapsed={headerCollapsed}>
             <>
               <div className="orders-search-wrapper">
                 <input
@@ -1782,7 +1783,7 @@ const Orders = ({ adminData, setAdminData }) => {
                 Export
               </Button3D>
             </>
-          )}
+          </CollapseSection>
         </div>
 
         {!headerCollapsed && (

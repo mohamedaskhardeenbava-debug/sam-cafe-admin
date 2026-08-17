@@ -250,13 +250,11 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 (child) => location.pathname === child.path || location.pathname.startsWith(child.path + "/")
               );
               const isExpanded = openMenu === index;
-              const isCollapsed = !isOpen;
 
               return (
                 <div key={index} className="sidebar-group">
                   <button
                     className={`sidebar-link ${isAnyChildActive ? "sidebar-link-active" : ""}`}
-                    {...(!isOpen ? { "data-bs-toggle": "tooltip", "data-bs-placement": "right", "data-bs-title": item.label } : {})}
                     onClick={(e) => {
                       if (isOpen) {
                         setOpenMenu(isExpanded ? null : index);

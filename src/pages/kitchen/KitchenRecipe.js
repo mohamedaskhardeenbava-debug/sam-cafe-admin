@@ -19,6 +19,7 @@ import { allowTextInput } from "../../App";
 import Button3D from "../../components/Button3D";
 import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
+import CollapseSection from "../../components/CollapseSection";
 import CustomDropdown from "../../components/CustomDropdown";
 
 import "../Common.css";
@@ -195,7 +196,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
       </div>
 
       {/* FILTER BAR */}
-      {!headerCollapsed && (
+      <CollapseSection collapsed={headerCollapsed}>
         <div className="filter-bar">
           <div className="justify">
             <input
@@ -209,7 +210,7 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
             )}
           </div>
         </div>
-      )}
+      </CollapseSection>
 
       {/* EMPTY STATE */}
       {filteredRecipes.length === 0 && (

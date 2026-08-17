@@ -23,6 +23,7 @@ import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/In
 import Button3D from "../../components/Button3D";
 import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
+import CollapseSection from "../../components/CollapseSection";
 
 import "./Celebrations.css";
 import "./EvtCommon.css";
@@ -435,7 +436,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
           </div>
         </div>
 
-        {!headerCollapsed && (
+        <CollapseSection collapsed={headerCollapsed}>
           <>
             {/* KPI STRIP */}
             <div className="evt-kpi-row">
@@ -458,7 +459,7 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
               <Button3D onClick={() => { setShowCreate(true); createModal.open(); setForm({ ...EMPTY_FORM }); setCreateTab(0); }}>+ Add Celebration</Button3D>
             </div>
           </>
-        )}
+        </CollapseSection>
       </div>
 
       {/* FILTER BAR */}

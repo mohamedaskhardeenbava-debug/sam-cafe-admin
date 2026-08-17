@@ -331,8 +331,8 @@ function startVegetableCutterLoop(refs) {
   let sweepOffsetX = 0;
 
   function spawnSlice(cutX, cutY, targetX, targetY, r) {
-    const shadowEl = createSVG("ellipse", { class: "fx-slice-shadow" });
-    const g = createSVG("g", { class: "fx-slice" });
+    const shadowEl = createSVG("ellipse", { class: "fx-slice-shadow", cx: cutX, cy: cutY, rx: r * 0.92, ry: r * 0.92 });
+    const g = createSVG("g", { class: "fx-slice", transform: `translate(${cutX}, ${cutY})` });
     renderCoin(g, r);
     fxLayer.appendChild(shadowEl);
     fxLayer.appendChild(g);
@@ -368,6 +368,7 @@ function startVegetableCutterLoop(refs) {
       const el = createSVG("polygon", {
         class: "fx-crumb",
         points: crumbPoints(size),
+        transform: `translate(${x}, ${y})`,
         style: Math.random() < 0.5 ? "" : "fill:var(--carrot-dark)",
       });
       fxLayer.appendChild(el);
