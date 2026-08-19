@@ -253,11 +253,6 @@ const Permissions = () => {
               value={search}
               onChange={(e) => setSearch(allowTextInput(search, e.target.value, 100, 5))}
             />
-            {search && (
-              <button className="ae-clear-filter" onClick={() => setSearch("")}>
-                Clear
-              </button>
-            )}
             <CustomDropdown
               value={selectedRole}
               onChange={setSelectedRole}
@@ -265,6 +260,11 @@ const Permissions = () => {
               placeholder="All roles"
               className="perm-role-filter"
             />
+            {search && (
+              <button className="ae-clear-filter" onClick={() => setSearch("")}>
+                Clear
+              </button>
+            )}
           </div>
           <div className="filter-pills">
             {tabs.map((t) => (
@@ -392,7 +392,7 @@ const Permissions = () => {
               <Button3D variant="cancel" onClick={() => setShowResetConfirm(false)}>
                 Cancel
               </Button3D>
-              <Button3D  onClick={confirmReset}>
+              <Button3D onClick={confirmReset}>
                 Reset Defaults
               </Button3D>
             </div>
@@ -512,7 +512,7 @@ const RolesPanel = () => {
       </div>
 
       <div className="table-wrapper">
-        
+
         <table>
           <thead>
             <tr>

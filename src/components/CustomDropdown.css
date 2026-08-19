@@ -52,6 +52,8 @@
     cursor: pointer;
     text-align: center;
     transition: background 120ms ease-in;
+    overflow-wrap: break-word;
+    word-break: normal;
 }
 
 .cdd-option:hover {

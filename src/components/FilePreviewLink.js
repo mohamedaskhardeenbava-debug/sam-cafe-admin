@@ -16,9 +16,10 @@
  * case since there's no data: prefix to read.
  */
 
-import React, { useState } from "react";
+import React, { useMemo } from "react";
 import closeIcon from "../icon/close-icon.png";
 import Button3D from "./Button3D";
+import useAnimatedModal from "../hooks/useAnimatedModal";
 
 function sniffMime(href) {
   if (!href) return "";
@@ -30,8 +31,15 @@ function sniffMime(href) {
   return "";
 }
 
+let filePreviewInstanceCounter = 0;
+
 const FilePreviewLink = ({ href, download, label, className = "clickable" }) => {
-  const [open, setOpen] = useState(false);
+  // Each FilePreviewLink instance gets its own modal id (rather than
+  // sharing one global slot from ModalContext) since a single page can
+  // render many of these at once — e.g. one per row in a documents/file
+  // table — and each needs to open/close independently.
+  const modalId = useMemo(() => `file-preview-${++filePreviewInstanceCounter}`, []);
+  const modal = useAnimatedModal(modalId);
 
   if (!href) return null;
 
@@ -47,16 +55,16 @@ const FilePreviewLink = ({ href, download, label, className = "clickable" }) => 
         className={className}
         onClick={(e) => {
           e.preventDefault();
-          setOpen(true);
+          modal.open();
         }}
       >
         {label}
       </a>
 
-      {open && (
-        <div className="modal-overlay" onClick={() => setOpen(false)}>
+      {modal.shouldRender && (
+        <div className={`modal-overlay ${modal.overlayClass}`} onClick={() => modal.close()}>
           <div
-            className="admin-modal file-preview-modal"
+            className={`admin-modal file-preview-modal ${modal.modalClass}`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="admin-modal-header">
@@ -64,7 +72,7 @@ const FilePreviewLink = ({ href, download, label, className = "clickable" }) => 
                 <h3>{fileName}</h3>
                 <span className="sc-modal-sub">Preview</span>
               </div>
-              <Button3D variant="cancel" iconOnly onClick={() => setOpen(false)}>
+              <Button3D variant="cancel" iconOnly onClick={() => modal.close()}>
                 <img src={closeIcon} alt="Close" />
               </Button3D>
             </div>

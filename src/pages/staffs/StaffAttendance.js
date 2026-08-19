@@ -398,10 +398,6 @@ export default function StaffAttendance({ adminData, setAdminData }) {
               <CustomDatePicker value={attToDate} min={attFromDate} max={maxDateStr}
                 onChange={v => { setAttToDate(v); setAttPreset("custom"); }} placeholder="End" />
             </div>
-            {(attSearch || attPreset === "custom") && (
-              <button className="ae-clear-filter" onClick={() => { setAttSearch(""); applyAttPreset("month"); }}>Clear</button>
-            )}
-
             {/* Column-edit all toggle */}
             <Button3D variant="cancel" onClick={() => {
               const allOn = visibleDates.every(d => columnEdit[d]);
@@ -411,6 +407,10 @@ export default function StaffAttendance({ adminData, setAdminData }) {
             }}>
               {visibleDates.every(d => columnEdit[d]) ? "Lock All" : "Edit All"}
             </Button3D>
+
+            {(attSearch || attPreset === "custom") && (
+              <button className="ae-clear-filter" onClick={() => { setAttSearch(""); applyAttPreset("month"); }}>Clear</button>
+            )}
           </div>
         </div>
       </CollapseSection>
@@ -453,147 +453,147 @@ export default function StaffAttendance({ adminData, setAdminData }) {
               ) : (
                 <>
                   {visibleStaff.slice(0, displayLimit).map(staff => {
-                const stats = staffStats.find(s => s.id === staff.id);
-                return (
-                  <tr key={staff.id} className="att-row">
-                    <td className="att-name-td">
-                      <div className="att-name-wrap">
-                        <div className="att-avatar">
-                          {(staff.name || "?").charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <span className="att-name">{staff.name}</span>
-                          {staff.role && <span className="att-role">{staff.role}</span>}
-                        </div>
-                      </div>
-                    </td>
-
-                    {visibleDates.map(date => {
-                      const isSaving = savingCells[`${staff.id}_${date}`];
-                      const isToday = date === todayISO;
-                      const isHol = !!holidays[date];
-                      const isColEditing = !!columnEdit[date];
-                      const isRowEditing = !!editMode[staff.id]?.[date];
-                      const saved = getRecord(staff.id, date);
-
-                      // Holiday cell
-                      if (isHol) {
-                        return (
-                          <td key={date} className="att-td att-holiday-td">
-                            <span className="att-hol-text" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={holidays[date]}>🎉</span>
-                          </td>
-                        );
-                      }
-
-                      // Edit mode (column or row)
-                      if (isColEditing || isRowEditing) {
-                        return (
-                          <td key={date} className={`att-td att-editing-td${isToday ? " att-today-td" : ""}`}>
-                            <div className="att-edit-block">
-                              <label className="att-checkbox-label">
-                                <input type="checkbox" className="att-checkbox"
-                                  checked={saved?.status === "present"}
-                                  onChange={e => handleToggle(staff.id, date, e.target.checked)} />
-                                <span className={`att-check-custom${saved?.status === "present" ? " checked" : ""}`} />
-                              </label>
-                              {isRowEditing && (
-                                <>
-                                  <input className="att-reason-input" placeholder="Reason…"
-                                    onChange={e => setLocalAttendance(prev => ({
-                                      ...prev,
-                                      [staff.id]: { ...prev[staff.id], [date]: { status: "leave", reason: allowTextInput(prev[staff.id]?.[date]?.reason || "", e.target.value, 100, 5) } }
-                                    }))} />
-                                  <button className="att-save-mini" onClick={() => {
-                                    const data = localAttendance[staff.id]?.[date];
-                                    if (!data?.reason) { toast.warning("Enter a reason before saving"); return; }
-                                    saveAttendance(staff.id, date, data);
-                                    setEditMode(prev => ({ ...prev, [staff.id]: { ...prev[staff.id], [date]: false } }));
-                                  }}>Save</button>
-                                </>
-                              )}
+                    const stats = staffStats.find(s => s.id === staff.id);
+                    return (
+                      <tr key={staff.id} className="att-row">
+                        <td className="att-name-td">
+                          <div className="att-name-wrap">
+                            <div className="att-avatar">
+                              {(staff.name || "?").charAt(0).toUpperCase()}
                             </div>
-                          </td>
-                        );
-                      }
-
-                      // Leave
-                      if (saved?.status === "leave") {
-                        return (
-                          <td key={date} className="att-td att-leave-td">
-                            <div className="att-leave-cell">
-                              <span className="att-leave-icon">L</span>
-                              <span className="att-leave-reason">{saved.reason}</span>
-                              <button className="att-edit-btn"
-                                onClick={() => setEditMode(prev => ({ ...prev, [staff.id]: { ...prev[staff.id], [date]: true } }))}>
-                                <img src={editIcon} alt="edit" />
-                              </button>
+                            <div>
+                              <span className="att-name">{staff.name}</span>
+                              {staff.role && <span className="att-role">{staff.role}</span>}
                             </div>
-                          </td>
-                        );
-                      }
-
-                      // Absent
-                      if (saved?.status === "absent") {
-                        return (
-                          <td key={date} className={`att-td att-absent-td${isToday ? " att-today-td" : ""}`}>
-                            <div className="att-absent-cell">
-                              <span className="att-absent-icon">✕</span>
-                              <button className="att-edit-btn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Override"
-                                onClick={() => setEditMode(prev => ({ ...prev, [staff.id]: { ...prev[staff.id], [date]: true } }))}>
-                                <img src={editIcon} alt="edit" />
-                              </button>
-                            </div>
-                          </td>
-                        );
-                      }
-
-                      // Present
-                      if (saved?.status === "present") {
-                        return (
-                          <td key={date} className={`att-td att-present-td${isToday ? " att-today-td" : ""}`}>
-                            <label className="att-checkbox-label">
-                              <input type="checkbox" checked className="att-checkbox" disabled={isSaving}
-                                onChange={e => handleToggle(staff.id, date, e.target.checked)} />
-                              <span className="att-check-custom checked" />
-                            </label>
-                          </td>
-                        );
-                      }
-
-                      // Unmarked / no record — show checkbox (today) or absent icon (past)
-                      if (isToday || saved?.status === "unmarked") {
-                        return (
-                          <td key={date} className="att-td att-empty-td att-today-td">
-                            <label className="att-checkbox-label">
-                              <input type="checkbox" checked={false} className="att-checkbox"
-                                onChange={e => handleToggle(staff.id, date, e.target.checked)} />
-                              <span className="att-check-custom" />
-                            </label>
-                          </td>
-                        );
-                      }
-
-                      return (
-                        <td key={date} className="att-td att-absent-td">
-                          <div className="att-absent-cell">
-                            <span className="att-absent-icon">✕</span>
-                            <button className="att-edit-btn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Override"
-                              onClick={() => setEditMode(prev => ({ ...prev, [staff.id]: { ...prev[staff.id], [date]: true } }))}>
-                              <img src={editIcon} alt="edit" />
-                            </button>
                           </div>
                         </td>
-                      );
-                    })}
 
-                    {/* Summary cell */}
-                    <td className="att-td att-summary-cell">
-                      <span className="att-sum-p">✔{stats?.present || 0}</span>
-                      <span className="att-sum-a">✖{stats?.absent || 0}</span>
-                      {stats?.leave > 0 && <span className="att-sum-l">L{stats.leave}</span>}
-                    </td>
-                  </tr>
-                );
+                        {visibleDates.map(date => {
+                          const isSaving = savingCells[`${staff.id}_${date}`];
+                          const isToday = date === todayISO;
+                          const isHol = !!holidays[date];
+                          const isColEditing = !!columnEdit[date];
+                          const isRowEditing = !!editMode[staff.id]?.[date];
+                          const saved = getRecord(staff.id, date);
+
+                          // Holiday cell
+                          if (isHol) {
+                            return (
+                              <td key={date} className="att-td att-holiday-td">
+                                <span className="att-hol-text" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={holidays[date]}>🎉</span>
+                              </td>
+                            );
+                          }
+
+                          // Edit mode (column or row)
+                          if (isColEditing || isRowEditing) {
+                            return (
+                              <td key={date} className={`att-td att-editing-td${isToday ? " att-today-td" : ""}`}>
+                                <div className="att-edit-block">
+                                  <label className="att-checkbox-label">
+                                    <input type="checkbox" className="att-checkbox"
+                                      checked={saved?.status === "present"}
+                                      onChange={e => handleToggle(staff.id, date, e.target.checked)} />
+                                    <span className={`att-check-custom${saved?.status === "present" ? " checked" : ""}`} />
+                                  </label>
+                                  {isRowEditing && (
+                                    <>
+                                      <input className="att-reason-input" placeholder="Reason…"
+                                        onChange={e => setLocalAttendance(prev => ({
+                                          ...prev,
+                                          [staff.id]: { ...prev[staff.id], [date]: { status: "leave", reason: allowTextInput(prev[staff.id]?.[date]?.reason || "", e.target.value, 100, 5) } }
+                                        }))} />
+                                      <button className="att-save-mini" onClick={() => {
+                                        const data = localAttendance[staff.id]?.[date];
+                                        if (!data?.reason) { toast.warning("Enter a reason before saving"); return; }
+                                        saveAttendance(staff.id, date, data);
+                                        setEditMode(prev => ({ ...prev, [staff.id]: { ...prev[staff.id], [date]: false } }));
+                                      }}>Save</button>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                            );
+                          }
+
+                          // Leave
+                          if (saved?.status === "leave") {
+                            return (
+                              <td key={date} className="att-td att-leave-td">
+                                <div className="att-leave-cell">
+                                  <span className="att-leave-icon">L</span>
+                                  <span className="att-leave-reason">{saved.reason}</span>
+                                  <button className="att-edit-btn"
+                                    onClick={() => setEditMode(prev => ({ ...prev, [staff.id]: { ...prev[staff.id], [date]: true } }))}>
+                                    <img src={editIcon} alt="edit" />
+                                  </button>
+                                </div>
+                              </td>
+                            );
+                          }
+
+                          // Absent
+                          if (saved?.status === "absent") {
+                            return (
+                              <td key={date} className={`att-td att-absent-td${isToday ? " att-today-td" : ""}`}>
+                                <div className="att-absent-cell">
+                                  <span className="att-absent-icon">✕</span>
+                                  <button className="att-edit-btn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Override"
+                                    onClick={() => setEditMode(prev => ({ ...prev, [staff.id]: { ...prev[staff.id], [date]: true } }))}>
+                                    <img src={editIcon} alt="edit" />
+                                  </button>
+                                </div>
+                              </td>
+                            );
+                          }
+
+                          // Present
+                          if (saved?.status === "present") {
+                            return (
+                              <td key={date} className={`att-td att-present-td${isToday ? " att-today-td" : ""}`}>
+                                <label className="att-checkbox-label">
+                                  <input type="checkbox" checked className="att-checkbox" disabled={isSaving}
+                                    onChange={e => handleToggle(staff.id, date, e.target.checked)} />
+                                  <span className="att-check-custom checked" />
+                                </label>
+                              </td>
+                            );
+                          }
+
+                          // Unmarked / no record — show checkbox (today) or absent icon (past)
+                          if (isToday || saved?.status === "unmarked") {
+                            return (
+                              <td key={date} className="att-td att-empty-td att-today-td">
+                                <label className="att-checkbox-label">
+                                  <input type="checkbox" checked={false} className="att-checkbox"
+                                    onChange={e => handleToggle(staff.id, date, e.target.checked)} />
+                                  <span className="att-check-custom" />
+                                </label>
+                              </td>
+                            );
+                          }
+
+                          return (
+                            <td key={date} className="att-td att-absent-td">
+                              <div className="att-absent-cell">
+                                <span className="att-absent-icon">✕</span>
+                                <button className="att-edit-btn" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Override"
+                                  onClick={() => setEditMode(prev => ({ ...prev, [staff.id]: { ...prev[staff.id], [date]: true } }))}>
+                                  <img src={editIcon} alt="edit" />
+                                </button>
+                              </div>
+                            </td>
+                          );
+                        })}
+
+                        {/* Summary cell */}
+                        <td className="att-td att-summary-cell">
+                          <span className="att-sum-p">✔{stats?.present || 0}</span>
+                          <span className="att-sum-a">✖{stats?.absent || 0}</span>
+                          {stats?.leave > 0 && <span className="att-sum-l">L{stats.leave}</span>}
+                        </td>
+                      </tr>
+                    );
                   })}
                   <InfiniteScrollLoader
                     sentinelRef={sentinelRef}

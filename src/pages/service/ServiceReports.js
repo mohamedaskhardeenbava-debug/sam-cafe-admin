@@ -288,12 +288,12 @@ const ServiceReports = ({ adminData = {} }) => {
               groupClass="filter-group"
               separateItems
             />
-            {(reportFrom || reportTo) && (
-              <button className="ae-clear-filter" onClick={() => { setReportPreset("all"); setReportFrom(""); setReportTo(""); }}>Clear</button>
-            )}
             <span className="s-export-btn">
               <Button3D onClick={exportReport}>Export</Button3D>
             </span>
+            {(reportFrom || reportTo) && (
+              <button className="ae-clear-filter" onClick={() => { setReportPreset("all"); setReportFrom(""); setReportTo(""); }}>Clear</button>
+            )}
           </div>
         </CollapseSection>
         {headerCollapsed && (

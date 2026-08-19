@@ -5,21 +5,30 @@
    mid-animation. A fade is layered on top so the content doesn't feel
    like it's being mechanically squashed. */
 
+/* CollapseSection.css — Sam Cafe Admin Panel
+   Animates arbitrary-height content in/out via CSS grid-template-rows
+   (1fr <-> 0fr), which — unlike a max-height transition — needs no
+   knowledge of the content's actual height and never clips it awkwardly
+   mid-animation. A fade is layered on top so the content doesn't feel
+   like it's being mechanically squashed. */
+
 .collapse-section {
   display: grid;
   grid-template-rows: 1fr;
-  transition: grid-template-rows 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: grid-template-rows 0.32s cubic-bezier(0.22, 1, 0.36, 1);
   width: 100%;
 }
 
 .collapse-section-closed {
+  transition: grid-template-rows 0.26s cubic-bezier(0.4, 0, 1, 1);
   grid-template-rows: 0fr;
 }
 
 .collapse-section-inner {
   min-height: 0;
+  overflow: hidden;
   opacity: 1;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.24s ease 0.02s;
 
   display: flex;
   justify-content: space-between;
@@ -31,13 +40,15 @@
 
 .collapse-section-closed .collapse-section-inner {
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.16s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
 
   .collapse-section,
-  .collapse-section-inner {
+  .collapse-section-closed,
+  .collapse-section-inner,
+  .collapse-section-closed .collapse-section-inner {
     transition: none;
   }
 }

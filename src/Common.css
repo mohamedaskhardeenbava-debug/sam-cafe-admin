@@ -293,7 +293,7 @@ label {
 }
 
 .header-collapse-icon {
-  transition: transform 0.25s ease;
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .header-collapse-icon.collapsed {
@@ -311,7 +311,6 @@ label {
 
 .justify {
   display: flex;
-  align-items: center;
   justify-content: space-between;
   width: 100%;
 }
@@ -1051,6 +1050,9 @@ th.sorted .sort-arrow {
   cursor: pointer;
   text-align: left;
   transition: border-color 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dishes-status-dropdown:hover {
@@ -1085,6 +1087,8 @@ th.sorted .sort-arrow {
   border-radius: 10px;
   cursor: pointer;
   text-transform: capitalize;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 .dishes-dropdown-menu>div:not(.dishes-dropdown-menu-options):hover {
@@ -1165,6 +1169,9 @@ th.sorted .sort-arrow {
   text-align: center;
   text-transform: capitalize;
   transition: background 120ms ease-in;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
 }
 
 .dishes-dropdown-menu-option:hover {

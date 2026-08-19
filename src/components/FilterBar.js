@@ -322,10 +322,10 @@ export const FilterBar = ({
         {firstRowGroups.map((g, i) => (
           <PillGroup key={i} {...g} />
         ))}
+        {!secondRow && rightContent}
         {!secondRow && onClear && active && (
           <button type="button" className="ae-clear-filter" onClick={onClear}>{clearLabel}</button>
         )}
-        {!secondRow && rightContent}
       </div>
 
       {secondRow && (
@@ -333,10 +333,10 @@ export const FilterBar = ({
           {secondRowGroups.map((g, i) => (
             <PillGroup key={i} {...g} />
           ))}
+          {rightContent}
           {onClear && active && (
             <button type="button" className="ae-clear-filter" onClick={onClear}>{clearLabel}</button>
           )}
-          {rightContent}
         </div>
       )}
     </div>

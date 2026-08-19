@@ -158,10 +158,10 @@ export default function StaffCareer() {
               value={careerRoleFilters}
               onToggle={(key) => toggleSet(setCareerRoleFilters, key)}
             />
+            <span className="result-count">{filteredJobs.length} opening(s)</span>
             {(careerSearch || careerRoleFilters.size > 0) && (
               <button className="ae-clear-filter" onClick={() => { setCareerSearch(""); setCareerRoleFilters(new Set()); }}>Clear</button>
             )}
-            <span className="result-count">{filteredJobs.length} opening(s)</span>
           </div>
         </div>
       </CollapseSection>
