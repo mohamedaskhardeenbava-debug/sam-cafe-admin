@@ -13,6 +13,7 @@ import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import CustomDropdown from "../../components/CustomDropdown";
 import Button3D from "../../components/Button3D";
+import FilePreviewLink from "../../components/FilePreviewLink";
 import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
 import CollapseSection from "../../components/CollapseSection";
@@ -356,15 +357,12 @@ export default function StaffTraining({ adminData, setAdminData }) {
                     <tr>
                       <td>Certificate</td>
                       <td>
-                        <a
+                        <FilePreviewLink
                           href={selected.certificate}
-                          download
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{ color: "#0f0f0f", fontWeight: 600, textDecoration: "underline" }}
-                        >
-                          Download ↓
-                        </a>
+                          download={`${selected.staffName || "certificate"}.file`}
+                          label="Preview / Download ↓"
+                          className="clickable"
+                        />
                       </td>
                     </tr>
                   )}

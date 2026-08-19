@@ -329,6 +329,32 @@ function App() {
     return () => clearTimeout(retryTimer);
   }, [isAuthenticated, connectionError]);
 
+  /* ---------------- Document reminder check (Super Admin only) ----------------
+     On login, check for compliance documents (Documents page) whose reminder
+     date is today, and surface each as a permanent toast (no auto-close —
+     these are compliance deadlines, not transient notifications) that the
+     admin has to actively dismiss. Documents isn't part of the global
+     adminData preload (Super-Admin-only page), so this fetches it directly.
+     Gated to once per calendar day per browser via localStorage so it
+     doesn't re-fire on every route change/remount within the same day. */
+  useEffect(() => {
+    if (!isAuthenticated || !isSuperAdminUser) return;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const SEEN_KEY = "docReminderCheckDate";
+    if (localStorage.getItem(SEEN_KEY) === today) return;
+
+    api.get("/documents").then((res) => {
+      const dueToday = (res.data || []).filter((d) => d.reminderDate === today);
+      dueToday.forEach((d) => {
+        toast.warning(`Document reminder: "${d.name}" is due today`, "permanent");
+      });
+      localStorage.setItem(SEEN_KEY, today);
+    }).catch((err) => {
+      console.error("Failed to check document reminders:", err);
+    });
+  }, [isAuthenticated, isSuperAdminUser]);
+
   /* ---------------- SOCKET: real-time data-change listener ---------------- */
   useEffect(() => {
     if (!isAuthenticated) return;

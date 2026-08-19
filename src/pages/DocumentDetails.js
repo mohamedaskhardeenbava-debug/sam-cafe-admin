@@ -16,11 +16,12 @@ import { allowTextInput, formatDisplayDate } from "../App";
 import { useToast } from "../useToast";
 import { useAuth } from "../context/AuthContext";
 import Button3D from "../components/Button3D";
+import FilePreviewLink from "../components/FilePreviewLink";
 import CustomDropdown from "../components/CustomDropdown";
 import { CustomDatePicker, todayStr } from "../components/CustomDatePicker";
 import PageLoader from "../components/PageLoader";
 import editIcon from "../icon/edit-icon.png";
-import { DOCUMENT_DEPARTMENTS } from "./Documents";
+import { DOCUMENT_DEPARTMENTS, reminderFromToDate } from "./Documents";
 
 import "./IngredientDetails.css";
 import "./Documents.css";
@@ -94,11 +95,13 @@ const DocumentDetails = () => {
     if (!payload.name?.trim()) e.name = true;
     if (!payload.department) e.department = true;
     if (!payload.date) e.date = true;
+    if (!payload.toDate) e.toDate = true;
     if (Object.keys(e).length) { setFormErrors(e); return; }
 
     setSaving(true);
     try {
-      const res = await api.put(`/documents/${docId}`, payload);
+      const { reminderDateEdited, ...payloadToSave } = payload;
+      const res = await api.put(`/documents/${docId}`, payloadToSave);
       setDoc(res.data);
       setLocal(res.data);
       setIsEditing(false);
@@ -221,16 +224,16 @@ const DocumentDetails = () => {
         <div className="horizontal-form-group">
           <div className="section">
             <div className="section-title">
-              <span>Date</span>
+              <span>From Date</span>
             </div>
             {isEditing ? (
               <>
                 <CustomDatePicker
                   value={local.date || ""}
+                  max={local.toDate || undefined}
                   onChange={(val) => { setLocal((p) => ({ ...p, date: val })); setFormErrors((p) => ({ ...p, date: false })); }}
-                  max={todayStr()}
                 />
-                {formErrors.date && <div className="field-error-msg">Date is required</div>}
+                {formErrors.date && <div className="field-error-msg">From date is required</div>}
               </>
             ) : (
               <p>{formatDisplayDate(doc.date) || doc.date}</p>
@@ -239,13 +242,39 @@ const DocumentDetails = () => {
 
           <div className="section">
             <div className="section-title">
+              <span>To Date</span>
+            </div>
+            {isEditing ? (
+              <>
+                <CustomDatePicker
+                  value={local.toDate || ""}
+                  min={local.date || undefined}
+                  onChange={(val) =>
+                    setLocal((p) => ({
+                      ...p,
+                      toDate: val,
+                      reminderDate: p.reminderDateEdited ? p.reminderDate : reminderFromToDate(val),
+                    }))
+                  }
+                />
+                {formErrors.toDate && <div className="field-error-msg">To date is required</div>}
+              </>
+            ) : (
+              <p>{formatDisplayDate(doc.toDate) || doc.toDate}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="horizontal-form-group">
+          <div className="section">
+            <div className="section-title">
               <span>Reminder Date</span>
             </div>
             {isEditing ? (
               <>
                 <CustomDatePicker
                   value={local.reminderDate || ""}
-                  onChange={(val) => { setLocal((p) => ({ ...p, reminderDate: val })); setFormErrors((p) => ({ ...p, reminderDate: false })); }}
+                  onChange={(val) => setLocal((p) => ({ ...p, reminderDate: val, reminderDateEdited: true }))}
                 />
                 {formErrors.reminderDate && <div className="field-error-msg">Reminder date is required</div>}
               </>
@@ -280,9 +309,11 @@ const DocumentDetails = () => {
             </div>
           ) : doc.fileData ? (
             <p>
-              <a href={doc.fileData} download={doc.fileName || "document"} className="clickable">
-                {doc.fileName || "Download file"}
-              </a>
+              <FilePreviewLink
+                href={doc.fileData}
+                download={doc.fileName || "document"}
+                label={doc.fileName || "Preview file"}
+              />
             </p>
           ) : (
             <p>—</p>

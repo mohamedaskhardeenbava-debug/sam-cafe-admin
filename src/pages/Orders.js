@@ -14,6 +14,8 @@ import { exportToExcel } from "../utils/excelUtils";
 import api from "../api";
 import socket from "../socket";
 import { CustomDatePicker } from "../components/CustomDatePicker";
+import CustomDropdown from "../components/CustomDropdown";
+import "../components/CustomDropdown.css";
 
 import closeIcon from "../icon/close-icon.png";
 import { EmptyRow } from "../App";
@@ -735,7 +737,7 @@ const OrderRow = React.memo(({
             {orderStatus}
           </div>
         </td>
-        <td>
+        <td className="icon-width">
           <div className="bill-actions">
             <button
               className="options-btn"
@@ -889,8 +891,6 @@ const Orders = ({ adminData, setAdminData }) => {
   const orders = adminData.orders || [];
   const [activeOrderIds, setActiveOrderIds] = useState([]);
   const [pickupConfirm, setPickupConfirm] = useState(null);
-  const [openStatusDropdown, setOpenStatusDropdown] = useState(false);
-  const [openModeDropdown, setOpenModeDropdown] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [modeFilter, setModeFilter] = useState("all");
   const [orderSearch, setOrderSearch] = useState("");
@@ -1764,133 +1764,108 @@ const Orders = ({ adminData, setAdminData }) => {
               </div>
             </div>
           </div>
-
-          <CollapseSection collapsed={headerCollapsed}>
-            <>
-              <div className="orders-search-wrapper">
-                <input
-                  className="search-input"
-                  placeholder=" Search by order ID, customer, dish…"
-                  value={orderSearch}
-                  onChange={e => setOrderSearch(e.target.value)}
-                />
-                {orderSearch && (
-                  <button className="orders-search-clear" onClick={() => setOrderSearch("")}>✕</button>
-                )}
-              </div>
-
-              <Button3D style={{ marginLeft: "auto" }} onClick={() => exportOrders(filteredOrders, fromDate, toDate)}>
-                Export
-              </Button3D>
-            </>
-          </CollapseSection>
+          <Button3D style={{ marginLeft: "auto" }} onClick={() => exportOrders(filteredOrders, fromDate, toDate)}>
+            Export
+          </Button3D>
         </div>
 
-        {!headerCollapsed && (
-          <div className="orders-header-div">
+        <CollapseSection collapsed={headerCollapsed}>
+          <div className="filter-bar">
+            <div className="filter-groups">
+              <div className="filter-group">
+                <div className="orders-search-wrapper">
+                  <input
+                    className="search-input"
+                    placeholder=" Search by order ID, customer, dish…"
+                    value={orderSearch}
+                    onChange={e => setOrderSearch(e.target.value)}
+                  />
+                  {orderSearch && (
+                    <button className="orders-search-clear" onClick={() => setOrderSearch("")}>✕</button>
+                  )}
+                </div>
+              </div>
+
+              <div className="filter-group">
+                <button
+                  type="button"
+                  className={`filter-pill${datePreset === "today" ? " active" : ""}`}
+                  onClick={() => applyPreset("today")}
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  className={`filter-pill${datePreset === "week" ? " active" : ""}`}
+                  onClick={() => applyPreset("week")}
+                >
+                  This Week
+                </button>
+                <button
+                  type="button"
+                  className={`filter-pill${datePreset === "month" ? " active" : ""}`}
+                  onClick={() => applyPreset("month")}
+                >
+                  This Month
+                </button>
+                <button
+                  type="button"
+                  className={`filter-pill${datePreset === "lastMonth" ? " active" : ""}`}
+                  onClick={() => applyPreset("lastMonth")}
+                >
+                  Last Month
+                </button>
+              </div>
+
+              <div className="filter-group">
+                <div className="orders-div-group">
+                  <CustomDatePicker
+                    label="From"
+                    value={fromDate}
+                    max={toDate}
+                    onChange={(s) => { setFromDate(s); setDatePreset("custom"); if (s > toDate) setToDate(s); }}
+                  />
+                  <CustomDatePicker
+                    label="To"
+                    value={toDate}
+                    min={fromDate}
+                    max={todayISO}
+                    onChange={(s) => { setToDate(s); setDatePreset("custom"); }}
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="filter-group">
+              <div className="orders-div-group">
+                <CustomDropdown
+                  value={modeFilter}
+                  onChange={(val) => setModeFilter(val || "all")}
+                  options={[
+                    { value: "all", label: "All Modes" },
+                    { value: "dine in", label: "dine in" },
+                    { value: "take away", label: "take away" }
+                  ]}
+                  placeholder={null}
+                />
 
-              <button
-                type="button"
-                className={`filter-pill${datePreset === "today" ? " active" : ""}`}
-                onClick={() => applyPreset("today")}
-              >
-                Today
-              </button>
-              <button
-                type="button"
-                className={`filter-pill${datePreset === "week" ? " active" : ""}`}
-                onClick={() => applyPreset("week")}
-              >
-                This Week
-              </button>
-              <button
-                type="button"
-                className={`filter-pill${datePreset === "month" ? " active" : ""}`}
-                onClick={() => applyPreset("month")}
-              >
-                This Month
-              </button>
-              <button
-                type="button"
-                className={`filter-pill${datePreset === "lastMonth" ? " active" : ""}`}
-                onClick={() => applyPreset("lastMonth")}
-              >
-                Last Month
-              </button>
-            </div>
-
-            <CustomDatePicker
-              label="From"
-              value={fromDate}
-              max={toDate}
-              onChange={(s) => { setFromDate(s); setDatePreset("custom"); if (s > toDate) setToDate(s); }}
-            />
-            <CustomDatePicker
-              label="To"
-              value={toDate}
-              min={fromDate}
-              max={todayISO}
-              onChange={(s) => { setToDate(s); setDatePreset("custom"); }}
-            />
-
-            <div className="orders-dropdown-wrapper">
-              <button
-                className="orders-status-dropdown"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenModeDropdown(prev => !prev);
-                }}
-              >
-                {modeFilter === "all" ? "All Modes" : modeFilter}
-              </button>
-
-              {openModeDropdown && (
-                <div className="dropdown-menu">
-                  {["all", "dine in", "take away"].map(mode => (
-                    <div
-                      key={mode}
-                      onClick={() => {
-                        setModeFilter(mode);
-                        setOpenModeDropdown(false);
-                      }}
-                    >
-                      {mode === "all" ? "All Modes" : mode}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="orders-dropdown-wrapper">
-              <button
-                className="orders-status-dropdown"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenStatusDropdown(prev => !prev);
-                }}
-              >
-                {statusFilter === "all" ? "All Status" : statusFilter}
-              </button>
-
-              {openStatusDropdown && (
-                <div className="dropdown-menu">
-                  {["all", "placed", "preparing", "service pickup", "completed", "cancelled"].map(status => (
-                    <div
-                      key={status}
-                      onClick={() => {
-                        setStatusFilter(status);
-                        setOpenStatusDropdown(false);
-                      }}
-                    >
-                      {status === "all" ? "All Status" : status}
-                    </div>
-                  ))}
-                </div>
-              )}
+                <CustomDropdown
+                  value={statusFilter}
+                  onChange={(val) => setStatusFilter(val || "all")}
+                  options={[
+                    { value: "all", label: "All Status" },
+                    { value: "placed", label: "placed" },
+                    { value: "preparing", label: "preparing" },
+                    { value: "service pickup", label: "service pickup" },
+                    { value: "completed", label: "completed" },
+                    { value: "cancelled", label: "cancelled" }
+                  ]}
+                  placeholder={null}
+                />
+              </div>
             </div>
           </div>
-        )}
+        </CollapseSection>
 
       </div>
 
@@ -1959,7 +1934,7 @@ const Orders = ({ adminData, setAdminData }) => {
                   </span>
                 </span>
               </th>
-              <th>Bill</th>
+              <th className="icon-width">Bill</th>
             </tr>
           </thead>
 

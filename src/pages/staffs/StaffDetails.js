@@ -13,6 +13,7 @@ import editIcon from "../../icon/edit-icon.png";
 import deleteIcon from "../../icon/delete-icon.png";
 import { useToast } from "../../useToast";
 import Button3D from "../../components/Button3D";
+import FilePreviewLink from "../../components/FilePreviewLink";
 import { allowTextInput } from "../../App";
 
 import "./StaffDetails.css";
@@ -526,15 +527,19 @@ const StaffDetails = ({ adminData, setAdminData }) => {
         <div className="section">
           <p>
             ID Proof:{" "}
-            <a href={localStaff.idProof} download target="_blank" rel="noreferrer">
-              Download
-            </a>
+            <FilePreviewLink
+              href={localStaff.idProof}
+              download={`${localStaff.name || "id-proof"}-id-proof`}
+              label="Preview / Download"
+            />
           </p>
           <p>
             Bonafide:{" "}
-            <a href={localStaff.bonafide} download target="_blank" rel="noreferrer">
-              Download
-            </a>
+            <FilePreviewLink
+              href={localStaff.bonafide}
+              download={`${localStaff.name || "bonafide"}-bonafide`}
+              label="Preview / Download"
+            />
           </p>
         </div>
       </div>

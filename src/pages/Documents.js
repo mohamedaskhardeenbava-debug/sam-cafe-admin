@@ -33,7 +33,15 @@ import "./ModalCSS.css";
 
 export const DOCUMENT_DEPARTMENTS = ["FSSAI", "Sanitary Inspection", "Food Inspection", "Fire Inspection", "GST"];
 
-const EMPTY_FORM = { name: "", department: "", date: "", reminderDate: "", fileName: "", fileType: "", fileData: "" };
+const EMPTY_FORM = { name: "", department: "", date: "", toDate: "", reminderDate: "", reminderDateEdited: false, fileName: "", fileType: "", fileData: "" };
+
+/** Reminder default = 7 days before the "To Date". */
+export const reminderFromToDate = (toDate) => {
+  if (!toDate) return "";
+  const d = new Date(toDate);
+  d.setDate(d.getDate() - 7);
+  return d.toISOString().slice(0, 10);
+};
 
 const newDocId = () =>
   "doc_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
@@ -121,11 +129,13 @@ const Documents = ({ sortConfig, handleSort }) => {
     if (!form.name.trim()) e.name = true;
     if (!form.department) e.department = true;
     if (!form.date) e.date = true;
+    if (!form.toDate) e.toDate = true;
     if (!form.fileData) e.file = true;
     if (Object.keys(e).length) { setFormErrors(e); return; }
 
     setSaving(true);
-    const payload = { ...form, id: newDocId() };
+    const { reminderDateEdited, ...formToSave } = form;
+    const payload = { ...formToSave, id: newDocId() };
     const result = await createRecord({
       api,
       toast,
@@ -275,20 +285,43 @@ const Documents = ({ sortConfig, handleSort }) => {
               <div className="horizontal-form-group">
                 <div className="admin-form-group">
                   <CustomDatePicker
-                    label="Date"
+                    label="From Date"
                     value={form.date}
+                    max={form.toDate || undefined}
                     onChange={(val) => { setForm((p) => ({ ...p, date: val })); setFormErrors((p) => ({ ...p, date: false })); }}
-                    max={todayStr()}
                   />
-                  {formErrors.date && <div className="field-error-msg">Date is required</div>}
+                  {formErrors.date && <div className="field-error-msg">From date is required</div>}
                 </div>
                 <div className="admin-form-group">
                   <CustomDatePicker
-                    label="Reminder Date"
-                    value={form.reminderDate}
-                    onChange={(val) => { setForm((p) => ({ ...p, reminderDate: val })); setFormErrors((p) => ({ ...p, reminderDate: false })); }}
+                    label="To Date"
+                    value={form.toDate}
+                    min={form.date || undefined}
+                    onChange={(val) =>
+                      setForm((p) => ({
+                        ...p,
+                        toDate: val,
+                        // Auto-fill the reminder date to 7 days before the
+                        // To Date — but only while the user hasn't manually
+                        // edited the reminder date themselves. Once they
+                        // touch it directly, changing To Date again no
+                        // longer overwrites their choice.
+                        reminderDate: p.reminderDateEdited ? p.reminderDate : reminderFromToDate(val),
+                      }))
+                    }
                   />
+                  {formErrors.toDate && <div className="field-error-msg">To date is required</div>}
                 </div>
+              </div>
+
+              <div className="admin-form-group">
+                <CustomDatePicker
+                  label="Reminder Date"
+                  value={form.reminderDate}
+                  onChange={(val) =>
+                    setForm((p) => ({ ...p, reminderDate: val, reminderDateEdited: true }))
+                  }
+                />
               </div>
 
               <div className="admin-form-group">
@@ -331,14 +364,15 @@ const Documents = ({ sortConfig, handleSort }) => {
                 </span>
               </th>
               <th>Department</th>
-              <th>Date</th>
+              <th>From Date</th>
+              <th>To Date</th>
               <th>Reminder Date</th>
-              <th></th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredDocs.length === 0 ? (
-              <EmptyRow colSpan={5} message="No documents found" />
+              <EmptyRow colSpan={6} message="No documents found" />
             ) : (
               filteredDocs.slice(0, displayLimit).map((doc) => (
                 <tr key={doc.id}>
@@ -349,6 +383,7 @@ const Documents = ({ sortConfig, handleSort }) => {
                   </td>
                   <td>{doc.department}</td>
                   <td>{formatDisplayDate(doc.date) || doc.date}</td>
+                  <td>{formatDisplayDate(doc.toDate) || doc.toDate}</td>
                   <td>
                     <span
                       className={
@@ -388,7 +423,7 @@ const Documents = ({ sortConfig, handleSort }) => {
                 </tr>
               ))
             )}
-            <InfiniteScrollLoader sentinelRef={sentinelRef} hasMore={hasMore} colSpan={5} />
+            <InfiniteScrollLoader sentinelRef={sentinelRef} hasMore={hasMore} colSpan={6} />
           </tbody>
         </table>
         <InfiniteScrollOverlay isLoading={isLoadingMore} />

@@ -120,7 +120,7 @@ export const CustomDatePicker = ({ value, onChange, label, min, max, placeholder
       </button>
 
       {open && (
-        <div className="cdp-overlay" onMouseDown={() => setOpen(false)}>
+        <div className="cdp-overlay">
           <div className="cdp-popup" onMouseDown={(e) => e.stopPropagation()}>
             <button
               type="button"

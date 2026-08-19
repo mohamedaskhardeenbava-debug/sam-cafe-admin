@@ -21,6 +21,7 @@ import { useToast } from "../useToast";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import Button3D from "../components/Button3D";
+import CollapseChevron from "../components/CollapseChevron";
 import CollapseSection from "../components/CollapseSection";
 import { FilterBar } from "../components/FilterBar";
 
@@ -107,7 +108,7 @@ const Users = ({ handleSort, sortConfig, users }) => {
               data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand filters" : "Collapse filters"}
               aria-expanded={!headerCollapsed}
             >
-              <span className={`header-collapse-arrow${headerCollapsed ? " rotated" : ""}`}>▾</span>
+              <CollapseChevron collapsed={headerCollapsed} />
             </button>
           </div>
           <div className="header-title-col">
