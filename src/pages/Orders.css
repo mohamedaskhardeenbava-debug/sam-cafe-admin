@@ -1177,6 +1177,10 @@
   .orders-page .dishes-status-dropdown {
     height: 40px;
     font-size: 13px;
+
+    border: 1.5px solid #e0e0e0 !important;
+    background: #f9f9f9;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   }
 }
 

@@ -1316,16 +1316,10 @@ const Orders = ({ adminData, setAdminData }) => {
 
   }, [location.state]);
 
-  useEffect(() => {
-    const closeDropdowns = () => {
-      setOpenStatusDropdown(false);
-      setOpenModeDropdown(false);
-    };
-
-    window.addEventListener("click", closeDropdowns);
-
-    return () => window.removeEventListener("click", closeDropdowns);
-  }, []);
+  // Note: the status/mode filters render via CustomDropdown, which owns
+  // its own open/close state internally — a leftover
+  // window-click-to-close-dropdowns effect (referencing state that no
+  // longer exists) used to live here and has been removed.
 
   const exportOrders = (orders, from, to) => {
     if (!orders.length) {

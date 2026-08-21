@@ -34,12 +34,11 @@ export default function useGlobalTooltips() {
 
     // Elements whose tooltip was just force-closed by a click. Reinit
     // (via scan(), triggered by the MutationObserver reacting to
-    // whatever DOM change the click caused, e.g. sidebar
-    // collapse/expand) is suppressed for these until the pointer
-    // actually leaves and re-enters — otherwise a fresh Tooltip
-    // instance built while the cursor is still sitting on the trigger
-    // immediately shows itself again, which is exactly what looked
-    // like "the tooltip is stuck."
+    // whatever DOM change the click caused) is suppressed for these
+    // until the pointer actually leaves and re-enters — otherwise a
+    // fresh Tooltip instance built while the cursor is still sitting
+    // on the trigger immediately shows itself again, which is exactly
+    // what looked like "the tooltip is stuck."
     const suppressedUntilLeave = new WeakSet();
 
     const initExplicit = (el) => {
@@ -47,8 +46,8 @@ export default function useGlobalTooltips() {
       // data-bs-title="..." markup (added directly in JSX) — just needs
       // the Bootstrap Tooltip instance created, no attribute upgrading.
       if (SKIP_TAGS.has(el.tagName)) return;
-      if (window.bootstrap.Tooltip.getInstance(el)) return;
       if (suppressedUntilLeave.has(el)) return;
+      if (window.bootstrap.Tooltip.getInstance(el)) return;
       el.setAttribute("data-bs-tooltip-tracked", "true");
       // eslint-disable-next-line no-new
       new window.bootstrap.Tooltip(el, { trigger: "hover focus" });
@@ -57,6 +56,8 @@ export default function useGlobalTooltips() {
     const upgrade = (el) => {
       if (SKIP_TAGS.has(el.tagName)) return;
       if (!el.getAttribute("title")) return;
+      if (suppressedUntilLeave.has(el)) return;
+
       // Already has a live instance and is correctly wired — leave it
       // alone. Tearing down and rebuilding an existing, correctly-
       // configured instance on every scan() is what let a tooltip
@@ -71,7 +72,6 @@ export default function useGlobalTooltips() {
       ) {
         return;
       }
-      if (suppressedUntilLeave.has(el)) return;
 
       el.setAttribute("data-bs-toggle", "tooltip");
       if (!el.getAttribute("data-bs-placement")) {
@@ -124,26 +124,28 @@ export default function useGlobalTooltips() {
     const observer = new MutationObserver(() => scan());
     observer.observe(document.body, { childList: true, subtree: true, attributeFilter: ["title", "data-bs-toggle"] });
 
-    // Clicking a tooltip-bearing button (e.g. the sidebar collapse
-    // toggle) leaves the tooltip stuck visible: with trigger "hover
-    // focus", a click focuses the button but doesn't hover-out or
-    // blur it, so the tooltip has no event left to tell it to close —
-    // it just sits there once the mouse moves away. Force-hiding on
-    // every click, blurring the trigger, and suppressing reinit until
-    // the pointer actually leaves (see suppressedUntilLeave above)
-    // closes it immediately and keeps it closed even though the click
-    // itself often triggers a DOM mutation (e.g. sidebar collapsing)
-    // that would otherwise cause scan() to rebuild — and re-show — a
-    // fresh instance a moment later.
+    // Clicking a tooltip-bearing button leaves the tooltip stuck visible:
+    // with trigger "hover focus", a click focuses the button but doesn't
+    // hover-out or blur it, so the tooltip has no event left to tell it
+    // to close — it just sits there once the mouse moves away. Force-hide
+    // on every click, blur the trigger, and suppress reinit until the
+    // pointer actually leaves — this closes it immediately and keeps it
+    // closed even though the click itself often triggers a DOM mutation
+    // that would otherwise cause scan() to rebuild (and re-show) a fresh
+    // instance a moment later.
     const handleDocumentClick = (e) => {
-      const trigger = e.target.closest('[data-bs-toggle="tooltip"]');
+      // e.target can be a non-Element node in edge cases (e.g. a Text
+      // node when a click lands on a bare text child), and Text nodes
+      // have no .closest(). Guard so this never throws.
+      const target = e.target;
+      if (!target || typeof target.closest !== "function") return;
+      const trigger = target.closest('[data-bs-toggle="tooltip"]');
       if (!trigger) return;
       const instance = window.bootstrap.Tooltip.getInstance(trigger);
       if (instance) instance.hide();
       suppressedUntilLeave.add(trigger);
-      // Deferred so the click's own handler (e.g. toggling collapse
-      // state) runs first — blurring immediately can interfere with
-      // handlers that check document.activeElement.
+      // Deferred so the click's own handler runs first — blurring
+      // immediately can interfere with handlers checking activeElement.
       setTimeout(() => trigger.blur(), 0);
     };
     document.addEventListener("click", handleDocumentClick, true);
@@ -151,7 +153,12 @@ export default function useGlobalTooltips() {
     // Once the pointer truly leaves a suppressed trigger, it's safe to
     // let it get a normal tooltip instance again on the next hover.
     const handlePointerOut = (e) => {
-      const trigger = e.target.closest('[data-bs-toggle="tooltip"]');
+      // Same non-Element-target guard as handleDocumentClick above —
+      // pointerleave's target is occasionally `document` itself or a
+      // Text node, neither of which has .closest().
+      const target = e.target;
+      if (!target || typeof target.closest !== "function") return;
+      const trigger = target.closest('[data-bs-toggle="tooltip"]');
       if (trigger && suppressedUntilLeave.has(trigger)) {
         suppressedUntilLeave.delete(trigger);
       }
