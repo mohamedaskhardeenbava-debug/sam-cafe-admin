@@ -61,6 +61,7 @@ import Events from "./pages/events/Events";
 
 // STAFFS
 import Staffs from "./pages/staffs/Staffs";
+import StaffChat from "./pages/staffs/StaffChat";
 import StaffDetails from "./pages/staffs/StaffDetails";
 import StaffAttendance from "./pages/staffs/StaffAttendance";
 import StaffSalary from "./pages/staffs/StaffSalary";
@@ -882,6 +883,7 @@ function App() {
             <Route path="/staff-salary" element={<StaffSalary adminData={adminData} setAdminData={setAdminData} />} />
             <Route path="/staff-career" element={<StaffCareer adminData={adminData} setAdminData={setAdminData} />} />
             <Route path="/staff-training" element={<StaffTraining adminData={adminData} setAdminData={setAdminData} />} />
+            <Route path="/staff-chat" element={<StaffChat />} />
 
             <Route
               path="/kitchen-assign"

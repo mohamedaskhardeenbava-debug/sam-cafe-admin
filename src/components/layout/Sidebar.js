@@ -53,6 +53,7 @@ const BASE_MENU = [
       { label: "Salary", path: "/staff-salary" },
       { label: "Career", path: "/staff-career" },
       { label: "Training", path: "/staff-training" },
+      { label: "Chat", path: "/staff-chat" },
     ],
   },
   {
