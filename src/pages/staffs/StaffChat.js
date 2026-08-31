@@ -30,6 +30,7 @@ import { getAvatarColor } from "../../utils/avatarColor";
 import { fmtDateTime } from "../../utils/dateUtils";
 import { exportToExcel } from "../../utils/excelUtils";
 import Button3D from "../../components/Button3D";
+import CustomDropdown from "../../components/CustomDropdown";
 import "./StaffChat.css";
 
 const MAX_FILE_BYTES = 2 * 1024 * 1024; // 2MB
@@ -80,9 +81,6 @@ const IconMic = ({ active }) => (
 const IconCamera = () => (
   <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" /><circle cx="12" cy="13" r="4" /></svg>
 );
-const IconMore = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="12" cy="5" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="19" r="2" /></svg>
-);
 const IconClip = () => (
   <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21.4 11.2l-8.9 8.9a5 5 0 01-7.1-7.1l8.5-8.5a3.5 3.5 0 014.9 4.9L9.7 17.5a2 2 0 01-2.9-2.9l7.6-7.6" /></svg>
 );
@@ -103,6 +101,9 @@ const IconDownload = () => (
 );
 const IconCheckSquare = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
+);
+const IconBack = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
 );
 const IconClose = () => (
   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -155,7 +156,7 @@ export default function StaffChat() {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
 
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [topbarMenuChoice, setTopbarMenuChoice] = useState(""); // CustomDropdown's controlled value for the "more options" menu — see handleTopbarMenuChoice
   const [recording, setRecording] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraMode, setCameraMode] = useState("photo"); // "photo" | "video"
@@ -173,7 +174,6 @@ export default function StaffChat() {
 
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
-  const menuRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const videoRecorderRef = useRef(null);
@@ -241,7 +241,7 @@ export default function StaffChat() {
         toast.info(`💬 New message from ${fromName}: ${describeMessage(msg)}`, "permanent");
       }
       if (isOpenThread && msg.fromId !== admin.id) {
-        api.patch(`/chat/${msg.fromId}/read`).catch(() => {});
+        api.patch(`/chat/${msg.fromId}/read`).catch(() => { });
       }
 
       loadStaffList();
@@ -305,24 +305,13 @@ export default function StaffChat() {
       .then((res) => setMessages(res.data || []))
       .catch((err) => toast.error(err?.response?.data?.error || "Failed to load conversation"))
       .finally(() => setLoadingThread(false));
-    api.patch(`/chat/${selectedId}/read`).then(() => loadStaffList()).catch(() => {});
-    setMenuOpen(false);
+    api.patch(`/chat/${selectedId}/read`).then(() => loadStaffList()).catch(() => { });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  /* ── Close action menu on outside click ──────────────────────── */
-  useEffect(() => {
-    if (!menuOpen) return undefined;
-    const onDocClick = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [menuOpen]);
 
   /* ── Send helpers ─────────────────────────────────────────────── */
   const sendPayload = useCallback(
@@ -431,7 +420,7 @@ export default function StaffChat() {
   useEffect(() => {
     if (cameraOpen && videoPreviewRef.current && streamRef.current) {
       videoPreviewRef.current.srcObject = streamRef.current;
-      videoPreviewRef.current.play?.().catch(() => {});
+      videoPreviewRef.current.play?.().catch(() => { });
     }
   }, [cameraOpen]);
 
@@ -514,7 +503,6 @@ export default function StaffChat() {
 
   /* ── Topbar "more options" dropdown actions ──────────────────── */
   const handleClearChat = () => {
-    setMenuOpen(false);
     setClearModalOpen(true);
   };
 
@@ -533,7 +521,6 @@ export default function StaffChat() {
   };
 
   const handleExportChat = () => {
-    setMenuOpen(false);
     exportMessages(messages);
   };
 
@@ -557,7 +544,6 @@ export default function StaffChat() {
   };
 
   const handleInfo = () => {
-    setMenuOpen(false);
     setInfoMessages(messages);
     setInfoOpen(true);
   };
@@ -568,6 +554,20 @@ export default function StaffChat() {
     if (!msg) return;
     setInfoMessages([msg]);
     setInfoOpen(true);
+  };
+
+  // Dispatcher for the "more options" CustomDropdown — its interaction
+  // model is select-a-value/onChange(value), so each menu action is
+  // modeled as a one-shot "selection" that fires the matching handler
+  // and is intentionally never fed back as the dropdown's current
+  // value (topbarMenuChoice always resets to "" straight after), so
+  // the trigger doesn't end up permanently displaying whichever action
+  // was last clicked as if it were a persisted selection.
+  const handleTopbarMenuChoice = (val) => {
+    setTopbarMenuChoice("");
+    if (val === "info") handleInfo();
+    else if (val === "export") handleExportChat();
+    else if (val === "clear") handleClearChat();
   };
 
   /* ── Select mode: bulk delete / download / export / share ───────── */
@@ -682,7 +682,7 @@ export default function StaffChat() {
   );
 
   return (
-    <div className="chat-page">
+    <div className={`chat-page${selectedStaff ? " chat-conversation-open" : ""}`}>
       {/* ───────── Sidebar ───────── */}
       <aside className="chat-sidebar">
         <div className="chat-sidebar-header">
@@ -750,6 +750,14 @@ export default function StaffChat() {
         ) : (
           <>
             <div className="chat-topbar">
+              <button
+                type="button"
+                className="chat-icon-btn chat-back-btn"
+                title="Back to staff list"
+                onClick={() => setSelectedId(null)}
+              >
+                <IconBack />
+              </button>
               <span className="chat-avatar" style={{ background: getAvatarColor(selectedStaff.name) }}>
                 {initials(selectedStaff.name)}
               </span>
@@ -791,33 +799,17 @@ export default function StaffChat() {
                   <IconDownload />
                 </button>
 
-                <div className="chat-topbar-actions" ref={menuRef}>
-                  <button
-                    type="button"
-                    className="chat-icon-btn"
-                    title="More options"
-                    onClick={() => setMenuOpen((v) => !v)}
-                  >
-                    <IconMore />
-                  </button>
-                  {menuOpen && (
-                    <div className="chat-action-dropdown-overlay" onMouseDown={() => setMenuOpen(false)}>
-                      <div className="chat-action-dropdown" onMouseDown={(e) => e.stopPropagation()}>
-                        <div className="chat-action-dropdown-title">Conversation</div>
-                        <div className="chat-action-dropdown-options">
-                          <button type="button" onClick={handleInfo}>
-                            <IconInfo /> Info
-                          </button>
-                          <button type="button" onClick={handleExportChat}>
-                            <IconClip /> Export Chat
-                          </button>
-                          <button type="button" className="danger" onClick={handleClearChat}>
-                            <IconTrash /> Clear Chat
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                <div className="chat-topbar-actions chat-more-dropdown">
+                  <CustomDropdown
+                    value={topbarMenuChoice}
+                    onChange={handleTopbarMenuChoice}
+                    placeholder={null}
+                    options={[
+                      { value: "info", label: (<span className="chat-dropdown-option"><IconInfo /> Info</span>) },
+                      { value: "export", label: (<span className="chat-dropdown-option"><IconClip /> Export Chat</span>) },
+                      { value: "clear", label: (<span className="chat-dropdown-option chat-dropdown-option-danger"><IconTrash /> Clear Chat</span>) },
+                    ]}
+                  />
                 </div>
               </div>
             </div>
@@ -828,20 +820,20 @@ export default function StaffChat() {
                 <div className="chat-select-actions">
                   {selectedMsgIds.length === 1 && (
                     <button type="button" onClick={handleSingleMsgInfo} title="Info">
-                      <IconInfo /> Info
+                      <IconInfo /> <span>Info</span>
                     </button>
                   )}
                   <button type="button" onClick={handleBulkDownload} title="Download">
-                    <IconDownload /> Download
+                    <IconDownload /> <span>Download</span>
                   </button>
                   <button type="button" onClick={handleBulkExport} title="Export">
-                    <IconClip /> Export
+                    <IconClip /> <span>Export</span>
                   </button>
                   <button type="button" onClick={openShareForSelection} title="Share">
-                    <IconShare /> Share
+                    <IconShare /> <span>Share</span>
                   </button>
                   <button type="button" className="danger" onClick={handleBulkDelete} title="Delete">
-                    <IconTrash /> Delete
+                    <IconTrash /> <span>Delete</span>
                   </button>
                 </div>
               </div>
@@ -849,7 +841,10 @@ export default function StaffChat() {
 
             <div className="chat-messages">
               {loadingThread ? (
-                <div className="chat-empty-hint">Loading conversation…</div>
+                <div className="chat-empty-hint chat-loading-hint">
+                  <span className="chat-spinner" aria-hidden="true" />
+                  Loading conversation…
+                </div>
               ) : messages.length === 0 ? (
                 <div className="chat-empty-hint">No messages yet — say hello 👋</div>
               ) : (
@@ -925,7 +920,7 @@ export default function StaffChat() {
                   disabled={sending || recording}
                   onClick={handleSendHi}
                 >
-                  👋 Hi
+                  👋 <span>Hi</span>
                 </button>
 
                 <Button3D type="submit" iconOnly disabled={sending || !text.trim()} title="Send">

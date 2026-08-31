@@ -72,6 +72,8 @@
  */
 
 import React, { useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import "./CustomDropdown.css";
 
 const CustomDropdown = ({
   value,
@@ -133,16 +135,16 @@ const CustomDropdown = ({
           {displayLabel || ""}
         </button>
 
-        {open && (
-          <div className="dishes-dropdown-overlay">
-            <div className="dishes-dropdown-menu" onMouseDown={(e) => e.stopPropagation()}>
-              {label && <div className="dishes-dropdown-menu-title">{label}</div>}
+        {open && createPortal(
+          <div className="cdd-overlay" onMouseDown={() => setOpen(false)}>
+            <div className="cdd-popup" onMouseDown={(e) => e.stopPropagation()}>
+              {label && <div className="cdd-popup-title">{label}</div>}
 
-              <div className="dishes-dropdown-menu-options">
+              <div className="cdd-options">
                 {/* Clear / placeholder row */}
                 {placeholder !== null && (
                   <div
-                    className={`dishes-dropdown-menu-option dishes-dropdown-menu-option-placeholder${!selected ? " dishes-dropdown-menu-option-sel" : ""}`}
+                    className={`cdd-option cdd-option-placeholder${!selected ? " cdd-sel" : ""}`}
                     onClick={() => {
                       onChange("");
                       setOpen(false);
@@ -158,7 +160,7 @@ const CustomDropdown = ({
                   return (
                     <div
                       key={i}
-                      className={`dishes-dropdown-menu-option${val === value ? " dishes-dropdown-menu-option-sel" : ""}`}
+                      className={`cdd-option${val === value ? " cdd-sel" : ""}`}
                       onClick={() => {
                         onChange(val);
                         setOpen(false);
@@ -170,7 +172,8 @@ const CustomDropdown = ({
                 })}
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
 
