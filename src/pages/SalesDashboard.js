@@ -226,7 +226,7 @@ const SalesDashboard = ({ adminData, setAdminData, orders = [] }) => {
 
   const TrendTooltip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
-    return (<div className="trend-tooltip"><div className="trend-tooltip-label">{label}</div><div className="trend-tooltip-value">₹{num(payload[0].value).toLocaleString()}</div></div>);
+    return (<div className="trend-tooltip"><div className="trend-tooltip-label">{sharedFmtDateOnly(label)}</div><div className="trend-tooltip-value">₹{num(payload[0].value).toLocaleString()}</div></div>);
   };
   const StockTooltip = ({ active, payload }) => {
     if (!active || !payload?.length) return null;
@@ -427,7 +427,7 @@ const SalesDashboard = ({ adminData, setAdminData, orders = [] }) => {
                   <ResponsiveContainer width="100%" height={260}>
                     <LineChart data={revenueTrendData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                       <CartesianGrid vertical={false} stroke="#e3e3e3" />
-                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#777" }} tickFormatter={(d) => format(new Date(d), "dd MMM")} />
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#777" }} tickFormatter={(d) => sharedFmtDateOnly(d)} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#777" }} tickFormatter={(v) => `₹${v}`} />
                       <Tooltip content={<TrendTooltip />} />
                       <defs><linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#54a0ff" stopOpacity={0.25} /><stop offset="100%" stopColor="#54a0ff" stopOpacity={0} /></linearGradient></defs>

@@ -53,7 +53,6 @@ const BASE_MENU = [
       { label: "Salary", path: "/staff-salary" },
       { label: "Career", path: "/staff-career" },
       { label: "Training", path: "/staff-training" },
-      { label: "Chat", path: "/staff-chat" },
     ],
   },
   {
@@ -85,6 +84,7 @@ const BASE_MENU = [
     ],
   },
   { label: "Offers", path: "/offers", icon: offerIcon, module: "offers", cardKey: "offers" },
+  { label: "Subscriptions", path: "/subscriptions", icon: orderIcon, module: "subscriptions" },
   { label: "Venues", path: "/venues", icon: staffIcon, superAdminOnly: true },
   { label: "Roles and Responsibilities", path: "/permissions", icon: staffIcon, superAdminOnly: true },
   { label: "Category Cards", path: "/category-cards", icon: categoryIcon, superAdminOnly: true },

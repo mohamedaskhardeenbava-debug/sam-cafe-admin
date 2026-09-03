@@ -525,6 +525,7 @@ th.sorted .sort-arrow {
   gap: 6px;
   width: 100%;
   box-sizing: border-box;
+  margin-bottom: 6px;
 }
 
 .horizontal-form-group {

@@ -46,6 +46,7 @@ const DEFAULT_CARDS = [
   { id: "my", name: "My Favourites", image: "/assets/category-assets/pizza.png", enabled: true },
   { id: "others", name: "Crowd Picks", image: "/assets/category-assets/crowd.png", enabled: true },
   { id: "my-orders", name: "My Orders", image: "/assets/category-assets/offers.png", enabled: true },
+  { id: "subscriptions", name: "Meal Subscriptions", image: "/assets/category-assets/offers.png", enabled: true },
   { id: "combo", name: "Combos", image: "/assets/category-assets/combo.png", enabled: true },
   { id: "best-sellers", name: "Best Sellers", image: "/assets/category-assets/offers.png", enabled: true },
   { id: "offers", name: "Offers", image: "/assets/category-assets/offers.png", enabled: true },

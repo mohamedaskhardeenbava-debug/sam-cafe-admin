@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import "./Topbar.css";
 import notification from "../../icon/notification.png";
+import chat from "../../icon/chat.png";
+import phone from "../../icon/phone.png";
 import bellSound from "../../assets/sounds/bell.mp3";
 import socket from "../../socket";
 import api from "../../api";
@@ -271,6 +273,7 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   // Tracks a failed <img> load for admin.photo so a broken/stale photo
   // URL falls back to the initials avatar instead of rendering a
   // broken-image icon. Reset whenever the photo URL itself changes.
@@ -291,6 +294,7 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
   const notifRef = useRef(null);
   const profileRef = useRef(null);
   const phoneRef = useRef(null);
+  const chatRef = useRef(null);
   const bellAudioRef = useRef(new Audio(bellSound));
   const bellLoopRef = useRef(null);
 
@@ -313,6 +317,7 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
       if (notifRef.current && !notifRef.current.contains(e.target)) setShowNotifications(false);
       if (profileRef.current && !profileRef.current.contains(e.target)) setShowProfile(false);
       if (phoneRef.current && !phoneRef.current.contains(e.target)) setShowPhone(false);
+      if (chatRef.current && !chatRef.current.contains(e.target)) setShowChat(false);
     };
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
@@ -677,17 +682,7 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
             }}
             aria-label="Calls & Reminders"
           >
-            <span className="phone-icon-svg">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07
-                  A19.5 19.5 0 0 1 4.27 12 19.79 19.79 0 0 1 1.07 3.43
-                  A2 2 0 0 1 3.04 1h3a2 2 0 0 1 2 1.72
-                  c.127.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91
-                  a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45
-                  c.91.34 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-              </svg>
-            </span>
+            <img src={phone} alt="Phone" />
             {phoneBadgeCount > 0 && (
               <span className="notification-badge">
                 {phoneBadgeCount > 9 ? "9+" : phoneBadgeCount}
@@ -796,7 +791,7 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
                             <span>{meta.label || log.type} ·  {log.phone}</span>
                           </div>
                           <span className="phone-list__phone-sm phone-list__phone-sm--time">
-                            {sharedFmtDate(log.calledAt)}, {new Date(log.calledAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
+                            {sharedFmtDate(log.calledAt)}, {(() => { const d = new Date(log.calledAt); return sharedFmtTime(`${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`); })()}
                           </span>
                         </li>
                       );
@@ -806,6 +801,25 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
               </section>
             </div>
           )}
+        </div>
+
+        {/* ── CHAT ── */}
+        <div className="topbar-icon-wrapper" ref={chatRef}>
+          <button
+            type="button"
+            className="notification-icon-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowChat(false);
+              setShowNotifications(false);
+              setShowProfile(false);
+              setShowPhone(false);
+              navigate("/staff-chat");
+            }}
+            aria-label="Chat"
+          >
+            <img src={chat} alt="" />
+          </button>
         </div>
 
         {/* ── NOTIFICATIONS ── */}

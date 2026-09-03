@@ -14,6 +14,7 @@ import { allowTextInput } from "../App";
 import { resolveCategoryAndSubCategory } from "../App"
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
+import { SLOT_OPTIONS } from "./Dishes";
 
 import "./DishDetails.css";
 import PageLoader from "../components/PageLoader";
@@ -165,6 +166,19 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
 
   const deleteVariant = (index) => {
     setEditingVariants(prev => prev.filter((_, i) => i !== index));
+  };
+
+  /* ---------------- SLOT TOGGLE ---------------- */
+  const toggleLocalDishSlot = (slotValue) => {
+    setLocalDish(prev => {
+      const has = (prev.slots || []).includes(slotValue);
+      return {
+        ...prev,
+        slots: has
+          ? prev.slots.filter(s => s !== slotValue)
+          : [...(prev.slots || []), slotValue]
+      };
+    });
   };
 
   const startEditing = () => {
@@ -416,6 +430,33 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
                 className={`veg-badge ${localDish.isComboFood ? "veg" : "non-veg"}`}
               >
                 {localDish.isComboFood ? "Yes" : "No"}
+              </span>
+            )}
+          </div>
+
+          {/* SLOT */}
+          <div className="section">
+            <div className="section-title"><span>Slot</span></div>
+            {isEditing ? (
+              <div className="slot-checkbox-group">
+                {SLOT_OPTIONS.map(opt => (
+                  <label className="slot-checkbox" key={opt.value}>
+                    <input
+                      type="checkbox"
+                      checked={(localDish.slots || []).includes(opt.value)}
+                      onChange={() => toggleLocalDishSlot(opt.value)}
+                    />
+                    <span>{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <span className="slot-cell">
+                {(localDish.slots || []).length
+                  ? localDish.slots
+                    .map(s => SLOT_OPTIONS.find(o => o.value === s)?.label || s)
+                    .join(", ")
+                  : "—"}
               </span>
             )}
           </div>

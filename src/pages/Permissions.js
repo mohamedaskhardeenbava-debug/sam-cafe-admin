@@ -36,10 +36,10 @@ const MODULE_TABS = [
   { key: "sms", label: "SMS", keys: ["serviceActivity", "serviceSchedules", "serviceAssign", "serviceMise", "serviceGrooming", "tables", "tablePreferences"] },
   { key: "security", label: "Security", keys: ["permissions", "auditLogs"] },
   { key: "purchase", label: "Purchase", keys: ["ingredients"] },
-  { key: "menu", label: "Menu", keys: ["categories", "combo", "combo_offers", "comboSectionConfig", "favourites", "offers"] },
+  { key: "menu", label: "Menu", keys: ["categories", "combo", "combo_offers", "comboSectionConfig", "favourites", "offers", "subscriptions"] },
   { key: "orders", label: "Orders and Booking", keys: ["orders", "reservations", "events", "eventBookings", "cateringOrders", "preBookings", "celebrations"] },
   { key: "admin", label: "Admin Only", keys: ["venues", "theme", "categoryCards"] },
-  { key: "people", label: "People", keys: ["users", "staff", "careers", "holidays", "callHistory", "tasks"] },
+  { key: "people", label: "People", keys: ["users", "staff", "careers", "holidays", "callHistory", "tasks", "chat"] },
 ];
 
 const Permissions = () => {

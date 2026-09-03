@@ -96,7 +96,12 @@ export const CustomDatePicker = ({ value, onChange, label, min, max, placeholder
   }, [open]);
 
   const displayVal = value
-    ? new Date(value).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+    ? (() => {
+      const d = new Date(value);
+      return isNaN(d.getTime())
+        ? placeholder
+        : `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`;
+    })()
     : placeholder;
 
   return (

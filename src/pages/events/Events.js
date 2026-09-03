@@ -28,7 +28,7 @@ import { venueToAddressFields, emptyAddressFields } from "../../utils/resolveVen
 import "../Common.css";
 import "./Events.css";
 import "../ModalCSS.css";
-import { fmtDate as formatDate } from "../../utils/dateUtils";
+import { fmtDate as formatDate, fmtTime } from "../../utils/dateUtils";
 import { useTabLiquid } from "../../hooks/useTabLiquid";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -955,7 +955,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
 
                         <div className="ae-event-meta">
                           <span>{formatDate(evt.date)}</span>
-                          {evt.time && <span>{evt.time}</span>}
+                          {evt.time && <span>{fmtTime(evt.time)}</span>}
                           {evt.venue && <span>{evt.venue}</span>}
                           <span>{evt.price === 0 || !evt.price ? "Free" : `₹${Number(evt.price).toLocaleString("en-IN")}`}</span>
                         </div>
@@ -1365,7 +1365,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                       <div className="ae-summary-row"><span className="ae-summary-key">Type</span><span className="ae-summary-val">{formData.eventType}</span></div>
                       <div className="ae-summary-row"><span className="ae-summary-key">Status</span><span className="ae-summary-val">{formData.status}</span></div>
                       <div className="ae-summary-row"><span className="ae-summary-key">Date</span><span className="ae-summary-val">{formData.date ? formatDate(formData.date) : "—"}</span></div>
-                      <div className="ae-summary-row"><span className="ae-summary-key">Time</span><span className="ae-summary-val">{formData.time || "—"}</span></div>
+                      <div className="ae-summary-row"><span className="ae-summary-key">Time</span><span className="ae-summary-val">{formData.time ? fmtTime(formData.time) : "—"}</span></div>
                       <div className="ae-summary-row"><span className="ae-summary-key">Venue</span><span className="ae-summary-val">{formData.venue || "—"}</span></div>
                       <div className="ae-summary-row"><span className="ae-summary-key">Capacity</span><span className="ae-summary-val">{formData.maxCapacity || "—"}</span></div>
                       <div className="ae-summary-row"><span className="ae-summary-key">Price</span><span className="ae-summary-val">{formData.price ? `₹${Number(formData.price).toLocaleString("en-IN")} / person` : "Free"}</span></div>
@@ -1806,7 +1806,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                     <div className="ae-detail-section">
                       <h4>Event</h4>
                       <p className="ae-detail-event-title">{evt?.title || b.eventId}</p>
-                      <p>{formatDate(evt?.date)} {evt?.time && `· ${evt.time}`}</p>
+                      <p>{formatDate(evt?.date)} {evt?.time && `· ${fmtTime(evt.time)}`}</p>
                     </div>
                     <div className="ae-detail-section">
                       <h4>Guest Information</h4>

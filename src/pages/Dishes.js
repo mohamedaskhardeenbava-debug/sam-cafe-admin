@@ -26,6 +26,16 @@ import "./Dishes.css";
 import "./ModalCSS.css";
 import PageLoader from "../components/PageLoader";
 
+// Meal slots a dish can be available in. A dish can belong to more than
+// one (e.g. a dish served at both lunch and dinner).
+export const SLOT_OPTIONS = [
+  { value: "breakfast", label: "Breakfast" },
+  { value: "brunch", label: "Brunch" },
+  { value: "lunch", label: "Lunch" },
+  { value: "hi-tea", label: "Hi-Tea" },
+  { value: "dinner", label: "Dinner" },
+];
+
 const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }) => {
   // ── Hooks
 
@@ -50,6 +60,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     isVeg: true,
     isEventFood: false,
     isComboFood: false,
+    slots: [],
     benefits: {
       calories: "",
       protein: "",
@@ -85,6 +96,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       isVeg: true,
       isEventFood: false,
       isComboFood: false,
+      slots: [],
       benefits: {
         calories: "",
         protein: "",
@@ -107,6 +119,18 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     });
 
     setDishImagePreview("");
+  };
+
+  const toggleNewDishSlot = (slotValue) => {
+    setNewDish(prev => {
+      const has = (prev.slots || []).includes(slotValue);
+      return {
+        ...prev,
+        slots: has
+          ? prev.slots.filter(s => s !== slotValue)
+          : [...(prev.slots || []), slotValue]
+      };
+    });
   };
 
   const { categoryId } = useParams();
@@ -301,6 +325,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       isVeg: newDish.isVeg,
       isEventFood: newDish.isEventFood,
       isComboFood: newDish.isComboFood,
+      slots: newDish.slots || [],
 
       basePrice: Number(newDish.basePrice),
 
@@ -585,53 +610,53 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
 
       {adminData.categories.length > 0 && (
         <CollapseSection collapsed={categoryBarCollapsed}>
-        <div className="dish-category-buttons">
-          {adminData.categories.flatMap(cat => {
+          <div className="dish-category-buttons">
+            {adminData.categories.flatMap(cat => {
 
-            if ((cat.subCategories || []).length > 0) {
+              if ((cat.subCategories || []).length > 0) {
 
-              return cat.subCategories.map(sub => (
+                return cat.subCategories.map(sub => (
+
+                  <button
+                    key={sub.id}
+                    className={`filter-pill ${selectedCategoryIds.includes(sub.id) ? "active" : ""
+                      }${visibleCategoryId === sub.id ? " scroll-active" : ""}`}
+                    onClick={() =>
+                      setSelectedCategoryIds(prev =>
+                        prev.includes(sub.id)
+                          ? prev.filter(id => id !== sub.id)
+                          : [...prev, sub.id]
+                      )
+                    }
+                  >
+                    {sub.name}
+                    <span className="filter-pill-count">{(sub.dishes || []).length}</span>
+                  </button>
+
+                ));
+
+              }
+
+              return (
 
                 <button
-                  key={sub.id}
-                  className={`filter-pill ${selectedCategoryIds.includes(sub.id) ? "active" : ""
-                    }${visibleCategoryId === sub.id ? " scroll-active" : ""}`}
+                  key={cat.id}
+                  className={`filter-pill ${selectedCategoryIds.includes(cat.id) ? "active" : ""
+                    }${visibleCategoryId === cat.id ? " scroll-active" : ""}`}
                   onClick={() =>
                     setSelectedCategoryIds(prev =>
-                      prev.includes(sub.id)
-                        ? prev.filter(id => id !== sub.id)
-                        : [...prev, sub.id]
+                      prev.includes(cat.id)
+                        ? prev.filter(id => id !== cat.id)
+                        : [...prev, cat.id]
                     )
                   }
                 >
-                  {sub.name}
-                  <span className="filter-pill-count">{(sub.dishes || []).length}</span>
+                  {cat.name}
+                  <span className="filter-pill-count">{(cat.dishes || []).length}</span>
                 </button>
-
-              ));
-
-            }
-
-            return (
-
-              <button
-                key={cat.id}
-                className={`filter-pill ${selectedCategoryIds.includes(cat.id) ? "active" : ""
-                  }${visibleCategoryId === cat.id ? " scroll-active" : ""}`}
-                onClick={() =>
-                  setSelectedCategoryIds(prev =>
-                    prev.includes(cat.id)
-                      ? prev.filter(id => id !== cat.id)
-                      : [...prev, cat.id]
-                  )
-                }
-              >
-                {cat.name}
-                <span className="filter-pill-count">{(cat.dishes || []).length}</span>
-              </button>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
         </CollapseSection>
       )}
 
@@ -657,6 +682,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               </th>
               <th>Type</th>
               <th>Event Food</th>
+              <th>Slot</th>
               <th>Base Price</th>
               <th className="icon-width">Delete</th>
             </tr>
@@ -696,6 +722,16 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                   </span>
                 </td>
 
+                <td>
+                  <span className="slot-cell">
+                    {(dish.slots || []).length
+                      ? dish.slots
+                        .map(s => SLOT_OPTIONS.find(o => o.value === s)?.label || s)
+                        .join(", ")
+                      : "—"}
+                  </span>
+                </td>
+
                 <td>{dish.basePrice}
                 </td>
 
@@ -708,12 +744,12 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
             ))}
 
             {filteredDishes.length === 0 && (
-              <EmptyRow colSpan={6} message="No dishes available" />
+              <EmptyRow colSpan={7} message="No dishes available" />
             )}
             <InfiniteScrollLoader
               sentinelRef={sentinelRef}
               hasMore={hasMore}
-              colSpan={6}
+              colSpan={7}
             />
           </tbody>
         </table>
@@ -891,6 +927,22 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                   >
                     <span className="dish-switch-dot non-veg" /> No
                   </button>
+                </div>
+              </div>
+
+              <div className="admin-form-group">
+                <label htmlFor="">Slot</label>
+                <div className="slot-checkbox-group">
+                  {SLOT_OPTIONS.map(opt => (
+                    <label className="slot-checkbox" key={opt.value}>
+                      <input
+                        type="checkbox"
+                        checked={(newDish.slots || []).includes(opt.value)}
+                        onChange={() => toggleNewDishSlot(opt.value)}
+                      />
+                      <span>{opt.label}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
 

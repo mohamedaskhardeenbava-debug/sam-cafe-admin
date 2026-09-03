@@ -39,7 +39,7 @@ const getTotalItemsOrdered = (user) => {
   }, 0);
 };
 
-const Users = ({ handleSort, sortConfig, users }) => {
+const Users = ({ handleSort, sortConfig, users, subscriptions }) => {
   // ── Hooks
 
   const navigate = useNavigate();
@@ -48,6 +48,16 @@ const Users = ({ handleSort, sortConfig, users }) => {
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
 
   // ── Derived Values
+
+  // Any user whose phone number matches an existing (any-status)
+  // subscription record is tagged as a "Member" in the table below.
+  const memberPhones = useMemo(() => {
+    const set = new Set();
+    (subscriptions || []).forEach(s => {
+      if (s.customerPhone) set.add(s.customerPhone);
+    });
+    return set;
+  }, [subscriptions]);
 
   const sortedUsers = useMemo(() => sortArray(users, sortConfig), [users, sortConfig]);
 
@@ -77,6 +87,7 @@ const Users = ({ handleSort, sortConfig, users }) => {
       Mobile: u.mobile || "—",
       "Total Orders": u.orders?.length || 0,
       "Total Dishes Ordered": getTotalItemsOrdered(u),
+      Member: memberPhones.has(u.mobile) ? "Yes" : "No",
     }));
     const ok = exportToExcel({
       rows,
@@ -169,11 +180,12 @@ const Users = ({ handleSort, sortConfig, users }) => {
               </th>
               <th>Total Orders</th>
               <th>Total Dishes Ordered</th>
+              <th>Member</th>
             </tr>
           </thead>
           <tbody>
             {filteredUsers.length === 0 ? (
-              <EmptyRow colSpan={5} message="No users found" />
+              <EmptyRow colSpan={6} message="No users found" />
             ) : (
               filteredUsers.slice(0, displayLimit).map((user, index) => (
                 <tr key={user.id}>
@@ -189,13 +201,20 @@ const Users = ({ handleSort, sortConfig, users }) => {
                   <td>{user.mobile}</td>
                   <td>{user.orders?.length || 0}</td>
                   <td>{getTotalItemsOrdered(user)}</td>
+                  <td>
+                    {memberPhones.has(user.mobile) ? (
+                      <span className="user-member-badge">Member</span>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
                 </tr>
               ))
             )}
             <InfiniteScrollLoader
               sentinelRef={sentinelRef}
               hasMore={hasMore}
-              colSpan={5}
+              colSpan={6}
             />
           </tbody>
         </table>

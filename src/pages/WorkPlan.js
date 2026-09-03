@@ -19,7 +19,7 @@ import { CustomDatePicker } from "../components/CustomDatePicker";
 import { CustomTimePicker } from "../components/CustomTimePicker";
 import { allowTextInput } from "../App";
 import { todayStr } from "../utils/dateRangeUtils";
-import { fmtDate as fmtDateNumeric } from "../utils/dateUtils";
+import { fmtDate as fmtDateNumeric, fmtTime } from "../utils/dateUtils";
 
 import "./WorkPlan.css";
 
@@ -148,7 +148,7 @@ export default function WorkPlan({ adminData, setAdminData }) {
                 <div className="wp-item-body" onClick={() => openEdit(item)}>
                   <div className="wp-item-top">
                     <span className={`wp-type-badge wp-type-badge--${item.type}`}>{TYPE_LABELS[item.type] || item.type}</span>
-                    <span className="wp-item-date">{fmtDate(item.date)}{item.time ? ` · ${item.time}` : ""}</span>
+                    <span className="wp-item-date">{fmtDate(item.date)}{item.time ? ` · ${fmtTime(item.time)}` : ""}</span>
                   </div>
                   <div className={`wp-item-title${item.status === "done" ? " wp-item-title--done" : ""}`}>{item.title}</div>
                   {item.location && <div className="wp-item-location">📍 {item.location}</div>}
@@ -166,7 +166,7 @@ export default function WorkPlan({ adminData, setAdminData }) {
                     <div className="wp-item-body" onClick={() => openEdit(item)}>
                       <div className="wp-item-top">
                         <span className={`wp-type-badge wp-type-badge--${item.type}`}>{TYPE_LABELS[item.type] || item.type}</span>
-                        <span className="wp-item-date">{fmtDate(item.date)}{item.time ? ` · ${item.time}` : ""}</span>
+                        <span className="wp-item-date">{fmtDate(item.date)}{item.time ? ` · ${fmtTime(item.time)}` : ""}</span>
                       </div>
                       <div className="wp-item-title">{item.title}</div>
                     </div>

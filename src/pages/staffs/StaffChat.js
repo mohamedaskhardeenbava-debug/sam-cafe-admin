@@ -27,7 +27,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useVenue } from "../../context/VenueContext";
 import { useToast } from "../../useToast";
 import { getAvatarColor } from "../../utils/avatarColor";
-import { fmtDateTime } from "../../utils/dateUtils";
+import { fmtDateTime, fmtDate, todayStr, toLocalISO } from "../../utils/dateUtils";
 import { exportToExcel } from "../../utils/excelUtils";
 import Button3D from "../../components/Button3D";
 import CustomDropdown from "../../components/CustomDropdown";
@@ -56,6 +56,31 @@ function readFileAsDataUrl(file) {
 function timeOnly(iso) {
   const parts = fmtDateTime(iso).split(",");
   return parts[1]?.trim() || "";
+}
+
+/** Local YYYY-MM-DD key for grouping messages by day. */
+function dateKey(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return toLocalISO(d);
+}
+
+/** "Today" / "Yesterday" / "13-06-2026" — used for the chat-messages date divider. */
+function dividerLabel(iso) {
+  const key = dateKey(iso);
+  if (!key) return "";
+  if (key === todayStr()) return "Today";
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (key === toLocalISO(yesterday)) return "Yesterday";
+  return fmtDate(iso);
+}
+
+/** Sidebar "last message" time — just the time for today, "DD-MM-YYYY" for older days. */
+function staffTimeLabel(iso) {
+  if (!iso) return "";
+  return dateKey(iso) === todayStr() ? timeOnly(iso) : fmtDate(iso);
 }
 
 function describeMessage(m) {
@@ -270,10 +295,10 @@ export default function StaffChat() {
       );
     };
 
-    // Fires once at midnight when the server purges everything from
-    // before today (see chat.js's scheduleMidnightChatPurge) — clear
-    // the open thread and refresh the sidebar previews so nobody's
-    // looking at messages that no longer exist server-side.
+    // Fires once a week (Sunday 12:00 AM) when the server purges every
+    // chat message (see chat.js's scheduleWeeklyChatPurge) — clear the
+    // open thread and refresh the sidebar previews so nobody's looking
+    // at messages that no longer exist server-side.
     const handlePurged = () => {
       setMessages([]);
       loadStaffList();
@@ -711,7 +736,11 @@ export default function StaffChat() {
                 onClick={() => setSelectedId(s.id)}
               >
                 <span className="chat-avatar" style={{ background: getAvatarColor(s.name) }}>
-                  {initials(s.name)}
+                  {s.photo ? (
+                    <img src={s.photo} alt={s.name} className="chat-avatar-img" />
+                  ) : (
+                    initials(s.name)
+                  )}
                 </span>
                 <span className="chat-staff-info">
                   <span className="chat-staff-name-row">
@@ -724,7 +753,7 @@ export default function StaffChat() {
                       )}
                     </span>
                     {s.lastMessage && (
-                      <span className="chat-staff-time">{timeOnly(s.lastMessage.at)}</span>
+                      <span className="chat-staff-time">{staffTimeLabel(s.lastMessage.at)}</span>
                     )}
                   </span>
                   <span className="chat-staff-preview">
@@ -759,7 +788,11 @@ export default function StaffChat() {
                 <IconBack />
               </button>
               <span className="chat-avatar" style={{ background: getAvatarColor(selectedStaff.name) }}>
-                {initials(selectedStaff.name)}
+                {selectedStaff.photo ? (
+                  <img src={selectedStaff.photo} alt={selectedStaff.name} className="chat-avatar-img" />
+                ) : (
+                  initials(selectedStaff.name)
+                )}
               </span>
               <div className="chat-topbar-info">
                 <span className="chat-topbar-name">
@@ -848,18 +881,28 @@ export default function StaffChat() {
               ) : messages.length === 0 ? (
                 <div className="chat-empty-hint">No messages yet — say hello 👋</div>
               ) : (
-                messages.map((m) => (
-                  <MessageBubble
-                    key={m.id}
-                    message={m}
-                    isMine={m.fromId === admin?.id}
-                    selectMode={selectMode}
-                    isSelected={selectedMsgIds.includes(m.id)}
-                    onToggleSelect={() => toggleMsgSelected(m.id)}
-                    onOpenMedia={() => setMediaViewer(m)}
-                    showSuperAdminTag={!viewerIsSuperAdmin && m.fromId !== admin?.id && selectedStaff?.roleGroup === "Super Admin"}
-                  />
-                ))
+                messages.map((m, i) => {
+                  const prev = messages[i - 1];
+                  const showDivider = !prev || dateKey(prev.createdAt) !== dateKey(m.createdAt);
+                  return (
+                    <React.Fragment key={m.id}>
+                      {showDivider && (
+                        <div className="chat-date-divider">
+                          <span>{dividerLabel(m.createdAt)}</span>
+                        </div>
+                      )}
+                      <MessageBubble
+                        message={m}
+                        isMine={m.fromId === admin?.id}
+                        selectMode={selectMode}
+                        isSelected={selectedMsgIds.includes(m.id)}
+                        onToggleSelect={() => toggleMsgSelected(m.id)}
+                        onOpenMedia={() => setMediaViewer(m)}
+                        showSuperAdminTag={!viewerIsSuperAdmin && m.fromId !== admin?.id && selectedStaff?.roleGroup === "Super Admin"}
+                      />
+                    </React.Fragment>
+                  );
+                })
               )}
               <div ref={messagesEndRef} />
             </div>

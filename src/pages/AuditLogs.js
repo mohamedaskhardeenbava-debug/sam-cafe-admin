@@ -22,6 +22,7 @@ import useInfiniteScroll from "../components/useInfiniteScroll";
 import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import { FilterBar } from "../components/FilterBar";
 import { resolveDateRange } from "../utils/dateRangeUtils";
+import { fmtDateTime } from "../utils/dateUtils";
 import { allowTextInput, EmptyRow } from "../App";
 
 import "./AuditLogs.css";
@@ -290,7 +291,7 @@ const AuditLogs = () => {
               <>
                 {logs.map((log) => (
                   <tr key={log.id}>
-                    <td>{new Date(log.createdAt).toLocaleString()}</td>
+                    <td>{fmtDateTime(log.createdAt)}</td>
                     <td>
                       {log.adminName || "—"}
                       {log.adminRoleTitle ? <span className="audit-who-role"> · {log.adminRoleTitle}</span> : null}

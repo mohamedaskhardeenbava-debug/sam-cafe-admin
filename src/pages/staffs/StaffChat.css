@@ -185,6 +185,14 @@
   font-weight: 700;
   font-size: 14px;
   box-shadow: 0 0 0 2px var(--surface, #fff), var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
+  overflow: hidden;
+}
+
+.chat-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .chat-staff-info {
@@ -674,6 +682,22 @@
 
 .chat-messages::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.25);
+}
+
+/* ── Date divider between message groups ── */
+.chat-date-divider {
+  display: flex;
+  justify-content: center;
+  margin: 6px 0;
+}
+
+.chat-date-divider span {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-3, #6b6b6b);
+  background: linear-gradient(135deg, #d9e8fe 0%, #c4d8f5 100%);
+  padding: 4px 12px;
+  border-radius: 999px;
 }
 
 .chat-bubble-row {

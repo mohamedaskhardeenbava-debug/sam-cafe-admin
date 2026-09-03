@@ -5,7 +5,7 @@
 
 import { useParams, useNavigate } from "react-router-dom";
 
-import { formatDisplayDate } from "../App"
+import { formatDisplayDate, formatIndianTime } from "../App"
 
 import "./UserDetails.css";
 
@@ -87,7 +87,7 @@ const UserDetails = ({ users }) => {
                     <tr key={order.id}>
                       <td className="clickable" onClick={() => navigate(`/orders/${order.id}`)}>{order.id}</td>
                       <td>{formatDisplayDate(order.date)}</td>
-                      <td>{order.time}</td>
+                      <td>{formatIndianTime(order.date, order.time)}</td>
                       <td>₹{order.totalAmount}</td>
                     </tr>
                   ))

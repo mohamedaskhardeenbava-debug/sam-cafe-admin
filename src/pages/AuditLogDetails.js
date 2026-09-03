@@ -12,6 +12,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import api from "../api";
 import { useVenue } from "../context/VenueContext";
 import { useToast } from "../useToast";
+import { fmtDateTime } from "../utils/dateUtils";
 
 import "./AuditLogDetails.css";
 
@@ -158,7 +159,7 @@ const AuditLogDetails = () => {
         <div className="ald-summary-grid">
           <div className="ald-summary-item">
             <span className="ald-summary-label">When</span>
-            <span className="ald-summary-value">{new Date(log.createdAt).toLocaleString()}</span>
+            <span className="ald-summary-value">{fmtDateTime(log.createdAt)}</span>
           </div>
           <div className="ald-summary-item">
             <span className="ald-summary-label">Who</span>

@@ -1,0 +1,74 @@
+/* ═══════════════════════════════════════════════════════
+   SubscriptionDetails.css  —  Sam Cafe Admin  —  SubscriptionDetails page
+   Depends on Common.css + Subscriptions.css (badges, builder styles)
+═══════════════════════════════════════════════════════ */
+
+.back-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 25px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.back-btn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 40%;
+  width: 12px;
+  height: 12px;
+  border-left: 3px solid #111;
+  border-bottom: 3px solid #111;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.back-btn:hover {
+  background: #f0f0f0;
+}
+
+/* Small "which slots are used" note next to the Meal Schedule
+   section title, in view mode. */
+.sub-details-slot-summary {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #8a8f98;
+  border-bottom: none;
+  text-align: right;
+}
+
+/* Read-only schedule — one card per slot (and week, for monthly
+   plans), listing every dish scheduled in it and the days it's on. */
+.sub-schedule-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sub-schedule-group {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #fafbfc;
+}
+
+.sub-schedule-group-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 8px;
+}
+
+.sub-scheduled-dish-row--readonly {
+  background: #fff;
+}
+
+@media (max-width: 768px) {
+  .back-btn {
+    width: 40px;
+    height: 40px;
+  }
+}

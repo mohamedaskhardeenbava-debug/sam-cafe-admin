@@ -18,7 +18,7 @@ import closeIcon from "../icon/close-icon.png";
 import "./ModalCSS.css";
 import "./staffs/StaffDetails.css";
 import "./Profile.css";
-import { fmtDate } from "../utils/dateUtils";
+import { fmtDate, fmtDateTime } from "../utils/dateUtils";
 import { getAvatarColor } from "../utils/avatarColor";
 
 const Profile = () => {
@@ -177,7 +177,7 @@ const Profile = () => {
             <table className="profile-table">
               <tbody>
                 <tr><td>Account Status</td><td>{admin.status}</td></tr>
-                <tr><td>Last Login</td><td>{admin.lastLoginAt ? new Date(admin.lastLoginAt).toLocaleString() : "—"}</td></tr>
+                <tr><td>Last Login</td><td>{admin.lastLoginAt ? fmtDateTime(admin.lastLoginAt) : "—"}</td></tr>
               </tbody>
             </table>
             <p className="profile-note">

@@ -17,3 +17,14 @@
   font-weight: 500;
   white-space: nowrap;
 }
+
+/* Subscription "Member" badge in the users table */
+.user-member-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #eaf6ee;
+  color: #27ae60;
+}

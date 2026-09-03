@@ -33,6 +33,9 @@ import Orders from "./pages/Orders";
 import OrderDetails from "./pages/OrderDetails";
 import Offers from "./pages/Offers";
 import OfferDetails from "./pages/OfferDetails";
+import Subscriptions from "./pages/Subscriptions";
+import SubscriptionDetails from "./pages/SubscriptionDetails";
+import MemberDetails from "./pages/MemberDetails";
 import Users from "./pages/Users";
 import UserDetails from "./pages/UserDetails";
 import Venues from "./pages/Venues";
@@ -176,6 +179,7 @@ function App() {
     staffAccounts: [],
     unlinkedStaff: [],
     roles: [],
+    subscriptions: [],
   });
 
   /* ---------------- FETCH DATA ---------------- */
@@ -199,7 +203,7 @@ function App() {
         "/serviceSchedules", "/tables", "/reservations", "/celebrations",
         "/preBookings", "/cateringOrders", "/events", "/eventBookings",
         "/tasks", "/work-plan", "/staff-auth/admins",
-        "/staff-auth/unlinked-staff", "/roles",
+        "/staff-auth/unlinked-staff", "/roles", "/subscriptions",
       ];
 
       const settled = await Promise.allSettled(
@@ -236,6 +240,7 @@ function App() {
         serviceActivityRes, serviceSchedulesRes, tablesRes, reservationsRes,
         celebrationsRes, preBookingsRes, cateringRes, eventsRes, bookingsRes,
         tasksRes, workPlanRes, staffAccountsRes, unlinkedStaffRes, rolesRes,
+        subscriptionsRes,
       ] = endpoints.map((_, i) => ({ data: dataOf(i) }));
 
       setAdminData({
@@ -272,6 +277,7 @@ function App() {
         staffAccounts: staffAccountsRes.data || [],
         unlinkedStaff: unlinkedStaffRes.data || [],
         roles: rolesRes.data || [],
+        subscriptions: subscriptionsRes.data || [],
       });
 
       // A 403 here means "this role isn't permitted to read this module" —
@@ -470,6 +476,7 @@ function App() {
               tasks: "tasks",
               tablePreferences: "tablePreferences",
               combo_offers: "combo_offers",
+              subscriptions: "subscriptions",
             };
             const key = RESOURCE_KEY_MAP[resource];
             if (!key) return prev;
@@ -839,6 +846,7 @@ function App() {
                   sortConfig={sortConfig}
                   handleSort={handleSort}
                   users={adminData.users}
+                  subscriptions={adminData.subscriptions}
                 />
               }
             />
@@ -974,6 +982,33 @@ function App() {
             <Route path="/offers/:offerId"
               element={
                 <OfferDetails
+                  adminData={adminData}
+                  setAdminData={setAdminData}
+                />
+              }
+            />
+
+            <Route path="/subscriptions"
+              element={
+                <Subscriptions
+                  adminData={adminData}
+                  setAdminData={setAdminData}
+                />
+              }
+            />
+
+            <Route path="/subscriptions/members/:memberPhone"
+              element={
+                <MemberDetails
+                  adminData={adminData}
+                  setAdminData={setAdminData}
+                />
+              }
+            />
+
+            <Route path="/subscriptions/:subscriptionId"
+              element={
+                <SubscriptionDetails
                   adminData={adminData}
                   setAdminData={setAdminData}
                 />
