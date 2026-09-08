@@ -1859,7 +1859,7 @@ const Orders = ({ adminData, setAdminData }) => {
     }
 
     // ── NORMAL (unsplit) bill — single receipt, unchanged behaviour.
-    const printerOrder = buildPrinterOrder(order);
+    const printerOrder = await buildPrinterOrder(order);
     const result = await sendBillToPrinter(socket, printerOrder);
     if (!result.success) {
       toast.error(result.error || "Failed to print bill");
