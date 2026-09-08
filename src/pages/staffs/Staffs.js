@@ -1128,7 +1128,7 @@ export default function Staffs({
                             placeholder=" "
                             required
                             value={formData.bank.ifsc}
-                            onChange={(e) => { setFormData({ ...formData, bank: { ...formData.bank, ifsc: e.target.value } }); setFormErrors(p => ({ ...p, bankIfsc: false })); }}
+                            onChange={(e) => { setFormData({ ...formData, bank: { ...formData.bank, ifsc: e.target.value.toUpperCase().slice(0, 11) } }); setFormErrors(p => ({ ...p, bankIfsc: false })); }}
                           />
                           <label className={`mat-label${formErrors.bankIfsc ? " mat-label-error" : ""}`}>IFSC Code<span className="rf-req">*</span></label>
                           <span className={`mat-bar${formErrors.bankIfsc ? " mat-bar-error" : ""}`} />

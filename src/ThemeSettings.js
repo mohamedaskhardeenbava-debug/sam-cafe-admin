@@ -13,6 +13,7 @@ import "./ThemeSettings.css";
 import PageLoader from "./components/PageLoader";
 import CustomColorPicker, { hslaToHex, hexToHsla, hslaToRgbaString } from "./components/CustomColorPicker";
 import Button3D from "./components/Button3D";
+import { allowTextInput } from "./App";
 import useAnimatedModal from "./hooks/useAnimatedModal";
 import closeIcon from "./icon/close-icon.png";
 
@@ -886,7 +887,7 @@ const ThemeSettings = () => {
                     placeholder=" "
                     autoFocus
                     value={presetForm.name}
-                    onChange={(e) => { setPresetForm((p) => ({ ...p, name: e.target.value })); setPresetFormError(""); }}
+                    onChange={(e) => { setPresetForm((p) => ({ ...p, name: allowTextInput(p.name, e.target.value, 100, 5) })); setPresetFormError(""); }}
                   />
                   <label className={`mat-label${presetFormError ? " mat-label-error" : ""}`}>Theme Name<span className="rf-req">*</span></label>
                   <span className={`mat-bar${presetFormError ? " mat-bar-error" : ""}`} />

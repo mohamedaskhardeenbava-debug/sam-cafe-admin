@@ -7,7 +7,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 import api from "../../api";
-import { fmtDateTime } from "../../utils/dateUtils";
+import { fmtDateTime, fmtDate } from "../../utils/dateUtils";
 
 import { useToast } from "../../useToast";
 import Button3D from "../../components/Button3D";
@@ -74,7 +74,7 @@ const CateringDetails = ({ adminData, setAdminData }) => {
     { label: "Customer Name", val: data.name || "—" },
     { label: "Mobile", val: data.mobile || "—" },
     { label: "Email", val: data.email || "—" },
-    { label: "Event Date", val: data.eventDate || data.date || "—" },
+    { label: "Event Date", val: fmtDate(data.eventDate || data.date) },
     { label: "Guests", val: data.guests || "—" },
     { label: "Location", val: data.location || data.address || "—" },
     { label: "Created At", val: fmtDateTime(data.createdAt) },
@@ -106,7 +106,7 @@ const CateringDetails = ({ adminData, setAdminData }) => {
               {data.mobile}{data.email ? ` · ${data.email}` : ""}
             </div>
             <div className="evt-details-hero-meta">
-              <span>{data.eventDate || data.date || "—"}</span>
+              <span>{fmtDate(data.eventDate || data.date)}</span>
               <span>{data.guests || "—"} guests</span>
               {(data.location || data.address) && <span>{data.location || data.address}</span>}
               <span>{data.items?.length || 0} items</span>

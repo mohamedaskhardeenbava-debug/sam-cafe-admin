@@ -442,7 +442,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                 <label>IFSC Code</label>
                 <input
                   value={localStaff.bank.ifsc}
-                  onChange={(e) => setLocalStaff({ ...localStaff, bank: { ...localStaff.bank, ifsc: e.target.value } })}
+                  onChange={(e) => setLocalStaff({ ...localStaff, bank: { ...localStaff.bank, ifsc: e.target.value.toUpperCase().slice(0, 11) } })}
                 />
               </div>
             </>

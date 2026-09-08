@@ -21,6 +21,7 @@ const LINE_WIDTH = 32;
 const DIVIDER = "--------------------------------";
 
 const money = (v) => Number(v || 0).toFixed(2);
+const wholeRupees = (v) => String(Math.round(Number(v || 0)));
 
 const padRight = (text, width) => {
   text = String(text || "");
@@ -39,6 +40,12 @@ const formatItemRow = (name, qty, total) =>
 // LABEL ........... AMOUNT (right-aligned)
 const formatAmountRow = (label, amount) =>
   padRight(label, LINE_WIDTH - 8) + padLeft(money(amount), 8);
+
+// Same as formatAmountRow, but for the final TOTAL line — printed as a
+// rounded whole-rupee amount rather than with paise, matching the QR
+// and on-screen total.
+const formatTotalRow = (label, amount) =>
+  padRight(label, LINE_WIDTH - 8) + padLeft(wholeRupees(amount), 8);
 
 const formatDate = (iso) =>
   iso ? new Date(iso).toLocaleDateString("en-GB") : "";
@@ -154,7 +161,7 @@ app.post("/print/bill", (req, res) => {
     return res.status(400).json({ success: false, error: "Invalid bill data" });
   }
 
-  console.log(`Bill — Order #${order.id} | Total: ₹${order.totalWithGST.total}`);
+  console.log(`Bill — Order #${order.id} | Total: ₹${wholeRupees(order.totalWithGST.total)}`);
 
   openPrinter(res, (printer) => {
     // ── Header ──
@@ -203,7 +210,7 @@ app.post("/print/bill", (req, res) => {
       .text(formatAmountRow("SGST @2.5%", order.totalWithGST.sgst))
       .text(DIVIDER)
       .style("B")
-      .text(formatAmountRow("TOTAL  ₹", order.totalWithGST.total))
+      .text(formatTotalRow("TOTAL  ₹", order.totalWithGST.total))
       .style("NORMAL")
       .text(DIVIDER);
 

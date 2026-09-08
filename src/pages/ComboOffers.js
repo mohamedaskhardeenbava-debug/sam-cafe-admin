@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 import api from "../api";
+import { allowTextInput } from "../App";
 
 import closeIcon from "../icon/close-icon.png";
 import deleteIcon from "../icon/delete-icon.png";
@@ -124,7 +125,7 @@ const MapSectionNameField = ({ label, onSave }) => {
         ref={inputRef}
         className="co-map-name-input"
         value={draft}
-        onChange={e => setDraft(e.target.value)}
+        onChange={e => setDraft(allowTextInput(draft, e.target.value, 100, 5))}
         onKeyDown={e => {
           if (e.key === "Enter") commit();
           if (e.key === "Escape") cancel();

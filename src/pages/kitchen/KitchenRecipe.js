@@ -102,7 +102,9 @@ export default function KitchenRecipe({ adminData, setAdminData }) {
   const handleIngredientChange = (index, field, value) => {
     setForm(prev => ({
       ...prev,
-      ingredients: prev.ingredients.map((ing, i) => (i === index ? { ...ing, [field]: value } : ing)),
+      ingredients: prev.ingredients.map((ing, i) =>
+        i === index ? { ...ing, [field]: allowTextInput(ing[field], value, 100, 5) } : ing
+      ),
     }));
   };
 

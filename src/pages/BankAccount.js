@@ -287,7 +287,7 @@ const BankAccount = () => {
                 placeholder=" "
                 type="text"
                 value={form.upiVpa}
-                onChange={(e) => setForm((p) => ({ ...p, upiVpa: e.target.value.trim() }))}
+                onChange={(e) => setForm((p) => ({ ...p, upiVpa: allowTextInput(p.upiVpa, e.target.value.trim(), 100, 5) }))}
               />
               <label className="mat-label">UPI VPA (optional)</label>
               <span className="mat-bar" />

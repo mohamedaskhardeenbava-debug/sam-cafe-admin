@@ -34,7 +34,7 @@ import "./PreviewModal.css";
 import "../ModalCSS.css";
 import "./EvtCommon.css";
 
-import { fmtTime, fmtDateTime } from "../../utils/dateUtils";
+import { fmtTime, fmtDateTime, fmtDate } from "../../utils/dateUtils";
 
 const SOURCE_OPTIONS = ["User App", "WhatsApp", "Phone", "In Person"];
 
@@ -43,7 +43,7 @@ const SLOT_GROUPS = [
   { label: "Brunch", key: "BR", start: "10:00", end: "12:00" },
   { label: "Lunch", key: "LU", start: "12:00", end: "15:00" },
   { label: "Hi-Tea", key: "HT", start: "15:00", end: "18:00" },
-  { label: "Dinner", key: "DI", start: "18:30", end: "22:00" },
+  { label: "Dinner", key: "DI", start: "19:00", end: "23:00" },
 ];
 const TABS = ["Details", "Dishes", "Review"];
 const RESTAURANT_ADDRESS = {
@@ -663,7 +663,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
             ) : (
               sortedData.slice(0, displayLimit).map(item => {
                 const status = item.status || "pending";
-                const date = item.date || item.eventDate || "—";
+                const date = fmtDate(item.date || item.eventDate);
                 return (
                   <tr className="act-row" key={item.id}>
                     <td>
@@ -996,29 +996,31 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                     </div>
                   </div>
 
-                  <div className="admin-form-group">
-                    <label>Dining Slot <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400 }}>(select to restrict time picker)</span></label>
-                    <div className="evt-res-pref-grid">
-                      {SLOT_GROUPS.map(sg => (
-                        <button key={sg.key} type="button"
-                          className={`evt-res-pref-card${form.slotGroup === sg.key ? " active" : ""}`}
-                          onClick={() => {
-                            const next = form.slotGroup === sg.key ? "" : sg.key;
-                            setF("slotGroup", next);
-                            setF("time", "");
-                          }}>
-                          <span className="evt-res-slot-chip-label">{sg.label}</span>
-                          <span className="evt-res-slot-chip-time">{sg.start}–{sg.end}</span>
-                        </button>
-                      ))}
+                  {form.eventDate && (
+                    <div className="admin-form-group evt-reveal">
+                      <label>Dining Slot <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400 }}>(select to restrict time picker)</span></label>
+                      <div className="evt-res-pref-grid">
+                        {SLOT_GROUPS.map(sg => (
+                          <button key={sg.key} type="button"
+                            className={`evt-res-pref-card${form.slotGroup === sg.key ? " active" : ""}`}
+                            onClick={() => {
+                              const next = form.slotGroup === sg.key ? "" : sg.key;
+                              setF("slotGroup", next);
+                              setF("time", "");
+                            }}>
+                            <span className="evt-res-slot-chip-label">{sg.label}</span>
+                            <span className="evt-res-slot-chip-time">{fmtTime(sg.start)}–{fmtTime(sg.end)}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {form.slotGroup ? (
-                    <div className="admin-form-group">
+                  {form.eventDate && form.slotGroup ? (
+                    <div className="admin-form-group evt-reveal">
                       <label className={formErrors.time ? "mat-label-error" : ""}>
                         Time <span className="evt-res-req">*</span>
-                        {(() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()}
+                        {(() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({fmtTime(sg.start)}–{fmtTime(sg.end)})</span> : null; })()}
                       </label>
                       <CustomTimePicker
                         value={form.time}
@@ -1029,11 +1031,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                         isToday={false}
                       />
                     </div>
-                  ) : (
-                    <div className="admin-form-group">
-                      <span style={{ fontSize: 11, color: "#aaa", marginTop: 4, display: "block" }}>Select a dining slot first to enable time picker</span>
-                    </div>
-                  )}
+                  ) : null}
 
                   <div className="evt-res-source-chips">
                     {SOURCE_OPTIONS.map(src => (
@@ -1251,7 +1249,7 @@ const Catering = ({ adminData, setAdminData, filters, patchFilters, onResetFilte
                         ["Name", form.name || "—"],
                         ["Mobile", form.mobile || "—"],
                         ["Email", form.email || "—"],
-                        ["Event Date", form.eventDate || "—"],
+                        ["Event Date", fmtDate(form.eventDate)],
                         ["Time", fmtTime(form.time)],
                         ["Guests", form.guests ?? "—"],
                       ].map(([l, v]) => (

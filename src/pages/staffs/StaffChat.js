@@ -30,6 +30,7 @@ import { getAvatarColor } from "../../utils/avatarColor";
 import { fmtDateTime, fmtDate, todayStr, toLocalISO } from "../../utils/dateUtils";
 import { exportToExcel } from "../../utils/excelUtils";
 import Button3D from "../../components/Button3D";
+import { allowTextInput } from "../../App";
 import CustomDropdown from "../../components/CustomDropdown";
 import "./StaffChat.css";
 
@@ -718,7 +719,7 @@ export default function StaffChat() {
               type="text"
               placeholder="Search staff…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => setSearch(allowTextInput(search, e.target.value, 100, 5))}
             />
           </div>
         </div>

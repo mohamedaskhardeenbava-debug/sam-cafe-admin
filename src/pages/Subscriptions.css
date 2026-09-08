@@ -341,3 +341,36 @@
 .sub-summary-table tbody tr:nth-child(even) {
   background: #fafbfc;
 }
+/* ══════════════════════════════════════
+   DELIVERY ADDRESS — Subscription Modal
+   (same pattern as the Catering form's address section, minus the
+   "use restaurant address" toggle — a subscription is always
+   delivered to the customer's own address)
+══════════════════════════════════════ */
+.evt-res-form-section-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  border-bottom: 1px solid #c0c0c0;
+  margin-top: 10px;
+}
+
+.ae-addr-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  margin-top: 8px;
+}
+
+.rf-req {
+  color: #dc2626;
+  font-size: 11px;
+}
+
+@media (max-width: 640px) {
+  .ae-addr-grid {
+    grid-template-columns: 1fr;
+  }
+}

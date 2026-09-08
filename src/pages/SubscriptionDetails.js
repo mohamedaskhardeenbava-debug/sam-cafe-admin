@@ -21,7 +21,6 @@ import Button3D from "../components/Button3D";
 import CustomDropdown from "../components/CustomDropdown";
 import { CustomDatePicker } from "../components/CustomDatePicker";
 import { todayStr } from "../utils/dateRangeUtils";
-import { fmtDate } from "../utils/dateUtils";
 
 import { useSubscriptionBuilder, SLOT_OPTIONS, WEEKS, WEEK_LABELS, DAYS, flattenScheduledCells } from "./subscriptions/useSubscriptionBuilder";
 import SubBuilderFields from "./subscriptions/SubBuilderFields";
@@ -85,7 +84,14 @@ const SubscriptionDetails = ({ adminData, setAdminData }) => {
     const { subscription: draft, filledCellCount, totalPrice } = builder;
     const errs = {};
     if (!draft.customerName.trim()) errs.customerName = true;
-    if (!draft.customerPhone.trim()) errs.customerPhone = true;
+    if (!draft.customerPhone.trim() || draft.customerPhone.replace(/\D/g, "").length !== 10) errs.customerPhone = true;
+    if (!draft.addrDoorNo?.trim()) errs.addrDoorNo = true;
+    if (!draft.addrStreet?.trim()) errs.addrStreet = true;
+    if (!draft.addrArea?.trim()) errs.addrArea = true;
+    if (!draft.addrCity?.trim()) errs.addrCity = true;
+    if (!draft.addrDistrict?.trim()) errs.addrDistrict = true;
+    if (!draft.addrState?.trim()) errs.addrState = true;
+    if (!draft.addrPincode || draft.addrPincode.length !== 6) errs.addrPincode = true;
     if (!draft.startDate) errs.startDate = true;
     if (filledCellCount === 0) errs.slots = true;
     if (Object.keys(errs).length) {
@@ -166,7 +172,7 @@ const SubscriptionDetails = ({ adminData, setAdminData }) => {
                     placeholder=" "
                     value={builder.subscription.customerName}
                     onChange={(e) => {
-                      builder.patchField("customerName", allowTextInput(builder.subscription.customerName, e.target.value, 100, 8));
+                      builder.patchField("customerName", allowTextInput(builder.subscription.customerName, e.target.value, 100, 5));
                       setFormErrors(p => ({ ...p, customerName: false }));
                     }}
                   />
@@ -180,9 +186,10 @@ const SubscriptionDetails = ({ adminData, setAdminData }) => {
                   <input
                     className={`mat-input${formErrors.customerPhone ? " mat-error" : ""}`}
                     placeholder=" "
+                    type="tel"
                     value={builder.subscription.customerPhone}
                     onChange={(e) => {
-                      builder.patchField("customerPhone", allowTextInput(builder.subscription.customerPhone, e.target.value, 20, 3));
+                      builder.patchField("customerPhone", e.target.value.replace(/\D/g, "").slice(0, 10));
                       setFormErrors(p => ({ ...p, customerPhone: false }));
                     }}
                   />
@@ -217,6 +224,47 @@ const SubscriptionDetails = ({ adminData, setAdminData }) => {
               </div>
             </div>
 
+            {/* Address — same 8-field grid as the create modal, minus the
+                "use restaurant address" toggle. */}
+            <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>
+              Delivery Address <span style={{ fontSize: 11, color: "#888" }}>(all fields required)</span>
+            </div>
+            <div className="ae-addr-grid">
+              {[
+                { key: "addrDoorNo", label: "Door No. / Building", optional: false },
+                { key: "addrStreet", label: "Street Name", optional: false },
+                { key: "addrArea", label: "Area / Locality", optional: false },
+                { key: "addrLandmark", label: "Landmark", optional: true },
+                { key: "addrCity", label: "City", optional: false },
+                { key: "addrDistrict", label: "District", optional: false },
+                { key: "addrState", label: "State", optional: false },
+                { key: "addrPincode", label: "Pincode", optional: false },
+              ].map(field => (
+                <div key={field.key} className="admin-form-group">
+                  <div className="mat">
+                    <input
+                      className={`mat-input${formErrors[field.key] ? " mat-error" : ""}`}
+                      type="text"
+                      value={builder.subscription[field.key] || ""}
+                      placeholder=" "
+                      maxLength={field.key === "addrPincode" ? 6 : undefined}
+                      onChange={e => {
+                        const v = field.key === "addrPincode"
+                          ? e.target.value.replace(/\D/g, "").slice(0, 6)
+                          : allowTextInput(builder.subscription[field.key] || "", e.target.value, 100, 5);
+                        builder.patchField(field.key, v);
+                        setFormErrors(p => ({ ...p, [field.key]: false }));
+                      }}
+                    />
+                    <label className={`mat-label${formErrors[field.key] ? " mat-label-error" : ""}`}>
+                      {field.label} {!field.optional && <span className="rf-req">*</span>}
+                    </label>
+                    <span className={`mat-bar${formErrors[field.key] ? " mat-bar-error" : ""}`} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {/* SCHEDULE BUILDER — same component the create modal uses */}
             <SubBuilderFields builder={builder} formErrors={formErrors} />
           </>
@@ -234,7 +282,7 @@ const SubscriptionDetails = ({ adminData, setAdminData }) => {
               </div>
               <div className="section">
                 <div className="section-title"><span>Start Date</span></div>
-                <p>{subscription.startDate ? fmtDate(subscription.startDate) : "—"}</p>
+                <p>{subscription.startDate || "—"}</p>
               </div>
               <div className="section">
                 <div className="section-title"><span>Status</span></div>
@@ -244,6 +292,17 @@ const SubscriptionDetails = ({ adminData, setAdminData }) => {
                   </span>
                 </p>
               </div>
+            </div>
+
+            <div className="section">
+              <div className="section-title"><span>Delivery Address</span></div>
+              <p>
+                {[
+                  subscription.addrDoorNo, subscription.addrStreet, subscription.addrArea,
+                  subscription.addrLandmark, subscription.addrCity, subscription.addrDistrict,
+                  subscription.addrState, subscription.addrPincode,
+                ].filter(Boolean).join(", ") || "—"}
+              </p>
             </div>
 
             <div className="section">

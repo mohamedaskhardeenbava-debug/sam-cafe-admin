@@ -405,6 +405,35 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
             )}
           </div>
 
+          {/* SUBSCRIPTION FOOD */}
+          <div className="section">
+            <div className="section-title"><span>Subscription Food</span></div>
+            {isEditing ? (
+              <div className="dish-switch-group" style={{ marginTop: 5 }}>
+                <button
+                  type="button"
+                  className={`dish-switch-btn${localDish.isSubscriptionFood ? " is-active" : ""}`}
+                  onClick={() => setLocalDish({ ...localDish, isSubscriptionFood: true })}
+                >
+                  <span className="dish-switch-dot veg" /> Yes
+                </button>
+                <button
+                  type="button"
+                  className={`dish-switch-btn${!localDish.isSubscriptionFood ? " is-active" : ""}`}
+                  onClick={() => setLocalDish({ ...localDish, isSubscriptionFood: false })}
+                >
+                  <span className="dish-switch-dot non-veg" /> No
+                </button>
+              </div>
+            ) : (
+              <span
+                className={`veg-badge ${localDish.isSubscriptionFood ? "veg" : "non-veg"}`}
+              >
+                {localDish.isSubscriptionFood ? "Yes" : "No"}
+              </span>
+            )}
+          </div>
+
           {/* COMBO FOOD */}
           <div className="section">
             <div className="section-title"><span>Combo Food</span></div>

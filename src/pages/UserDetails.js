@@ -27,7 +27,6 @@ const UserDetails = ({ users }) => {
     ) || 0;
 
   return (
-    <div className="user-details-page">
       <div className="details-container ">
 
         <div className="details-header">
@@ -104,7 +103,6 @@ const UserDetails = ({ users }) => {
         </div>
 
       </div>
-    </div>
   );
 };
 

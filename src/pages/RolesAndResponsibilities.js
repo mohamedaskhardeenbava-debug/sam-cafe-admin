@@ -232,7 +232,7 @@ const PermissionsTab = () => {
               className="search-input"
               placeholder=" Search modules…"
               value={search}
-              onChange={(e) => setSearch(allowTextInput(search, e.target.value, 60, 0))}
+              onChange={(e) => setSearch(allowTextInput(search, e.target.value, 100, 5))}
             />
             <div className="filter-group perm-category-pills">
               {tabsWithCounts.map((t) => (
@@ -455,7 +455,7 @@ const RolesTab = () => {
             className="search-input"
             placeholder=" Search roles…"
             value={search}
-            onChange={(e) => setSearch(allowTextInput(search, e.target.value, 60, 0))}
+            onChange={(e) => setSearch(allowTextInput(search, e.target.value, 100, 5))}
           />
         </div>
       </div>
@@ -511,7 +511,7 @@ const RolesTab = () => {
                     className="mat-input"
                     placeholder=" "
                     value={form.name}
-                    onChange={(e) => setForm((p) => ({ ...p, name: allowTextInput(p.name, e.target.value, 60, 3) }))}
+                    onChange={(e) => setForm((p) => ({ ...p, name: allowTextInput(p.name, e.target.value, 100, 5) }))}
                   />
                   <label className="mat-label">Role Name<span className="rf-req">*</span></label>
                   <span className="mat-bar" />
@@ -532,7 +532,7 @@ const RolesTab = () => {
                     className="mat-input"
                     placeholder=" "
                     value={form.description}
-                    onChange={(e) => setForm((p) => ({ ...p, description: allowTextInput(p.description, e.target.value, 200, 0) }))}
+                    onChange={(e) => setForm((p) => ({ ...p, description: allowTextInput(p.description, e.target.value, 100, 5) }))}
                   />
                   <label className="mat-label">Description</label>
                   <span className="mat-bar" />

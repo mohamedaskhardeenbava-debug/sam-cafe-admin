@@ -31,7 +31,7 @@ import "./Reservations.css";
 import "./EvtCommon.css";
 import "../ModalCSS.css";
 import "./PreviewModal.css";
-import { fmtTime, fmtDateTime } from "../../utils/dateUtils";
+import { fmtTime, fmtDateTime, fmtDate } from "../../utils/dateUtils";
 
 /* ─── All 5 slot groups ─── */
 const SLOT_GROUPS = [
@@ -39,7 +39,7 @@ const SLOT_GROUPS = [
   { label: "Brunch", key: "BR", short: "Br", start: "10:00", end: "12:00" },
   { label: "Lunch", key: "LU", short: "Lu", start: "12:00", end: "15:00" },
   { label: "Hi-Tea", key: "HT", short: "HT", start: "15:00", end: "18:00" },
-  { label: "Dinner", key: "DI", short: "Di", start: "18:30", end: "22:00" },
+  { label: "Dinner", key: "DI", short: "Di", start: "19:00", end: "23:00" },
 ];
 
 /* Map a 24-h time string → slot key */
@@ -631,7 +631,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
           <div className="filter-groups">
             <MultiPillGroup
               label="Slot"
-              options={SLOT_GROUPS.map(sg => [sg.key, sg.short, "", `${sg.label} (${sg.start}–${sg.end})`])}
+              options={SLOT_GROUPS.map(sg => [sg.key, sg.short, "", `${sg.label} (${fmtTime(sg.start)}–${fmtTime(sg.end)})`])}
               value={filterSlots}
               onToggle={(key) => toggleSet(setFilterSlots, key)}
             />
@@ -746,10 +746,10 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                     </td>
 
                     {/* Reserved Date */}
-                    <td style={{ fontWeight: 600 }}>{item.reservedDate || item.date || "—"}</td>
+                    <td style={{ fontWeight: 600 }}>{fmtDate(item.reservedDate || item.date)}</td>
 
                     {/* Booked On */}
-                    <td>{item.bookedDate || "—"}</td>
+                    <td>{fmtDate(item.bookedDate)}</td>
 
                     {/* Slot */}
                     <td>
@@ -1112,7 +1112,8 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                   </div>
 
                   <div className="evt-res-form-section-label">Booking Details</div>
-                  <div className="admin-form-group">
+                  {(form.reservedDate || form.date) && (
+                  <div className="admin-form-group evt-reveal">
                     <label>Dining Slot <span style={{ fontSize: 11, color: "#aaa", fontWeight: 400 }}>(select to restrict time picker)</span></label>
                     <div className="evt-res-pref-grid">
                       {SLOT_GROUPS.map(sg => {
@@ -1131,20 +1132,21 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                               setF("time", "");
                             }}>
                             <span className="evt-res-slot-chip-label">{sg.label}</span>
-                            <span className="evt-res-slot-chip-time">{sg.start}–{sg.end}</span>
+                            <span className="evt-res-slot-chip-time">{fmtTime(sg.start)}–{fmtTime(sg.end)}</span>
                             {isPast && <span style={{ fontSize: 9, fontWeight: 700, color: "#ef4444", letterSpacing: "0.05em", marginTop: 1, display: "block" }}>PAST</span>}
                           </button>
                         );
                       })}
                     </div>
                   </div>
+                  )}
 
-                  <div className="horizontal-form-group">
-                    {form.slotGroup && (
+                  {(form.reservedDate || form.date) && form.slotGroup && (
+                    <div className="horizontal-form-group evt-reveal">
                       <div className="admin-form-group" style={{ flex: 1 }}>
                         <label className={formErrors.time ? "mat-label-error" : ""}>
                           Time <span className="evt-res-req">*</span>
-                          {(() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({sg.start}–{sg.end})</span> : null; })()}
+                          {(() => { const sg = SLOT_GROUPS.find(s => s.key === form.slotGroup); return sg ? <span style={{ fontSize: 11, color: "#2980b9", fontWeight: 500, marginLeft: 6 }}>({fmtTime(sg.start)}–{fmtTime(sg.end)})</span> : null; })()}
                         </label>
                         <CustomTimePicker value={form.time}
                           onChange={v => { setF("time", v); setFormErrors(p => ({ ...p, time: false })); }}
@@ -1153,18 +1155,13 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                           hasError={!!formErrors.time}
                           isToday={form.reservedDate === todayStr()} />
                       </div>
-                    )}
-                    {form.slotGroup && (
                       <div className="admin-form-group" style={{ flex: 1 }}>
                         <label>Table No. <span style={{ fontSize: 10, color: "#aaa", fontWeight: 400, marginLeft: 4 }}>(available)</span></label>
                         <CustomDropdown value={form.tableNo} onChange={v => setF("tableNo", v)}
                           options={availableTablesForForm.map(t => ({ value: t, label: `Table ${t}` }))}
                           placeholder="— No table —" />
                       </div>
-                    )}
-                  </div>
-                  {!form.slotGroup && (
-                    <div style={{ fontSize: 11, color: "#aaa", marginTop: -6, marginBottom: 4 }}>Select a dining slot above to choose a time and table</div>
+                    </div>
                   )}
 
                   <div className="admin-form-group">
@@ -1210,7 +1207,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
                       <div className="prv-section-title">Reservation Details</div>
                       <div className="prv-grid">
                         {[
-                          ["Reserved For", form.reservedDate || form.date || "—"],
+                          ["Reserved For", fmtDate(form.reservedDate || form.date)],
                           ["Booked On", form.bookedDate || "—"],
                           ["Time", fmtTime(form.time)],
                           ["Slot", slotLabel],

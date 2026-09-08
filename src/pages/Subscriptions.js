@@ -41,7 +41,6 @@ import { useToast } from "../useToast";
 import { CustomDatePicker } from "../components/CustomDatePicker";
 import CustomDropdown from "../components/CustomDropdown";
 import { todayStr } from "../utils/dateRangeUtils";
-import { fmtDate } from "../utils/dateUtils";
 import Button3D from "../components/Button3D";
 import CollapseChevron from "../components/CollapseChevron";
 import CollapseSection from "../components/CollapseSection";
@@ -111,7 +110,14 @@ const Subscriptions = ({ adminData, setAdminData }) => {
   const handleSave = async () => {
     const errs = {};
     if (!newSubscription.customerName.trim()) errs.customerName = true;
-    if (!newSubscription.customerPhone.trim()) errs.customerPhone = true;
+    if (!newSubscription.customerPhone.trim() || newSubscription.customerPhone.replace(/\D/g, "").length !== 10) errs.customerPhone = true;
+    if (!newSubscription.addrDoorNo.trim()) errs.addrDoorNo = true;
+    if (!newSubscription.addrStreet.trim()) errs.addrStreet = true;
+    if (!newSubscription.addrArea.trim()) errs.addrArea = true;
+    if (!newSubscription.addrCity.trim()) errs.addrCity = true;
+    if (!newSubscription.addrDistrict.trim()) errs.addrDistrict = true;
+    if (!newSubscription.addrState.trim()) errs.addrState = true;
+    if (!newSubscription.addrPincode || newSubscription.addrPincode.length !== 6) errs.addrPincode = true;
     if (!newSubscription.startDate) errs.startDate = true;
     if (filledCellCount === 0) errs.slots = true; // at least one dish must be scheduled somewhere
     if (Object.keys(errs).length) {
@@ -421,7 +427,7 @@ const Subscriptions = ({ adminData, setAdminData }) => {
                           {sub.planType === "monthly" ? "Custom / Monthly" : "Weekly Repeat"}
                         </span>
                       </td>
-                      <td>{sub.startDate ? fmtDate(sub.startDate) : "—"}</td>
+                      <td>{sub.startDate || "—"}</td>
                       <td>{usedSlots.length ? usedSlots.join(", ") : "—"}</td>
                       <td>₹{sub.totalPrice ?? 0}</td>
                       <td>
@@ -431,7 +437,7 @@ const Subscriptions = ({ adminData, setAdminData }) => {
                       </td>
                       <td className="icon-width">
                         <Button3D
-                          variant="danger"
+                          variant="cancel"
                           iconOnly
                           onClick={() => handleDelete(sub.id, sub.customerName)}
                         ><img src={deleteIcon} alt="" /></Button3D>
@@ -574,7 +580,7 @@ const Subscriptions = ({ adminData, setAdminData }) => {
                         {m.latestPlanType === "monthly" ? "Custom / Monthly" : "Weekly Repeat"}
                       </span>
                     </td>
-                    <td>{m.latestStartDate !== "—" ? fmtDate(m.latestStartDate) : "—"}</td>
+                    <td>{m.latestStartDate !== "—" ? m.latestStartDate : "—"}</td>
                     <td>
                       <span className={`sub-status-badge ${m.latestStatus}`}>
                         {m.latestStatus.charAt(0).toUpperCase() + m.latestStatus.slice(1)}
@@ -612,7 +618,7 @@ const Subscriptions = ({ adminData, setAdminData }) => {
             {/* BODY — contact fields, then the shared two-column builder
                 (left: builder controls, right: Summary + totals). */}
             <div className="admin-modal-body">
-              <div className="horizontal-form-group">
+              <div className="horizontal-form-group" style={{alignItems: "flex-end"}}>
                 <div className="admin-form-group">
                   <div className="mat">
                     <input
@@ -620,7 +626,7 @@ const Subscriptions = ({ adminData, setAdminData }) => {
                       placeholder=" "
                       value={newSubscription.customerName}
                       onChange={(e) => {
-                        builder.patchField("customerName", allowTextInput(newSubscription.customerName, e.target.value, 100, 8));
+                        builder.patchField("customerName", allowTextInput(newSubscription.customerName, e.target.value, 100, 5));
                         setFormErrors(p => ({ ...p, customerName: false }));
                       }}
                     />
@@ -634,9 +640,10 @@ const Subscriptions = ({ adminData, setAdminData }) => {
                     <input
                       className={`mat-input${formErrors.customerPhone ? " mat-error" : ""}`}
                       placeholder=" "
+                      type="tel"
                       value={newSubscription.customerPhone}
                       onChange={(e) => {
-                        builder.patchField("customerPhone", allowTextInput(newSubscription.customerPhone, e.target.value, 20, 3));
+                        builder.patchField("customerPhone", e.target.value.replace(/\D/g, "").slice(0, 10));
                         setFormErrors(p => ({ ...p, customerPhone: false }));
                       }}
                     />
@@ -669,6 +676,48 @@ const Subscriptions = ({ adminData, setAdminData }) => {
                     placeholder="Select Status"
                   />
                 </div>
+              </div>
+
+              {/* Address — same 8-field grid used on the Catering form,
+                  minus the "use restaurant address" toggle: subscriptions
+                  are always delivered to the customer's own address. */}
+              <div className="evt-res-form-section-label" style={{ marginTop: 8 }}>
+                Delivery Address <span style={{ fontSize: 11, color: "#888" }}>(all fields required)</span>
+              </div>
+              <div className="ae-addr-grid">
+                {[
+                  { key: "addrDoorNo", label: "Door No. / Building", optional: false },
+                  { key: "addrStreet", label: "Street Name", optional: false },
+                  { key: "addrArea", label: "Area / Locality", optional: false },
+                  { key: "addrLandmark", label: "Landmark", optional: true },
+                  { key: "addrCity", label: "City", optional: false },
+                  { key: "addrDistrict", label: "District", optional: false },
+                  { key: "addrState", label: "State", optional: false },
+                  { key: "addrPincode", label: "Pincode", optional: false },
+                ].map(field => (
+                  <div key={field.key} className="admin-form-group">
+                    <div className="mat">
+                      <input
+                        className={`mat-input${formErrors[field.key] ? " mat-error" : ""}`}
+                        type="text"
+                        value={newSubscription[field.key]}
+                        placeholder=" "
+                        maxLength={field.key === "addrPincode" ? 6 : undefined}
+                        onChange={e => {
+                          const v = field.key === "addrPincode"
+                            ? e.target.value.replace(/\D/g, "").slice(0, 6)
+                            : allowTextInput(newSubscription[field.key], e.target.value, 100, 5);
+                          builder.patchField(field.key, v);
+                          setFormErrors(p => ({ ...p, [field.key]: false }));
+                        }}
+                      />
+                      <label className={`mat-label${formErrors[field.key] ? " mat-label-error" : ""}`}>
+                        {field.label} {!field.optional && <span className="rf-req">*</span>}
+                      </label>
+                      <span className={`mat-bar${formErrors[field.key] ? " mat-bar-error" : ""}`} />
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <SubBuilderFields builder={builder} formErrors={formErrors} />

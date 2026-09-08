@@ -7,7 +7,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 import api from "../../api";
-import { fmtTime, fmtDateTime } from "../../utils/dateUtils";
+import { fmtTime, fmtDateTime, fmtDate } from "../../utils/dateUtils";
 
 import { useToast } from "../../useToast";
 import Button3D from "../../components/Button3D";
@@ -28,7 +28,7 @@ const slotFromTime = (time) => {
   const h = parseInt(time.split(":")[0], 10);
   if (h < 10) return SLOT_MAP.BF;
   if (h < 12) return SLOT_MAP.BR;
-  if (h < 16) return SLOT_MAP.LU;
+  if (h < 15) return SLOT_MAP.LU;
   if (h < 18) return SLOT_MAP.HT;
   return SLOT_MAP.DI;
 };
@@ -95,7 +95,7 @@ const ReservationDetails = ({ adminData, setAdminData }) => {
     { label: "Email", val: data.email || "—" },
     { label: "Source", val: data.source || "—" },
     { label: "No. of Guests", val: data.guests || "—" },
-    { label: "Date", val: data.date || "—" },
+    { label: "Date", val: fmtDate(data.date) },
     { label: "Time", val: fmtTime(data.time) },
     { label: "Dining Slot", val: slotInfo?.label || "—" },
     { label: "Table No.", val: data.tableNo ? `Table ${data.tableNo}` : "—" },
@@ -130,7 +130,7 @@ const ReservationDetails = ({ adminData, setAdminData }) => {
               {data.mobile}{data.email ? ` · ${data.email}` : ""}
             </div>
             <div className="evt-details-hero-meta">
-              <span>{data.date || "—"}</span>
+              <span>{fmtDate(data.date)}</span>
               <span>{fmtTime(data.time)}</span>
               {slotInfo && <span>{slotInfo.label}</span>}
               <span>Table {data.tableNo || "—"}</span>

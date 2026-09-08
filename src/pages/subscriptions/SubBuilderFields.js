@@ -15,6 +15,7 @@
 import React from "react";
 import CustomDropdown from "../../components/CustomDropdown";
 import { SLOT_OPTIONS, WEEKS, WEEK_LABELS, DAYS } from "./useSubscriptionBuilder";
+import { fmtTime } from "../../utils/dateUtils";
 
 const SubBuilderFields = ({ builder, formErrors = {} }) => {
   const {
@@ -77,15 +78,16 @@ const SubBuilderFields = ({ builder, formErrors = {} }) => {
         {/* SLOT TABS */}
         <div className="admin-form-group">
           <label>Slot</label>
-          <div className="sub-tab-group">
+          <div className="evt-res-pref-grid">
             {SLOT_OPTIONS.map(opt => (
               <button
                 type="button"
                 key={opt.value}
-                className={`sub-tab-btn${activeSlot === opt.value ? " is-active" : ""}`}
+                className={`evt-res-pref-card${activeSlot === opt.value ? " active" : ""}`}
                 onClick={() => switchActiveSlot(opt.value)}
               >
-                {opt.label}
+                <span className="evt-res-slot-chip-label">{opt.label}</span>
+                <span className="evt-res-slot-chip-time">{fmtTime(opt.start)}–{fmtTime(opt.end)}</span>
               </button>
             ))}
           </div>

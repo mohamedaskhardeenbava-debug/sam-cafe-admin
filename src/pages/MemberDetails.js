@@ -86,7 +86,7 @@ const MemberDetails = ({ adminData, setAdminData }) => {
   const persistChanges = async () => {
     const errs = {};
     if (!draftName.trim()) errs.name = true;
-    if (!draftPhone.trim()) errs.phone = true;
+    if (!draftPhone.trim() || draftPhone.replace(/\D/g, "").length !== 10) errs.phone = true;
     if (Object.keys(errs).length) {
       setFormErrors(errs);
       return;
@@ -155,7 +155,7 @@ const MemberDetails = ({ adminData, setAdminData }) => {
                   placeholder=" "
                   value={draftName}
                   onChange={(e) => {
-                    setDraftName(allowTextInput(draftName, e.target.value, 100, 8));
+                    setDraftName(allowTextInput(draftName, e.target.value, 100, 5));
                     setFormErrors(p => ({ ...p, name: false }));
                   }}
                 />
@@ -173,9 +173,10 @@ const MemberDetails = ({ adminData, setAdminData }) => {
                 <input
                   className={`mat-input${formErrors.phone ? " mat-error" : ""}`}
                   placeholder=" "
+                  type="tel"
                   value={draftPhone}
                   onChange={(e) => {
-                    setDraftPhone(allowTextInput(draftPhone, e.target.value, 20, 3));
+                    setDraftPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
                     setFormErrors(p => ({ ...p, phone: false }));
                   }}
                 />

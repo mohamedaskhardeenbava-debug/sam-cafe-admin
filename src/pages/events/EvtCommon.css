@@ -109,6 +109,25 @@
   animation: evt-overlay-in 0.22s ease;
 }
 
+/* ── Progressive-reveal fields (slot picker / time picker appearing
+   after an earlier field is filled in) ── */
+.evt-reveal {
+  animation: evt-reveal-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: top;
+}
+
+@keyframes evt-reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scaleY(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
 @keyframes evt-overlay-in {
   from {
     opacity: 0;

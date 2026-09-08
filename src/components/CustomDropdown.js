@@ -136,7 +136,7 @@ const CustomDropdown = ({
         </button>
 
         {open && createPortal(
-          <div className="cdd-overlay" onMouseDown={() => setOpen(false)}>
+          <div className="cdd-overlay">
             <div className="cdd-popup" onMouseDown={(e) => e.stopPropagation()}>
               {label && <div className="cdd-popup-title">{label}</div>}
 

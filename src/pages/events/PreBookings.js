@@ -12,7 +12,7 @@ import api from "../../api";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 import { DateRangeGroup, MultiPillGroup } from "../../components/FilterBar";
 import { todayStr } from "../../utils/dateRangeUtils";
-import { fmtTime, fmtDateTime } from "../../utils/dateUtils";
+import { fmtTime, fmtDateTime, fmtDate } from "../../utils/dateUtils";
 
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
@@ -39,7 +39,7 @@ const SLOT_GROUPS = [
   { label: "Brunch", key: "BR", short: "Br", start: "10:00", end: "12:00" },
   { label: "Lunch", key: "LU", short: "Lu", start: "12:00", end: "15:00" },
   { label: "Hi-Tea", key: "HT", short: "HT", start: "15:00", end: "18:00" },
-  { label: "Dinner", key: "DI", short: "Di", start: "18:30", end: "22:00" },
+  { label: "Dinner", key: "DI", short: "Di", start: "19:00", end: "23:00" },
 ];
 
 const timeToSlotKey = (time) => {
@@ -383,34 +383,36 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                   <CustomDatePicker value={form.date} min={todayStr()} onChange={v => { setF("date", v); setErrors(p => ({ ...p, date: false })); }} hasError={!!errors.date} />
                 </div>
 
-                <div className="admin-form-group">
-                  <label>Dining Slot <span className="evt-pre-opt">(optional)</span></label>
-                  <div className="evt-res-pref-grid">
-                    {SLOT_GROUPS.map(sg => {
-                      const slotEndH = parseInt(sg.end.split(":")[0]);
-                      const slotEndM = parseInt(sg.end.split(":")[1] || "0");
-                      const isPast = form.date === todayStr() && nowMinutes >= slotEndH * 60 + slotEndM;
-                      return (
-                        <button key={sg.key} type="button"
-                          className={`evt-res-pref-card${form.slotGroup === sg.key ? " active" : ""}${isPast ? " chip-disabled" : ""}`}
-                          {...(isPast ? { "data-bs-toggle": "tooltip", "data-bs-placement": "top", "data-bs-title": "This slot has passed today" } : {})}
-                          onClick={() => {
-                            if (isPast) return;
-                            const next = form.slotGroup === sg.key ? "" : sg.key;
-                            setF("slotGroup", next);
-                            setF("time", "");
-                          }}>
-                          <span className="evt-res-slot-chip-label">{sg.label}</span>
-                          <span className="evt-pre-modal-slot-time">{sg.start}–{sg.end}</span>
-                          {isPast && <span style={{ fontSize: 9, color: "#ef4444", display: "block" }}>Passed</span>}
-                        </button>
-                      );
-                    })}
+                {form.date && (
+                  <div className="admin-form-group evt-reveal">
+                    <label>Dining Slot <span className="evt-pre-opt">(optional)</span></label>
+                    <div className="evt-res-pref-grid">
+                      {SLOT_GROUPS.map(sg => {
+                        const slotEndH = parseInt(sg.end.split(":")[0]);
+                        const slotEndM = parseInt(sg.end.split(":")[1] || "0");
+                        const isPast = form.date === todayStr() && nowMinutes >= slotEndH * 60 + slotEndM;
+                        return (
+                          <button key={sg.key} type="button"
+                            className={`evt-res-pref-card${form.slotGroup === sg.key ? " active" : ""}${isPast ? " chip-disabled" : ""}`}
+                            {...(isPast ? { "data-bs-toggle": "tooltip", "data-bs-placement": "top", "data-bs-title": "This slot has passed today" } : {})}
+                            onClick={() => {
+                              if (isPast) return;
+                              const next = form.slotGroup === sg.key ? "" : sg.key;
+                              setF("slotGroup", next);
+                              setF("time", "");
+                            }}>
+                            <span className="evt-res-slot-chip-label">{sg.label}</span>
+                            <span className="evt-pre-modal-slot-time">{fmtTime(sg.start)}–{fmtTime(sg.end)}</span>
+                            {isPast && <span style={{ fontSize: 9, color: "#ef4444", display: "block" }}>Passed</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {form.slotGroup ? (
-                  <div className="admin-form-group">
+                {form.date && form.slotGroup ? (
+                  <div className="admin-form-group evt-reveal">
                     <label className={errors.time ? "mat-label-error" : ""}>Time <span className="evt-pre-req">*</span></label>
                     <CustomTimePicker value={form.time} onChange={v => { setF("time", v); setErrors(p => ({ ...p, time: false })); }}
                       slotStart={SLOT_GROUPS.find(s => s.key === form.slotGroup)?.start}
@@ -418,12 +420,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                       hasError={!!errors.time}
                       isToday={form.date === todayStr()} />
                   </div>
-                ) : (
-                  <div className="admin-form-group">
-                    <label>Time</label>
-                    <span className="evt-pre-opt" style={{ fontSize: 11, color: "#aaa", display: "block" }}>Select a dining slot first</span>
-                  </div>
-                )}
+                ) : null}
               </div>
 
               <div className="evt-res-form-section-label">Source & Notes</div>
@@ -483,7 +480,7 @@ const AddPreBookingModal = ({ onClose, onSaved, toast }) => {
                 <div className="prv-section-title">Booking Details</div>
                 <div className="prv-grid">
                   {[
-                    ["Date", form.date || "—"],
+                    ["Date", fmtDate(form.date)],
                     ["Time", fmtTime(form.time)],
                     ["Slot", slotLabel],
                     ["Guests", form.guests ?? "—"],
@@ -811,7 +808,7 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
           <div className="filter-groups">
             <MultiPillGroup
               label="Slot"
-              options={SLOT_GROUPS.map(sg => [sg.key, sg.short, "", `${sg.label} (${sg.start}–${sg.end})`])}
+              options={SLOT_GROUPS.map(sg => [sg.key, sg.short, "", `${sg.label} (${fmtTime(sg.start)}–${fmtTime(sg.end)})`])}
               value={filterSlots}
               onToggle={(key) => toggleSet(setFilterSlots, key)}
             />
@@ -914,7 +911,7 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
                     </td>
 
                     {/* Date */}
-                    <td style={{ fontWeight: 600 }}>{item.date || "—"}</td>
+                    <td style={{ fontWeight: 600 }}>{fmtDate(item.date)}</td>
 
                     {/* Slot */}
                     <td>

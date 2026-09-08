@@ -21,11 +21,11 @@ import { useState, useMemo } from "react";
 
 // Meal slots — kept in sync with the dish "Slot" field (Dishes.js).
 export const SLOT_OPTIONS = [
-  { value: "breakfast", label: "Breakfast" },
-  { value: "brunch", label: "Brunch" },
-  { value: "lunch", label: "Lunch" },
-  { value: "hi-tea", label: "Hi-Tea" },
-  { value: "dinner", label: "Dinner" },
+  { value: "breakfast", label: "Breakfast", start: "07:00", end: "10:00" },
+  { value: "brunch", label: "Brunch", start: "10:00", end: "12:00" },
+  { value: "lunch", label: "Lunch", start: "12:00", end: "15:00" },
+  { value: "hi-tea", label: "Hi-Tea", start: "15:00", end: "18:00" },
+  { value: "dinner", label: "Dinner", start: "19:00", end: "23:00" },
 ];
 
 export const WEEKS = ["week1", "week2", "week3", "week4"];
@@ -54,6 +54,14 @@ const emptySlotsMap = () =>
 export const EMPTY_SUBSCRIPTION = {
   customerName: "",
   customerPhone: "",
+  addrDoorNo: "",
+  addrStreet: "",
+  addrArea: "",
+  addrLandmark: "",
+  addrCity: "",
+  addrDistrict: "",
+  addrState: "",
+  addrPincode: "",
   planType: "weekly", // "weekly" (week1 repeats to 2-4) | "monthly" (each week set independently)
   startDate: "",
   status: "active",
@@ -126,9 +134,13 @@ export function useSubscriptionBuilder(adminData, initialSubscription) {
 
   // Only offer dishes tagged for the slot currently being edited — a dish
   // with no `slots` field (not yet migrated / no slot chosen) is left out,
-  // since it hasn't been marked available in any slot yet.
+  // since it hasn't been marked available in any slot yet. Also restrict
+  // to dishes explicitly marked eligible for subscriptions — everything
+  // downstream (category/subCategory cascade, the dish dropdown itself)
+  // derives from this list, so filtering here is enough to keep
+  // non-subscription dishes out of the whole picker.
   const dishesForActiveSlot = useMemo(
-    () => allDishes.filter(d => (d.slots || []).includes(activeSlot)),
+    () => allDishes.filter(d => d.isSubscriptionFood && (d.slots || []).includes(activeSlot)),
     [allDishes, activeSlot]
   );
 

@@ -7,7 +7,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 import api from "../../api";
-import { fmtTime, fmtDateTime } from "../../utils/dateUtils";
+import { fmtTime, fmtDateTime, fmtDate } from "../../utils/dateUtils";
 
 import { useToast } from "../../useToast";
 import Button3D from "../../components/Button3D";
@@ -108,7 +108,7 @@ const CelebrationDetails = ({ adminData, setAdminData }) => {
     { label: "Source", val: data.source || "—" },
     { label: "Event Type", val: typeInfo.label },
     { label: "No. of Guests", val: data.guests || "—" },
-    { label: "Date", val: data.date || "—" },
+    { label: "Date", val: fmtDate(data.date) },
     { label: "Time", val: fmtTime(data.time) },
     ...(data.type === "birthday" ? [
       { label: "Birthday Person", val: data.birthdayPersonName || "—" },
@@ -145,7 +145,7 @@ const CelebrationDetails = ({ adminData, setAdminData }) => {
             </div>
             <div className="evt-details-hero-meta">
               <span>{typeInfo.label}</span>
-              <span>{data.date || "—"}</span>
+              <span>{fmtDate(data.date)}</span>
               <span>{fmtTime(data.time)}</span>
               <span>{data.guests} guests</span>
               {data.source && <span>{data.source}</span>}

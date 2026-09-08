@@ -60,6 +60,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
     isVeg: true,
     isEventFood: false,
     isComboFood: false,
+    isSubscriptionFood: false,
     slots: [],
     benefits: {
       calories: "",
@@ -96,6 +97,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       isVeg: true,
       isEventFood: false,
       isComboFood: false,
+      isSubscriptionFood: false,
       slots: [],
       benefits: {
         calories: "",
@@ -325,6 +327,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
       isVeg: newDish.isVeg,
       isEventFood: newDish.isEventFood,
       isComboFood: newDish.isComboFood,
+      isSubscriptionFood: newDish.isSubscriptionFood,
       slots: newDish.slots || [],
 
       basePrice: Number(newDish.basePrice),
@@ -598,7 +601,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               className="search-input"
               placeholder=" Search dish name…"
               value={dishSearch}
-              onChange={e => setDishSearch(e.target.value)}
+              onChange={e => setDishSearch(allowTextInput(dishSearch, e.target.value, 100, 5))}
             />
             {dishSearch && (
               <button type="button" className="ae-clear-filter" onClick={() => setDishSearch("")}>Clear</button>
@@ -682,6 +685,7 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               </th>
               <th>Type</th>
               <th>Event Food</th>
+              <th>Subscription Food</th>
               <th>Slot</th>
               <th>Base Price</th>
               <th className="icon-width">Delete</th>
@@ -723,6 +727,12 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 </td>
 
                 <td>
+                  <span className={`veg-badge ${dish.isSubscriptionFood ? "veg" : "non-veg"}`}>
+                    {dish.isSubscriptionFood ? "Yes" : "No"}
+                  </span>
+                </td>
+
+                <td>
                   <span className="slot-cell">
                     {(dish.slots || []).length
                       ? dish.slots
@@ -744,12 +754,12 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
             ))}
 
             {filteredDishes.length === 0 && (
-              <EmptyRow colSpan={7} message="No dishes available" />
+              <EmptyRow colSpan={8} message="No dishes available" />
             )}
             <InfiniteScrollLoader
               sentinelRef={sentinelRef}
               hasMore={hasMore}
-              colSpan={7}
+              colSpan={8}
             />
           </tbody>
         </table>
@@ -908,6 +918,26 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                     </button>
                   </div>
                 </div>
+
+                <div className="admin-form-group">
+                  <label>Subscription Food</label>
+                  <div className="dish-switch-group">
+                    <button
+                      type="button"
+                      className={`dish-switch-btn${newDish.isSubscriptionFood ? " is-active" : ""}`}
+                      onClick={() => setNewDish({ ...newDish, isSubscriptionFood: true })}
+                    >
+                      <span className="dish-switch-dot veg" /> Yes
+                    </button>
+                    <button
+                      type="button"
+                      className={`dish-switch-btn${!newDish.isSubscriptionFood ? " is-active" : ""}`}
+                      onClick={() => setNewDish({ ...newDish, isSubscriptionFood: false })}
+                    >
+                      <span className="dish-switch-dot non-veg" /> No
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div className="admin-form-group">
@@ -924,6 +954,26 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                     type="button"
                     className={`dish-switch-btn${!newDish.isComboFood ? " is-active" : ""}`}
                     onClick={() => setNewDish({ ...newDish, isComboFood: false })}
+                  >
+                    <span className="dish-switch-dot non-veg" /> No
+                  </button>
+                </div>
+              </div>
+
+              <div className="admin-form-group">
+                <label>Subscription Food</label>
+                <div className="dish-switch-group">
+                  <button
+                    type="button"
+                    className={`dish-switch-btn${newDish.isSubscriptionFood ? " is-active" : ""}`}
+                    onClick={() => setNewDish({ ...newDish, isSubscriptionFood: true })}
+                  >
+                    <span className="dish-switch-dot veg" /> Yes
+                  </button>
+                  <button
+                    type="button"
+                    className={`dish-switch-btn${!newDish.isSubscriptionFood ? " is-active" : ""}`}
+                    onClick={() => setNewDish({ ...newDish, isSubscriptionFood: false })}
                   >
                     <span className="dish-switch-dot non-veg" /> No
                   </button>

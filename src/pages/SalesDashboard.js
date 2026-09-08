@@ -350,7 +350,6 @@ const SalesDashboard = ({ adminData, setAdminData, orders = [] }) => {
                 </button>
               </div>
             </div>
-            {!headerCollapsed && activeTab !== "workplan" && <Button3D onClick={handleExport}>Export</Button3D>}
           </div>
           <CollapseSection collapsed={headerCollapsed}>
             <div className="dashboard-filter-date">
@@ -362,6 +361,7 @@ const SalesDashboard = ({ adminData, setAdminData, orders = [] }) => {
               <div className="dashboard-custom-datepickers">
                 <CustomDatePicker label="From" value={fromDate} max={toDate} onChange={(s) => { setFromDate(s); if (s > toDate) setToDate(s); setDatePreset("custom"); }} />
                 <CustomDatePicker label="To" value={toDate} min={fromDate} max={today} onChange={(s) => { setToDate(s); setDatePreset("custom"); }} />
+                {!headerCollapsed && activeTab !== "workplan" && <Button3D onClick={handleExport}>Export</Button3D>}
               </div>
             </div>
           </CollapseSection>
@@ -450,7 +450,7 @@ const SalesDashboard = ({ adminData, setAdminData, orders = [] }) => {
                   ) : (
                     <ResponsiveContainer
                       width="100%"
-                      height={Math.max(stockData.length * 20, 100)}
+                      height={Math.max(stockData.length * 22, 100)}
                     >
                       <BarChart
                         data={stockData}

@@ -5,8 +5,8 @@
  */
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
 import { createPortal } from "react-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 import { QRCodeCanvas } from "qrcode.react";
 
@@ -31,6 +31,7 @@ import CollapseSection from "../components/CollapseSection";
 import { printBill as sendBillToPrinter, printKot as sendKotToPrinter } from "../printUtils";
 
 import "./Orders.css";
+import "./ModalCSS.css";
 import "../Common.css";
 import PageLoader from "../components/PageLoader";
 
@@ -117,6 +118,58 @@ const getCreatedTime = (order) => {
 const normalizeStatus = (status = "") =>
   status.toLowerCase().trim();
 
+// Payment status is stored as "pending" | "completed" on the order itself
+// (see server.js POST /orders + payments.js markOrderPaid). Anything else
+// unrecognized falls back to "pending" rather than rendering blank.
+const normalizePaymentStatus = (order) => {
+  const s = (order?.paymentStatus || "pending").toLowerCase().trim();
+  return s === "completed" ? "completed" : "pending";
+};
+
+// The four possible outcomes of a scanned Cashfree QR payment, keyed by
+// the Payment doc's `status` field (see payments.js's mapCashfreeStatus)
+// — mirrors the Cashfree UPI simulator's SUCCESS/PENDING/USER_DROPPED/
+// FAILED buttons exactly. Used by the Payment Status modal. EXPIRED and
+// CANCELLED (edge cases outside the simulator's own 4 buttons) fall back
+// to the FAILED tone/copy so every possible status still renders sensibly.
+const PAYMENT_OUTCOME_INFO = {
+  PAID: {
+    title: "Payment Completed",
+    message: "The customer's payment has been received and confirmed.",
+    tone: "success"
+  },
+  PENDING: {
+    title: "Payment Pending",
+    message: "Waiting for the customer to complete the payment. This will update automatically once it's confirmed.",
+    tone: "pending"
+  },
+  USER_DROPPED: {
+    title: "User Dropped",
+    message: "The customer backed out of the UPI app before completing the payment.",
+    tone: "failed"
+  },
+  FAILED: {
+    title: "Payment Failed",
+    message: "The payment attempt did not go through (declined by the bank or gateway). You can try again.",
+    tone: "failed"
+  },
+  EXPIRED: {
+    title: "Payment Failed",
+    message: "The QR session timed out before the customer completed payment. Generate a new QR to try again.",
+    tone: "failed"
+  },
+  CANCELLED: {
+    title: "Payment Failed",
+    message: "The payment was cancelled before it could be completed.",
+    tone: "failed"
+  },
+  NONE: {
+    title: "No Payment Attempted",
+    message: "No payment has been started for this order yet.",
+    tone: "pending"
+  }
+};
+
 const STATUS_ORDER = {
   placed: 1,
   preparing: 2,
@@ -193,13 +246,14 @@ function loadCashfreeSdk() {
  * "if_required" redirect mode, but polling the order status independently
  * keeps this consistent with how printed-receipt QR status is tracked.
  */
-const CashfreeQRSection = React.memo(({ orderId, billNo, amount }) => {
+const CashfreeQRSection = React.memo(({ orderId, billNo, amount, onPaid }) => {
   const [payment, setPayment] = useState(null); // { id, paymentSessionId, status }
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [retryToken, setRetryToken] = useState(0); // bumped to force a fresh order when a session expires
   const mountRef = useRef(null);
   const qrComponentRef = useRef(null);
+  const hasFiredOnPaidRef = useRef(false); // onPaid must fire exactly once per order, not on every re-render while status stays PAID
   const lastOrderedRef = useRef(null); // { orderId, billNo, amountPaise } for the last order actually created
   const hasRetriedRef = useRef(false); // ensures payment_session_id_invalid triggers at most one retry, not a loop
 
@@ -276,15 +330,15 @@ const CashfreeQRSection = React.memo(({ orderId, billNo, amount }) => {
         upiQr.on("ready", () => {
           if (cancelled) return;
           // Kick off the actual UPI QR payment flow tied to this order's
-          // session. redirectTarget: "_self" only matters if Cashfree ever
-          // needs a fallback redirect (e.g. an edge-case bank flow) — the
-          // QR itself renders and is scannable without any redirect.
+          // session. No returnUrl/redirectTarget: the customer's phone has
+          // no admin session and nothing useful to show after paying — the
+          // outcome is surfaced entirely via the staff-side PaymentStatusModal
+          // on this page (polling GET /payments/orders/:id below), so the
+          // phone is simply left on Cashfree's own default result screen.
           cashfree
             .pay({
               paymentMethod: upiQr,
               paymentSessionId: payment.paymentSessionId,
-              returnUrl: `${window.location.origin}/orders`,
-              redirectTarget: "_self",
             })
             .then((result) => {
               if (cancelled) return;
@@ -306,7 +360,31 @@ const CashfreeQRSection = React.memo(({ orderId, billNo, amount }) => {
                   setError("");
                   setRetryToken((n) => n + 1);
                 } else {
-                  setError(result.error.message || "Payment could not be started");
+                  // Cashfree's ORDER-level status (what GET /orders/:id polls
+                  // via Cashfree's own order-status API) can legitimately
+                  // stay ACTIVE/PENDING even after THIS payment attempt
+                  // failed or was dropped — the order is still open for a
+                  // retry from Cashfree's point of view. So instead of
+                  // waiting on that poll (which would just keep reporting
+                  // PENDING and silently revert any client-side-only status
+                  // change back), persist the failure directly via
+                  // PATCH .../client-status, with the SDK's own message as
+                  // the decline reason — this is the one place that reason
+                  // reaches the database at all, which is also what the
+                  // Payment Status modal / inline outcome card below read
+                  // back to show staff (and the customer's own
+                  // /payment-complete page via public-status) exactly why
+                  // it failed, not just that it did.
+                  const reasonMessage = result.error.message || "The payment could not be completed.";
+                  const reasonCode = result.error.code || "";
+                  setPayment((p) => (p ? { ...p, status: "FAILED", lastErrorMessage: reasonMessage, lastErrorCode: reasonCode } : p));
+                  api.patch(`/payments/orders/${payment.id}/client-status`, {
+                    status: "FAILED",
+                    message: reasonMessage,
+                    code: reasonCode,
+                  }).catch((patchErr) => {
+                    console.error("Failed to persist payment failure reason", patchErr);
+                  });
                 }
               }
               if (result?.paymentDetails) {
@@ -334,9 +412,20 @@ const CashfreeQRSection = React.memo(({ orderId, billNo, amount }) => {
   // Step 3: poll our own backend for the order's status (backed by
   // Cashfree's order-status API + webhook), independent of the SDK's own
   // promise resolution, so a missed "ready"/redirect edge case still
-  // surfaces "Paid" within a few seconds.
+  // surfaces "Paid" within a few seconds. A failed/dropped attempt is
+  // instead reported directly by Step 2's pay() error handler via
+  // PATCH .../client-status — see the comment there for why this poll
+  // alone can't be relied on for that.
   useEffect(() => {
-    if (!payment?.id || payment.status === "PAID") return undefined;
+    // Stop polling once we've reached ANY terminal state — not just PAID.
+    // Once client-status (Step 2's pay() error handler) or the webhook has
+    // recorded FAILED/USER_DROPPED/EXPIRED/CANCELLED, there's nothing left
+    // to learn by continuing to poll, and (per the backend's guard) a poll
+    // against a non-PENDING record just returns the same terminal value
+    // back anyway — so this is purely to stop making pointless requests
+    // once the outcome is already final.
+    const isTerminalStatus = payment?.status && payment.status !== "PENDING";
+    if (!payment?.id || isTerminalStatus) return undefined;
     let cancelled = false;
 
     const poll = async () => {
@@ -352,11 +441,52 @@ const CashfreeQRSection = React.memo(({ orderId, billNo, amount }) => {
     return () => { cancelled = true; clearInterval(interval); };
   }, [payment?.id, payment?.status]);
 
-  if (payment?.status === "PAID") {
+  // Notify the parent page exactly once when this order's payment resolves
+  // to PAID — the Orders page uses this to auto-open the Payment Status
+  // modal on the admin's own screen (the customer's phone gets redirected
+  // to Cashfree's own generic return_url instead; the two devices don't
+  // share this signal any other way).
+  useEffect(() => {
+    if (payment?.status === "PAID" && !hasFiredOnPaidRef.current) {
+      hasFiredOnPaidRef.current = true;
+      onPaid && onPaid();
+    }
+  }, [payment?.status, onPaid]);
+
+  const outcomeInfo = PAYMENT_OUTCOME_INFO[payment?.status];
+
+  // Once a payment attempt reaches a TERMINAL state (paid, or one of the
+  // three failure outcomes the Cashfree simulator can send back), the QR
+  // itself is done — either it succeeded, or the same QR can't be reused
+  // (Cashfree order sessions are single-use), so it's replaced with an
+  // outcome card. PENDING is the one non-terminal state: the payment
+  // could still complete any moment, so the live QR keeps showing.
+  const isTerminal = payment?.status && payment.status !== "PENDING";
+
+  if (isTerminal && outcomeInfo) {
+    const canRetry = payment.status !== "PAID";
     return (
-      <div className="bill-qr-section bill-qr-paid">
-        <div className="bill-qr-title">Payment Received ✅</div>
-        <div className="bill-qr-amount">₹{Number(amount).toFixed(2)}</div>
+      <div className={`bill-qr-section bill-qr-outcome bill-qr-${outcomeInfo.tone}`}>
+        <div className="bill-qr-outcome-title">{outcomeInfo.title}</div>
+        <p className="bill-qr-outcome-message">{payment.lastErrorMessage || outcomeInfo.message}</p>
+        {payment.status === "PAID" ? (
+          <div className="bill-qr-amount">₹{Math.round(Number(amount))}</div>
+        ) : (
+          canRetry && (
+            <button
+              type="button"
+              className="bill-qr-retry-btn"
+              onClick={() => {
+                setPayment(null);
+                setError("");
+                hasRetriedRef.current = false;
+                setRetryToken((n) => n + 1);
+              }}
+            >
+              Generate New QR
+            </button>
+          )
+        )}
       </div>
     );
   }
@@ -390,6 +520,147 @@ const CashfreeQRSection = React.memo(({ orderId, billNo, amount }) => {
   );
 });
 
+/**
+ * PaymentStatusModal — shows the latest Cashfree payment attempt's outcome
+ * for an order, with full transaction details, in a shared modal-overlay/
+ * admin-modal. Covers all 4 possible outcomes the Cashfree UPI simulator
+ * can send back — SUCCESS, PENDING, USER_DROPPED, FAILED (mapped by
+ * payments.js's mapCashfreeStatus into PAID/PENDING/USER_DROPPED/FAILED,
+ * with EXPIRED/CANCELLED as rarer edge cases folded into the FAILED tone).
+ */
+const PaymentStatusModal = ({ order, onClose }) => {
+  const [payment, setPayment] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState("");
+
+  useEffect(() => {
+    if (!order) return;
+    let cancelled = false;
+    setLoading(true);
+    setFetchError("");
+
+    (async () => {
+      try {
+        const res = await api.get(`/payments/orders`, { params: { orderId: order.id } });
+        if (!cancelled) {
+          const docs = Array.isArray(res.data) ? res.data : [];
+          // Prefer an actually-PAID document over merely "most recent" —
+          // a stray/duplicate Cashfree order can end up created after the
+          // real successful one (e.g. a receipt reprinted before the
+          // buildPrinterOrder fix that stopped doing this), leaving a
+          // never-resolved PENDING record with a LATER createdAt than the
+          // payment that actually went through. Showing "most recent"
+          // unconditionally would then report an already-paid order as
+          // still pending. The order's own paymentStatus (set once via
+          // markOrderPaid, see payments.js) is the true source of truth —
+          // find the PAID doc to show its details if the order is marked
+          // completed; otherwise fall back to the most recent attempt.
+          const paidDoc = docs.find(d => d.status === "PAID");
+          const mostRecent = docs[0] || null;
+          setPayment(
+            normalizePaymentStatus(order) === "completed"
+              ? (paidDoc || mostRecent)
+              : mostRecent
+          );
+        }
+      } catch (err) {
+        console.error("Failed to fetch payment status", err);
+        if (!cancelled) setFetchError("Could not load payment status.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [order]);
+
+  if (!order) return null;
+
+  // Same authoritative-order-status override for the outcome card itself:
+  // if the order is genuinely marked completed, never show anything other
+  // than the success card, even if the payment doc we ended up with
+  // (paidDoc might not exist if the PAID webhook update never touched the
+  // Payment collection, only order.paymentStatus) says otherwise.
+  const info = normalizePaymentStatus(order) === "completed"
+    ? PAYMENT_OUTCOME_INFO.PAID
+    : (PAYMENT_OUTCOME_INFO[payment?.status] || PAYMENT_OUTCOME_INFO.NONE);
+
+  const formatDateTime = (iso) => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    return isNaN(d.getTime()) ? "—" : d.toLocaleString("en-IN");
+  };
+
+  return (
+    <div className="modal-overlay modal-anim-in" >
+      <div className="admin-modal modal-anim-in payment-status-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="admin-modal-header">
+          <h3>Payment Status — Order {order.id}</h3>
+          <Button3D variant="cancel" iconOnly onClick={onClose}>
+            <img src={closeIcon} alt="Close" />
+          </Button3D>
+        </div>
+
+        <div className="admin-modal-body">
+          {loading ? (
+            <div className="payment-status-loading">Checking payment status…</div>
+          ) : fetchError ? (
+            <div className="payment-status-outcome payment-status-failed">
+              <div className="payment-status-outcome-title">{fetchError}</div>
+            </div>
+          ) : (
+            <>
+              <div className={`payment-status-outcome payment-status-${info.tone}`}>
+                <div className="payment-status-outcome-title">{info.title}</div>
+                <p className="payment-status-outcome-message">
+                  {info.tone === "success" ? info.message : (payment?.lastErrorMessage || info.message)}
+                </p>
+              </div>
+
+              {payment && (
+                <div className="payment-status-details">
+                  <div className="payment-status-detail-row">
+                    <span>Amount</span>
+                    <span>₹{Math.round(Number(payment.amount))}</span>
+                  </div>
+                  <div className="payment-status-detail-row">
+                    <span>Transaction ID</span>
+                    <span className="payment-status-detail-mono">{payment.id}</span>
+                  </div>
+                  {payment.cfPaymentId && (
+                    <div className="payment-status-detail-row">
+                      <span>Cashfree Payment ID</span>
+                      <span className="payment-status-detail-mono">{payment.cfPaymentId}</span>
+                    </div>
+                  )}
+                  {payment.billNo != null && (
+                    <div className="payment-status-detail-row">
+                      <span>Bill No.</span>
+                      <span>{payment.billNo}</span>
+                    </div>
+                  )}
+                  <div className="payment-status-detail-row">
+                    <span>Initiated</span>
+                    <span>{formatDateTime(payment.createdAt)}</span>
+                  </div>
+                  <div className="payment-status-detail-row">
+                    <span>Last Updated</span>
+                    <span>{formatDateTime(payment.updatedAt)}</span>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="admin-modal-footer">
+          <Button3D variant="cancel" onClick={onClose}>Close</Button3D>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const BillLayout = React.memo(({
   order,
   editable,
@@ -401,10 +672,15 @@ const BillLayout = React.memo(({
   splitBills,
   setSplitBills,
   applySplitAmount,
-  applySplitBill
+  applySplitBill,
+  onPaid
 }) => {
   const totals = useMemo(() => {
-    const subTotal = order.items.reduce(
+    // Cancelled items are excluded from the bill entirely (not just relying
+    // on totalPrice already being 0) — this is what the QR/preview amount
+    // and the printed receipt total are ultimately derived from.
+    const activeItems = order.items.filter(i => normalizeStatus(i.status) !== "cancelled");
+    const subTotal = activeItems.reduce(
       (sum, i) => sum + Number(i.totalPrice || 0),
       0
     );
@@ -419,7 +695,7 @@ const BillLayout = React.memo(({
       discountAmount,
       cgst,
       sgst,
-      total: +(taxableAmount + cgst + sgst).toFixed(2)
+      total: Math.round(taxableAmount + cgst + sgst)
     };
   }, [order.items, order.discount]);
 
@@ -431,17 +707,21 @@ const BillLayout = React.memo(({
 
     const groups = Array.from({ length: billCount }, (_, i) => {
       const billNo = i + 1;
-      const items = order.items.filter(it => Number(it.billAssignment) === billNo);
+      const items = order.items.filter(
+        it => Number(it.billAssignment) === billNo && normalizeStatus(it.status) !== "cancelled"
+      );
       const subTotal = +items.reduce((sum, it) => sum + Number(it.totalPrice || 0), 0).toFixed(2);
       const discountAmount = +(subTotal * (discountPercent / 100)).toFixed(2);
       const taxable = +(subTotal - discountAmount).toFixed(2);
       const cgst = +(taxable * 0.025).toFixed(2);
       const sgst = +(taxable * 0.025).toFixed(2);
-      const total = +(taxable + cgst + sgst).toFixed(2);
+      const total = Math.round(taxable + cgst + sgst);
       return { billNo, itemCount: items.length, subTotal, total };
     });
 
-    const unassignedCount = order.items.filter(it => !it.billAssignment).length;
+    const unassignedCount = order.items.filter(
+      it => !it.billAssignment && normalizeStatus(it.status) !== "cancelled"
+    ).length;
     return { groups, unassignedCount };
   }, [order.splitType, order.splitBillCount, order.items, order.discount]);
 
@@ -611,7 +891,20 @@ const BillLayout = React.memo(({
         </div>
       )}
 
-      <CashfreeQRSection orderId={order.id} billNo={finalBillNo} amount={finalAmount} />
+      {/* QR only shows on the Preview modal and printed receipt — not the
+          Edit modal, since the bill amount can still change there — and
+          never once the order's payment is already marked completed,
+          since there's nothing left to collect. */}
+      {!editable && (
+        normalizePaymentStatus(order) === "completed" ? (
+          <div className="bill-qr-section bill-qr-outcome bill-qr-success">
+            <div className="bill-qr-outcome-title">Payment Received ✅</div>
+            <div className="bill-qr-amount">₹{Math.round(Number(finalAmount))}</div>
+          </div>
+        ) : (
+          <CashfreeQRSection orderId={order.id} billNo={finalBillNo} amount={finalAmount} onPaid={onPaid} />
+        )
+      )}
     </div>
   );
 });
@@ -657,6 +950,47 @@ const ItemTimer = React.memo(({ item, order }) => {
   );
 });
 
+/**
+ * OrderActionsMenu — the Orders table row's "⋮" actions menu, rebuilt to
+ * match the same custom-dropdown look used elsewhere in the admin panel
+ * (Dishes page's "Select Ingredient" popup / CustomDropdown component):
+ * a centered dimmed-backdrop overlay with a rounded popup card, portal-
+ * rendered to document.body so it always sits above the table regardless
+ * of scroll position. Unlike CustomDropdown (single-value picker), this
+ * renders arbitrary actions — including disabled and danger-styled ones —
+ * so it's a dedicated small component rather than reusing CustomDropdown
+ * directly.
+ */
+const OrderActionsMenu = ({ title, items, onClose }) => {
+  return createPortal(
+    <div className="cdd-overlay">
+      <div className="cdd-popup" onMouseDown={(e) => e.stopPropagation()}>
+        {title && <div className="cdd-popup-title">{title}</div>}
+        <div className="cdd-options">
+          {items.map((item, i) => (
+            <div
+              key={i}
+              className={[
+                "cdd-option",
+                item.danger ? "cdd-option-danger" : "",
+                item.disabled ? "cdd-option-disabled" : "",
+              ].filter(Boolean).join(" ")}
+              onClick={() => {
+                if (item.disabled) return;
+                onClose();
+                item.onClick();
+              }}
+            >
+              {item.label}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
 const OrderRow = React.memo(({
   order,
   isActive,
@@ -667,8 +1001,12 @@ const OrderRow = React.memo(({
   navigate,
   orderStatus,
   setAdminData,
-  toast
+  toast,
+  isMenuOpen,
+  onMenuAction
 }) => {
+  const isPaymentCompleted = normalizePaymentStatus(order) === "completed";
+  const isOrderCancelled = normalizeStatus(order.status) === "cancelled";
   return (
     <React.Fragment>
       <tr
@@ -688,7 +1026,7 @@ const OrderRow = React.memo(({
         <td>{order.mode ? order.mode.toUpperCase() : "TAKE AWAY"}</td>
         <td>{order.tableNo != null ? order.tableNo : "---"}</td>
         <td>{order.items.length}</td>
-        <td>₹{order.resolvedTotal}</td>
+        <td>₹{Math.round(order.resolvedTotal)}</td>
         <td onClick={(e) => e.stopPropagation()}>
           {orderStatus !== "completed" && orderStatus !== "cancelled" ? (
             <input
@@ -737,27 +1075,72 @@ const OrderRow = React.memo(({
             {orderStatus}
           </div>
         </td>
+        <td>
+          <div className={`status status-${normalizePaymentStatus(order)}`}>
+            {normalizePaymentStatus(order) === "completed" ? "Completed" : "Pending"}
+          </div>
+        </td>
         <td className="icon-width">
           <div className="bill-actions">
             <button
               className="options-btn"
               onClick={(e) => {
                 e.stopPropagation();
-                const rect = e.currentTarget.getBoundingClientRect();
-                onOptionsClick(order.id, {
-                  top: rect.bottom + 6,
-                  left: rect.right - 90
-                });
+                onOptionsClick(order.id);
               }}
             >
               ⋮
             </button>
+            {isMenuOpen && (
+              <OrderActionsMenu
+                title={`Order ${order.id}`}
+                onClose={() => onOptionsClick(order.id)}
+                items={[
+                  {
+                    label: "Edit",
+                    disabled: isOrderCancelled || isPaymentCompleted,
+                    onClick: () => onMenuAction("edit", order),
+                  },
+                  {
+                    label: "Preview",
+                    disabled: isOrderCancelled,
+                    onClick: () => onMenuAction("preview", order),
+                  },
+                  {
+                    label: "Print",
+                    disabled: isOrderCancelled,
+                    onClick: () => onMenuAction("print", order),
+                  },
+                  {
+                    label: "Print KOT",
+                    disabled: isOrderCancelled,
+                    onClick: () => onMenuAction("printKot", order),
+                  },
+                  {
+                    label: "Payment Status",
+                    disabled: isOrderCancelled,
+                    onClick: () => onMenuAction("paymentStatus", order),
+                  },
+                  {
+                    label: "Add Discount",
+                    disabled: isOrderCancelled || isPaymentCompleted,
+                    onClick: () => onMenuAction("discount", order),
+                  },
+                  {
+                    label: "Cancel Order",
+                    danger: true,
+                    disabled: isOrderCancelled || isPaymentCompleted,
+                    onClick: () => onMenuAction("cancel", order),
+                  },
+                ]}
+              />
+            )}
           </div>
         </td>
       </tr>
 
       <tr className={`order-sub-row ${isActive ? "open" : ""}`}>
-        <td colSpan={11}>
+        <td colSpan={12}>
           <div className="order-sub-content">
             {normalizeStatus(order.status) === "cancelled" && order.cancelReason && (
               <div
@@ -793,7 +1176,8 @@ const OrderRow = React.memo(({
                     itemStatus !== "cancelled" &&
                     itemStatus !== "completed" &&
                     itemStatus !== "service pickup" &&
-                    normalizeStatus(order.status) !== "cancelled";
+                    normalizeStatus(order.status) !== "cancelled" &&
+                    normalizePaymentStatus(order) !== "completed";
 
                   return (
                     <tr key={idx} className={itemStatus === "cancelled" ? "order-item-cancelled" : ""}>
@@ -994,7 +1378,6 @@ const Orders = ({ adminData, setAdminData }) => {
   const [editBillOrder, setEditBillOrder] = useState(null);
   const [previewBillOrder, setPreviewBillOrder] = useState(null);
   const [editableBill, setEditableBill] = useState(null);
-  const [menuPos, setMenuPos] = useState(null);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [cancelOrderConfirm, setCancelOrderConfirm] = useState(null);
   const [cancelItemConfirm, setCancelItemConfirm] = useState(null);
@@ -1005,6 +1388,7 @@ const Orders = ({ adminData, setAdminData }) => {
   const [discountModalOrder, setDiscountModalOrder] = useState(null);
   const [discountPercent, setDiscountPercent] = useState("");
   const [discountReason, setDiscountReason] = useState("");
+  const [paymentStatusOrder, setPaymentStatusOrder] = useState(null);
 
   const CANCEL_REASONS = [
     "Customer changed their mind",
@@ -1357,7 +1741,7 @@ const Orders = ({ adminData, setAdminData }) => {
     const taxable = +(subTotal - discountAmount).toFixed(2);
     const cgst = +(taxable * 0.025).toFixed(2);
     const sgst = +(taxable * 0.025).toFixed(2);
-    const total = +(taxable + cgst + sgst).toFixed(2);
+    const total = Math.round(taxable + cgst + sgst);
     return { subTotal: +subTotal.toFixed(2), discountPercent: discountPercent || 0, discountAmount, cgst, sgst, total };
   };
 
@@ -1369,11 +1753,23 @@ const Orders = ({ adminData, setAdminData }) => {
       const subTotal = Number(order.resolvedTotal || 0);
       const cgst = +(subTotal * 0.025).toFixed(2);
       const sgst = +(subTotal * 0.025).toFixed(2);
-      const total = +(subTotal + cgst + sgst).toFixed(2);
+      const total = Math.round(subTotal + cgst + sgst);
       return { subTotal, cgst, sgst, total };
     })();
 
     const sourceItems = overrides.items || order.items;
+
+    // Once the order's payment is already completed, there's nothing left
+    // to collect — printing/re-printing a receipt must NOT create yet
+    // another Cashfree order every time (buildUpiUrl below does exactly
+    // that unconditionally). Each of those stray orders leaves behind its
+    // own Payment document stuck at PENDING forever (nobody ever scans a
+    // QR nobody asked for), and since GET /payments/orders returns the
+    // newest one first, that dangling PENDING record — not the real PAID
+    // one — is what the Payment Status modal then shows, even though the
+    // order is genuinely fully paid. Skip QR creation entirely here.
+    const upiUrl = overrides.upiUrl
+      || (normalizePaymentStatus(order) === "completed" ? null : await buildUpiUrl(totalWithGST.total, order.id, overrides.billNo ?? null));
 
     return {
       id: order.id,
@@ -1390,7 +1786,7 @@ const Orders = ({ adminData, setAdminData }) => {
         spiciness: item.spiciness
       })),
       totalWithGST,
-      upiUrl: overrides.upiUrl || await buildUpiUrl(totalWithGST.total, order.id, overrides.billNo ?? null),
+      upiUrl,
       ...(overrides.splitLabel ? { splitLabel: overrides.splitLabel } : {}),
       ...(overrides.perHeadNote ? { perHeadNote: overrides.perHeadNote } : {})
     };
@@ -1617,21 +2013,54 @@ const Orders = ({ adminData, setAdminData }) => {
 
   const closeOptionsMenu = useCallback(() => {
     setOpenMenuOrderId(null);
-    setMenuPos(null);
   }, []);
 
-  useEffect(() => {
-    if (!openMenuOrderId) return;
+  // No outside-click listener needed here: OrderActionsMenu's own
+  // .cdd-overlay backdrop (mirroring CustomDropdown) already closes the
+  // menu on any click outside the popup card, same pattern as the
+  // Dishes-page "Select Ingredient" dropdown.
 
-    const handleOutsideClick = (e) => {
-      if (e.target.closest(".options-menu.portal")) return;
-      if (e.target.closest(".options-btn")) return;
-      closeOptionsMenu();
-    };
+  // Single dispatcher for every row-level dropdown action — keeps the
+  // custom (non-portal) dropdown's per-item onClick handlers thin.
+  const handleMenuAction = useCallback((action, order) => {
+    closeOptionsMenu();
 
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, [openMenuOrderId, closeOptionsMenu]);
+    switch (action) {
+      case "edit": {
+        closeAllBillOverlays();
+        const cloned = JSON.parse(JSON.stringify(order));
+        setEditableBill(cloned);
+        setOriginalBill(cloned);
+        setEditBillOrder(true);
+        break;
+      }
+      case "preview":
+        closeAllBillOverlays();
+        setPreviewBillOrder(order);
+        break;
+      case "print":
+        printBill(order);
+        break;
+      case "printKot":
+        printKot(order);
+        break;
+      case "paymentStatus":
+        setPaymentStatusOrder(order);
+        break;
+      case "discount":
+        setDiscountModalOrder(order);
+        setDiscountPercent(order?.discount?.percent != null ? String(order.discount.percent) : "");
+        setDiscountReason(order?.discount?.reason || "");
+        break;
+      case "cancel":
+        setCancelOrderConfirm(order);
+        setCancelReason("");
+        setCancelReasonOption("");
+        break;
+      default:
+        break;
+    }
+  }, [closeOptionsMenu, closeAllBillOverlays]);
 
   // No loading check here: App.js already gates the entire route tree
   // behind its own top-level loading screen (isAppLoading) and only
@@ -1644,6 +2073,16 @@ const Orders = ({ adminData, setAdminData }) => {
 
   const recalcOrderTotals = (order) => {
     const items = order.items.map(item => {
+      // Cancelled items must never contribute to the bill — their price
+      // was zeroed out at cancellation time (see cancelOrderItem), and
+      // recomputing totalPrice here from quantity×price would silently
+      // undo that zeroing (qty/price are still stored on the item even
+      // after it's cancelled) and add the dish's cost right back into
+      // the total.
+      if (normalizeStatus(item.status) === "cancelled") {
+        return { ...item, totalPrice: 0 };
+      }
+
       const qty = Number(item.quantity || 0);
       const price = Number(
         item.price ??
@@ -1662,10 +2101,13 @@ const Orders = ({ adminData, setAdminData }) => {
       };
     });
 
-    const subTotal = +items.reduce(
-      (sum, i) => sum + i.totalPrice,
-      0
-    ).toFixed(2);
+    // Cancelled items are excluded here too (not just relying on their
+    // totalPrice being 0 above) so the bill total is unambiguously
+    // computed only from active items.
+    const subTotal = +items
+      .filter(i => normalizeStatus(i.status) !== "cancelled")
+      .reduce((sum, i) => sum + i.totalPrice, 0)
+      .toFixed(2);
 
     const discountPct = Math.max(0, Math.min(100, Number(order.discount?.percent) || 0));
     const discountAmount = +(subTotal * (discountPct / 100)).toFixed(2);
@@ -1673,7 +2115,7 @@ const Orders = ({ adminData, setAdminData }) => {
 
     const cgst = +(taxableAmount * 0.025).toFixed(2);
     const sgst = +(taxableAmount * 0.025).toFixed(2);
-    const total = +(taxableAmount + cgst + sgst).toFixed(2);
+    const total = Math.round(taxableAmount + cgst + sgst);
 
     return {
       ...order,
@@ -1772,7 +2214,7 @@ const Orders = ({ adminData, setAdminData }) => {
                     className="search-input"
                     placeholder=" Search by order ID, customer, dish…"
                     value={orderSearch}
-                    onChange={e => setOrderSearch(e.target.value)}
+                    onChange={e => setOrderSearch(allowTextInput(orderSearch, e.target.value, 100, 5))}
                   />
                   {orderSearch && (
                     <button className="orders-search-clear" onClick={() => setOrderSearch("")}>✕</button>
@@ -1876,6 +2318,7 @@ const Orders = ({ adminData, setAdminData }) => {
             <col />
             <col />
             <col style={{ width: "120px" }} />
+            <col style={{ width: "120px" }} />
             <col style={{ width: "60px" }} />
           </colgroup>
           <thead>
@@ -1928,30 +2371,32 @@ const Orders = ({ adminData, setAdminData }) => {
                   </span>
                 </span>
               </th>
+              <th>Payment Status</th>
               <th className="icon-width">Bill</th>
             </tr>
           </thead>
 
           <tbody>
             {sortedOrders.length === 0 ? (
-              <EmptyRow colSpan={11} message="No orders for selected date range" />
+              <EmptyRow colSpan={12} message="No orders for selected date range" />
             ) : (
               sortedOrders.slice(0, displayLimit).map(order => {
                 const orderStatus = deriveOrderStatusFromItems(order.items, order.status);
                 return (
                   <OrderRow
                     key={order.id}
-                    colSpan={11}
+                    colSpan={12}
                     order={order}
                     orderStatus={orderStatus}
                     isActive={activeOrderIds.includes(order.id)}
                     onToggle={toggleOrder}
                     onPickup={setPickupConfirm}
                     onCancelItem={setCancelItemConfirm}
-                    onOptionsClick={(id, pos) => {
-                      setMenuPos(pos);
+                    onOptionsClick={(id) => {
                       setOpenMenuOrderId(prev => prev === id ? null : id);
                     }}
+                    isMenuOpen={openMenuOrderId === order.id}
+                    onMenuAction={handleMenuAction}
                     navigate={navigate}
                     setAdminData={setAdminData}
                     toast={toast}
@@ -1961,7 +2406,7 @@ const Orders = ({ adminData, setAdminData }) => {
             <InfiniteScrollLoader
               sentinelRef={sentinelRef}
               hasMore={hasMore}
-              colSpan={11}
+              colSpan={12}
             />
           </tbody>
         </table>
@@ -2281,104 +2726,12 @@ const Orders = ({ adminData, setAdminData }) => {
         </div>
       )}
 
-      {openMenuOrderId && menuPos &&
-        createPortal(
-          <div
-            className="options-menu portal"
-            style={{
-              top: menuPos.top,
-              left: menuPos.left
-            }}
-          >
-            <div
-              onClick={(e) => {
-                e.stopPropagation();
-                closeOptionsMenu();
-                closeAllBillOverlays();
-
-                const selectedOrder = orders.find(o => o.id === openMenuOrderId);
-
-                const cloned = JSON.parse(JSON.stringify(selectedOrder));
-
-                setEditableBill(cloned);
-                setOriginalBill(cloned);
-                setEditBillOrder(true);
-              }}
-            >
-              Edit
-            </div>
-
-            <div
-              onClick={(e) => {
-                closeOptionsMenu();
-                closeAllBillOverlays();
-                e.stopPropagation();
-                setPreviewBillOrder(
-                  orders.find(o => o.id === openMenuOrderId)
-                );
-              }}
-            >
-              Preview
-            </div>
-
-            <div
-              onClick={(e) => {
-                closeOptionsMenu();
-                e.stopPropagation();
-                printBill(orders.find(o => o.id === openMenuOrderId));
-              }}
-            >
-              Print
-            </div>
-
-            <div
-              onClick={(e) => {
-                closeOptionsMenu();
-                e.stopPropagation();
-                printKot(orders.find(o => o.id === openMenuOrderId));
-              }}
-            >
-              Print KOT
-            </div>
-
-            {normalizeStatus(
-              orders.find(o => o.id === openMenuOrderId)?.status
-            ) !== "cancelled" && (
-                <div
-                  onClick={(e) => {
-                    closeOptionsMenu();
-                    e.stopPropagation();
-                    const order = orders.find(o => o.id === openMenuOrderId);
-                    setDiscountModalOrder(order);
-                    setDiscountPercent(order?.discount?.percent != null ? String(order.discount.percent) : "");
-                    setDiscountReason(order?.discount?.reason || "");
-                  }}
-                >
-                  Add Discount
-                </div>
-              )}
-
-            {normalizeStatus(
-              orders.find(o => o.id === openMenuOrderId)?.status
-            ) !== "cancelled" && (
-                <div
-                  className="danger-option"
-                  style={{ color: "#c0392b", fontWeight: 600 }}
-                  onClick={(e) => {
-                    closeOptionsMenu();
-                    e.stopPropagation();
-                    setCancelOrderConfirm(orders.find(o => o.id === openMenuOrderId));
-                    setCancelReason("");
-                    setCancelReasonOption("");
-                  }}
-                >
-                  Cancel Order
-                </div>
-              )}
-          </div>,
-          document.body
-        )
-      }
+      {paymentStatusOrder && (
+        <PaymentStatusModal
+          order={paymentStatusOrder}
+          onClose={() => setPaymentStatusOrder(null)}
+        />
+      )}
 
       {editBillOrder && (
         <div className="overlay">
@@ -2465,6 +2818,17 @@ const Orders = ({ adminData, setAdminData }) => {
             <BillLayout
               onClose={closeAllBillOverlays}
               order={previewBillOrder}
+              onPaid={() => {
+                // Payment just resolved to PAID while staff had the Preview
+                // modal open with the QR showing — surface the outcome
+                // immediately via the Payment Status modal instead of
+                // leaving them looking at a stale QR. This is the admin
+                // panel's own signal, independent of whatever URL Cashfree
+                // redirects the customer's phone to.
+                const paidOrder = previewBillOrder;
+                setPreviewBillOrder(null);
+                setPaymentStatusOrder(paidOrder);
+              }}
             />
 
             <div className="admin-modal-footer">

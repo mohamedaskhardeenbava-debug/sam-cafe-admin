@@ -23,6 +23,7 @@ import DishDetails from "./pages/DishDetails";
 import Stocks from "./pages/Stocks";
 import ComboOffers from "./pages/ComboOffers";
 import Login from "./pages/Login";
+import PaymentComplete from "./pages/PaymentComplete";
 import ForgotPassword from "./pages/ForgotPassword";
 import ForcePasswordReset from "./pages/ForcePasswordReset";
 import Profile from "./pages/Profile";
@@ -603,6 +604,15 @@ function App() {
       console.error("Delete ingredient failed:", err);
     }
   };
+
+  /* ---------------- PUBLIC ROUTE (no auth) ----------------
+     Cashfree's payment-return redirect lands on the paying customer's
+     own device, which has no admin session at all — this must render
+     unconditionally, before the auth-loading check and the auth gate
+     below, or it would fall through to the login screen instead. */
+  if (window.location.pathname === "/payment-complete") {
+    return <PaymentComplete />;
+  }
 
   /* ---------------- AUTH GUARD ---------------- */
   // Wait for the initial GET /staff-auth/me check to resolve before

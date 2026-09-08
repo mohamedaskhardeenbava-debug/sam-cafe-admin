@@ -7,6 +7,7 @@ import { useParams, useNavigate } from "react-router-dom";
 
 import { formatDisplayDate } from "../App"
 
+import "../Common.css";
 import "./OrderDetails.css";
 
 const OrderDetails = ({ orders, menu }) => {
@@ -75,6 +76,11 @@ const OrderDetails = ({ orders, menu }) => {
   const normalizeStatus = (status = "") =>
     status.toLowerCase().trim();
 
+  const normalizePaymentStatus = (o) => {
+    const s = (o?.paymentStatus || "pending").toLowerCase().trim();
+    return s === "completed" ? "completed" : "pending";
+  };
+
   return (
     <div className="details-container">
 
@@ -104,12 +110,21 @@ const OrderDetails = ({ orders, menu }) => {
                 <td>
                   <strong>Status:</strong>{" "}
                   <span
-                    className={`dd-status status-${normalizeStatus(order.status).replace(/\s+/g, "-")}`}
+                    className={`status status-${normalizeStatus(order.status).replace(/\s+/g, "-")}`}
                   >
                     {order.status}
                   </span>
                 </td>
                 <td><strong>Customer Name:</strong> {order.userName ?? "—"}</td>
+              </tr>
+              <tr>
+                <td>
+                  <strong>Payment Status:</strong>{" "}
+                  <span className={`status status-${normalizePaymentStatus(order)}`}>
+                    {normalizePaymentStatus(order) === "completed" ? "Completed" : "Pending"}
+                  </span>
+                </td>
+                <td></td>
               </tr>
               {normalizeStatus(order.status) === "cancelled" && order.cancelReason && (
                 <tr>

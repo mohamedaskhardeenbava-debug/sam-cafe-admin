@@ -229,7 +229,7 @@ function VenueIndicator() {
           value: v.id,
           label: v.isMainBranch || !mainBranch || mainBranch.id === v.id ? v.name : `${v.name} (${mainBranch.name})`,
         }))}
-        placeholder={null}
+        placeholder="Select venue"
       />
     );
   }

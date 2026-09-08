@@ -215,8 +215,50 @@
 
 .bill-qr-upi-mount {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
   min-height: 180px;
+  /* The Cashfree v3 SDK renders the UPI QR inside an iframe it injects
+     into this element, sized to fill its container by default (its
+     internal iframe content can't be reached/restyled from here at all —
+     cross-origin). Constraining THIS element's own width to the QR's
+     rendered size (matches the "180px" passed to cashfree.create) is what
+     actually centers it — flex justify-content/margin:auto on a
+     full-width child has nothing to center within otherwise. */
+  width: 200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.bill-qr-upi-mount iframe {
+  width: 100% !important;
+  max-width: 200px;
+  /* The iframe box itself is already centered (200×180, matching the
+     mount's own width above) — but the QR graphic Cashfree draws INSIDE
+     that iframe's own cross-origin document sits a few pixels left of
+     center within its box, and that inner content can't be reached or
+     restyled from this stylesheet at all. This is a small compensating
+     nudge on the iframe's own position, not a structural fix. */
+  position: relative;
+  left: 4px;
+}
+
+/* The Cashfree Drop-in SDK injects its own wrapper/img/canvas into
+   .bill-qr-upi-mount — those elements are full-width by default, so
+   flex centering on the mount div alone doesn't center the QR image
+   itself. Force every direct/nested child to size to its own content
+   and center within the flex column above. */
+.bill-qr-upi-mount>* {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.bill-qr-upi-mount img,
+.bill-qr-upi-mount canvas,
+.bill-qr-upi-mount svg {
+  display: block;
+  margin: 0 auto;
 }
 
 .bill-qr-loading {
@@ -237,14 +279,53 @@
   margin-top: 6px;
 }
 
-.bill-qr-paid {
-  padding: 14px 0;
+.bill-qr-outcome {
+  padding: 18px 12px;
+  border-radius: 12px;
+  margin-top: 10px;
 }
 
-.bill-qr-paid .bill-qr-title {
-  color: #0d9e3f;
-  font-weight: 700;
+.bill-qr-outcome-title {
   font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.bill-qr-outcome-message {
+  font-size: 12px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.bill-qr-success {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.bill-qr-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.bill-qr-failed {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.bill-qr-retry-btn {
+  margin-top: 12px;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #dc2626;
+  color: #fff;
+}
+
+.bill-qr-retry-btn:hover {
+  background: #b91c1c;
 }
 
 .bill-qr-amount {
@@ -270,31 +351,106 @@
   cursor: pointer;
 }
 
-.options-menu {
-  position: absolute;
-  right: 24px;
-  top: 28px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  z-index: 9999;
-  width: 120px;
+/* Row-actions menu now renders via OrderActionsMenu, which reuses
+   CustomDropdown's .cdd-overlay/.cdd-popup/.cdd-option classes (see
+   CustomDropdown.css) — .cdd-option-disabled/.cdd-option-danger below
+   are the only additions this page needs on top of those. */
+.cdd-option-disabled {
+  color: #b0b0b0;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
-.options-menu.portal {
-  position: fixed;
-  z-index: 10000;
+.cdd-option-danger {
+  color: #c0392b;
+  font-weight: 600;
 }
 
-.options-menu div {
-  padding: 10px 14px;
+.cdd-option-danger.cdd-option-disabled {
+  color: #e0b4ae;
+}
+
+/* ===== PAYMENT STATUS MODAL (modal-overlay / admin-modal) ===== */
+.payment-status-modal {
+  min-height: 460px;
+  max-height: 460px;
+}
+
+.payment-status-loading {
+  padding: 24px 0;
+  text-align: center;
+  color: #888;
   font-size: 14px;
-  cursor: pointer;
 }
 
-.options-menu div:hover {
-  background: #f3f4f6;
+.payment-status-outcome {
+  border-radius: 12px;
+  padding: 18px 16px;
+  margin: 14px 0;
+  text-align: center;
+}
+
+.payment-status-outcome-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.payment-status-outcome-message {
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.payment-status-success {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.payment-status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.payment-status-failed {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.payment-status-details {
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 4px 14px;
+  margin-bottom: 14px;
+}
+
+.payment-status-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid #f2f2f2;
+  font-size: 13px;
+}
+
+.payment-status-detail-row:last-child {
+  border-bottom: none;
+}
+
+.payment-status-detail-row span:first-child {
+  color: #888;
+}
+
+.payment-status-detail-row span:last-child {
+  font-weight: 600;
+  text-align: right;
+}
+
+.payment-status-detail-mono {
+  font-family: monospace;
+  font-size: 12px;
+  word-break: break-all;
 }
 
 /* ===== STATUS – ACTION STYLE PILL ===== */

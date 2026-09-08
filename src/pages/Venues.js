@@ -250,7 +250,7 @@ const Venues = () => {
               className="search-input"
               placeholder=" Search name, address, or area…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => setSearch(allowTextInput(search, e.target.value, 100, 5))}
             />
             {search && (
               <button className="ae-clear-filter" onClick={() => setSearch("")}>

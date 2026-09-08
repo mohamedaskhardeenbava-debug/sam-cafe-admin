@@ -1242,6 +1242,21 @@ th.sorted .sort-arrow {
   color: #1e40af;
 }
 
+.status-placed {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.status-preparing {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.status-service-pickup {
+  background: #cffafe;
+  color: #0e7490;
+}
+
 
 /* ─────────────────────────────────────────────────────────────
    15. SCROLLBAR STYLES

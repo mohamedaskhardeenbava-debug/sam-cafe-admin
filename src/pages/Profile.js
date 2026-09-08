@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useVenue } from "../context/VenueContext";
+import { allowTextInput } from "../App";
 import Button3D from "../components/Button3D";
 import useAnimatedModal from "../hooks/useAnimatedModal";
 import closeIcon from "../icon/close-icon.png";
@@ -73,6 +74,10 @@ const Profile = () => {
 
   const handleSave = async () => {
     setError("");
+    if (phone && phone.length !== 10) {
+      setError("Phone number must be exactly 10 digits.");
+      return;
+    }
     setIsSaving(true);
     try {
       await updateProfile({ name, phone, photo });
@@ -212,7 +217,7 @@ const Profile = () => {
                       className="mat-input"
                       placeholder=" "
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={(e) => setName(allowTextInput(name, e.target.value, 100, 5))}
                     />
                     <label className="mat-label">Full name</label>
                     <span className="mat-bar" />
@@ -232,8 +237,9 @@ const Profile = () => {
                     <input
                       className="mat-input"
                       placeholder=" "
+                      type="tel"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                     />
                     <label className="mat-label">Phone</label>
                     <span className="mat-bar" />

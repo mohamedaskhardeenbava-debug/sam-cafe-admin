@@ -7,7 +7,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 import api from "../../api";
-import { fmtTime, fmtDateTime } from "../../utils/dateUtils";
+import { fmtTime, fmtDateTime, fmtDate } from "../../utils/dateUtils";
 
 import { useToast } from "../../useToast";
 import Button3D from "../../components/Button3D";
@@ -101,7 +101,7 @@ const PreBookingDetails = ({ adminData, setAdminData }) => {
     { label: "Mobile", val: data.mobile || "—" },
     { label: "Email", val: data.email || "—" },
     { label: "No. of Guests", val: data.guests || "—" },
-    { label: "Date", val: data.date || "—" },
+    { label: "Date", val: fmtDate(data.date) },
     { label: "Time", val: fmtTime(data.time) },
     { label: "Dining Slot", val: slot.label },
     { label: "Table Preference", val: data.tablePref || "—" },
@@ -135,7 +135,7 @@ const PreBookingDetails = ({ adminData, setAdminData }) => {
               {data.mobile}{data.email ? ` · ${data.email}` : ""}
             </div>
             <div className="evt-details-hero-meta">
-              <span>{data.date || "—"}</span>
+              <span>{fmtDate(data.date)}</span>
               <span>{fmtTime(data.time)}</span>
               <span>{slot.label}</span>
               <span>{data.guests || 1} guests</span>
