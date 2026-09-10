@@ -26,6 +26,7 @@ import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
 import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import Button3D from "../components/Button3D";
+import ConfirmDialog from "../components/ConfirmDialog";
 import CollapseChevron from "../components/CollapseChevron";
 import CollapseSection from "../components/CollapseSection";
 import { printBill as sendBillToPrinter, printKot as sendKotToPrinter } from "../printUtils";
@@ -38,6 +39,43 @@ import PageLoader from "../components/PageLoader";
 const SEVEN_MIN = 7 * 60 * 1000;
 const ONE_MIN = 60 * 1000;
 const DATE_STORAGE_KEY = "orders_date_filter";
+
+/**
+ * computeBillTotal — the ONE place GST + round-off math happens for an
+ * order/bill amount. Every other total shown anywhere (preview modal,
+ * edit modal, printed receipt, UPI QR amount, split-by-bill, split-by-
+ * amount) is derived from this, instead of each place re-implementing
+ * the same subtotal→discount→GST→round formula slightly differently.
+ *
+ * That used to be exactly the failure mode this consolidates away: this
+ * formula was duplicated across four separate spots in this file
+ * (BillLayout's `totals`/`billGroups` memos, `computeGSTFromSubtotal`,
+ * and buildPrinterOrder's own inline fallback), which is precisely the
+ * kind of drift that can make the QR amount, the printed receipt, and
+ * the on-screen total each round slightly differently — as far as a
+ * customer or a payment reconciliation is concerned, an amount
+ * mismatch between what's shown, what's printed, and what's in the QR
+ * is a real integrity problem, not just a cosmetic one.
+ *
+ * Rounding rule: standard "round half up to the nearest rupee" via
+ * Math.round(), applied ONCE, to the final GST-inclusive total — never
+ * to the subtotal or the individual GST components, which stay as
+ * exact paise (2 decimal places) so CGST/SGST always sum to exactly
+ * half the tax each and the breakdown shown to the customer adds up.
+ *
+ * @param {number} subTotal - sum of active (non-cancelled) item prices, already in rupees
+ * @param {number} [discountPercent=0] - 0-100
+ * @returns {{ subTotal:number, discountPercent:number, discountAmount:number, taxableAmount:number, cgst:number, sgst:number, total:number }}
+ */
+function computeBillTotal(subTotal, discountPercent = 0) {
+  const pct = Math.max(0, Math.min(100, Number(discountPercent) || 0));
+  const discountAmount = +(subTotal * (pct / 100)).toFixed(2);
+  const taxableAmount = +(subTotal - discountAmount).toFixed(2);
+  const cgst = +(taxableAmount * 0.025).toFixed(2);
+  const sgst = +(taxableAmount * 0.025).toFixed(2);
+  const total = Math.round(taxableAmount + cgst + sgst);
+  return { subTotal: +subTotal.toFixed(2), discountPercent: pct, discountAmount, taxableAmount, cgst, sgst, total };
+}
 
 const formatDuration = (ms) => {
   const totalSeconds = Math.floor(ms / 1000);
@@ -126,46 +164,25 @@ const normalizePaymentStatus = (order) => {
   return s === "completed" ? "completed" : "pending";
 };
 
-// The four possible outcomes of a scanned Cashfree QR payment, keyed by
-// the Payment doc's `status` field (see payments.js's mapCashfreeStatus)
-// — mirrors the Cashfree UPI simulator's SUCCESS/PENDING/USER_DROPPED/
-// FAILED buttons exactly. Used by the Payment Status modal. EXPIRED and
-// CANCELLED (edge cases outside the simulator's own 4 buttons) fall back
-// to the FAILED tone/copy so every possible status still renders sensibly.
+// The two possible states of a UPI QR payment record — this system has
+// no gateway to report FAILED/USER_DROPPED/EXPIRED/CANCELLED outcomes
+// the way Cashfree's simulator could, since nothing but the admin's own
+// "Mark as Paid" click ever changes this (see payments.js's file-level
+// comment for why). Used by the Payment Status modal.
 const PAYMENT_OUTCOME_INFO = {
   PAID: {
     title: "Payment Completed",
-    message: "The customer's payment has been received and confirmed.",
+    message: "Marked as paid — the payment has been confirmed received.",
     tone: "success"
   },
   PENDING: {
-    title: "Payment Pending",
-    message: "Waiting for the customer to complete the payment. This will update automatically once it's confirmed.",
+    title: "Awaiting Payment",
+    message: "Waiting for the customer to pay, and for staff to confirm it was received.",
     tone: "pending"
-  },
-  USER_DROPPED: {
-    title: "User Dropped",
-    message: "The customer backed out of the UPI app before completing the payment.",
-    tone: "failed"
-  },
-  FAILED: {
-    title: "Payment Failed",
-    message: "The payment attempt did not go through (declined by the bank or gateway). You can try again.",
-    tone: "failed"
-  },
-  EXPIRED: {
-    title: "Payment Failed",
-    message: "The QR session timed out before the customer completed payment. Generate a new QR to try again.",
-    tone: "failed"
-  },
-  CANCELLED: {
-    title: "Payment Failed",
-    message: "The payment was cancelled before it could be completed.",
-    tone: "failed"
   },
   NONE: {
     title: "No Payment Attempted",
-    message: "No payment has been started for this order yet.",
+    message: "No payment QR has been generated for this order yet.",
     tone: "pending"
   }
 };
@@ -204,79 +221,47 @@ const StableQRCode = React.memo(({ value }) => {
 });
 
 const PAYMENT_POLL_MS = 4000;
-const CASHFREE_SDK_URL = "https://sdk.cashfree.com/js/v3/cashfree.js";
-
-// Loads the Cashfree.js v3 SDK script once (shared across every
-// CashfreeQRSection instance on the page) and resolves with the global
-// `Cashfree` factory function it attaches to window.
-let cashfreeSdkPromise = null;
-function loadCashfreeSdk() {
-  if (window.Cashfree) return Promise.resolve(window.Cashfree);
-  if (cashfreeSdkPromise) return cashfreeSdkPromise;
-
-  cashfreeSdkPromise = new Promise((resolve, reject) => {
-    const existing = document.querySelector(`script[src="${CASHFREE_SDK_URL}"]`);
-    if (existing) {
-      existing.addEventListener("load", () => resolve(window.Cashfree));
-      existing.addEventListener("error", reject);
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = CASHFREE_SDK_URL;
-    script.async = true;
-    script.onload = () => resolve(window.Cashfree);
-    script.onerror = reject;
-    document.body.appendChild(script);
-  });
-
-  return cashfreeSdkPromise;
-}
-
 /**
- * CashfreeQRSection — creates a Cashfree order for the current bill amount,
- * then uses the Cashfree.js Web Element SDK to render a genuine UPI QR
- * component (cashfree.create('upiQr')) tied to that order's payment
- * session. This scans directly into the customer's UPI app (PhonePe/GPay/
- * Paytm) — there's no Cashfree-hosted webpage involved, so there's no
- * "session expired" redirect flow to break, and it doesn't require the
- * S2S account flag that the raw Order Pay API needs.
- *
- * Falls back to the standalone /payments/orders/:id status endpoint for
- * polling — cashfree.pay()'s own promise also resolves on completion for
- * "if_required" redirect mode, but polling the order status independently
- * keeps this consistent with how printed-receipt QR status is tracked.
+ * UpiQrSection — generates a direct UPI payment QR for the current bill
+ * amount (no payment gateway) and lets an admin confirm receipt once
+ * they've verified the payment themselves (UPI app / bank SMS /
+ * statement). See payments.js's file-level comment for the full
+ * rationale — there's no webhook or gateway to poll here, so there's
+ * nothing to auto-detect; the QR shows what to pay, and confirmation is
+ * a deliberate, guarded manual step instead.
  */
-const CashfreeQRSection = React.memo(({ orderId, billNo, amount, onPaid }) => {
-  const [payment, setPayment] = useState(null); // { id, paymentSessionId, status }
+const UpiQrSection = React.memo(({ orderId, billNo, amount, onPaid }) => {
+  const [payment, setPayment] = useState(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
-  const [retryToken, setRetryToken] = useState(0); // bumped to force a fresh order when a session expires
-  const mountRef = useRef(null);
-  const qrComponentRef = useRef(null);
-  const hasFiredOnPaidRef = useRef(false); // onPaid must fire exactly once per order, not on every re-render while status stays PAID
-  const lastOrderedRef = useRef(null); // { orderId, billNo, amountPaise } for the last order actually created
-  const hasRetriedRef = useRef(false); // ensures payment_session_id_invalid triggers at most one retry, not a loop
+  const [confirming, setConfirming] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const hasFiredOnPaidRef = useRef(false); // onPaid must fire exactly once per order
+  const lastCreatedRef = useRef(null); // { orderId, billNo, amountPaise } for the last record actually created
+  const { toast } = useToast();
 
-  // Round to paise once so downstream float noise (e.g. a parent re-render
-  // recomputing totals via slightly different summation order) can't be
-  // mistaken for a real amount change and trigger a spurious re-create.
+  // Round to paise once so downstream float noise (e.g. a parent
+  // re-render recomputing totals via slightly different summation
+  // order) can't be mistaken for a real amount change and trigger a
+  // spurious re-create of the QR.
   const amountPaise = Math.round(Number(amount) * 100);
 
-  // Step 1: create the Cashfree order for this bill amount. Guarded against
-  // both (a) unchanged (orderId, billNo, amount) not re-creating a session,
-  // and (b) a burst of renders before the first POST resolves — the ref is
-  // set synchronously before the await, not after, so an in-flight request
-  // is never duplicated even if the effect re-fires several times in a row.
+  // Create the Payment record (and its upi://pay QR string) for this
+  // bill amount. Guarded against both (a) unchanged (orderId, billNo,
+  // amount) not re-creating a record, and (b) a burst of renders before
+  // the first POST resolves — the ref is set synchronously before the
+  // await, not after, so an in-flight request is never duplicated even
+  // if the effect re-fires several times in a row.
   useEffect(() => {
     if (!(amountPaise > 0)) return undefined;
 
-    const requestKey = `${orderId}|${billNo ?? ""}|${amountPaise}|${retryToken}`;
-    if (lastOrderedRef.current === requestKey) return undefined;
-    lastOrderedRef.current = requestKey; // claim this request immediately, before any await
+    const requestKey = `${orderId}|${billNo ?? ""}|${amountPaise}`;
+    if (lastCreatedRef.current === requestKey) return undefined;
+    lastCreatedRef.current = requestKey;
 
     let cancelled = false;
 
-    const createOrder = async () => {
+    const createPaymentRecord = async () => {
       setCreating(true);
       setError("");
       try {
@@ -287,165 +272,38 @@ const CashfreeQRSection = React.memo(({ orderId, billNo, amount, onPaid }) => {
         });
         if (!cancelled) setPayment(res.data);
       } catch (err) {
-        console.error("Failed to create Cashfree order", err);
+        console.error("Failed to generate UPI payment QR", err);
         if (!cancelled) {
-          setError(err?.response?.data?.error || "Payment gateway unavailable");
-          lastOrderedRef.current = null; // allow a genuine retry after a failure
+          setError(err?.response?.data?.error || "Could not generate payment QR");
+          lastCreatedRef.current = null; // allow a genuine retry after a failure
         }
       } finally {
         if (!cancelled) setCreating(false);
       }
     };
 
-    createOrder();
+    createPaymentRecord();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId, billNo, amountPaise, retryToken]);
+  }, [orderId, billNo, amountPaise]);
 
-  // Step 2: once we have a paymentSessionId, load the SDK and mount the
-  // real UPI QR component into this section — no hosted-page redirect.
-  useEffect(() => {
-    if (!payment?.paymentSessionId || payment.status === "PAID") return undefined;
-    let cancelled = false;
+  const handleConfirmPaid = async () => {
+    if (!payment?.id) return;
+    setConfirming(true);
+    try {
+      const res = await api.post(`/payments/orders/${payment.id}/confirm`, { orderId });
+      setPayment(res.data);
+      setShowConfirmDialog(false);
+    } catch (err) {
+      console.error("Failed to confirm payment", err);
+      toast.error(err?.response?.data?.error || "Could not confirm payment — please try again.");
+    } finally {
+      setConfirming(false);
+    }
+  };
 
-    (async () => {
-      try {
-        const CashfreeFactory = await loadCashfreeSdk();
-        if (cancelled || !mountRef.current) return;
-
-        const cashfree = CashfreeFactory({
-          mode: (process.env.REACT_APP_CASHFREE_ENV || "sandbox").toLowerCase(),
-        });
-
-        const upiQr = cashfree.create("upiQr", { values: { size: "180px" } });
-        qrComponentRef.current = upiQr;
-
-        upiQr.on("loaderror", (data) => {
-          console.error("Cashfree UPI QR failed to load", data?.error);
-          if (!cancelled) setError(data?.error?.message || "Failed to load payment QR");
-        });
-
-        upiQr.mount(mountRef.current);
-
-        upiQr.on("ready", () => {
-          if (cancelled) return;
-          // Kick off the actual UPI QR payment flow tied to this order's
-          // session. No returnUrl/redirectTarget: the customer's phone has
-          // no admin session and nothing useful to show after paying — the
-          // outcome is surfaced entirely via the staff-side PaymentStatusModal
-          // on this page (polling GET /payments/orders/:id below), so the
-          // phone is simply left on Cashfree's own default result screen.
-          cashfree
-            .pay({
-              paymentMethod: upiQr,
-              paymentSessionId: payment.paymentSessionId,
-            })
-            .then((result) => {
-              if (cancelled) return;
-              if (result?.error) {
-                console.error("Cashfree UPI QR pay() error", result.error);
-                // "payment_session_id is not present or is invalid" means the
-                // session expired (UPI QR sessions are short-lived, ~5 min) —
-                // recreate the order from scratch rather than showing a dead
-                // error state forever, so the QR stays scannable for the
-                // customer even if they took a while to pull out their phone.
-                if (result.error.code === "payment_session_id_invalid" && !hasRetriedRef.current) {
-                  // Retry ONCE — a session can legitimately go stale if the
-                  // customer takes several minutes to scan. If it's still
-                  // invalid immediately after a fresh order, the problem is
-                  // upstream (Cashfree/SDK), not a normal expiry — don't
-                  // loop forever creating orders against a broken endpoint.
-                  hasRetriedRef.current = true;
-                  setPayment(null);
-                  setError("");
-                  setRetryToken((n) => n + 1);
-                } else {
-                  // Cashfree's ORDER-level status (what GET /orders/:id polls
-                  // via Cashfree's own order-status API) can legitimately
-                  // stay ACTIVE/PENDING even after THIS payment attempt
-                  // failed or was dropped — the order is still open for a
-                  // retry from Cashfree's point of view. So instead of
-                  // waiting on that poll (which would just keep reporting
-                  // PENDING and silently revert any client-side-only status
-                  // change back), persist the failure directly via
-                  // PATCH .../client-status, with the SDK's own message as
-                  // the decline reason — this is the one place that reason
-                  // reaches the database at all, which is also what the
-                  // Payment Status modal / inline outcome card below read
-                  // back to show staff (and the customer's own
-                  // /payment-complete page via public-status) exactly why
-                  // it failed, not just that it did.
-                  const reasonMessage = result.error.message || "The payment could not be completed.";
-                  const reasonCode = result.error.code || "";
-                  setPayment((p) => (p ? { ...p, status: "FAILED", lastErrorMessage: reasonMessage, lastErrorCode: reasonCode } : p));
-                  api.patch(`/payments/orders/${payment.id}/client-status`, {
-                    status: "FAILED",
-                    message: reasonMessage,
-                    code: reasonCode,
-                  }).catch((patchErr) => {
-                    console.error("Failed to persist payment failure reason", patchErr);
-                  });
-                }
-              }
-              if (result?.paymentDetails) {
-                // Resolved without redirect — payment completed.
-                setPayment((p) => (p ? { ...p, status: "PAID" } : p));
-              }
-            })
-            .catch((err) => {
-              if (!cancelled) {
-                console.error("Cashfree UPI QR pay() threw", err);
-                setError("Payment could not be started");
-              }
-            });
-        });
-      } catch (err) {
-        console.error("Failed to load Cashfree SDK", err);
-        if (!cancelled) setError("Payment gateway unavailable");
-      }
-    })();
-
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [payment?.paymentSessionId]);
-
-  // Step 3: poll our own backend for the order's status (backed by
-  // Cashfree's order-status API + webhook), independent of the SDK's own
-  // promise resolution, so a missed "ready"/redirect edge case still
-  // surfaces "Paid" within a few seconds. A failed/dropped attempt is
-  // instead reported directly by Step 2's pay() error handler via
-  // PATCH .../client-status — see the comment there for why this poll
-  // alone can't be relied on for that.
-  useEffect(() => {
-    // Stop polling once we've reached ANY terminal state — not just PAID.
-    // Once client-status (Step 2's pay() error handler) or the webhook has
-    // recorded FAILED/USER_DROPPED/EXPIRED/CANCELLED, there's nothing left
-    // to learn by continuing to poll, and (per the backend's guard) a poll
-    // against a non-PENDING record just returns the same terminal value
-    // back anyway — so this is purely to stop making pointless requests
-    // once the outcome is already final.
-    const isTerminalStatus = payment?.status && payment.status !== "PENDING";
-    if (!payment?.id || isTerminalStatus) return undefined;
-    let cancelled = false;
-
-    const poll = async () => {
-      try {
-        const res = await api.get(`/payments/orders/${payment.id}`);
-        if (!cancelled) setPayment(res.data);
-      } catch (err) {
-        console.warn("Payment status poll failed", err);
-      }
-    };
-
-    const interval = setInterval(poll, PAYMENT_POLL_MS);
-    return () => { cancelled = true; clearInterval(interval); };
-  }, [payment?.id, payment?.status]);
-
-  // Notify the parent page exactly once when this order's payment resolves
-  // to PAID — the Orders page uses this to auto-open the Payment Status
-  // modal on the admin's own screen (the customer's phone gets redirected
-  // to Cashfree's own generic return_url instead; the two devices don't
-  // share this signal any other way).
+  // Notify the parent page exactly once when this order's payment
+  // resolves to PAID — the Orders page uses this to auto-open the
+  // Payment Status modal.
   useEffect(() => {
     if (payment?.status === "PAID" && !hasFiredOnPaidRef.current) {
       hasFiredOnPaidRef.current = true;
@@ -453,40 +311,11 @@ const CashfreeQRSection = React.memo(({ orderId, billNo, amount, onPaid }) => {
     }
   }, [payment?.status, onPaid]);
 
-  const outcomeInfo = PAYMENT_OUTCOME_INFO[payment?.status];
-
-  // Once a payment attempt reaches a TERMINAL state (paid, or one of the
-  // three failure outcomes the Cashfree simulator can send back), the QR
-  // itself is done — either it succeeded, or the same QR can't be reused
-  // (Cashfree order sessions are single-use), so it's replaced with an
-  // outcome card. PENDING is the one non-terminal state: the payment
-  // could still complete any moment, so the live QR keeps showing.
-  const isTerminal = payment?.status && payment.status !== "PENDING";
-
-  if (isTerminal && outcomeInfo) {
-    const canRetry = payment.status !== "PAID";
+  if (payment?.status === "PAID") {
     return (
-      <div className={`bill-qr-section bill-qr-outcome bill-qr-${outcomeInfo.tone}`}>
-        <div className="bill-qr-outcome-title">{outcomeInfo.title}</div>
-        <p className="bill-qr-outcome-message">{payment.lastErrorMessage || outcomeInfo.message}</p>
-        {payment.status === "PAID" ? (
-          <div className="bill-qr-amount">₹{Math.round(Number(amount))}</div>
-        ) : (
-          canRetry && (
-            <button
-              type="button"
-              className="bill-qr-retry-btn"
-              onClick={() => {
-                setPayment(null);
-                setError("");
-                hasRetriedRef.current = false;
-                setRetryToken((n) => n + 1);
-              }}
-            >
-              Generate New QR
-            </button>
-          )
-        )}
+      <div className="bill-qr-section bill-qr-outcome bill-qr-success">
+        <div className="bill-qr-outcome-title">Payment Received ✅</div>
+        <div className="bill-qr-amount">₹{Math.round(Number(amount))}</div>
       </div>
     );
   }
@@ -494,16 +323,16 @@ const CashfreeQRSection = React.memo(({ orderId, billNo, amount, onPaid }) => {
   if (error) {
     return (
       <div className="bill-qr-section">
-        <div className="bill-qr-title">Scan To Pay</div>
+        <div className="bill-qr-title">Scan To Pay via UPI</div>
         <div className="bill-qr-error">{error}</div>
       </div>
     );
   }
 
-  if (creating || !payment?.paymentSessionId) {
+  if (creating || !payment?.upiUrl) {
     return (
       <div className="bill-qr-section">
-        <div className="bill-qr-title">Scan To Pay</div>
+        <div className="bill-qr-title">Scan To Pay via UPI</div>
         <div className="bill-qr-loading">Generating payment QR…</div>
       </div>
     );
@@ -511,22 +340,48 @@ const CashfreeQRSection = React.memo(({ orderId, billNo, amount, onPaid }) => {
 
   return (
     <div className="bill-qr-section">
-      <div className="bill-qr-title">Scan To Pay via UPI (Cashfree)</div>
-      <div ref={mountRef} className="bill-qr-upi-mount" />
-      <div className="bill-qr-status">
-        {payment.status === "PENDING" ? "Waiting for payment…" : payment.status}
-      </div>
+      <div className="bill-qr-title">Scan To Pay via UPI</div>
+      <StableQRCode value={payment.upiUrl} />
+      <div className="bill-qr-amount">₹{Math.round(Number(amount))}</div>
+      <div className="bill-qr-status">Waiting for payment…</div>
+      <button
+        type="button"
+        className="bill-qr-confirm-btn"
+        onClick={() => setShowConfirmDialog(true)}
+      >
+        Mark as Paid
+      </button>
+
+      {showConfirmDialog && (
+        <ConfirmDialog
+          open
+          title="Confirm payment received"
+          message={
+            <>
+              Confirm that <strong>₹{Math.round(Number(amount))}</strong> was received via UPI for
+              Order <strong>{orderId}</strong>{billNo ? <> (Bill {billNo})</> : null}?
+              <br />
+              Only confirm after verifying the payment in your own UPI app, bank SMS, or statement —
+              this cannot be undone.
+            </>
+          }
+          confirmLabel={confirming ? "Confirming…" : "Yes, Mark as Paid"}
+          onCancel={() => !confirming && setShowConfirmDialog(false)}
+          onConfirm={handleConfirmPaid}
+        />
+      )}
     </div>
   );
 });
 
 /**
- * PaymentStatusModal — shows the latest Cashfree payment attempt's outcome
- * for an order, with full transaction details, in a shared modal-overlay/
- * admin-modal. Covers all 4 possible outcomes the Cashfree UPI simulator
- * can send back — SUCCESS, PENDING, USER_DROPPED, FAILED (mapped by
- * payments.js's mapCashfreeStatus into PAID/PENDING/USER_DROPPED/FAILED,
- * with EXPIRED/CANCELLED as rarer edge cases folded into the FAILED tone).
+ * PaymentStatusModal — shows a UPI payment record's current status for
+ * an order, with full details, in a shared modal-overlay/admin-modal.
+ * Only two real states exist in this system — PENDING (QR generated,
+ * not yet confirmed) and PAID (an admin clicked "Mark as Paid" — see
+ * UpiQrSection / payments.js) — there's no gateway to report
+ * FAILED/USER_DROPPED/etc, since nothing but that manual confirmation
+ * ever changes a record's status.
  */
 const PaymentStatusModal = ({ order, onClose }) => {
   const [payment, setPayment] = useState(null);
@@ -545,16 +400,17 @@ const PaymentStatusModal = ({ order, onClose }) => {
         if (!cancelled) {
           const docs = Array.isArray(res.data) ? res.data : [];
           // Prefer an actually-PAID document over merely "most recent" —
-          // a stray/duplicate Cashfree order can end up created after the
+          // a stray/duplicate QR record can end up created after the
           // real successful one (e.g. a receipt reprinted before the
           // buildPrinterOrder fix that stopped doing this), leaving a
-          // never-resolved PENDING record with a LATER createdAt than the
-          // payment that actually went through. Showing "most recent"
-          // unconditionally would then report an already-paid order as
-          // still pending. The order's own paymentStatus (set once via
-          // markOrderPaid, see payments.js) is the true source of truth —
-          // find the PAID doc to show its details if the order is marked
-          // completed; otherwise fall back to the most recent attempt.
+          // never-confirmed PENDING record with a LATER createdAt than
+          // the payment that actually went through. Showing "most
+          // recent" unconditionally would then report an already-paid
+          // order as still pending. The order's own paymentStatus (set
+          // once via markOrderPaid, see payments.js) is the true
+          // source of truth — find the PAID doc to show its details if
+          // the order is marked completed; otherwise fall back to the
+          // most recent attempt.
           const paidDoc = docs.find(d => d.status === "PAID");
           const mostRecent = docs[0] || null;
           setPayment(
@@ -579,8 +435,7 @@ const PaymentStatusModal = ({ order, onClose }) => {
   // Same authoritative-order-status override for the outcome card itself:
   // if the order is genuinely marked completed, never show anything other
   // than the success card, even if the payment doc we ended up with
-  // (paidDoc might not exist if the PAID webhook update never touched the
-  // Payment collection, only order.paymentStatus) says otherwise.
+  // (paidDoc might not exist if it was never fetched) says otherwise.
   const info = normalizePaymentStatus(order) === "completed"
     ? PAYMENT_OUTCOME_INFO.PAID
     : (PAYMENT_OUTCOME_INFO[payment?.status] || PAYMENT_OUTCOME_INFO.NONE);
@@ -612,9 +467,7 @@ const PaymentStatusModal = ({ order, onClose }) => {
             <>
               <div className={`payment-status-outcome payment-status-${info.tone}`}>
                 <div className="payment-status-outcome-title">{info.title}</div>
-                <p className="payment-status-outcome-message">
-                  {info.tone === "success" ? info.message : (payment?.lastErrorMessage || info.message)}
-                </p>
+                <p className="payment-status-outcome-message">{info.message}</p>
               </div>
 
               {payment && (
@@ -624,13 +477,23 @@ const PaymentStatusModal = ({ order, onClose }) => {
                     <span>₹{Math.round(Number(payment.amount))}</span>
                   </div>
                   <div className="payment-status-detail-row">
-                    <span>Transaction ID</span>
+                    <span>Transaction Reference</span>
                     <span className="payment-status-detail-mono">{payment.id}</span>
                   </div>
-                  {payment.cfPaymentId && (
+                  <div className="payment-status-detail-row">
+                    <span>UPI ID</span>
+                    <span className="payment-status-detail-mono">{payment.upiVpa}</span>
+                  </div>
+                  {payment.confirmedBy && (
                     <div className="payment-status-detail-row">
-                      <span>Cashfree Payment ID</span>
-                      <span className="payment-status-detail-mono">{payment.cfPaymentId}</span>
+                      <span>Confirmed By</span>
+                      <span>{payment.confirmedBy}</span>
+                    </div>
+                  )}
+                  {payment.confirmedAt && (
+                    <div className="payment-status-detail-row">
+                      <span>Confirmed At</span>
+                      <span>{formatDateTime(payment.confirmedAt)}</span>
                     </div>
                   )}
                   {payment.billNo != null && (
@@ -684,26 +547,14 @@ const BillLayout = React.memo(({
       (sum, i) => sum + Number(i.totalPrice || 0),
       0
     );
-    const discountPercent = Math.max(0, Math.min(100, Number(order.discount?.percent) || 0));
-    const discountAmount = +(subTotal * (discountPercent / 100)).toFixed(2);
-    const taxableAmount = +(subTotal - discountAmount).toFixed(2);
-    const cgst = +(taxableAmount * 0.025).toFixed(2);
-    const sgst = +(taxableAmount * 0.025).toFixed(2);
-    return {
-      subTotal,
-      discountPercent,
-      discountAmount,
-      cgst,
-      sgst,
-      total: Math.round(taxableAmount + cgst + sgst)
-    };
+    return computeBillTotal(subTotal, order.discount?.percent);
   }, [order.items, order.discount]);
 
   const billGroups = useMemo(() => {
     if (order.splitType !== "bill" || !order.splitBillCount) return null;
 
     const billCount = Number(order.splitBillCount);
-    const discountPercent = Math.max(0, Math.min(100, Number(order.discount?.percent) || 0));
+    const discountPercent = order.discount?.percent;
 
     const groups = Array.from({ length: billCount }, (_, i) => {
       const billNo = i + 1;
@@ -711,11 +562,7 @@ const BillLayout = React.memo(({
         it => Number(it.billAssignment) === billNo && normalizeStatus(it.status) !== "cancelled"
       );
       const subTotal = +items.reduce((sum, it) => sum + Number(it.totalPrice || 0), 0).toFixed(2);
-      const discountAmount = +(subTotal * (discountPercent / 100)).toFixed(2);
-      const taxable = +(subTotal - discountAmount).toFixed(2);
-      const cgst = +(taxable * 0.025).toFixed(2);
-      const sgst = +(taxable * 0.025).toFixed(2);
-      const total = Math.round(taxable + cgst + sgst);
+      const { total } = computeBillTotal(subTotal, discountPercent);
       return { billNo, itemCount: items.length, subTotal, total };
     });
 
@@ -902,7 +749,7 @@ const BillLayout = React.memo(({
             <div className="bill-qr-amount">₹{Math.round(Number(finalAmount))}</div>
           </div>
         ) : (
-          <CashfreeQRSection orderId={order.id} billNo={finalBillNo} amount={finalAmount} onPaid={onPaid} />
+          <UpiQrSection orderId={order.id} billNo={finalBillNo} amount={finalAmount} onPaid={onPaid} />
         )
       )}
     </div>
@@ -1414,36 +1261,28 @@ const Orders = ({ adminData, setAdminData }) => {
     }
   }, [location.state]);
 
-  // Static UPI-intent fallback — only used if a live Cashfree order can't
-  // be created (gateway down/misconfigured), so a printed bill still gets
-  // *some* scannable payment QR instead of none.
-  const buildStaticUpiFallback = useCallback((amount, orderId) => {
-    const upiId = "9019081708@upi";
-    const name = "Sam Cafe";
-
-    return (
-      `upi://pay?pa=${upiId}` +
-      `&pn=${encodeURIComponent(name)}` +
-      `&am=${amount}` +
-      `&cu=INR` +
-      `&tn=Order%20${orderId}` +
-      `&tr=ORDER_${orderId}`
-    );
-  }, []);
-
-  // Creates a Cashfree order for this bill and returns its hosted payment
-  // link (used for the printed-receipt QR — the on-screen bill preview
-  // uses CashfreeQRSection directly instead). Falls back to the static
-  // UPI string on any failure so printing is never blocked by the gateway.
+  // Creates a UPI QR payment record for this bill and returns the
+  // upi://pay deep-link to encode as the printed-receipt QR (the
+  // on-screen bill preview uses UpiQrSection directly instead, which
+  // creates its own record the same way). No fallback UPI ID here on
+  // failure — unlike the old Cashfree integration, there's no gateway
+  // that could legitimately be "down" independent of this call; if this
+  // fails, it's because no UPI ID is configured in Admin → Bank
+  // Accounts (or a genuine network/server error), and silently
+  // printing a QR against some other placeholder UPI ID would send a
+  // real customer's real payment to the wrong account — a bug far
+  // worse than a receipt printing without a QR and an error being
+  // surfaced instead.
   const buildUpiUrl = useCallback(async (amount, orderId, billNo = null) => {
     try {
       const res = await api.post("/payments/orders", { orderId, billNo, amount: Number(amount) });
-      return res.data?.paymentLink || buildStaticUpiFallback(amount, orderId);
+      return res.data?.upiUrl || null;
     } catch (err) {
-      console.warn("Cashfree order creation failed for printed bill, falling back to static UPI QR", err);
-      return buildStaticUpiFallback(amount, orderId);
+      console.error("Could not generate UPI payment QR for printed bill", err);
+      toast.error(err?.response?.data?.error || "Could not generate payment QR — printing receipt without one.");
+      return null;
     }
-  }, [buildStaticUpiFallback]);
+  }, [toast]);
 
   /* ---------------- SAFE TOTAL RESOLUTION ---------------- */
   const resolveItemTotal = useCallback(
@@ -1736,38 +1575,27 @@ const Orders = ({ adminData, setAdminData }) => {
     exportToExcel({ rows, sheetName: "Orders", fileName: `orders_${from}_to_${to}.xlsx` });
   };
 
-  const computeGSTFromSubtotal = (subTotal, discountPercent) => {
-    const discountAmount = +(subTotal * ((discountPercent || 0) / 100)).toFixed(2);
-    const taxable = +(subTotal - discountAmount).toFixed(2);
-    const cgst = +(taxable * 0.025).toFixed(2);
-    const sgst = +(taxable * 0.025).toFixed(2);
-    const total = Math.round(taxable + cgst + sgst);
-    return { subTotal: +subTotal.toFixed(2), discountPercent: discountPercent || 0, discountAmount, cgst, sgst, total };
-  };
-
   // Builds the printer-shaped payload for a single receipt. `overrides`
   // lets split-bill printing swap in a filtered item list / per-bill
   // totals without duplicating the base mapping logic.
   const buildPrinterOrder = async (order, overrides = {}) => {
     const totalWithGST = overrides.totalWithGST || order.totalWithGST || (() => {
       const subTotal = Number(order.resolvedTotal || 0);
-      const cgst = +(subTotal * 0.025).toFixed(2);
-      const sgst = +(subTotal * 0.025).toFixed(2);
-      const total = Math.round(subTotal + cgst + sgst);
-      return { subTotal, cgst, sgst, total };
+      return computeBillTotal(subTotal, order.discount?.percent);
     })();
 
     const sourceItems = overrides.items || order.items;
 
     // Once the order's payment is already completed, there's nothing left
     // to collect — printing/re-printing a receipt must NOT create yet
-    // another Cashfree order every time (buildUpiUrl below does exactly
-    // that unconditionally). Each of those stray orders leaves behind its
-    // own Payment document stuck at PENDING forever (nobody ever scans a
-    // QR nobody asked for), and since GET /payments/orders returns the
-    // newest one first, that dangling PENDING record — not the real PAID
-    // one — is what the Payment Status modal then shows, even though the
-    // order is genuinely fully paid. Skip QR creation entirely here.
+    // another payment record every time (buildUpiUrl below does exactly
+    // that unconditionally). Each of those stray records leaves behind
+    // its own Payment document stuck at PENDING forever (nobody ever
+    // scans a QR nobody asked for), and since GET /payments/orders
+    // returns the newest one first, that dangling PENDING record — not
+    // the real PAID one — is what the Payment Status modal then shows,
+    // even though the order is genuinely fully paid. Skip QR creation
+    // entirely here.
     const upiUrl = overrides.upiUrl
       || (normalizePaymentStatus(order) === "completed" ? null : await buildUpiUrl(totalWithGST.total, order.id, overrides.billNo ?? null));
 
@@ -1838,7 +1666,7 @@ const Orders = ({ adminData, setAdminData }) => {
         if (billItems.length === 0) continue; // nothing assigned to this bill — skip, don't print an empty receipt
 
         const subTotal = +billItems.reduce((sum, it) => sum + Number(it.totalPrice || 0), 0).toFixed(2);
-        const totalWithGST = computeGSTFromSubtotal(subTotal, discountPercent);
+        const totalWithGST = computeBillTotal(subTotal, discountPercent);
 
         const printerOrder = await buildPrinterOrder(order, {
           items: billItems,
@@ -2110,12 +1938,7 @@ const Orders = ({ adminData, setAdminData }) => {
       .toFixed(2);
 
     const discountPct = Math.max(0, Math.min(100, Number(order.discount?.percent) || 0));
-    const discountAmount = +(subTotal * (discountPct / 100)).toFixed(2);
-    const taxableAmount = +(subTotal - discountAmount).toFixed(2);
-
-    const cgst = +(taxableAmount * 0.025).toFixed(2);
-    const sgst = +(taxableAmount * 0.025).toFixed(2);
-    const total = Math.round(taxableAmount + cgst + sgst);
+    const { discountAmount, taxableAmount, cgst, sgst, total } = computeBillTotal(subTotal, discountPct);
 
     return {
       ...order,
@@ -2135,12 +1958,31 @@ const Orders = ({ adminData, setAdminData }) => {
   const applySplitAmount = () => {
     if (!splitPeople || isNaN(splitPeople)) return;
 
-    const total = editableBill.items.reduce(
-      (sum, i) => sum + Number(i.totalPrice || 0),
-      0
-    );
+    // Same "exclude cancelled items" rule as every other total on this
+    // page (BillLayout's totals/billGroups, buildPrinterOrder) — this
+    // previously summed ALL items including cancelled ones, which could
+    // make a per-head split amount larger than the bill actually is.
+    const subTotal = editableBill.items
+      .filter(i => normalizeStatus(i.status) !== "cancelled")
+      .reduce((sum, i) => sum + Number(i.totalPrice || 0), 0);
 
-    const perHead = (total / Number(splitPeople)).toFixed(2);
+    // Split the GST-INCLUSIVE total, not the pre-tax subtotal — a
+    // per-head amount that excluded tax would mean the group
+    // collectively pays less than the actual bill (the tax has to come
+    // from somewhere). Uses the same computeBillTotal every other total
+    // on this page goes through, so this splits exactly the number
+    // shown as "TOTAL" on the bill, not a different, untaxed figure.
+    const { total } = computeBillTotal(subTotal, editableBill.discount?.percent);
+
+    // Rounded to the nearest whole rupee — an unrounded per-head amount
+    // (e.g. "150.3333...") is not a payable UPI amount and doesn't match
+    // how every other total on this page rounds. Note N people at a
+    // rounded per-head amount can sum to slightly more/less than the
+    // bill's own rounded total (a few paise to a rupee either way,
+    // depending on N) — an unavoidable consequence of splitting a
+    // rounded whole-rupee total evenly; kept simple/predictable rather
+    // than distributing the remainder unevenly across guests.
+    const perHead = Math.round(total / Number(splitPeople));
 
     setEditableBill(prev => ({
       ...prev,
@@ -2819,12 +2661,10 @@ const Orders = ({ adminData, setAdminData }) => {
               onClose={closeAllBillOverlays}
               order={previewBillOrder}
               onPaid={() => {
-                // Payment just resolved to PAID while staff had the Preview
-                // modal open with the QR showing — surface the outcome
-                // immediately via the Payment Status modal instead of
-                // leaving them looking at a stale QR. This is the admin
-                // panel's own signal, independent of whatever URL Cashfree
-                // redirects the customer's phone to.
+                // Payment was just confirmed via "Mark as Paid" while staff
+                // had the Preview modal open with the QR showing — surface
+                // the outcome immediately via the Payment Status modal
+                // instead of leaving them looking at a stale QR.
                 const paidOrder = previewBillOrder;
                 setPreviewBillOrder(null);
                 setPaymentStatusOrder(paidOrder);

@@ -39,6 +39,8 @@ export const DAYS = [
   { key: "sat", label: "Sat" },
   { key: "sun", label: "Sun" },
 ];
+export const ALL_DAY_KEYS = DAYS.map(d => d.key);
+export const WEEKDAY_KEYS = ["mon", "tue", "wed", "thu", "fri"];
 
 // Builds an empty { mon: [], tue: [], ... sun: [] } day map — each day
 // holds an array of dish ids (0, 1, or many).
@@ -216,6 +218,40 @@ export function useSubscriptionBuilder(adminData, initialSubscription) {
     });
   };
 
+  // Clears a dish from ALL 7 days, then (optionally) sets it present on
+  // just `dayKeys` — one atomic state update. Backs the "All Days" /
+  // "Weekdays" quick-select chips: the two are mutually exclusive (only
+  // one can read as active at a time), and unchecking either clears the
+  // dish from every day rather than leaving a partial selection behind.
+  const setDishExclusivelyOnDays = (slot, week, dayKeys, dishId) => {
+    setSubscription(prev => {
+      const nextSlots = { ...prev.slots };
+      const weeksToUpdate = prev.planType === "weekly" ? WEEKS : [week];
+
+      const nextSlotWeeks = { ...nextSlots[slot] };
+      weeksToUpdate.forEach(w => {
+        const nextWeek = { ...nextSlotWeeks[w] };
+        ALL_DAY_KEYS.forEach(dayKey => {
+          const existing = nextWeek[dayKey];
+          const currentIds = Array.isArray(existing) ? existing : (existing ? [existing] : []);
+          const shouldBePresent = dayKeys.includes(dayKey);
+          const alreadyIn = currentIds.includes(dishId);
+          if (shouldBePresent && !alreadyIn) {
+            nextWeek[dayKey] = [...currentIds, dishId];
+          } else if (!shouldBePresent && alreadyIn) {
+            nextWeek[dayKey] = currentIds.filter(id => id !== dishId);
+          } else {
+            nextWeek[dayKey] = currentIds;
+          }
+        });
+        nextSlotWeeks[w] = nextWeek;
+      });
+      nextSlots[slot] = nextSlotWeeks;
+
+      return { ...prev, slots: nextSlots };
+    });
+  };
+
   // Switching plan type doesn't touch dishes already picked — "weekly"
   // just means further edits to week1 propagate; existing week2-4 data
   // (if any) from a prior "monthly" pass is left as-is until re-edited.
@@ -286,6 +322,7 @@ export function useSubscriptionBuilder(adminData, initialSubscription) {
     dishesForPicker,
 
     toggleCellDish,
+    setDishExclusivelyOnDays,
     setPlanType,
     dishLabel,
 

@@ -175,9 +175,13 @@ const ConfirmModal = ({ message, confirmLabel = "Yes, delete", cancelLabel = "Ca
   return (
     <div className="confirm-overlay" onClick={handleCancel}>
       <div className="confirm-card" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
-        <h4 className="confirm-danger">Are you sure?</h4>
-        <p>{message}</p>
-        <div className="confirm-actions">
+        <div className="confirm-card-header">
+          <h4>Are you sure?</h4>
+        </div>
+        <div className="confirm-card-body">
+          <p>{message}</p>
+        </div>
+        <div className="confirm-card-footer confirm-actions">
           <Button3D variant="cancel" onClick={handleCancel}>{cancelLabel}</Button3D>
           <Button3D variant="danger" onClick={handleConfirm}>{confirmLabel}</Button3D>
         </div>

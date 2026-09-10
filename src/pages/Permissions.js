@@ -42,6 +42,14 @@ const MODULE_TABS = [
   { key: "people", label: "People", keys: ["users", "staff", "careers", "holidays", "callHistory", "tasks", "chat"] },
 ];
 
+// Full names for the shortened tab labels above — shown as a hover
+// tooltip via useGlobalTooltips (any element with a plain `title`
+// attribute gets auto-upgraded into a Bootstrap tooltip app-wide).
+const MODULE_TAB_TOOLTIPS = {
+  kms: "Kitchen Management System",
+  sms: "Service Management System",
+};
+
 const Permissions = () => {
   const { toast } = useToast();
   const { isSuperAdmin } = useAuth();
@@ -273,6 +281,7 @@ const Permissions = () => {
                 type="button"
                 className={`filter-pill${activeTab === t.key ? " active" : ""}`}
                 onClick={() => setActiveTab(t.key)}
+                title={MODULE_TAB_TOOLTIPS[t.key]}
               >
                 {t.label}
               </button>
@@ -365,17 +374,21 @@ const Permissions = () => {
       {pendingToggle && (
         <div className="confirm-overlay" onClick={() => setPendingToggle(null)}>
           <div className="confirm-card" onClick={(e) => e.stopPropagation()}>
-            <h4>Confirm permission change</h4>
-            <p>
-              {pendingToggle.nextValue ? "Grant" : "Revoke"}{" "}
-              <strong>{pendingToggle.field === "canRead" ? "Read" : "Write"}</strong> access to{" "}
-              <strong>{pendingToggle.moduleLabel}</strong> for <strong>{pendingToggle.roleTitle}</strong>?
-            </p>
-            <div className="confirm-actions">
+            <div className="confirm-card-header">
+              <h4>Confirm permission change</h4>
+            </div>
+            <div className="confirm-card-body">
+              <p>
+                {pendingToggle.nextValue ? "Grant" : "Revoke"}{" "}
+                <strong>{pendingToggle.field === "canRead" ? "Read" : "Write"}</strong> access to{" "}
+                <strong>{pendingToggle.moduleLabel}</strong> for <strong>{pendingToggle.roleTitle}</strong>?
+              </p>
+            </div>
+            <div className="confirm-card-footer confirm-actions">
               <Button3D variant="cancel" onClick={() => setPendingToggle(null)}>
                 Cancel
               </Button3D>
-              <Button3D onClick={confirmToggle}>Confirm</Button3D>
+              <Button3D variant="danger" onClick={confirmToggle}>Confirm</Button3D>
             </div>
           </div>
         </div>
@@ -384,15 +397,19 @@ const Permissions = () => {
       {showResetConfirm && (
         <div className="confirm-overlay" onClick={() => setShowResetConfirm(false)}>
           <div className="confirm-card" onClick={(e) => e.stopPropagation()}>
-            <h4>Reset permission matrix</h4>
-            <p>
-              Reset the entire permission matrix to defaults? This discards all customizations.
-            </p>
-            <div className="confirm-actions">
+            <div className="confirm-card-header">
+              <h4>Reset permission matrix</h4>
+            </div>
+            <div className="confirm-card-body">
+              <p>
+                Reset the entire permission matrix to defaults? This discards all customizations.
+              </p>
+            </div>
+            <div className="confirm-card-footer confirm-actions">
               <Button3D variant="cancel" onClick={() => setShowResetConfirm(false)}>
                 Cancel
               </Button3D>
-              <Button3D onClick={confirmReset}>
+              <Button3D variant="danger" onClick={confirmReset}>
                 Reset Defaults
               </Button3D>
             </div>

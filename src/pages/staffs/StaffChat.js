@@ -1024,12 +1024,16 @@ export default function StaffChat() {
       {clearModalOpen && selectedStaff && (
         <div className="confirm-overlay" onClick={() => setClearModalOpen(false)}>
           <div className="confirm-card" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
-            <h4 className="confirm-danger">Clear this conversation?</h4>
-            <p>
-              Choose whether to clear your copy of the chat with <strong>{selectedStaff.name}</strong>, or wipe it
-              for both of you. This can't be undone.
-            </p>
-            <div className="confirm-actions chat-clear-actions">
+            <div className="confirm-card-header">
+              <h4>Clear this conversation?</h4>
+            </div>
+            <div className="confirm-card-body">
+              <p>
+                Choose whether to clear your copy of the chat with <strong>{selectedStaff.name}</strong>, or wipe it
+                for both of you. This can't be undone.
+              </p>
+            </div>
+            <div className="confirm-card-footer confirm-actions chat-clear-actions">
               <Button3D variant="cancel" onClick={() => setClearModalOpen(false)}>
                 Cancel
               </Button3D>

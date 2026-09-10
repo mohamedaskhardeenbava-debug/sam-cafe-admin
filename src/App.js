@@ -606,10 +606,15 @@ function App() {
   };
 
   /* ---------------- PUBLIC ROUTE (no auth) ----------------
-     Cashfree's payment-return redirect lands on the paying customer's
-     own device, which has no admin session at all — this must render
-     unconditionally, before the auth-loading check and the auth gate
-     below, or it would fall through to the login screen instead. */
+     ⚠ No longer reached in normal use — this existed for Cashfree's
+     payment-return redirect, which landed on the paying customer's own
+     device (no admin session). The Direct UPI QR Payment System
+     (payments.js) generates a plain upi://pay deep-link QR instead, so
+     a customer's UPI app never redirects back to this domain at all.
+     Left in place rather than removed — see the fuller note atop
+     PaymentComplete.js — but this branch should be unreachable in
+     practice now. Still rendered unconditionally, before the
+     auth-loading check and the auth gate below, in case it's ever hit. */
   if (window.location.pathname === "/payment-complete") {
     return <PaymentComplete />;
   }

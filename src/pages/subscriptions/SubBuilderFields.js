@@ -14,7 +14,7 @@
 
 import React from "react";
 import CustomDropdown from "../../components/CustomDropdown";
-import { SLOT_OPTIONS, WEEKS, WEEK_LABELS, DAYS } from "./useSubscriptionBuilder";
+import { SLOT_OPTIONS, WEEKS, WEEK_LABELS, DAYS, ALL_DAY_KEYS, WEEKDAY_KEYS } from "./useSubscriptionBuilder";
 import { fmtTime } from "../../utils/dateUtils";
 
 const SubBuilderFields = ({ builder, formErrors = {} }) => {
@@ -35,6 +35,7 @@ const SubBuilderFields = ({ builder, formErrors = {} }) => {
     subCategoriesForPicker,
     dishesForPicker,
     toggleCellDish,
+    setDishExclusivelyOnDays,
     setPlanType,
     dishLabel,
     dishById,
@@ -174,6 +175,39 @@ const SubBuilderFields = ({ builder, formErrors = {} }) => {
                   <span className="sub-dish-days-picker-label">
                     Serve <strong>{dishLabel(pickerDishId)}</strong> on:
                   </span>
+                  <div className="sub-day-quick-row">
+                    {[
+                      { keys: ALL_DAY_KEYS, label: "All Days" },
+                      { keys: WEEKDAY_KEYS, label: "Weekdays" },
+                    ].map(({ keys, label }) => {
+                      const checkedDayKeys = ALL_DAY_KEYS.filter(key => {
+                        const cellValue = subscription.slots?.[activeSlot]?.[weekForCell]?.[key];
+                        const dayIds = Array.isArray(cellValue) ? cellValue : (cellValue ? [cellValue] : []);
+                        return dayIds.includes(pickerDishId);
+                      });
+                      // Active only when the checked days are EXACTLY this
+                      // chip's set — not just a superset of it — so "All
+                      // Days" and "Weekdays" can never both read as active
+                      // at once (e.g. all 7 days checked satisfies "every
+                      // weekday is checked" too, but isn't the Weekdays
+                      // chip's own exact selection).
+                      const isActive =
+                        checkedDayKeys.length === keys.length &&
+                        keys.every(key => checkedDayKeys.includes(key));
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          className={`sub-day-quick-chip${isActive ? " is-active" : ""}`}
+                          onClick={() =>
+                            setDishExclusivelyOnDays(activeSlot, weekForCell, isActive ? [] : keys, pickerDishId)
+                          }
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
                   <div className="sub-day-chip-row">
                     {DAYS.map(({ key, label }) => {
                       const cellValue = subscription.slots?.[activeSlot]?.[weekForCell]?.[key];

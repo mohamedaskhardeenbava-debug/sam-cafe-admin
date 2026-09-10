@@ -75,35 +75,58 @@
     z-index: 10;
 }
 
-/* IMAGE + DOC ROW */
+/* ── PROFILE CARD (photo + name + role + quick facts) ─────────────── */
+.staff-profile-card {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    padding: 20px;
+    margin-bottom: 4px;
+    background: linear-gradient(135deg, #fafbfc 0%, #f3f5f7 100%);
+    border: 1px solid #eceef0;
+    border-radius: 16px;
+}
+
 .staff-image-row {
     display: flex;
-    gap: 20px;
-    align-items: flex-start;
-    margin-bottom: 20px;
+    gap: 24px;
+    align-items: center;
+    width: 100%;
+    flex-wrap: wrap;
 }
 
 .staff-details-image {
     position: relative;
-    width: 20%;
+    width: 112px;
+    height: 112px;
     aspect-ratio: 1 / 1;
-    border: 4px solid var(--text-placeholder);
+    border-radius: 50%;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 3px var(--color-blue, #2563eb), 0 6px 16px rgba(0, 0, 0, 0.12);
+    flex-shrink: 0;
+    overflow: hidden;
+    background: #fff;
+}
+
+.staff-details-image > span {
+    display: none;
 }
 
 .staff-details-image img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    border-radius: 12px;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
 }
 
 .image-upload-btn {
     position: absolute;
-    bottom: 4px;
-    right: 0;
+    bottom: 2px;
+    right: 2px;
     background: #111;
     color: #fff;
-    font-size: 12px;
+    font-size: 11px;
     padding: 4px 6px;
     border-radius: 6px;
     cursor: pointer;
@@ -111,6 +134,64 @@
 
 .name-section {
     width: 100%;
+    flex: 1;
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* Name + Role sit side-by-side as the profile identity row */
+.staff-identity-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.staff-identity-row .section {
+    flex: 1;
+    min-width: 160px;
+}
+
+/* Role pill shown in read-only mode */
+.staff-role-pill {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 3px 12px;
+    border-radius: 20px;
+    background: #eef2ff;
+    color: #3b4fd6;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Work Type / Employment Type / Date of Joining — compact row under identity */
+.staff-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.staff-meta-row .section {
+    flex: 1;
+    min-width: 150px;
+}
+
+/* ── DETAIL CARDS — every non-identity section becomes its own card ─── */
+.staff-details-card {
+    background: #fff;
+    border: 1px solid #eceef0;
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.staff-details-card .section-title {
+    margin-bottom: 8px;
+    border-bottom: none;
+    font-size: 14px;
+    color: #111;
 }
 
 /* ADD BUTTON */
@@ -150,6 +231,82 @@
     border: 1px solid #ddd;
 }
 
+/* ── READ-ONLY LABEL/VALUE GRID — replaces the old plain <table> ─────
+   Used inside .staff-details-card when not editing. */
+.staff-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px 24px;
+    margin-top: 4px;
+}
+
+.staff-info-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.staff-info-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #8a8f98;
+}
+
+.staff-info-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: #111;
+    word-break: break-word;
+}
+
+/* Experience list in read-only mode — small chip rows instead of a table */
+.staff-experience-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.staff-experience-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px;
+    background: #f7f8fa;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.staff-experience-row .exp-org {
+    font-weight: 600;
+    color: #111;
+}
+
+.staff-experience-row .exp-place {
+    color: #6b7280;
+}
+
+/* Documents card — icon + label + preview link laid out in a tidy row */
+.staff-documents-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin-top: 4px;
+}
+
+.staff-document-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.staff-document-item .staff-info-label {
+    margin: 0;
+}
+
 .staff-details-table {
     width: 100%;
     border-collapse: collapse;
@@ -180,7 +337,8 @@
     }
 
     .staff-details-image {
-        width: 160px;
+        width: 96px;
+        height: 96px;
     }
 
     .data-table th,
@@ -193,23 +351,49 @@
 ═══════════════════════════════════════════ */
 @media (max-width: 992px) {
   .staff-details-image {
-    width: 30%;
+    width: 96px;
+    height: 96px;
   }
 }
 
 @media (max-width: 578px) {
+  .staff-profile-card {
+    padding: 16px;
+  }
+
+  .staff-image-row {
+    gap: 16px;
+  }
+
   .staff-details-image {
-    width: 120px;
+    width: 84px;
+    height: 84px;
   }
 
   .data-table th,
   .data-table td {
     font-size: 11px;
   }
+
+  .staff-info-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px 16px;
+  }
 }
 
 @media (max-width: 480px) {
+  .staff-profile-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .staff-details-image {
-    width: 100px;
+    width: 80px;
+    height: 80px;
+  }
+
+  .staff-info-grid {
+    grid-template-columns: 1fr 1fr;
   }
 }
+

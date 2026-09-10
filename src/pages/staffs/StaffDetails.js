@@ -14,6 +14,8 @@ import deleteIcon from "../../icon/delete-icon.png";
 import { useToast } from "../../useToast";
 import Button3D from "../../components/Button3D";
 import FilePreviewLink from "../../components/FilePreviewLink";
+import CustomDropdown from "../../components/CustomDropdown";
+import useRoleTitles from "./useRoleTitles";
 import { allowTextInput } from "../../App";
 
 import "./StaffDetails.css";
@@ -25,6 +27,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
   const { toast } = useToast();
   const { staffId } = useParams();
   const navigate = useNavigate();
+  const { roleTitles: jobRoles } = useRoleTitles(); // same Roles and Responsibilities registry used on the Staffs list, so this page can't drift out of sync with login account role titles
 
   const staff = adminData.staff.find(s => s.id === staffId);
 
@@ -123,142 +126,148 @@ const StaffDetails = ({ adminData, setAdminData }) => {
       </div>
 
       <div className="details-body">
-        {/* IMAGE */}
-        <div className="staff-image-row">
+        {/* PROFILE CARD */}
+        <div className="staff-profile-card">
+          <div className="staff-image-row">
 
-          {/* PROFILE IMAGE */}
-          <div className="staff-details-image">
-            <span>Staff Image</span>
-            <img src={localStaff.idImage || "/placeholder.png"} alt="" />
-            {isEditing && (
-              <div className="file-wrap">
-                <input
-                  type="file"
-                  className="file-input"
-                  onChange={(e) => handleImageUpload(e, "idImage")}
-                />
-                <div className="file-label">Change</div>
-              </div>
-            )}
-          </div>
-
-          <div className="name-section">
-            {/* NAME */}
-            <div className="section">
-              <div className="section-title">
-                <span>Full Name</span>
-              </div>
-              {isEditing ? (
-                <div className="admin-form-group">
+            {/* PROFILE IMAGE */}
+            <div className="staff-details-image">
+              <span>Staff Image</span>
+              <img src={localStaff.idImage || "/placeholder.png"} alt="" />
+              {isEditing && (
+                <div className="file-wrap">
                   <input
-                    value={localStaff.name}
-                    onChange={(e) =>
-                      setLocalStaff({ ...localStaff, name: allowTextInput(localStaff.name, e.target.value, 100, 5) })
-                    }
+                    type="file"
+                    className="file-input"
+                    onChange={(e) => handleImageUpload(e, "idImage")}
                   />
+                  <div className="file-label">Change</div>
                 </div>
-              ) : (
-                <p>{localStaff.name}</p>
               )}
             </div>
 
-            {/* ROLE */}
-            <div className="section">
-              <div className="section-title">
-                <span>Role</span>
-              </div>
-              {isEditing ? (
-                <div className="admin-form-group">
-                  <input
-                    value={localStaff.role}
-                    onChange={(e) =>
-                      setLocalStaff({ ...localStaff, role: allowTextInput(localStaff.role, e.target.value, 100, 5) })
-                    }
-                  />
-                </div>
-              ) : (
-                <p>{localStaff.role}</p>
-              )}
-            </div>
-
-            {/* WORK TYPE */}
-            <div className="section">
-              <div className="section-title">
-                <span>Work Type</span>
-              </div>
-              {isEditing ? (
-                <div className="admin-form-group">
-                  <div className="radio-group">
-                    {["part-time", "full-time", "double-shift"].map((type) => (
-                      <label key={type} className="radio-btn">
-                        <input
-                          type="radio"
-                          className="radio"
-                          checked={(localStaff.workType || "full-time") === type}
-                          onChange={() =>
-                            setLocalStaff({ ...localStaff, workType: type })
-                          }
-                        />
-                        {type}
-                      </label>
-                    ))}
+            <div className="name-section">
+              {/* NAME + ROLE */}
+              <div className="staff-identity-row">
+                <div className="section">
+                  <div className="section-title">
+                    <span>Full Name</span>
                   </div>
+                  {isEditing ? (
+                    <div className="admin-form-group">
+                      <input
+                        value={localStaff.name}
+                        onChange={(e) =>
+                          setLocalStaff({ ...localStaff, name: allowTextInput(localStaff.name, e.target.value, 100, 5) })
+                        }
+                      />
+                    </div>
+                  ) : (
+                    <p>{localStaff.name}</p>
+                  )}
                 </div>
-              ) : (
-                <p>{localStaff.workType || "full-time"}</p>
-              )}
-            </div>
 
-            {/* EMPLOYMENT TYPE */}
-            <div className="section">
-              <div className="section-title">
-                <span>Employment Type</span>
-              </div>
-              {isEditing ? (
-                <div className="admin-form-group">
-                  <div className="radio-group">
-                    {["permanent", "trainee", "intern"].map((type) => (
-                      <label key={type} className="radio-btn">
-                        <input
-                          type="radio"
-                          className="radio"
-                          checked={(localStaff.employmentType || "permanent") === type}
-                          onChange={() =>
-                            setLocalStaff({ ...localStaff, employmentType: type })
-                          }
-                        />
-                        {type}
-                      </label>
-                    ))}
+                {/* ROLE */}
+                <div className="section">
+                  <div className="section-title">
+                    <span>Role</span>
                   </div>
+                  {isEditing ? (
+                    <div className="admin-form-group">
+                      <CustomDropdown
+                        value={localStaff.role}
+                        onChange={(v) => setLocalStaff({ ...localStaff, role: v })}
+                        options={jobRoles}
+                        placeholder="Select Role"
+                      />
+                    </div>
+                  ) : (
+                    <span className="staff-role-pill">{localStaff.role}</span>
+                  )}
                 </div>
-              ) : (
-                <p>{localStaff.employmentType || "permanent"}</p>
-              )}
-            </div>
-
-            {/* DATE OF JOINING */}
-            <div className="section">
-              <div className="section-title">
-                <span>Date of Joining</span>
               </div>
-              {isEditing ? (
-                <div className="admin-form-group">
-                  <CustomDatePicker
-                    value={localStaff.joiningDate || ""}
-                    onChange={(v) => setLocalStaff({ ...localStaff, joiningDate: v })}
-                    placeholder="Select joining date"
-                  />
+
+              {/* WORK TYPE / EMPLOYMENT TYPE / DATE OF JOINING */}
+              <div className="staff-meta-row">
+                <div className="section">
+                  <div className="section-title">
+                    <span>Work Type</span>
+                  </div>
+                  {isEditing ? (
+                    <div className="admin-form-group">
+                      <div className="radio-group">
+                        {["part-time", "full-time", "double-shift"].map((type) => (
+                          <label key={type} className="radio-btn">
+                            <input
+                              type="radio"
+                              className="radio"
+                              checked={(localStaff.workType || "full-time") === type}
+                              onChange={() =>
+                                setLocalStaff({ ...localStaff, workType: type })
+                              }
+                            />
+                            {type}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p>{localStaff.workType || "full-time"}</p>
+                  )}
                 </div>
-              ) : (
-                <p>{localStaff.joiningDate}</p>
-              )}
+
+                {/* EMPLOYMENT TYPE */}
+                <div className="section">
+                  <div className="section-title">
+                    <span>Employment Type</span>
+                  </div>
+                  {isEditing ? (
+                    <div className="admin-form-group">
+                      <div className="radio-group">
+                        {["permanent", "trainee", "intern"].map((type) => (
+                          <label key={type} className="radio-btn">
+                            <input
+                              type="radio"
+                              className="radio"
+                              checked={(localStaff.employmentType || "permanent") === type}
+                              onChange={() =>
+                                setLocalStaff({ ...localStaff, employmentType: type })
+                              }
+                            />
+                            {type}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p>{localStaff.employmentType || "permanent"}</p>
+                  )}
+                </div>
+
+                {/* DATE OF JOINING */}
+                <div className="section">
+                  <div className="section-title">
+                    <span>Date of Joining</span>
+                  </div>
+                  {isEditing ? (
+                    <div className="admin-form-group">
+                      <CustomDatePicker
+                        value={localStaff.joiningDate || ""}
+                        onChange={(v) => setLocalStaff({ ...localStaff, joiningDate: v })}
+                        placeholder="Select joining date"
+                      />
+                    </div>
+                  ) : (
+                    <p>{localStaff.joiningDate}</p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         {/* PERSONAL */}
-        <div className="section">
+        <div className="staff-details-card section">
           <div className="section-title">
             <span>Personal Details</span>
           </div>
@@ -298,20 +307,33 @@ const StaffDetails = ({ adminData, setAdminData }) => {
               </div>
             </div>
           ) : (
-            <table className="staff-details-table">
-              <tbody>
-                <tr><td>DOB</td><td>{localStaff.dob}</td></tr>
-                <tr><td>Joining Date</td><td>{localStaff.joiningDate}</td></tr>
-                <tr><td>Education</td><td>{localStaff.education}</td></tr>
-                <tr><td>Experience</td><td>{localStaff.experience}</td></tr>
-                <tr><td>Salary</td><td>₹{localStaff.salary}</td></tr>
-              </tbody>
-            </table>
+            <div className="staff-info-grid">
+              <div className="staff-info-cell">
+                <span className="staff-info-label">DOB</span>
+                <span className="staff-info-value">{localStaff.dob || "—"}</span>
+              </div>
+              <div className="staff-info-cell">
+                <span className="staff-info-label">Joining Date</span>
+                <span className="staff-info-value">{localStaff.joiningDate || "—"}</span>
+              </div>
+              <div className="staff-info-cell">
+                <span className="staff-info-label">Education</span>
+                <span className="staff-info-value">{localStaff.education || "—"}</span>
+              </div>
+              <div className="staff-info-cell">
+                <span className="staff-info-label">Experience</span>
+                <span className="staff-info-value">{localStaff.experience || "—"}</span>
+              </div>
+              <div className="staff-info-cell">
+                <span className="staff-info-label">Salary</span>
+                <span className="staff-info-value">₹{localStaff.salary || "—"}</span>
+              </div>
+            </div>
           )}
         </div>
 
         {/* CONTACT */}
-        <div className="section">
+        <div className="staff-details-card section">
           <div className="section-title">
             <span>Contact Details</span>
           </div>
@@ -335,17 +357,21 @@ const StaffDetails = ({ adminData, setAdminData }) => {
               </div>
             </>
           ) : (
-            <table className="staff-details-table">
-              <tbody>
-                <tr><td>Phone</td><td>{localStaff.contact}</td></tr>
-                <tr><td>Alt</td><td>{localStaff.altContact}</td></tr>
-              </tbody>
-            </table>
+            <div className="staff-info-grid">
+              <div className="staff-info-cell">
+                <span className="staff-info-label">Phone</span>
+                <span className="staff-info-value">{localStaff.contact || "—"}</span>
+              </div>
+              <div className="staff-info-cell">
+                <span className="staff-info-label">Alt Phone</span>
+                <span className="staff-info-value">{localStaff.altContact || "—"}</span>
+              </div>
+            </div>
           )}
         </div>
 
         {/* ADDRESS */}
-        <div className="section">
+        <div className="staff-details-card section">
           <div className="section-title">
             <span>Address Details</span>
           </div>
@@ -407,17 +433,21 @@ const StaffDetails = ({ adminData, setAdminData }) => {
               </div>
             </>
           ) : (
-            <table className="staff-details-table">
-              <tbody>
-                <tr><td>Residential</td><td>{localStaff.residentialAddress}</td></tr>
-                <tr><td>Permanent</td><td>{localStaff.permanentAddress}</td></tr>
-              </tbody>
-            </table>
+            <div className="staff-info-grid">
+              <div className="staff-info-cell">
+                <span className="staff-info-label">Residential</span>
+                <span className="staff-info-value">{localStaff.residentialAddress || "—"}</span>
+              </div>
+              <div className="staff-info-cell">
+                <span className="staff-info-label">Permanent</span>
+                <span className="staff-info-value">{localStaff.permanentAddress || "—"}</span>
+              </div>
+            </div>
           )}
         </div>
 
         {/* BANK */}
-        <div className="section">
+        <div className="staff-details-card section">
           <div className="section-title">
             <span>Bank Details</span>
           </div>
@@ -447,18 +477,25 @@ const StaffDetails = ({ adminData, setAdminData }) => {
               </div>
             </>
           ) : (
-            <table className="staff-details-table">
-              <tbody>
-                <tr><td>Bank</td><td>{localStaff.bank.name}</td></tr>
-                <tr><td>Account</td><td>{localStaff.bank.account}</td></tr>
-                <tr><td>IFSC</td><td>{localStaff.bank.ifsc}</td></tr>
-              </tbody>
-            </table>
+            <div className="staff-info-grid">
+              <div className="staff-info-cell">
+                <span className="staff-info-label">Bank</span>
+                <span className="staff-info-value">{localStaff.bank.name || "—"}</span>
+              </div>
+              <div className="staff-info-cell">
+                <span className="staff-info-label">Account</span>
+                <span className="staff-info-value">{localStaff.bank.account || "—"}</span>
+              </div>
+              <div className="staff-info-cell">
+                <span className="staff-info-label">IFSC</span>
+                <span className="staff-info-value">{localStaff.bank.ifsc || "—"}</span>
+              </div>
+            </div>
           )}
         </div>
 
         {/* EXPERIENCE */}
-        <div className="section">
+        <div className="staff-details-card section">
           <div className="section-title">
             <span>Previous Experience Details</span>
           </div>
@@ -510,37 +547,46 @@ const StaffDetails = ({ adminData, setAdminData }) => {
               <Button3D onClick={() => setEditingExp([...editingExp, { org: "", place: "" }])}>Add</Button3D>
             </>
           ) : (
-            <table className="staff-details-table">
-              <tbody>
+            localStaff.previousExperience.length > 0 ? (
+              <div className="staff-experience-list">
                 {localStaff.previousExperience.map((exp, i) => (
-                  <tr key={i}>
-                    <td>{exp.org}</td>
-                    <td>{exp.place}</td>
-                  </tr>
+                  <div className="staff-experience-row" key={i}>
+                    <span className="exp-org">{exp.org}</span>
+                    <span className="exp-place">{exp.place}</span>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            ) : (
+              <p>—</p>
+            )
           )}
         </div>
 
         {/* DOCUMENTS */}
-        <div className="section">
-          <p>
-            ID Proof:{" "}
-            <FilePreviewLink
-              href={localStaff.idProof}
-              download={`${localStaff.name || "id-proof"}-id-proof`}
-              label="Preview / Download"
-            />
-          </p>
-          <p>
-            Bonafide:{" "}
-            <FilePreviewLink
-              href={localStaff.bonafide}
-              download={`${localStaff.name || "bonafide"}-bonafide`}
-              label="Preview / Download"
-            />
-          </p>
+        <div className="staff-details-card section">
+          <div className="section-title">
+            <span>Documents</span>
+          </div>
+          <div className="staff-documents-row">
+            <div className="staff-document-item">
+              <span className="staff-info-label">ID Proof</span>
+              <FilePreviewLink
+                href={localStaff.idProof}
+                thumbnail={localStaff.idProofThumbnail}
+                download={`${localStaff.name || "id-proof"}-id-proof`}
+                label="Preview / Download"
+              />
+            </div>
+            <div className="staff-document-item">
+              <span className="staff-info-label">Bonafide</span>
+              <FilePreviewLink
+                href={localStaff.bonafide}
+                thumbnail={localStaff.bonafideThumbnail}
+                download={`${localStaff.name || "bonafide"}-bonafide`}
+                label="Preview / Download"
+              />
+            </div>
+          </div>
         </div>
       </div>
 

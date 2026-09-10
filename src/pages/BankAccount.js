@@ -32,6 +32,11 @@ const EMPTY_FORM = {
 };
 
 const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+// Same pattern as bankAccount.js's isValidUpiVpa server-side — kept in
+// sync deliberately so a value that passes here never gets rejected by
+// the server's own check (and vice versa), which would otherwise show
+// as a confusing "saved successfully" client-side followed by a 400.
+const UPI_VPA_PATTERN = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z][a-zA-Z0-9.\-_]{1,64}$/;
 
 const BankAccount = () => {
   const { toast } = useToast();
@@ -91,6 +96,11 @@ const BankAccount = () => {
     if (!form.accountNumber.trim() || !/^\d{9,18}$/.test(form.accountNumber.trim())) e.accountNumber = true;
     if (!IFSC_PATTERN.test(form.ifscCode.trim().toUpperCase())) e.ifscCode = true;
     if (!form.bankName.trim()) e.bankName = true;
+    // Required — the Direct UPI QR Payment System (Orders page) reads
+    // this to build every order's payment QR. A missing/malformed value
+    // here would otherwise surface as a confusing failure later, on the
+    // Orders page, disconnected from where it actually needs fixing.
+    if (!UPI_VPA_PATTERN.test(form.upiVpa.trim())) e.upiVpa = true;
     return e;
   };
 
@@ -148,7 +158,7 @@ const BankAccount = () => {
       </div>
 
       <p className="ba-subtitle">
-        Where customer payments (Cashfree) settle. Visible to Super Admin only.
+        Where customer payments settle, and the UPI ID every order's payment QR is generated against. Visible to Super Admin only.
       </p>
 
       {saved ? (
@@ -160,8 +170,18 @@ const BankAccount = () => {
           {saved.branchName && (
             <div className="ba-row"><span className="ba-label">Branch</span><span className="ba-value">{saved.branchName}</span></div>
           )}
-          {saved.upiVpa && (
+          {saved.upiVpa ? (
             <div className="ba-row"><span className="ba-label">UPI VPA</span><span className="ba-value">{saved.upiVpa}</span></div>
+          ) : (
+            // A record saved before UPI VPA became required (see
+            // bankAccount.js) can still have an empty value — surfaced
+            // as a warning rather than silently omitting the row,
+            // since a missing VPA means every order's "Generate QR"
+            // action on the Orders page will fail until this is fixed.
+            <div className="ba-row">
+              <span className="ba-label">UPI VPA</span>
+              <span className="ba-value ba-warning">Not set — payment QRs will not work until this is added</span>
+            </div>
           )}
         </div>
       ) : (
@@ -283,14 +303,20 @@ const BankAccount = () => {
           <div className="admin-form-group">
             <div className="mat">
               <input
-                className="mat-input"
+                className={`mat-input${formErrors.upiVpa ? " mat-error" : ""}`}
                 placeholder=" "
                 type="text"
                 value={form.upiVpa}
                 onChange={(e) => setForm((p) => ({ ...p, upiVpa: allowTextInput(p.upiVpa, e.target.value.trim(), 100, 5) }))}
               />
-              <label className="mat-label">UPI VPA (optional)</label>
-              <span className="mat-bar" />
+              <label className={`mat-label${formErrors.upiVpa ? " mat-label-error" : ""}`}>
+                UPI VPA<span className="rf-req">*</span>
+              </label>
+              <span className={`mat-bar${formErrors.upiVpa ? " mat-bar-error" : ""}`} />
+            </div>
+            {formErrors.upiVpa && <div className="field-error-msg">Enter a valid UPI ID (e.g. yourname@okhdfcbank)</div>}
+            <div className="field-hint">
+              Every order's payment QR (Orders page) is generated against this UPI ID.
             </div>
           </div>
             </div>

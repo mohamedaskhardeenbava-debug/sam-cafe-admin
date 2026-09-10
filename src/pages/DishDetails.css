@@ -92,44 +92,25 @@ td input {
   box-sizing: border-box;
 }
 
-/* Veg / Non-Veg badge */
-.veg-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 20px;
-  width: fit-content;
-}
-
-.veg-badge.veg {
-  background: #e6f9ec;
+/* Type / Event Food / Subscription Food / Combo Food — instead of a
+   separate colored value line, the section-title's own label span
+   gets recolored based on the field's value: gray for "No", green for
+   "Yes"/"Veg", red for "Non-Veg". The value itself renders as plain
+   text below (a normal <p>). */
+.section-title .status-yes {
   color: #1a7a38;
-  border: 1px solid #a3e4b4;
 }
 
-.veg-badge.non-veg {
-  background: #fff0ee;
+.section-title .status-no {
+  color: #6b7280;
+}
+
+.section-title .status-veg {
+  color: #1a7a38;
+}
+
+.section-title .status-nonveg {
   color: #c0392b;
-  border: 1px solid #f5b7b1;
-}
-
-.veg-badge::before {
-  content: "";
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.veg-badge.veg::before {
-  background: #27ae60;
-}
-
-.veg-badge.non-veg::before {
-  background: #e74c3c;
 }
 
 /* ── Dish type/event/combo toggle — Uiverse-inspired, white/neumorphic ─── */

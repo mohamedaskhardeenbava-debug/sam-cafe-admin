@@ -359,6 +359,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
                       <td>
                         <FilePreviewLink
                           href={selected.certificate}
+                          thumbnail={selected.certificateThumbnail}
                           download={`${selected.staffName || "certificate"}.file`}
                           label="Preview / Download ↓"
                           className="clickable"

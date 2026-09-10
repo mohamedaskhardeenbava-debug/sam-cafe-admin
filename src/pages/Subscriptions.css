@@ -162,6 +162,38 @@
   gap: 8px;
 }
 
+/* "All Days" / "Weekdays" quick-select chips — fill a whole week (or
+   Mon–Fri) for a repeating dish in one tap instead of clicking each of
+   the 7 day chips below one at a time. */
+.sub-day-quick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.sub-day-quick-chip {
+  padding: 6px 14px;
+  border: 1px solid #d8dbe0;
+  border-radius: 999px;
+  background: #fff;
+  color: #555;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.sub-day-quick-chip:hover {
+  border-color: #27ae60;
+}
+
+.sub-day-quick-chip.is-active {
+  background: #27ae60;
+  border-color: #27ae60;
+  color: #fff;
+}
+
 .sub-day-chip {
   min-width: 52px;
   padding: 8px 14px;

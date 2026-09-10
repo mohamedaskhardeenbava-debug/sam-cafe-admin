@@ -49,6 +49,13 @@
   font-family: monospace;
 }
 
+.ba-warning {
+  color: #b45309;
+  font-weight: 600;
+  font-size: 12px;
+  text-align: right;
+}
+
 .ba-empty {
   color: var(--text-secondary, #888);
   padding: 40px;
@@ -66,4 +73,17 @@
   justify-content: flex-end;
   gap: 12px;
   margin-top: 12px;
+}
+
+.field-error-msg {
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.field-hint {
+  color: var(--text-secondary, #888);
+  font-size: 11px;
+  margin-top: 4px;
+  line-height: 1.4;
 }

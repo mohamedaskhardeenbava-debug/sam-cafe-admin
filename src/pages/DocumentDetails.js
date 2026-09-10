@@ -311,6 +311,7 @@ const DocumentDetails = () => {
             <p>
               <FilePreviewLink
                 href={doc.fileData}
+                thumbnail={doc.thumbnailData}
                 download={doc.fileName || "document"}
                 label={doc.fileName || "Preview file"}
               />

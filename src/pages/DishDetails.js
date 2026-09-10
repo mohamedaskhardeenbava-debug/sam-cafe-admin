@@ -349,7 +349,9 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
 
           {/* VEG / NON-VEG */}
           <div className="section">
-            <div className="section-title"><span>Type</span></div>
+            <div className="section-title">
+              <span className={isEditing ? "" : (localDish.isVeg === false ? "status-nonveg" : "status-veg")}>Type</span>
+            </div>
             {isEditing ? (
               <div className="dish-switch-group" style={{ marginTop: 5 }}>
                 <button
@@ -368,17 +370,15 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
                 </button>
               </div>
             ) : (
-              <span
-                className={`veg-badge ${localDish.isVeg === false ? "non-veg" : "veg"}`}
-              >
-                {localDish.isVeg === false ? "Non-Veg" : "Veg"}
-              </span>
+              <p>{localDish.isVeg === false ? "Non-Veg" : "Veg"}</p>
             )}
           </div>
 
           {/* EVENT FOOD */}
           <div className="section">
-            <div className="section-title"><span>Event Food</span></div>
+            <div className="section-title">
+              <span className={isEditing ? "" : (localDish.isEventFood ? "status-yes" : "status-no")}>Event Food</span>
+            </div>
             {isEditing ? (
               <div className="dish-switch-group" style={{ marginTop: 5 }}>
                 <button
@@ -397,17 +397,15 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
                 </button>
               </div>
             ) : (
-              <span
-                className={`veg-badge ${localDish.isEventFood ? "veg" : "non-veg"}`}
-              >
-                {localDish.isEventFood ? "Yes" : "No"}
-              </span>
+              <p>{localDish.isEventFood ? "Yes" : "No"}</p>
             )}
           </div>
 
           {/* SUBSCRIPTION FOOD */}
           <div className="section">
-            <div className="section-title"><span>Subscription Food</span></div>
+            <div className="section-title">
+              <span className={isEditing ? "" : (localDish.isSubscriptionFood ? "status-yes" : "status-no")}>Subscription Food</span>
+            </div>
             {isEditing ? (
               <div className="dish-switch-group" style={{ marginTop: 5 }}>
                 <button
@@ -426,17 +424,15 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
                 </button>
               </div>
             ) : (
-              <span
-                className={`veg-badge ${localDish.isSubscriptionFood ? "veg" : "non-veg"}`}
-              >
-                {localDish.isSubscriptionFood ? "Yes" : "No"}
-              </span>
+              <p>{localDish.isSubscriptionFood ? "Yes" : "No"}</p>
             )}
           </div>
 
           {/* COMBO FOOD */}
           <div className="section">
-            <div className="section-title"><span>Combo Food</span></div>
+            <div className="section-title">
+              <span className={isEditing ? "" : (localDish.isComboFood ? "status-yes" : "status-no")}>Combo Food</span>
+            </div>
             {isEditing ? (
               <div className="dish-switch-group" style={{ marginTop: 5 }}>
                 <button
@@ -455,11 +451,7 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
                 </button>
               </div>
             ) : (
-              <span
-                className={`veg-badge ${localDish.isComboFood ? "veg" : "non-veg"}`}
-              >
-                {localDish.isComboFood ? "Yes" : "No"}
-              </span>
+              <p>{localDish.isComboFood ? "Yes" : "No"}</p>
             )}
           </div>
 

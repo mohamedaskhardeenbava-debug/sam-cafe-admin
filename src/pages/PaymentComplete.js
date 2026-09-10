@@ -1,11 +1,28 @@
 /**
  * PaymentComplete.js — public "Transaction Completed" page.
  *
+ * ⚠ NO LONGER REACHABLE IN NORMAL USE. This page existed for the old
+ * Cashfree integration — a customer's phone would land here after
+ * finishing (or backing out of) payment in their bank app, via
+ * Cashfree's order_meta.return_url, and it polled the public
+ * GET /payments/public-status/:id endpoint for the outcome.
+ *
+ * The Direct UPI QR Payment System (see payments.js) generates a plain
+ * upi://pay deep-link QR instead of a Cashfree-hosted session — when a
+ * customer's UPI app finishes paying, it simply returns to their own
+ * phone's home screen; there is no redirect back to this admin panel's
+ * domain at all, and GET /payments/public-status/:id no longer exists
+ * server-side. This file is left in place rather than deleted (in case
+ * something still links to it, and to avoid guessing at removal scope
+ * beyond what was asked for) but the fetch below will now fail if this
+ * route is ever visited directly.
+ *
+ * Original doc comment, for context:
  * This is the page a CUSTOMER's own phone lands on after they finish (or
  * back out of) the UPI payment flow in their bank app, via Cashfree's
- * order_meta.return_url (see payments.js). It has no admin session and
- * needs none — it only reads the Cashfree order id from the URL's
- * ?order_id= query param and polls the public, unauthenticated
+ * order_meta.return_url. It has no admin session and needs none — it
+ * only reads the Cashfree order id from the URL's ?order_id= query
+ * param and polls the public, unauthenticated
  * GET /payments/public-status/:id endpoint for the outcome.
  *
  * This is intentionally simple and self-contained (own CSS, no AuthShell/

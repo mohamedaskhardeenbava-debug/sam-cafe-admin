@@ -213,54 +213,6 @@
   margin-bottom: 6px;
 }
 
-.bill-qr-upi-mount {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 180px;
-  /* The Cashfree v3 SDK renders the UPI QR inside an iframe it injects
-     into this element, sized to fill its container by default (its
-     internal iframe content can't be reached/restyled from here at all —
-     cross-origin). Constraining THIS element's own width to the QR's
-     rendered size (matches the "180px" passed to cashfree.create) is what
-     actually centers it — flex justify-content/margin:auto on a
-     full-width child has nothing to center within otherwise. */
-  width: 200px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.bill-qr-upi-mount iframe {
-  width: 100% !important;
-  max-width: 200px;
-  /* The iframe box itself is already centered (200×180, matching the
-     mount's own width above) — but the QR graphic Cashfree draws INSIDE
-     that iframe's own cross-origin document sits a few pixels left of
-     center within its box, and that inner content can't be reached or
-     restyled from this stylesheet at all. This is a small compensating
-     nudge on the iframe's own position, not a structural fix. */
-  position: relative;
-  left: 4px;
-}
-
-/* The Cashfree Drop-in SDK injects its own wrapper/img/canvas into
-   .bill-qr-upi-mount — those elements are full-width by default, so
-   flex centering on the mount div alone doesn't center the QR image
-   itself. Force every direct/nested child to size to its own content
-   and center within the flex column above. */
-.bill-qr-upi-mount>* {
-  margin-left: auto !important;
-  margin-right: auto !important;
-}
-
-.bill-qr-upi-mount img,
-.bill-qr-upi-mount canvas,
-.bill-qr-upi-mount svg {
-  display: block;
-  margin: 0 auto;
-}
-
 .bill-qr-loading {
   font-size: 12px;
   color: #888;
@@ -307,25 +259,26 @@
   color: #92400e;
 }
 
-.bill-qr-failed {
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-.bill-qr-retry-btn {
+/* "Mark as Paid" — the one manual action that ever moves a UPI
+   payment record to PAID (see payments.js's file-level comment for
+   why there's no automatic detection to trigger this instead). Styled
+   as a clear affirmative action, distinct from the red confirm-dialog
+   button it opens (ConfirmDialog is always red — this is the trigger,
+   not the destructive confirmation itself). */
+.bill-qr-confirm-btn {
   margin-top: 12px;
   border: none;
   border-radius: 8px;
-  padding: 8px 18px;
+  padding: 10px 20px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  background: #dc2626;
+  background: #16a34a;
   color: #fff;
 }
 
-.bill-qr-retry-btn:hover {
-  background: #b91c1c;
+.bill-qr-confirm-btn:hover {
+  background: #15803d;
 }
 
 .bill-qr-amount {

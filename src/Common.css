@@ -623,6 +623,60 @@ th.sorted .sort-arrow {
   cursor: pointer;
 }
 
+/* ── FilePreviewLink — inline thumbnail + label ──────────────────── */
+.file-preview-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+
+.file-preview-thumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #f4f5f7;
+  border: 1px solid #e2e4e8;
+}
+
+.file-preview-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Rendered document-page thumbnails (PDF/DOCX first page — see
+   server/fileThumbnail.js) get a portrait box sized to the page's own
+   aspect ratio (~1:1.3 for A4/Letter) with object-fit: contain, so
+   the whole rendered page is visible instead of being cropped to fit
+   a square — unlike a plain photo upload, cropping a document page
+   can cut off the actual content (a signature block, a footer date,
+   etc). */
+.file-preview-thumb.file-preview-thumb--document {
+  width: 96px;
+  height: 128px;
+}
+
+.file-preview-thumb.file-preview-thumb--document img {
+  object-fit: contain;
+}
+
+.file-preview-thumb svg {
+  display: block;
+  width: 40px;
+  height: 40px;
+}
+
+.file-preview-link-label {
+  word-break: break-word;
+}
+
 
 /* ─────────────────────────────────────────────────────────────
    8. ACTION BUTTONS (.category-add-btn / .export-btn)
@@ -1384,25 +1438,40 @@ th.sorted .sort-arrow {
 .confirm-card {
   background: var(--color-white);
   border-radius: 12px;
-  padding: 24px 28px;
+  padding: 0;
   width: min(360px, 90vw);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
   text-align: center;
+  overflow: hidden;
 }
 
-.confirm-card h4 {
-  margin: 0 0 8px;
+.confirm-card-header {
+  background: #dc2626;
+  padding: 14px 20px;
+}
+
+.confirm-card-header h4 {
+  margin: 0;
   font-size: 16px;
+  color: #fff;
 }
 
-.confirm-card p {
+.confirm-card-body {
+  padding: 18px 20px 0;
+}
+
+.confirm-card-body p {
   margin: 0 0 20px;
   font-size: 13px;
   color: #666;
 }
 
-.confirm-card p strong {
+.confirm-card-body p strong {
   color: #222;
+}
+
+.confirm-card-footer {
+  padding: 0 20px 20px;
 }
 
 .confirm-actions {
