@@ -12,6 +12,7 @@ import { useAuth } from "../../context/AuthContext";
 import { getAvatarColor } from "../../utils/avatarColor";
 import { useVenue } from "../../context/VenueContext";
 import CustomDropdown from "../CustomDropdown";
+import usePopupAnimation from "../../hooks/usePopupAnimation";
 import { fmtDate as sharedFmtDate, fmtTime as sharedFmtTime } from "../../utils/dateUtils";
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -270,9 +271,9 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
 
   /* ── UI state ── */
   const [scrolled, setScrolled] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
-  const [showPhone, setShowPhone] = useState(false);
+  const notificationsPopup = usePopupAnimation();
+  const profilePopup = usePopupAnimation();
+  const phonePopup = usePopupAnimation();
   const [showChat, setShowChat] = useState(false);
   // Tracks a failed <img> load for admin.photo so a broken/stale photo
   // URL falls back to the initials avatar instead of rendering a
@@ -314,14 +315,14 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
   ───────────────────────────────────── */
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (notifRef.current && !notifRef.current.contains(e.target)) setShowNotifications(false);
-      if (profileRef.current && !profileRef.current.contains(e.target)) setShowProfile(false);
-      if (phoneRef.current && !phoneRef.current.contains(e.target)) setShowPhone(false);
+      if (notifRef.current && !notifRef.current.contains(e.target)) notificationsPopup.close();
+      if (profileRef.current && !profileRef.current.contains(e.target)) profilePopup.close();
+      if (phoneRef.current && !phoneRef.current.contains(e.target)) phonePopup.close();
       if (chatRef.current && !chatRef.current.contains(e.target)) setShowChat(false);
     };
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
-  }, []);
+  }, [notificationsPopup, profilePopup, phonePopup]);
 
   /* ─────────────────────────────────────
      Sync readOrderIds when orders change
@@ -676,9 +677,9 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
             className="notification-icon-btn"
             onClick={(e) => {
               e.stopPropagation();
-              setShowPhone(v => !v);
-              setShowNotifications(false);
-              setShowProfile(false);
+              phonePopup.toggle();
+              notificationsPopup.close();
+              profilePopup.close();
             }}
             aria-label="Calls & Reminders"
           >
@@ -690,8 +691,8 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
             )}
           </button>
 
-          {showPhone && (
-            <div className="dropdown phone-dropdown" onClick={(e) => e.stopPropagation()}>
+          {phonePopup.shouldRender && (
+            <div className={`dropdown phone-dropdown ${phonePopup.animClass}`} onClick={(e) => e.stopPropagation()}>
               <h4 className="dropdown-title"> Calls & Reminders</h4>
 
               {/* ── TODAY'S CALLS ── */}
@@ -723,7 +724,7 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
                             <button
                               type="button"
                               className="modal-confirm-btn"
-                              onClick={(e) => { e.stopPropagation(); handleCallDone(chip); navigate(meta.route); setShowPhone(false); }}
+                              onClick={(e) => { e.stopPropagation(); handleCallDone(chip); navigate(meta.route); phonePopup.close(); }}
                             >
                               <span className="shadow"></span>
                               <span className="edge"></span>
@@ -732,7 +733,7 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
                             <button
                               type="button"
                               className="modal-save-btn"
-                              onClick={(e) => { e.stopPropagation(); navigate(meta.route); setShowPhone(false); }}
+                              onClick={(e) => { e.stopPropagation(); navigate(meta.route); phonePopup.close(); }}
                             >
                               <span className="shadow"></span>
                               <span className="edge"></span>
@@ -761,7 +762,7 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
                         <li
                           key={`${item._type}-${item.id}`}
                           className="phone-list__item phone-list__item--compact"
-                          onClick={(e) => { e.stopPropagation(); navigate(meta.route); setShowPhone(false); }}
+                          onClick={(e) => { e.stopPropagation(); navigate(meta.route); phonePopup.close(); }}
                         >
                           <div className="phone-list__compact-info">
                             <strong>{name}</strong>
@@ -811,9 +812,9 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
             onClick={(e) => {
               e.stopPropagation();
               setShowChat(false);
-              setShowNotifications(false);
-              setShowProfile(false);
-              setShowPhone(false);
+              notificationsPopup.close();
+              profilePopup.close();
+              phonePopup.close();
               navigate("/staff-chat");
             }}
             aria-label="Chat"
@@ -829,9 +830,9 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
             className="notification-icon-btn"
             onClick={(e) => {
               e.stopPropagation();
-              setShowNotifications(v => !v);
-              setShowProfile(false);
-              setShowPhone(false);
+              notificationsPopup.toggle();
+              profilePopup.close();
+              phonePopup.close();
             }}
             aria-label="Notifications"
           >
@@ -841,15 +842,15 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
             )}
           </button>
 
-          {showNotifications && (
-            <div className="dropdown notification-dropdown" onClick={(e) => e.stopPropagation()}>
+          {notificationsPopup.shouldRender && (
+            <div className={`dropdown notification-dropdown ${notificationsPopup.animClass}`} onClick={(e) => e.stopPropagation()}>
               <h4 className="dropdown-title">Notifications</h4>
               <ul className="notification-list">
                 {unreadOrders.map(order => (
                   <li key={order.id} onClick={(e) => {
                     e.stopPropagation();
                     setReadOrderIds(prev => [...prev, order.id]);
-                    setShowNotifications(false);
+                    notificationsPopup.close();
                     navigate("/orders", { state: { scrollToOrderId: order.id } });
                   }}>
                     <strong>New Order</strong>
@@ -857,13 +858,13 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
                   </li>
                 ))}
                 {unreadLowStock.length > 0 && (
-                  <li onClick={(e) => { e.stopPropagation(); setShowNotifications(false); navigate("/stocks"); }}>
+                  <li onClick={(e) => { e.stopPropagation(); notificationsPopup.close(); navigate("/stocks"); }}>
                     <strong>Low Stock</strong>
                     <span>{unreadLowStock.length} ingredients below limit</span>
                   </li>
                 )}
                 {expiryNotifications.map(ing => (
-                  <li key={ing.id} onClick={(e) => { e.stopPropagation(); setShowNotifications(false); navigate("/stocks"); }}>
+                  <li key={ing.id} onClick={(e) => { e.stopPropagation(); notificationsPopup.close(); navigate("/stocks"); }}>
                     <strong>Expiry Alert</strong>
                     <span>{ing.name} expires in {ing.daysLeft} day{ing.daysLeft === 1 ? "" : "s"}</span>
                   </li>
@@ -872,7 +873,7 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
                   <li><span>No new notifications</span></li>
                 )}
               </ul>
-              <button className="modal-save-btn" style={{ width: "100%", marginTop: "10px" }} type="button" onClick={(e) => { e.stopPropagation(); setShowNotifications(false); navigate("/orders"); }}>
+              <button className="modal-save-btn" style={{ width: "100%", marginTop: "10px" }} type="button" onClick={(e) => { e.stopPropagation(); notificationsPopup.close(); navigate("/orders"); }}>
                 <span className="shadow"></span>
                 <span className="edge"></span>
                 <span className="front">View all notifications</span>
@@ -888,9 +889,9 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
             className="profile-btn"
             onClick={(e) => {
               e.stopPropagation();
-              setShowProfile(v => !v);
-              setShowNotifications(false);
-              setShowPhone(false);
+              profilePopup.toggle();
+              notificationsPopup.close();
+              phonePopup.close();
             }}
           >
             <div
@@ -906,8 +907,8 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
             <span className="profile-name">{admin?.name || "Admin"}</span>
           </button>
 
-          {showProfile && (
-            <div className="dropdown profile-dropdown" onClick={(e) => e.stopPropagation()}>
+          {profilePopup.shouldRender && (
+            <div className={`dropdown profile-dropdown ${profilePopup.animClass}`} onClick={(e) => e.stopPropagation()}>
               <div className="profile-info">
                 <div
                   className="profile-avatar large"
@@ -929,7 +930,7 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
                 type="button"
                 style={{ width: "100%", marginBottom: "8px" }}
                 className="modal-cancel-btn"
-                onClick={(e) => { e.stopPropagation(); setShowProfile(false); navigate("/profile"); }}
+                onClick={(e) => { e.stopPropagation(); profilePopup.close(); navigate("/profile"); }}
               >
                 <span className="shadow"></span>
                 <span className="edge"></span>
@@ -939,7 +940,7 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
                 type="button"
                 style={{ width: "100%", marginBottom: "8px" }}
                 className="modal-cancel-btn"
-                onClick={(e) => { e.stopPropagation(); setShowProfile(false); navigate("/todo"); }}
+                onClick={(e) => { e.stopPropagation(); profilePopup.close(); navigate("/todo"); }}
               >
                 <span className="shadow"></span>
                 <span className="edge"></span>
@@ -950,7 +951,7 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
                   type="button"
                   style={{ width: "100%", marginBottom: "8px" }}
                   className="modal-cancel-btn"
-                  onClick={(e) => { e.stopPropagation(); setShowProfile(false); navigate("/documents"); }}
+                  onClick={(e) => { e.stopPropagation(); profilePopup.close(); navigate("/documents"); }}
                 >
                   <span className="shadow"></span>
                   <span className="edge"></span>
@@ -963,7 +964,7 @@ const Topbar = ({ admin, adminData = {}, setAdminData }) => {
                 className="modal-danger-btn"
                 onClick={async (e) => {
                   e.stopPropagation();
-                  setShowProfile(false);
+                  profilePopup.close();
                   await logout();
                   navigate("/login", { replace: true });
                 }}

@@ -349,49 +349,47 @@ const Offers = ({ adminData, setAdminData }) => {
                     placeholder="Select Discount Type"
                   />
                 </div>
+              </div>
 
-                <div className="admin-form-group">
-                  {isFlat ? (
-                    <div className="mat">
-                      <input
-                        className={`mat-input${formErrors.flatAmount ? " mat-error" : ""}`}
-                        placeholder=" "
-                        type="number"
-                        min="1"
-                        value={newOffer.flatAmount}
-                        onChange={(e) => {
-                          setNewOffer({ ...newOffer, flatAmount: Number(e.target.value) });
-                          setFormErrors(p => ({ ...p, flatAmount: false }));
-                        }}
-                      />
-                      <label className={`mat-label${formErrors.flatAmount ? " mat-label-error" : ""}`}>Flat Discount (₹)<span className="rf-req">*</span></label>
-                      <span className={`mat-bar${formErrors.flatAmount ? " mat-bar-error" : ""}`} />
-                    </div>
-                  ) : (
-                    <div className="mat">
-                      <input
-                        className={`mat-input${formErrors.percentage ? " mat-error" : ""}`}
-                        placeholder=" "
-                        type="number"
-                        min="1"
-                        max="100"
-                        value={newOffer.percentage}
-                        onChange={(e) => {
-                          setNewOffer({ ...newOffer, percentage: Number(e.target.value) });
-                          setFormErrors(p => ({ ...p, percentage: false }));
-                        }}
-                      />
-                      <label className={`mat-label${formErrors.percentage ? " mat-label-error" : ""}`}>Offer Percentage (%)<span className="rf-req">*</span></label>
-                      <span className={`mat-bar${formErrors.percentage ? " mat-bar-error" : ""}`} />
-                    </div>
-                  )}
-                </div>
+              <div className="admin-form-group">
+                {isFlat ? (
+                  <div className="mat">
+                    <input
+                      className={`mat-input${formErrors.flatAmount ? " mat-error" : ""}`}
+                      placeholder=" "
+                      type="number"
+                      min="1"
+                      value={newOffer.flatAmount}
+                      onChange={(e) => {
+                        setNewOffer({ ...newOffer, flatAmount: Number(e.target.value) });
+                        setFormErrors(p => ({ ...p, flatAmount: false }));
+                      }}
+                    />
+                    <label className={`mat-label${formErrors.flatAmount ? " mat-label-error" : ""}`}>Flat Discount (₹)<span className="rf-req">*</span></label>
+                    <span className={`mat-bar${formErrors.flatAmount ? " mat-bar-error" : ""}`} />
+                  </div>
+                ) : (
+                  <div className="mat">
+                    <input
+                      className={`mat-input${formErrors.percentage ? " mat-error" : ""}`}
+                      placeholder=" "
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={newOffer.percentage}
+                      onChange={(e) => {
+                        setNewOffer({ ...newOffer, percentage: Number(e.target.value) });
+                        setFormErrors(p => ({ ...p, percentage: false }));
+                      }}
+                    />
+                    <label className={`mat-label${formErrors.percentage ? " mat-label-error" : ""}`}>Offer Percentage (%)<span className="rf-req">*</span></label>
+                    <span className={`mat-bar${formErrors.percentage ? " mat-bar-error" : ""}`} />
+                  </div>
+                )}
               </div>
 
               {/* PRICE PREVIEW */}
               <div className="admin-form-group">
-                <label>Price Breakdown</label>
-
                 <div className="offers-price-preview">
                   <div>
                     <span>Original</span>

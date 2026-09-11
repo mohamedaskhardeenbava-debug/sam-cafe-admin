@@ -71,9 +71,10 @@
  * date picker's outside-click-to-cancel behavior.
  */
 
-import React, { useRef, useState } from "react";
+import React, { useRef } from "react";
 import { createPortal } from "react-dom";
 import "./CustomDropdown.css";
+import usePopupAnimation from "../hooks/usePopupAnimation";
 
 const CustomDropdown = ({
   value,
@@ -86,7 +87,8 @@ const CustomDropdown = ({
   hasError = false,
   className = "",
 }) => {
-  const [open, setOpen] = useState(false);
+  const popup = usePopupAnimation();
+  const open = popup.shouldRender;
   const ref = useRef(null);
 
   /* Resolve display label from current value */
@@ -103,7 +105,7 @@ const CustomDropdown = ({
   const wrapperCls = [
     "mat-select",
     value !== "" && value !== null && value !== undefined ? "has-value" : "",
-    open ? "is-open" : "",
+    popup.isOpen ? "is-open" : "",
     hasError ? "mat-select-error" : "",
     disabled ? "mat-select-disabled" : "",
     className,
@@ -113,7 +115,7 @@ const CustomDropdown = ({
 
   const handleToggle = (e) => {
     e.stopPropagation();
-    if (!disabled) setOpen((p) => !p);
+    if (!disabled) popup.toggle();
   };
 
   return (
@@ -136,8 +138,8 @@ const CustomDropdown = ({
         </button>
 
         {open && createPortal(
-          <div className="cdd-overlay">
-            <div className="cdd-popup" onMouseDown={(e) => e.stopPropagation()}>
+          <div className={`cdd-overlay ${popup.animClass}`} onClick={() => popup.close()}>
+            <div className={`cdd-popup ${popup.animClass}`} onMouseDown={(e) => e.stopPropagation()}>
               {label && <div className="cdd-popup-title">{label}</div>}
 
               <div className="cdd-options">
@@ -147,7 +149,7 @@ const CustomDropdown = ({
                     className={`cdd-option cdd-option-placeholder${!selected ? " cdd-sel" : ""}`}
                     onClick={() => {
                       onChange("");
-                      setOpen(false);
+                      popup.close();
                     }}
                   >
                     {placeholder}
@@ -163,7 +165,7 @@ const CustomDropdown = ({
                       className={`cdd-option${val === value ? " cdd-sel" : ""}`}
                       onClick={() => {
                         onChange(val);
-                        setOpen(false);
+                        popup.close();
                       }}
                     >
                       {lbl}

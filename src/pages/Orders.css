@@ -261,24 +261,11 @@
 
 /* "Mark as Paid" — the one manual action that ever moves a UPI
    payment record to PAID (see payments.js's file-level comment for
-   why there's no automatic detection to trigger this instead). Styled
-   as a clear affirmative action, distinct from the red confirm-dialog
-   button it opens (ConfirmDialog is always red — this is the trigger,
-   not the destructive confirmation itself). */
+   why there's no automatic detection to trigger this instead). Uses
+   Button3D's standard "save" (green, modal-save-btn) styling — this is
+   just the spacing hook on top of that. */
 .bill-qr-confirm-btn {
   margin-top: 12px;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 20px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  background: #16a34a;
-  color: #fff;
-}
-
-.bill-qr-confirm-btn:hover {
-  background: #15803d;
 }
 
 .bill-qr-amount {
@@ -466,6 +453,32 @@
   background-color: #6b7280 !important;
 }
 
+/* Payment Status column — pill + "Mark as Paid" button share one row via
+   flex instead of stacking, so the column reads compactly. Widened via
+   .payment-status-cell (applied to both the <th> and each row's <td>)
+   so the button doesn't wrap awkwardly next to the pill. */
+.payment-status-cell {
+  width: 220px;
+  min-width: 220px !important;
+}
+
+.payment-status-cell-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.payment-status-cell-inner .status {
+  flex-shrink: 0;
+}
+
+.row-mark-paid-btn {
+  transform: scale(0.85);
+  transform-origin: left center;
+  flex-shrink: 0;
+}
+
 /* ===== Order Blink Highlight (FoodItem-style) ===== */
 .order-main-row.blink {
   position: relative;
@@ -623,6 +636,39 @@
   overflow: hidden;
 }
 
+/* ── Shared enter/exit animation — same timing as ModalCSS.css's
+   .modal-overlay so every overlay in the app opens/closes consistently.
+   Driven by Orders.js's closeAllBillOverlays (billOverlayClosing state). ── */
+.overlay.modal-anim-in {
+  animation: modalOverlayIn 0.22s ease-out both;
+}
+
+.overlay.modal-anim-out {
+  animation: modalOverlayOut 0.2s ease-in both;
+  pointer-events: none;
+}
+
+.overlay.modal-anim-in > .admin-modal,
+.overlay > .admin-modal.modal-anim-in {
+  animation: modalCardIn 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.overlay.modal-anim-out > .admin-modal,
+.overlay > .admin-modal.modal-anim-out {
+  animation: modalCardOut 0.2s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay.modal-anim-in,
+  .overlay.modal-anim-out,
+  .overlay.modal-anim-in > .admin-modal,
+  .overlay.modal-anim-out > .admin-modal,
+  .overlay > .admin-modal.modal-anim-in,
+  .overlay > .admin-modal.modal-anim-out {
+    animation: none !important;
+  }
+}
+
 .overlay-box {
   background: #fff;
   padding: 30px;
@@ -697,6 +743,35 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
+}
+
+/* ── Shared enter/exit animation — same keyframes/timing as
+   ModalCSS.css's .modal-overlay, driven by usePopupAnimation.js
+   (cancelOrderPopup / cancelItemPopup / discountPopup in Orders.js). ── */
+.pickup-overlay.modal-anim-in {
+  animation: modalOverlayIn 0.22s ease-out both;
+}
+
+.pickup-overlay.modal-anim-out {
+  animation: modalOverlayOut 0.2s ease-in both;
+  pointer-events: none;
+}
+
+.pickup-overlay.modal-anim-in > .pickup-modal {
+  animation: modalCardIn 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.pickup-overlay.modal-anim-out > .pickup-modal {
+  animation: modalCardOut 0.2s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pickup-overlay.modal-anim-in,
+  .pickup-overlay.modal-anim-out,
+  .pickup-overlay.modal-anim-in > .pickup-modal,
+  .pickup-overlay.modal-anim-out > .pickup-modal {
+    animation: none !important;
+  }
 }
 
 .pickup-modal {
@@ -1422,7 +1497,9 @@
   text-align: left;
   cursor: pointer;
   transition: border-color 0.2s ease;
-  background-image: url("data:image/svg+xml;utf8,<svg fill='%23666' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-image: url("data:image/svg+xml;utf8,<svg fill='%23666' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 16px;
@@ -1430,4 +1507,27 @@
   border: none;
   text-transform: capitalize;
   text-align: center;
+}
+
+.filter-bar .mat-select>.mat-label {
+  position: absolute;
+    left: 0;
+    top: 58% !important;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: #9ca3af;
+    pointer-events: none;
+    padding: 0 3px;
+    line-height: 1;
+    z-index: 2;
+    transition: top 0.18s ease, transform 0.18s ease, font-size 0.18s ease, color 0.18s ease;
+}
+
+.filter-bar .mat-select.has-value>.mat-label {
+  top: 4px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: var(--color-blue) !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
 }

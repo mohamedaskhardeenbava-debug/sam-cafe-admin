@@ -306,6 +306,16 @@
   }
 }
 
+@keyframes chat-fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
 /* ── Super Admin tag: shown next to their name in the sidebar,
    topbar, and on their message bubbles when viewed by staff who
    can't reply (see .chat-locked-bar below). ── */
@@ -995,7 +1005,15 @@
   justify-content: center;
   z-index: 200;
   backdrop-filter: blur(2px);
-  animation: chat-fade-in 0.15s ease-out;
+}
+
+.chat-camera-overlay.popup-anim-in {
+  animation: chat-fade-in 0.15s ease-out both;
+}
+
+.chat-camera-overlay.popup-anim-out {
+  animation: chat-fade-out 0.13s ease-in both;
+  pointer-events: none;
 }
 
 .chat-camera-modal {
@@ -1007,7 +1025,14 @@
   flex-direction: column;
   gap: 14px;
   width: min(560px, 92vw);
-  animation: chat-modal-pop 0.2s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.chat-camera-modal.popup-anim-in {
+  animation: chat-modal-pop 0.2s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
+.chat-camera-modal.popup-anim-out {
+  animation: chat-modal-pop-out 0.14s cubic-bezier(0.4, 0, 1, 1) both;
 }
 
 @keyframes chat-modal-pop {
@@ -1019,6 +1044,18 @@
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes chat-modal-pop-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(0.96);
   }
 }
 
@@ -1081,7 +1118,15 @@
   display: flex;
   justify-content: flex-end;
   z-index: 210;
-  animation: chat-fade-in 0.15s ease-out;
+}
+
+.chat-info-overlay.popup-anim-in {
+  animation: chat-fade-in 0.15s ease-out both;
+}
+
+.chat-info-overlay.popup-anim-out {
+  animation: chat-fade-out 0.13s ease-in both;
+  pointer-events: none;
 }
 
 .chat-info-panel {
@@ -1091,7 +1136,14 @@
   box-shadow: var(--shadow-lg, 0 20px 60px rgba(0, 0, 0, 0.14));
   display: flex;
   flex-direction: column;
-  animation: chat-panel-in 0.2s ease-out;
+}
+
+.chat-info-panel.popup-anim-in {
+  animation: chat-panel-in 0.2s ease-out both;
+}
+
+.chat-info-panel.popup-anim-out {
+  animation: chat-panel-out 0.16s ease-in both;
 }
 
 @keyframes chat-panel-in {
@@ -1103,6 +1155,18 @@
   to {
     transform: translateX(0);
     opacity: 1;
+  }
+}
+
+@keyframes chat-panel-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateX(24px);
+    opacity: 0;
   }
 }
 
@@ -1275,7 +1339,15 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  animation: chat-fade-in 0.15s ease-out;
+}
+
+.chat-media-overlay.popup-anim-in {
+  animation: chat-fade-in 0.15s ease-out both;
+}
+
+.chat-media-overlay.popup-anim-out {
+  animation: chat-fade-out 0.13s ease-in both;
+  pointer-events: none;
 }
 
 .chat-media-toolbar {

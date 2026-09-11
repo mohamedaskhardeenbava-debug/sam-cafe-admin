@@ -22,6 +22,7 @@ import { todayStr } from "../utils/dateRangeUtils";
 import { fmtDate as fmtDateNumeric, fmtTime } from "../utils/dateUtils";
 
 import "./WorkPlan.css";
+import closeIcon from "../icon/close-icon.png";
 
 const EMPTY_FORM = { title: "", notes: "", type: "meeting", date: "", time: "", location: "" };
 
@@ -188,7 +189,7 @@ export default function WorkPlan({ adminData, setAdminData }) {
           >
             <div className="admin-modal-header">
               <h3>{editingId ? "Edit Work Plan Item" : "Add to Work Plan"}</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => workPlanModal.close(() => setShowModal(false))}>×</Button3D>
+              <Button3D variant="cancel" iconOnly aria-label="Close" onClick={() => workPlanModal.close(() => setShowModal(false))}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="admin-modal-body">

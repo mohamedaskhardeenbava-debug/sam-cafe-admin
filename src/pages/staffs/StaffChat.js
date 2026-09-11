@@ -30,6 +30,7 @@ import { getAvatarColor } from "../../utils/avatarColor";
 import { fmtDateTime, fmtDate, todayStr, toLocalISO } from "../../utils/dateUtils";
 import { exportToExcel } from "../../utils/excelUtils";
 import Button3D from "../../components/Button3D";
+import usePopupAnimation from "../../hooks/usePopupAnimation";
 import { allowTextInput } from "../../App";
 import CustomDropdown from "../../components/CustomDropdown";
 import "./StaffChat.css";
@@ -184,19 +185,19 @@ export default function StaffChat() {
 
   const [topbarMenuChoice, setTopbarMenuChoice] = useState(""); // CustomDropdown's controlled value for the "more options" menu — see handleTopbarMenuChoice
   const [recording, setRecording] = useState(false);
-  const [cameraOpen, setCameraOpen] = useState(false);
+  const cameraPopup = usePopupAnimation();
   const [cameraMode, setCameraMode] = useState("photo"); // "photo" | "video"
   const [videoRecording, setVideoRecording] = useState(false);
 
-  const [clearModalOpen, setClearModalOpen] = useState(false);
-  const [infoOpen, setInfoOpen] = useState(false);
+  const clearChatPopup = usePopupAnimation();
+  const infoPopup = usePopupAnimation();
   const [infoMessages, setInfoMessages] = useState([]); // messages shown in the info panel (whole thread or one selected message)
-  const [mediaViewer, setMediaViewer] = useState(null); // the message being viewed full-screen
+  const mediaViewerPopup = usePopupAnimation();
   const [zoom, setZoom] = useState(1);
 
   const [selectMode, setSelectMode] = useState(false);
   const [selectedMsgIds, setSelectedMsgIds] = useState([]);
-  const [sharePanel, setSharePanel] = useState(null); // "selection" | message obj | null
+  const sharePanelPopup = usePopupAnimation();
 
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -430,7 +431,7 @@ export default function StaffChat() {
       });
       streamRef.current = stream;
       setCameraMode(mode);
-      setCameraOpen(true);
+      cameraPopup.open();
     } catch {
       toast.error("Camera access was denied or is unavailable");
     }
@@ -444,11 +445,11 @@ export default function StaffChat() {
   // a blank canvas) and why the video preview stayed empty even though
   // the underlying recording worked fine.
   useEffect(() => {
-    if (cameraOpen && videoPreviewRef.current && streamRef.current) {
+    if (cameraPopup.isOpen && videoPreviewRef.current && streamRef.current) {
       videoPreviewRef.current.srcObject = streamRef.current;
       videoPreviewRef.current.play?.().catch(() => { });
     }
-  }, [cameraOpen]);
+  }, [cameraPopup.isOpen]);
 
   // Touchpad "pinch zoom" arrives as a wheel event with ctrlKey set.
   // React's onWheel is passive by default, so preventDefault() inside a
@@ -457,7 +458,7 @@ export default function StaffChat() {
   // does. This keeps the gesture scoped to just the media stage.
   useEffect(() => {
     const stage = mediaStageRef.current;
-    if (!mediaViewer || !stage) return undefined;
+    if (!mediaViewerPopup.data || !stage) return undefined;
 
     const handleWheel = (e) => {
       e.preventDefault();
@@ -467,13 +468,14 @@ export default function StaffChat() {
 
     stage.addEventListener("wheel", handleWheel, { passive: false });
     return () => stage.removeEventListener("wheel", handleWheel);
-  }, [mediaViewer]);
+  }, [mediaViewerPopup.data]);
 
   const closeCamera = () => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    setCameraOpen(false);
     setVideoRecording(false);
+    cameraPopup.close(() => {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    });
   };
 
   const capturePhoto = async () => {
@@ -529,7 +531,7 @@ export default function StaffChat() {
 
   /* ── Topbar "more options" dropdown actions ──────────────────── */
   const handleClearChat = () => {
-    setClearModalOpen(true);
+    clearChatPopup.open();
   };
 
   const runClearChat = async (scope) => {
@@ -542,7 +544,7 @@ export default function StaffChat() {
     } catch (err) {
       toast.error(err?.response?.data?.error || "Failed to clear conversation");
     } finally {
-      setClearModalOpen(false);
+      clearChatPopup.close();
     }
   };
 
@@ -571,7 +573,7 @@ export default function StaffChat() {
 
   const handleInfo = () => {
     setInfoMessages(messages);
-    setInfoOpen(true);
+    infoPopup.open();
   };
 
   const handleSingleMsgInfo = () => {
@@ -579,7 +581,7 @@ export default function StaffChat() {
     const msg = messages.find((m) => m.id === selectedMsgIds[0]);
     if (!msg) return;
     setInfoMessages([msg]);
-    setInfoOpen(true);
+    infoPopup.open();
   };
 
   // Dispatcher for the "more options" CustomDropdown — its interaction
@@ -664,9 +666,9 @@ export default function StaffChat() {
   /* ── Share (internal staff + external apps) ──────────────────── */
   const openShareForSelection = () => {
     if (selectMode && selectedMsgIds.length > 0) {
-      setSharePanel({ kind: "selection", messages: selectedMessages });
+      sharePanelPopup.open({ kind: "selection", messages: selectedMessages });
     } else if (selectedStaff) {
-      setSharePanel({ kind: "selection", messages });
+      sharePanelPopup.open({ kind: "selection", messages });
     }
   };
 
@@ -676,8 +678,8 @@ export default function StaffChat() {
       .join("\n");
 
   const shareToStaff = async (targetStaffId) => {
-    if (!sharePanel) return;
-    for (const m of sharePanel.messages) {
+    if (!sharePanelPopup.data) return;
+    for (const m of sharePanelPopup.data.messages) {
       // eslint-disable-next-line no-await-in-loop
       await sendPayload(
         m.type === "text"
@@ -687,19 +689,19 @@ export default function StaffChat() {
       );
     }
     toast.success("Shared");
-    setSharePanel(null);
+    sharePanelPopup.close();
   };
 
   const shareExternal = (channel) => {
-    if (!sharePanel) return;
-    const text = encodeURIComponent(shareText(sharePanel));
+    if (!sharePanelPopup.data) return;
+    const text = encodeURIComponent(shareText(sharePanelPopup.data));
     const urls = {
       whatsapp: `https://wa.me/?text=${text}`,
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${window.location.origin}&quote=${text}`,
       gmail: `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent("Shared from Sam Cafe Staff Chat")}&body=${text}`,
     };
     window.open(urls[channel], "_blank", "noopener,noreferrer");
-    setSharePanel(null);
+    sharePanelPopup.close();
   };
 
   /* ── Sidebar list filtering ───────────────────────────────────── */
@@ -898,7 +900,7 @@ export default function StaffChat() {
                         selectMode={selectMode}
                         isSelected={selectedMsgIds.includes(m.id)}
                         onToggleSelect={() => toggleMsgSelected(m.id)}
-                        onOpenMedia={() => setMediaViewer(m)}
+                        onOpenMedia={() => mediaViewerPopup.open(m)}
                         showSuperAdminTag={!viewerIsSuperAdmin && m.fromId !== admin?.id && selectedStaff?.roleGroup === "Super Admin"}
                       />
                     </React.Fragment>
@@ -977,9 +979,9 @@ export default function StaffChat() {
       </section>
 
       {/* ───────── Camera overlay ───────── */}
-      {cameraOpen && (
-        <div className="chat-camera-overlay">
-          <div className="chat-camera-modal">
+      {cameraPopup.shouldRender && (
+        <div className={`chat-camera-overlay ${cameraPopup.animClass}`}>
+          <div className={`chat-camera-modal ${cameraPopup.animClass}`}>
             <video ref={videoPreviewRef} autoPlay muted playsInline className="chat-camera-preview" />
             <div className="chat-camera-controls">
               <div className="chat-camera-mode-toggle">
@@ -1021,9 +1023,9 @@ export default function StaffChat() {
       )}
 
       {/* ───────── Clear chat: "for me" vs "for everyone" ───────── */}
-      {clearModalOpen && selectedStaff && (
-        <div className="confirm-overlay" onClick={() => setClearModalOpen(false)}>
-          <div className="confirm-card" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
+      {clearChatPopup.shouldRender && selectedStaff && (
+        <div className={`confirm-overlay ${clearChatPopup.animClass}`} onClick={() => clearChatPopup.close()}>
+          <div className={`confirm-card ${clearChatPopup.animClass}`} onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
             <div className="confirm-card-header">
               <h4>Clear this conversation?</h4>
             </div>
@@ -1034,7 +1036,7 @@ export default function StaffChat() {
               </p>
             </div>
             <div className="confirm-card-footer confirm-actions chat-clear-actions">
-              <Button3D variant="cancel" onClick={() => setClearModalOpen(false)}>
+              <Button3D variant="cancel" onClick={() => clearChatPopup.close()}>
                 Cancel
               </Button3D>
               <Button3D variant="save" onClick={() => runClearChat("me")}>
@@ -1049,12 +1051,12 @@ export default function StaffChat() {
       )}
 
       {/* ───────── Conversation info: send/deliver/seen timings ───────── */}
-      {infoOpen && selectedStaff && (
-        <div className="chat-info-overlay" onClick={() => setInfoOpen(false)}>
-          <div className="chat-info-panel" onClick={(e) => e.stopPropagation()}>
+      {infoPopup.shouldRender && selectedStaff && (
+        <div className={`chat-info-overlay ${infoPopup.animClass}`} onClick={() => infoPopup.close()}>
+          <div className={`chat-info-panel ${infoPopup.animClass}`} onClick={(e) => e.stopPropagation()}>
             <div className="chat-info-header">
               <span>{infoMessages.length === 1 ? "Message Info" : "Conversation Info"}</span>
-              <button type="button" className="chat-icon-btn" onClick={() => setInfoOpen(false)}>
+              <button type="button" className="chat-icon-btn" onClick={() => infoPopup.close()}>
                 <IconClose />
               </button>
             </div>
@@ -1082,11 +1084,11 @@ export default function StaffChat() {
       )}
 
       {/* ───────── Image/video overlay: zoom, download, delete ───────── */}
-      {mediaViewer && (
+      {mediaViewerPopup.shouldRender && (
         <div
-          className="chat-media-overlay"
+          className={`chat-media-overlay ${mediaViewerPopup.animClass}`}
           onClick={() => {
-            setMediaViewer(null);
+            mediaViewerPopup.close();
             setZoom(1);
           }}
         >
@@ -1100,22 +1102,22 @@ export default function StaffChat() {
             </button>
             <button
               type="button"
-              onClick={() => downloadDataUrl(mediaViewer.fileData, mediaViewer.fileName)}
+              onClick={() => downloadDataUrl(mediaViewerPopup.data?.fileData, mediaViewerPopup.data?.fileName)}
               title="Download"
             >
               <IconDownload />
             </button>
-            {mediaViewer.fromId === admin?.id && (
+            {mediaViewerPopup.data?.fromId === admin?.id && (
               <button
                 type="button"
                 className="danger"
                 title="Delete for me"
                 onClick={() => {
-                  const id = mediaViewer.id;
+                  const id = mediaViewerPopup.data.id;
                   toast.confirm("Delete this message for you? The other side keeps their copy.", () => {
                     api.delete(`/chat/${selectedStaff.id}/messages`, { data: { ids: [id] } }).then(() => {
                       setMessages((prev) => prev.filter((m) => m.id !== id));
-                      setMediaViewer(null);
+                      mediaViewerPopup.close();
                       setZoom(1);
                       toast.success("Deleted");
                     }).catch((err) => toast.error(err?.response?.data?.error || "Failed to delete"));
@@ -1128,7 +1130,7 @@ export default function StaffChat() {
             <button
               type="button"
               onClick={() => {
-                setMediaViewer(null);
+                mediaViewerPopup.close();
                 setZoom(1);
               }}
               title="Close"
@@ -1137,27 +1139,27 @@ export default function StaffChat() {
             </button>
           </div>
           <div className="chat-media-stage" ref={mediaStageRef} onClick={(e) => e.stopPropagation()}>
-            {mediaViewer.type === "image" ? (
+            {mediaViewerPopup.data?.type === "image" ? (
               <img
-                src={mediaViewer.fileData}
-                alt={mediaViewer.fileName || "image"}
+                src={mediaViewerPopup.data.fileData}
+                alt={mediaViewerPopup.data.fileName || "image"}
                 style={{ transform: `scale(${zoom})` }}
                 className="chat-media-full"
               />
             ) : (
-              <video src={mediaViewer.fileData} controls autoPlay className="chat-media-full" style={{ transform: `scale(${zoom})` }} />
+              <video src={mediaViewerPopup.data?.fileData} controls autoPlay className="chat-media-full" style={{ transform: `scale(${zoom})` }} />
             )}
           </div>
         </div>
       )}
 
       {/* ───────── Share panel: internal staff + external apps ───────── */}
-      {sharePanel && (
-        <div className="chat-info-overlay" onClick={() => setSharePanel(null)}>
-          <div className="chat-info-panel chat-share-panel" onClick={(e) => e.stopPropagation()}>
+      {sharePanelPopup.shouldRender && (
+        <div className={`chat-info-overlay ${sharePanelPopup.animClass}`} onClick={() => sharePanelPopup.close()}>
+          <div className={`chat-info-panel chat-share-panel ${sharePanelPopup.animClass}`} onClick={(e) => e.stopPropagation()}>
             <div className="chat-info-header">
-              <span>Share {sharePanel.messages.length > 1 ? `${sharePanel.messages.length} messages` : "message"}</span>
-              <button type="button" className="chat-icon-btn" onClick={() => setSharePanel(null)}>
+              <span>Share {sharePanelPopup.data?.messages.length > 1 ? `${sharePanelPopup.data.messages.length} messages` : "message"}</span>
+              <button type="button" className="chat-icon-btn" onClick={() => sharePanelPopup.close()}>
                 <IconClose />
               </button>
             </div>

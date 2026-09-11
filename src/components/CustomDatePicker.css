@@ -48,8 +48,8 @@
 .cdp-arrow {
     flex-shrink: 0;
     margin-left: 10px;
-    font-size: 11px;
-    color: #999;
+    font-size: 14px;
+    color: #111;
 }
 
 .cdp-icon {
@@ -91,6 +91,26 @@
     }
 }
 
+@keyframes cdpOverlayFadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+/* ── Shared open/close animation, driven by usePopupAnimation.js ── */
+.cdp-overlay.popup-anim-in {
+    animation: cdpOverlayFadeIn 0.16s ease-out both;
+}
+
+.cdp-overlay.popup-anim-out {
+    animation: cdpOverlayFadeOut 0.14s ease-in both;
+    pointer-events: none;
+}
+
 .cdp-popup {
     position: relative;
     z-index: 999;
@@ -100,7 +120,35 @@
     padding: 16px;
     width: 280px;
     height: 310px;
-    animation: cdpFadeIn 0.18s ease;
+}
+
+.cdp-popup.popup-anim-in {
+    animation: cdpFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.cdp-popup.popup-anim-out {
+    animation: cdpFadeOut 0.16s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+@keyframes cdpFadeOut {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(8px) scale(0.97);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cdp-overlay.popup-anim-in,
+    .cdp-overlay.popup-anim-out,
+    .cdp-popup.popup-anim-in,
+    .cdp-popup.popup-anim-out {
+        animation: none !important;
+    }
 }
 
 .cdp-close-btn {
@@ -129,10 +177,12 @@
 @keyframes cdpFadeIn {
     from {
         opacity: 0;
+        transform: translateY(8px) scale(0.96);
     }
 
     to {
         opacity: 1;
+        transform: translateY(0) scale(1);
     }
 }
 

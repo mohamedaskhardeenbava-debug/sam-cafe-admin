@@ -64,6 +64,18 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
   gap: 12px;
+  /* CollapseSection wraps this in a `display: flex` container
+     (.collapse-section-inner, shared by ~38 pages for things like
+     filter bars). As a flex item, this grid would otherwise default to
+     its content's intrinsic width instead of filling the row — which
+     made `repeat(auto-fill, ...)` compute against a near-zero track
+     and collapse the whole grid to a single column. flex: 1 1 100%
+     makes it claim the full row width like block content normally
+     would, and min-width: 0 lets it actually shrink below that
+     content's intrinsic width when the window is narrow. */
+  flex: 1 1 100%;
+  min-width: 0;
+  width: 100%;
 }
 
 /* TABLE CARD */

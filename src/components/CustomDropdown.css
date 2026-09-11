@@ -14,6 +14,25 @@
     z-index: 1000;
 }
 
+.cdd-overlay.popup-anim-in {
+    animation: cddOverlayFadeIn 0.16s ease-out both;
+}
+
+.cdd-overlay.popup-anim-out {
+    animation: cddOverlayFadeOut 0.14s ease-in both;
+    pointer-events: none;
+}
+
+@keyframes cddOverlayFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes cddOverlayFadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
 .cdd-popup {
     background: #fff;
     border-radius: 16px;
@@ -25,6 +44,33 @@
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
+}
+
+.cdd-popup.popup-anim-in {
+    animation: cddPopupIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.cdd-popup.popup-anim-out {
+    animation: cddPopupOut 0.16s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+@keyframes cddPopupIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes cddPopupOut {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(8px) scale(0.97); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cdd-overlay.popup-anim-in,
+    .cdd-overlay.popup-anim-out,
+    .cdd-popup.popup-anim-in,
+    .cdd-popup.popup-anim-out {
+        animation: none !important;
+    }
 }
 
 .cdd-popup-title {

@@ -207,8 +207,16 @@
     border-radius: 12px;
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
     padding: 14px;
-    animation: dropdownFade 0.2s ease;
     z-index: 9999;
+  }
+
+  .dropdown.popup-anim-in {
+    animation: dropdownFade 0.2s ease both;
+  }
+
+  .dropdown.popup-anim-out {
+    animation: dropdownFadeOut 0.16s ease both;
+    pointer-events: none;
   }
 
   @keyframes dropdownFade {
@@ -220,6 +228,25 @@
     to {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+
+  @keyframes dropdownFadeOut {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    to {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dropdown.popup-anim-in,
+    .dropdown.popup-anim-out {
+      animation: none !important;
     }
   }
 

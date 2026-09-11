@@ -383,9 +383,9 @@
   appearance: none;
   cursor: pointer;
   position: relative;
-  background-image: url("data:image/svg+xml;utf8,<svg fill='%23666' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
   background-repeat: no-repeat;
   background-position: right 10px center;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='%23666' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
   background-size: 16px;
   transition: all 0.2s ease;
   text-align: start;
@@ -439,7 +439,6 @@
   text-align: left;
   cursor: pointer;
   transition: border-color 0.2s ease;
-  background-image: url("data:image/svg+xml;utf8,<svg fill='%23666' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 16px;
@@ -458,7 +457,7 @@
 .mat-select>.mat-label {
   position: absolute;
   left: 0;
-  top: 68% !important;
+  top: 66% !important;
   transform: translateY(-50%);
   font-size: 14px;
   color: #9ca3af;
@@ -535,6 +534,13 @@
 .dish-switch-group {
   display: flex;
   gap: 8px;
+}
+
+/* Slot uses the same button look as Combo/Subscription Food, but with
+   5 independently-toggleable options instead of a Yes/No pair — needs
+   to wrap on narrower modal widths instead of overflowing in one row. */
+.slot-switch-group {
+  flex-wrap: wrap;
 }
 
 .dish-switch-btn {

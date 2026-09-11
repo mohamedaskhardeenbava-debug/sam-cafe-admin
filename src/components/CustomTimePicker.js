@@ -7,6 +7,7 @@ import React, { useState, useEffect, useRef } from "react";
 
 import "./CustomTimePicker.css";
 import Button3D from "./Button3D";
+import usePopupAnimation from "../hooks/usePopupAnimation";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const pad = (n) => String(n).padStart(2, "0");
@@ -57,7 +58,8 @@ export const CustomTimePicker = ({
   isToday = false,
   placeholder,
 }) => {
-  const [open, setOpen] = useState(false);
+  const popup = usePopupAnimation();
+  const { shouldRender: open, close: closePopup, toggle: togglePopup } = popup;
   const [mode, setMode] = useState("hour");
   const ref = useRef(null);
   const svgRef = useRef(null);
@@ -153,7 +155,7 @@ export const CustomTimePicker = ({
     if (modeRef.current === "hour") {
       modeRef.current = "minute"; setMode("minute");
     } else {
-      setOpen(false); modeRef.current = "hour"; setMode("hour");
+      closePopup(); modeRef.current = "hour"; setMode("hour");
     }
   };
 
@@ -168,7 +170,7 @@ export const CustomTimePicker = ({
     if (isMinDis(m)) return;
     const ns = { ...selRef.current, m };
     selRef.current = ns; setSel({ ...ns }); emit(ns);
-    setOpen(false); setMode("hour");
+    closePopup(); setMode("hour");
   };
   const tapAmpm = (ap) => {
     const ns = { ...selRef.current, ampm: ap };
@@ -199,138 +201,142 @@ export const CustomTimePicker = ({
       <button
         type="button"
         className={`ctp-trigger${disabled ? " ctp-disabled" : ""}`}
-        onClick={() => { if (!disabled) setOpen((o) => !o); }}
+        onClick={() => { if (!disabled) togglePopup(); }}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
-        </svg>
-        <span className={`ctp-val${!value ? " ctp-ph" : ""}`}>{displayVal}</span>
+        <div className="ctp-trigger-main">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          <span className={`ctp-val${!value ? " ctp-ph" : ""}`}>{displayVal}</span>
+        </div>
         <span className="ctp-arrow">▾</span>
-      </button>
+      </button >
 
       {/* ── Popup ── */}
-      {open && !disabled && (
-        <div className="ctp-overlay">
-          <div className="ctp-popup" onMouseDown={(e) => e.stopPropagation()}>
+      {
+        open && !disabled && (
+          <div className={`ctp-overlay ${popup.animClass}`}>
+            <div className={`ctp-popup ${popup.animClass}`} onMouseDown={(e) => e.stopPropagation()}>
 
-            {/* Red header: AM/PM + time display */}
-            <div className="ctp-header">
-              <div className="ctp-ampm-col">
-                <button
-                  type="button"
-                  className={`ctp-ampm-btn${sel.ampm === "AM" ? " active" : ""}`}
-                  onClick={() => tapAmpm("AM")}
-                >AM</button>
-                <button
-                  type="button"
-                  className={`ctp-ampm-btn${sel.ampm === "PM" ? " active" : ""}`}
-                  onClick={() => tapAmpm("PM")}
-                >PM</button>
+              {/* Red header: AM/PM + time display */}
+              <div className="ctp-header">
+                <div className="ctp-ampm-col">
+                  <button
+                    type="button"
+                    className={`ctp-ampm-btn${sel.ampm === "AM" ? " active" : ""}`}
+                    onClick={() => tapAmpm("AM")}
+                  >AM</button>
+                  <button
+                    type="button"
+                    className={`ctp-ampm-btn${sel.ampm === "PM" ? " active" : ""}`}
+                    onClick={() => tapAmpm("PM")}
+                  >PM</button>
+                </div>
+                <div className="ctp-time-display">
+                  <span
+                    className={`ctp-hm${mode === "hour" ? " active" : ""}`}
+                    onClick={() => setMode("hour")}
+                  >{pad(sel.h)}</span>
+                  <span className="ctp-colon">:</span>
+                  <span
+                    className={`ctp-hm${mode === "minute" ? " active" : ""}`}
+                    onClick={() => setMode("minute")}
+                  >{pad(sel.m)}</span>
+                </div>
               </div>
-              <div className="ctp-time-display">
-                <span
-                  className={`ctp-hm${mode === "hour" ? " active" : ""}`}
-                  onClick={() => setMode("hour")}
-                >{pad(sel.h)}</span>
-                <span className="ctp-colon">:</span>
-                <span
-                  className={`ctp-hm${mode === "minute" ? " active" : ""}`}
-                  onClick={() => setMode("minute")}
-                >{pad(sel.m)}</span>
+
+              {/* Slot hint */}
+              {slotHint && <div className="ctp-slot-hint">{slotHint}</div>}
+
+              {/* SVG clock face */}
+              <svg
+                ref={svgRef}
+                width={CENTER * 2}
+                height={CENTER * 2}
+                className="ctp-clock"
+                style={{ touchAction: "none", display: "block" }}
+                onPointerDown={onPointerDown}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}
+                onPointerCancel={onPointerUp}
+              >
+                {/* Face */}
+                <circle cx={CENTER} cy={CENTER} r={CLOCK_R} fill="#f8f9fa" stroke="#e5e7eb" strokeWidth="1.5" />
+
+                {/* Hand */}
+                <line
+                  x1={CENTER} y1={CENTER}
+                  x2={handTip.x} y2={handTip.y}
+                  stroke="var(--color-blue, #e74c3c)" strokeWidth="2.5" strokeLinecap="round"
+                />
+                <circle cx={CENTER} cy={CENTER} r="4" fill="var(--color-blue, #e74c3c)" />
+                <circle cx={handTip.x} cy={handTip.y} r="18" fill="var(--color-blue, #e74c3c)" opacity="0.18" />
+                <circle cx={handTip.x} cy={handTip.y} r="5" fill="#fff" />
+
+                {/* Hour numbers */}
+                {mode === "hour" && hours12.map((h) => {
+                  const ang = hourAngle(h);
+                  const pos = toXY(ang, HOUR_R);
+                  const isSel = sel.h === h;
+                  const isDis = isHourDis(h, sel.ampm);
+                  return (
+                    <g key={h}
+                      style={{ cursor: isDis ? "not-allowed" : "pointer" }}
+                      onPointerDown={(e) => { e.stopPropagation(); if (!isDis) tapHour(h); }}
+                    >
+                      <circle cx={pos.x} cy={pos.y} r="16"
+                        fill={isSel ? "var(--color-blue, #e74c3c)" : "transparent"} />
+                      <text
+                        x={pos.x} y={pos.y}
+                        textAnchor="middle" dominantBaseline="central"
+                        fontSize="13" fontWeight={isSel ? "700" : "400"}
+                        fill={isSel ? "#fff" : isDis ? "#d1d5db" : "#333"}
+                      >{h}</text>
+                    </g>
+                  );
+                })}
+
+                {/* Minute marks */}
+                {mode === "minute" && minutes5.map((m) => {
+                  const ang = minAngle(m);
+                  const pos = toXY(ang, MIN_R);
+                  const isSel = sel.m === m;
+                  const isDis = isMinDis(m);
+                  return (
+                    <g key={m}
+                      style={{ cursor: isDis ? "not-allowed" : "pointer" }}
+                      onPointerDown={(e) => { e.stopPropagation(); tapMinute(m); }}
+                    >
+                      <circle cx={pos.x} cy={pos.y} r="16"
+                        fill={isSel ? "var(--color-blue, #e74c3c)" : isDis ? "#f3f4f6" : "transparent"} />
+                      <text
+                        x={pos.x} y={pos.y}
+                        textAnchor="middle" dominantBaseline="central"
+                        fontSize="12" fontWeight={isSel ? "700" : "400"}
+                        fill={isSel ? "#fff" : isDis ? "#d1d5db" : "#333"}
+                      >{pad(m)}</text>
+                    </g>
+                  );
+                })}
+              </svg>
+
+              {/* Footer */}
+              <div className="ctp-footer">
+                <Button3D className="modal-cancel-btn" variant="secondary" size="sm"
+                  onClick={() => { closePopup(); setMode("hour"); }}>
+                  Cancel
+                </Button3D>
+                <Button3D className="modal-ok-btn" variant="primary" size="sm"
+                  onClick={() => { emit(selRef.current); closePopup(); setMode("hour"); }}>
+                  OK
+                </Button3D>
               </div>
-            </div>
-
-            {/* Slot hint */}
-            {slotHint && <div className="ctp-slot-hint">{slotHint}</div>}
-
-            {/* SVG clock face */}
-            <svg
-              ref={svgRef}
-              width={CENTER * 2}
-              height={CENTER * 2}
-              className="ctp-clock"
-              style={{ touchAction: "none", display: "block" }}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={onPointerUp}
-            >
-              {/* Face */}
-              <circle cx={CENTER} cy={CENTER} r={CLOCK_R} fill="#f8f9fa" stroke="#e5e7eb" strokeWidth="1.5" />
-
-              {/* Hand */}
-              <line
-                x1={CENTER} y1={CENTER}
-                x2={handTip.x} y2={handTip.y}
-                stroke="var(--color-blue, #e74c3c)" strokeWidth="2.5" strokeLinecap="round"
-              />
-              <circle cx={CENTER} cy={CENTER} r="4" fill="var(--color-blue, #e74c3c)" />
-              <circle cx={handTip.x} cy={handTip.y} r="18" fill="var(--color-blue, #e74c3c)" opacity="0.18" />
-              <circle cx={handTip.x} cy={handTip.y} r="5" fill="#fff" />
-
-              {/* Hour numbers */}
-              {mode === "hour" && hours12.map((h) => {
-                const ang = hourAngle(h);
-                const pos = toXY(ang, HOUR_R);
-                const isSel = sel.h === h;
-                const isDis = isHourDis(h, sel.ampm);
-                return (
-                  <g key={h}
-                    style={{ cursor: isDis ? "not-allowed" : "pointer" }}
-                    onPointerDown={(e) => { e.stopPropagation(); if (!isDis) tapHour(h); }}
-                  >
-                    <circle cx={pos.x} cy={pos.y} r="16"
-                      fill={isSel ? "var(--color-blue, #e74c3c)" : "transparent"} />
-                    <text
-                      x={pos.x} y={pos.y}
-                      textAnchor="middle" dominantBaseline="central"
-                      fontSize="13" fontWeight={isSel ? "700" : "400"}
-                      fill={isSel ? "#fff" : isDis ? "#d1d5db" : "#333"}
-                    >{h}</text>
-                  </g>
-                );
-              })}
-
-              {/* Minute marks */}
-              {mode === "minute" && minutes5.map((m) => {
-                const ang = minAngle(m);
-                const pos = toXY(ang, MIN_R);
-                const isSel = sel.m === m;
-                const isDis = isMinDis(m);
-                return (
-                  <g key={m}
-                    style={{ cursor: isDis ? "not-allowed" : "pointer" }}
-                    onPointerDown={(e) => { e.stopPropagation(); tapMinute(m); }}
-                  >
-                    <circle cx={pos.x} cy={pos.y} r="16"
-                      fill={isSel ? "var(--color-blue, #e74c3c)" : isDis ? "#f3f4f6" : "transparent"} />
-                    <text
-                      x={pos.x} y={pos.y}
-                      textAnchor="middle" dominantBaseline="central"
-                      fontSize="12" fontWeight={isSel ? "700" : "400"}
-                      fill={isSel ? "#fff" : isDis ? "#d1d5db" : "#333"}
-                    >{pad(m)}</text>
-                  </g>
-                );
-              })}
-            </svg>
-
-            {/* Footer */}
-            <div className="ctp-footer">
-              <Button3D className="modal-cancel-btn" variant="secondary" size="sm"
-                onClick={() => { setOpen(false); setMode("hour"); }}>
-                Cancel
-              </Button3D>
-              <Button3D className="modal-ok-btn" variant="primary" size="sm"
-                onClick={() => { emit(selRef.current); setOpen(false); setMode("hour"); }}>
-                OK
-              </Button3D>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 

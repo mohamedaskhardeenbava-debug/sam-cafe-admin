@@ -66,10 +66,15 @@
 }
 
 /* ── Card wrapping the scene + label ──────────── */
+/* Sized to match the User Panel's PageLoader (was max-width: min(560px, 90vw)
+   / .loader-visual max-width: 420px) and expressed with vw-based clamps
+   instead of a single 90vw ceiling, so it scales smoothly with viewport
+   width at every breakpoint rather than only at the point where 90vw
+   first exceeds the max-width cap. */
 .loader-card {
   width: 100%;
-  max-width: min(560px, 90vw);
-  padding: clamp(16px, 3vw, 32px);
+  max-width: clamp(160px, 45vw, 280px);
+  padding: clamp(8px, 1.5vw, 16px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -78,7 +83,7 @@
 .loader-visual {
   position: relative;
   width: 100%;
-  max-width: 420px;
+  max-width: 210px;
   aspect-ratio: 900 / 500;
 }
 
@@ -239,12 +244,15 @@
 }
 
 /* ── Label text ────────────────────────────────── */
+/* Scaled down to match the halved .loader-card/.loader-visual above
+   (was clamp(15px, 2.6vw, 19px) / margin-top clamp(10px, 2.4vw, 18px)),
+   matching the User Panel's PageLoader label size. */
 .pl-label {
-  margin: clamp(10px, 2.4vw, 18px) 0 0;
+  margin: clamp(6px, 1.4vw, 10px) 0 0;
   font-family: "Fraunces", Georgia, serif;
   font-style: italic;
   font-weight: 500;
-  font-size: clamp(15px, 2.6vw, 19px);
+  font-size: clamp(11px, 1.6vw, 13px);
   letter-spacing: 0.01em;
   color: #6b6b6b;
   text-align: center;

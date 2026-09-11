@@ -8,6 +8,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 
 import "./CustomDatePicker.css";
+import usePopupAnimation from "../hooks/usePopupAnimation";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const pad = (n) => String(n).padStart(2, "0");
@@ -28,7 +29,8 @@ const MONTHS = [
 //   placeholder – text shown when no date is selected (default "Select date")
 // ─────────────────────────────────────────────────────────────────────────────
 export const CustomDatePicker = ({ value, onChange, label, min, max, placeholder = "Select date" }) => {
-  const [open, setOpen] = useState(false);
+  const popup = usePopupAnimation();
+  const { shouldRender: open, close: closePopup, toggle: togglePopup } = popup;
   const [view, setView] = useState("day");
   const ref = useRef(null);
 
@@ -64,7 +66,7 @@ export const CustomDatePicker = ({ value, onChange, label, min, max, placeholder
   const selectDay = (d) => {
     const s = `${calYear}-${pad(calMonth + 1)}-${pad(d)}`;
     onChange(s);
-    setOpen(false);
+    closePopup();
   };
 
   const prevNav = () => {
@@ -89,11 +91,11 @@ export const CustomDatePicker = ({ value, onChange, label, min, max, placeholder
   useEffect(() => {
     if (!open) return undefined;
     const onKeyDown = (e) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") closePopup();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open]);
+  }, [open, closePopup]);
 
   const displayVal = value
     ? (() => {
@@ -109,7 +111,7 @@ export const CustomDatePicker = ({ value, onChange, label, min, max, placeholder
       <button
         type="button"
         className="cdp-trigger"
-        onClick={() => { setOpen(o => !o); setView("day"); }}
+        onClick={() => { togglePopup(); setView("day"); }}
       >
         <span className="cdp-trigger-main">
           <svg className="cdp-cal-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -125,13 +127,13 @@ export const CustomDatePicker = ({ value, onChange, label, min, max, placeholder
       </button>
 
       {open && (
-        <div className="cdp-overlay">
-          <div className="cdp-popup" onMouseDown={(e) => e.stopPropagation()}>
+        <div className={`cdp-overlay ${popup.animClass}`}>
+          <div className={`cdp-popup ${popup.animClass}`} onMouseDown={(e) => e.stopPropagation()}>
             <button
               type="button"
               className="cdp-close-btn"
               aria-label="Close"
-              onClick={() => setOpen(false)}
+              onClick={() => closePopup()}
             >
               ×
             </button>

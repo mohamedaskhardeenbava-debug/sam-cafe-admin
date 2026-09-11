@@ -219,7 +219,7 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
       {/* FILTER BAR */}
       <CollapseSection collapsed={headerCollapsed}>
         <div className="filter-bar">
-          <div className="filter-group">
+          <div className="filter-groups">
             {/* SEARCH WITH DROPDOWN */}
             <div className="sgroom-search-wrap" ref={searchRef}>
               <input

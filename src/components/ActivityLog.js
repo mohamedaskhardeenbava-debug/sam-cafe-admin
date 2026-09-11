@@ -137,7 +137,7 @@ const ActivityLog = ({ title, items = [], exportFilePrefix }) => {
 
       <CollapseSection collapsed={headerCollapsed}>
         <div className="filter-bar">
-          <div className="filter-group">
+          <div className="filter-groups">
             <input
               className="search-input"
               placeholder=" Search work / staff…"

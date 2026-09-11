@@ -211,9 +211,8 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
 
       <CollapseSection collapsed={headerCollapsed}>
         <div className="filter-bar">
-          <div className="filter-group">
+          <div className="filter-groups">
             <input className="search-input" placeholder=" Search work / staff…" value={searchText} onChange={e => setSearchText(allowTextInput(searchText, e.target.value, 100, 5))} />
-            <div className="filter-group">
               <DateRangeGroup
                 from={fromDate}
                 to={toDate}
@@ -237,7 +236,6 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                 onChange={applyPreset}
                 toggle={false}
               />
-            </div>
 
             <MultiPillGroup
               label="status"

@@ -1130,6 +1130,28 @@ th.sorted .sort-arrow {
   padding: 16px;
 }
 
+/* Enter/exit animation — driven by usePopupAnimation.js inside
+   ConfirmDialog itself (see components/ConfirmDialog.js). Exit duration
+   must match the JS-side POPUP_EXIT_DURATION passed to the hook there. */
+.confirm-overlay.popup-anim-in {
+  animation: confirm-overlay-in 0.16s ease-out both;
+}
+
+.confirm-overlay.popup-anim-out {
+  animation: confirm-overlay-out 0.14s ease-in both;
+  pointer-events: none;
+}
+
+@keyframes confirm-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes confirm-overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
 .confirm-card {
   background: var(--color-white, #fff);
   width: 100%;
@@ -1140,12 +1162,33 @@ th.sorted .sort-arrow {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: confirm-card-in 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.confirm-card.popup-anim-in {
+  animation: confirm-card-in 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.confirm-card.popup-anim-out {
+  animation: confirm-card-out 0.14s cubic-bezier(0.4, 0, 1, 1) both;
 }
 
 @keyframes confirm-card-in {
   from { opacity: 0; transform: translateY(8px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes confirm-card-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(6px) scale(0.97); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirm-overlay.popup-anim-in,
+  .confirm-overlay.popup-anim-out,
+  .confirm-card.popup-anim-in,
+  .confirm-card.popup-anim-out {
+    animation: none !important;
+  }
 }
 
 /* HEADER — always solid red / white text, regardless of `danger`,

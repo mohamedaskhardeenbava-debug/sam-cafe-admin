@@ -11,6 +11,13 @@
     width: 100%;
 }
 
+.ctp-trigger-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
 /* ── Trigger button — matches .clp-cdp-trigger ── */
 .ctp-trigger {
     display: inline-flex;
@@ -60,16 +67,17 @@
 }
 
 .ctp-ph {
-    color: #aaa;
-    font-weight: 400;
+    font-size: 13px;
+    font-weight: 600;
+    color: #111;
 }
 
 /* Chevron */
 .ctp-arrow {
     margin-left: auto;
-    font-size: 12px;
-    opacity: 0.4;
+    font-size: 14px;
     flex-shrink: 0;
+    color: #111;
 }
 
 /* ── Overlay backdrop (matches modal overlay pattern) ── */
@@ -93,6 +101,26 @@
     }
 }
 
+@keyframes ctpOverlayFadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+/* ── Shared open/close animation, driven by usePopupAnimation.js ── */
+.ctp-overlay.popup-anim-in {
+    animation: ctpOverlayFadeIn 0.16s ease-out both;
+}
+
+.ctp-overlay.popup-anim-out {
+    animation: ctpOverlayFadeOut 0.14s ease-in both;
+    pointer-events: none;
+}
+
 /* ── Popup ── */
 .ctp-popup {
     position: fixed;
@@ -106,7 +134,14 @@
     padding: 0 0 12px;
     width: 260px;
     overflow: hidden;
-    animation: ctpFadeIn 0.18s ease;
+}
+
+.ctp-popup.popup-anim-in {
+    animation: ctpFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.ctp-popup.popup-anim-out {
+    animation: ctpFadeOut 0.16s cubic-bezier(0.4, 0, 1, 1) both;
 }
 
 @keyframes ctpFadeIn {
@@ -118,6 +153,28 @@
     to {
         opacity: 1;
         transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+@keyframes ctpFadeOut {
+    from {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.94);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .ctp-overlay.popup-anim-in,
+    .ctp-overlay.popup-anim-out,
+    .ctp-popup.popup-anim-in,
+    .ctp-popup.popup-anim-out {
+        animation: none !important;
     }
 }
 

@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import Button3D from "./Button3D";
+import usePopupAnimation from "../hooks/usePopupAnimation";
 
 /**
  * ConfirmDialog
@@ -41,7 +42,11 @@ import Button3D from "./Button3D";
  *   confirmLabel  – confirm button label (default "Confirm")
  *   cancelLabel   – cancel button label (default "Cancel")
  *   onConfirm     – called when the confirm button is clicked
- *   onCancel      – called when the cancel button, overlay, or Escape is used
+ *   onCancel      – called when the Cancel button or Escape is used.
+ *                   Clicking the backdrop (confirm-overlay) intentionally
+ *                   does NOT close the dialog — a confirm/cancel choice
+ *                   this consequential shouldn't be dismissable by an
+ *                   accidental stray click outside the card.
  */
 const ConfirmDialog = ({
   open,
@@ -52,11 +57,39 @@ const ConfirmDialog = ({
   onConfirm,
   onCancel,
 }) => {
-  if (!open) return null;
+  // Two call patterns exist across the app: (a) always mounted with a
+  // reactive `open={!!something}` boolean, and (b) conditionally mounted
+  // by the caller ({show && <ConfirmDialog open ... />}) where `open` is
+  // just the literal `true` and never changes after mount. initialOpen
+  // seeds the hook already-open for pattern (b) — otherwise nothing ever
+  // transitions from false → true and the dialog never appears.
+  const popup = usePopupAnimation({ initialOpen: !!open });
+  const wasOpenRef = useRef(open);
+  useEffect(() => {
+    if (open && !wasOpenRef.current) popup.open();
+    else if (!open && wasOpenRef.current) popup.close();
+    wasOpenRef.current = open;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  if (!popup.shouldRender) return null;
+
+  // Route the Cancel button through the animated close, then call the
+  // caller's onCancel once the exit animation finishes so `open` flips
+  // to false right as the dialog disappears instead of yanking it away
+  // mid-fade. The backdrop (confirm-overlay) deliberately has no click
+  // handler — see the onCancel doc above.
+  const handleCancel = () => popup.close(onCancel);
+  const handleConfirm = () => popup.close(onConfirm);
 
   return (
-    <div className="confirm-overlay" onClick={onCancel}>
-      <div className="confirm-card" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
+    <div className={`confirm-overlay ${popup.animClass}`}>
+      <div
+        className={`confirm-card ${popup.animClass}`}
+        onClick={(e) => e.stopPropagation()}
+        role="alertdialog"
+        aria-modal="true"
+      >
         <div className="confirm-card-header">
           <h4>{title}</h4>
         </div>
@@ -66,10 +99,10 @@ const ConfirmDialog = ({
           </div>
         )}
         <div className="confirm-card-footer confirm-actions">
-          <Button3D variant="cancel" onClick={onCancel}>
+          <Button3D variant="cancel" onClick={handleCancel}>
             {cancelLabel}
           </Button3D>
-          <Button3D variant="danger" onClick={onConfirm}>
+          <Button3D variant="danger" onClick={handleConfirm}>
             {confirmLabel}
           </Button3D>
         </div>

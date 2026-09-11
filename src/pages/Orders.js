@@ -16,6 +16,7 @@ import socket from "../socket";
 import { CustomDatePicker } from "../components/CustomDatePicker";
 import CustomDropdown from "../components/CustomDropdown";
 import "../components/CustomDropdown.css";
+import usePopupAnimation, { MODAL_ANIM_EXIT_DURATION } from "../hooks/usePopupAnimation";
 
 import closeIcon from "../icon/close-icon.png";
 import { EmptyRow } from "../App";
@@ -213,7 +214,7 @@ const StableQRCode = React.memo(({ value }) => {
   return (
     <QRCodeCanvas
       value={value}
-      size={120}
+      size={180}
       level="M"
       includeMargin
     />
@@ -344,13 +345,12 @@ const UpiQrSection = React.memo(({ orderId, billNo, amount, onPaid }) => {
       <StableQRCode value={payment.upiUrl} />
       <div className="bill-qr-amount">₹{Math.round(Number(amount))}</div>
       <div className="bill-qr-status">Waiting for payment…</div>
-      <button
-        type="button"
+      <Button3D
         className="bill-qr-confirm-btn"
         onClick={() => setShowConfirmDialog(true)}
       >
         Mark as Paid
-      </button>
+      </Button3D>
 
       {showConfirmDialog && (
         <ConfirmDialog
@@ -375,6 +375,87 @@ const UpiQrSection = React.memo(({ orderId, billNo, amount, onPaid }) => {
 });
 
 /**
+ * MarkAsPaidRowButton — a compact "Mark as Paid" action for the Payment
+ * Status column of the Orders table, so an admin who's already verified
+ * a UPI payment doesn't have to open the full Preview modal just to
+ * confirm it. Uses the exact same two backend calls as UpiQrSection's
+ * own confirm flow (POST /payments/orders to get-or-create the payment
+ * record, then POST /payments/orders/:id/confirm) with the same
+ * computeBillTotal-derived amount, so whichever entry point an admin
+ * uses, the amount confirmed is identical — no separate calculation to
+ * drift out of sync.
+ */
+const MarkAsPaidRowButton = ({ order }) => {
+  const [confirming, setConfirming] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const { toast } = useToast();
+
+  const amount = useMemo(() => {
+    const activeItems = order.items.filter(i => normalizeStatus(i.status) !== "cancelled");
+    const subTotal = activeItems.reduce((sum, i) => sum + Number(i.totalPrice || 0), 0);
+    return computeBillTotal(subTotal, order.discount?.percent).total;
+  }, [order.items, order.discount]);
+
+  const handleConfirmPaid = async () => {
+    setConfirming(true);
+    try {
+      // Same idempotent get-or-create used by UpiQrSection and by the
+      // printed-receipt QR (buildUpiUrl) — returns the existing payment
+      // record for this (orderId, amount) if one was already created
+      // from the Preview modal, rather than making a second one.
+      const created = await api.post("/payments/orders", {
+        orderId: order.id,
+        billNo: null,
+        amount,
+      });
+      const paymentId = created.data?.id;
+      if (!paymentId) throw new Error("No payment record returned");
+      await api.post(`/payments/orders/${paymentId}/confirm`, { orderId: order.id });
+      setShowConfirmDialog(false);
+      toast.success("Payment marked as received");
+    } catch (err) {
+      console.error("Failed to confirm payment", err);
+      toast.error(err?.response?.data?.error || "Could not confirm payment — please try again.");
+    } finally {
+      setConfirming(false);
+    }
+  };
+
+  return (
+    <>
+      <Button3D
+        className="row-mark-paid-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowConfirmDialog(true);
+        }}
+      >
+        Mark as Paid
+      </Button3D>
+
+      {showConfirmDialog && (
+        <ConfirmDialog
+          open
+          title="Confirm payment received"
+          message={
+            <>
+              Confirm that <strong>₹{Math.round(Number(amount))}</strong> was received via UPI for
+              Order <strong>{order.id}</strong>?
+              <br />
+              Only confirm after verifying the payment in your own UPI app, bank SMS, or statement —
+              this cannot be undone.
+            </>
+          }
+          confirmLabel={confirming ? "Confirming…" : "Yes, Mark as Paid"}
+          onCancel={() => !confirming && setShowConfirmDialog(false)}
+          onConfirm={handleConfirmPaid}
+        />
+      )}
+    </>
+  );
+};
+
+/**
  * PaymentStatusModal — shows a UPI payment record's current status for
  * an order, with full details, in a shared modal-overlay/admin-modal.
  * Only two real states exist in this system — PENDING (QR generated,
@@ -383,7 +464,7 @@ const UpiQrSection = React.memo(({ orderId, billNo, amount, onPaid }) => {
  * FAILED/USER_DROPPED/etc, since nothing but that manual confirmation
  * ever changes a record's status.
  */
-const PaymentStatusModal = ({ order, onClose }) => {
+const PaymentStatusModal = ({ order, isClosing, onClose }) => {
   const [payment, setPayment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
@@ -447,8 +528,8 @@ const PaymentStatusModal = ({ order, onClose }) => {
   };
 
   return (
-    <div className="modal-overlay modal-anim-in" >
-      <div className="admin-modal modal-anim-in payment-status-modal" onClick={(e) => e.stopPropagation()}>
+    <div className={`modal-overlay ${isClosing ? "modal-anim-out" : "modal-anim-in"}`}>
+      <div className={`admin-modal payment-status-modal ${isClosing ? "modal-anim-out" : "modal-anim-in"}`} onClick={(e) => e.stopPropagation()}>
         <div className="admin-modal-header">
           <h3>Payment Status — Order {order.id}</h3>
           <Button3D variant="cancel" iconOnly onClick={onClose}>
@@ -922,9 +1003,14 @@ const OrderRow = React.memo(({
             {orderStatus}
           </div>
         </td>
-        <td>
-          <div className={`status status-${normalizePaymentStatus(order)}`}>
-            {normalizePaymentStatus(order) === "completed" ? "Completed" : "Pending"}
+        <td className="payment-status-cell" onClick={(e) => e.stopPropagation()}>
+          <div className="payment-status-cell-inner">
+            <div className={`status status-${normalizePaymentStatus(order)}`}>
+              {normalizePaymentStatus(order) === "completed" ? "Completed" : "Pending"}
+            </div>
+            {!isPaymentCompleted && !isOrderCancelled && (
+              <MarkAsPaidRowButton order={order} />
+            )}
           </div>
         </td>
         <td className="icon-width">
@@ -943,6 +1029,11 @@ const OrderRow = React.memo(({
                 title={`Order ${order.id}`}
                 onClose={() => onOptionsClick(order.id)}
                 items={[
+                  {
+                    label: "Close Dropdown",
+                    danger: true,
+                    onClick: () => isMenuOpen(false),
+                  },
                   {
                     label: "Edit",
                     disabled: isOrderCancelled || isPaymentCompleted,
@@ -1222,20 +1313,44 @@ const Orders = ({ adminData, setAdminData }) => {
   const isOrdersPage = location.pathname === "/orders";
   const orderRefs = useRef({});
   const [openMenuOrderId, setOpenMenuOrderId] = useState(null);
-  const [editBillOrder, setEditBillOrder] = useState(null);
-  const [previewBillOrder, setPreviewBillOrder] = useState(null);
+  const editBillPopup = usePopupAnimation({
+    duration: MODAL_ANIM_EXIT_DURATION,
+    inClass: "modal-anim-in",
+    outClass: "modal-anim-out",
+  });
+  const previewBillPopup = usePopupAnimation({
+    duration: MODAL_ANIM_EXIT_DURATION,
+    inClass: "modal-anim-in",
+    outClass: "modal-anim-out",
+  });
   const [editableBill, setEditableBill] = useState(null);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
-  const [cancelOrderConfirm, setCancelOrderConfirm] = useState(null);
-  const [cancelItemConfirm, setCancelItemConfirm] = useState(null);
   const [cancelItemReason, setCancelItemReason] = useState("");
   const [cancelReason, setCancelReason] = useState("");
   const [cancelReasonOption, setCancelReasonOption] = useState("");
   const [cancelItemReasonOption, setCancelItemReasonOption] = useState("");
-  const [discountModalOrder, setDiscountModalOrder] = useState(null);
   const [discountPercent, setDiscountPercent] = useState("");
   const [discountReason, setDiscountReason] = useState("");
-  const [paymentStatusOrder, setPaymentStatusOrder] = useState(null);
+  const cancelOrderPopup = usePopupAnimation({
+    duration: MODAL_ANIM_EXIT_DURATION,
+    inClass: "modal-anim-in",
+    outClass: "modal-anim-out",
+  });
+  const cancelItemPopup = usePopupAnimation({
+    duration: MODAL_ANIM_EXIT_DURATION,
+    inClass: "modal-anim-in",
+    outClass: "modal-anim-out",
+  });
+  const discountPopup = usePopupAnimation({
+    duration: MODAL_ANIM_EXIT_DURATION,
+    inClass: "modal-anim-in",
+    outClass: "modal-anim-out",
+  });
+  const paymentStatusModal = usePopupAnimation({
+    duration: MODAL_ANIM_EXIT_DURATION,
+    inClass: "modal-anim-in",
+    outClass: "modal-anim-out",
+  });
 
   const CANCEL_REASONS = [
     "Customer changed their mind",
@@ -1579,8 +1694,19 @@ const Orders = ({ adminData, setAdminData }) => {
   // lets split-bill printing swap in a filtered item list / per-bill
   // totals without duplicating the base mapping logic.
   const buildPrinterOrder = async (order, overrides = {}) => {
+    // Must match BillLayout's own `totals` memo exactly — both the
+    // on-screen Preview/QR amount and the printed receipt/QR amount
+    // have to agree, or "Print" can end up requesting a UPI payment
+    // for a different amount than the one already showing on screen
+    // (and therefore a different payment record with a different QR
+    // string — see the point-4 fix in buildUpiUrl's caller below).
+    // order.resolvedTotal is NOT a safe substitute here: it can come
+    // from a stale cached order.totalAmount, and even when summed live
+    // it doesn't exclude cancelled items the way BillLayout's
+    // activeItems filter does.
     const totalWithGST = overrides.totalWithGST || order.totalWithGST || (() => {
-      const subTotal = Number(order.resolvedTotal || 0);
+      const activeItems = (order.items || []).filter(i => normalizeStatus(i.status) !== "cancelled");
+      const subTotal = activeItems.reduce((sum, i) => sum + Number(i.totalPrice || 0), 0);
       return computeBillTotal(subTotal, order.discount?.percent);
     })();
 
@@ -1827,17 +1953,38 @@ const Orders = ({ adminData, setAdminData }) => {
     }
   };
 
-  const closeAllBillOverlays = useCallback(() => {
-    setEditBillOrder(null);
-    setPreviewBillOrder(null);
+  // Instantly resets both bill overlays' data with no exit animation —
+  // used right before opening a fresh one (edit/preview), never as a
+  // user-facing "close" action. Animating here was the bug: it queued a
+  // close timeout that later fired and nulled out the very overlay that
+  // had just been opened, making edit/preview look like they closed
+  // themselves instantly.
+  const resetBillOverlaysForOpen = useCallback(() => {
+    editBillPopup.close();
+    previewBillPopup.close();
     if (originalBill) setEditableBill(originalBill);
     setOriginalBill(null);
-    // Reset the split-input fields too — otherwise a half-typed "3" left
-    // in the Split Amount/Split Bill box would carry over into the next
-    // order's edit session and could be applied by mistake.
     setSplitPeople("");
     setSplitBills("");
-  }, [originalBill]);
+  }, [editBillPopup, previewBillPopup, originalBill]);
+
+  // User-facing close for either bill overlay — plays the exit animation,
+  // then clears the shared edit-form state once it finishes.
+  const closeAllBillOverlays = useCallback(() => {
+    const finishReset = () => {
+      setOriginalBill((current) => {
+        if (current) setEditableBill(current);
+        return null;
+      });
+      // Reset the split-input fields too — otherwise a half-typed "3" left
+      // in the Split Amount/Split Bill box would carry over into the next
+      // order's edit session and could be applied by mistake.
+      setSplitPeople("");
+      setSplitBills("");
+    };
+    if (editBillPopup.isOpen) editBillPopup.close(finishReset);
+    else if (previewBillPopup.isOpen) previewBillPopup.close(finishReset);
+  }, [editBillPopup, previewBillPopup]);
 
   const closeOptionsMenu = useCallback(() => {
     setOpenMenuOrderId(null);
@@ -1855,16 +2002,16 @@ const Orders = ({ adminData, setAdminData }) => {
 
     switch (action) {
       case "edit": {
-        closeAllBillOverlays();
+        resetBillOverlaysForOpen();
         const cloned = JSON.parse(JSON.stringify(order));
         setEditableBill(cloned);
         setOriginalBill(cloned);
-        setEditBillOrder(true);
+        editBillPopup.open();
         break;
       }
       case "preview":
-        closeAllBillOverlays();
-        setPreviewBillOrder(order);
+        resetBillOverlaysForOpen();
+        previewBillPopup.open(order);
         break;
       case "print":
         printBill(order);
@@ -1873,22 +2020,22 @@ const Orders = ({ adminData, setAdminData }) => {
         printKot(order);
         break;
       case "paymentStatus":
-        setPaymentStatusOrder(order);
+        paymentStatusModal.open(order);
         break;
       case "discount":
-        setDiscountModalOrder(order);
+        discountPopup.open(order);
         setDiscountPercent(order?.discount?.percent != null ? String(order.discount.percent) : "");
         setDiscountReason(order?.discount?.reason || "");
         break;
       case "cancel":
-        setCancelOrderConfirm(order);
+        cancelOrderPopup.open(order);
         setCancelReason("");
         setCancelReasonOption("");
         break;
       default:
         break;
     }
-  }, [closeOptionsMenu, closeAllBillOverlays]);
+  }, [closeOptionsMenu, resetBillOverlaysForOpen, editBillPopup, previewBillPopup, paymentStatusModal, discountPopup, cancelOrderPopup]);
 
   // No loading check here: App.js already gates the entire route tree
   // behind its own top-level loading screen (isAppLoading) and only
@@ -2213,7 +2360,7 @@ const Orders = ({ adminData, setAdminData }) => {
                   </span>
                 </span>
               </th>
-              <th>Payment Status</th>
+              <th className="payment-status-cell">Payment Status</th>
               <th className="icon-width">Bill</th>
             </tr>
           </thead>
@@ -2233,7 +2380,7 @@ const Orders = ({ adminData, setAdminData }) => {
                     isActive={activeOrderIds.includes(order.id)}
                     onToggle={toggleOrder}
                     onPickup={setPickupConfirm}
-                    onCancelItem={setCancelItemConfirm}
+                    onCancelItem={cancelItemPopup.open}
                     onOptionsClick={(id) => {
                       setOpenMenuOrderId(prev => prev === id ? null : id);
                     }}
@@ -2331,15 +2478,15 @@ const Orders = ({ adminData, setAdminData }) => {
         </div>
       )}
 
-      {cancelOrderConfirm && (
+      {cancelOrderPopup.shouldRender && (
         <div
-          className="pickup-overlay"
+          className={`pickup-overlay ${cancelOrderPopup.animClass}`}
         >
           <div
-            className="pickup-modal"
+            className={`pickup-modal ${cancelOrderPopup.animClass}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3>Cancel Order {cancelOrderConfirm.id}</h3>
+            <h3>Cancel Order {cancelOrderPopup.data?.id}</h3>
             <p>Are you sure you want to cancel this order? Please select a reason.</p>
 
             <div className="cancel-reason-options" style={{ marginTop: "10px" }}>
@@ -2387,7 +2534,7 @@ const Orders = ({ adminData, setAdminData }) => {
               <Button3D
                 variant="cancel"
                 onClick={() => {
-                  setCancelOrderConfirm(null);
+                  cancelOrderPopup.close();
                   setCancelReasonOption("");
                   setCancelReason("");
                 }}
@@ -2398,8 +2545,8 @@ const Orders = ({ adminData, setAdminData }) => {
               <Button3D
                 disabled={!cancelReason.trim()}
                 onClick={async () => {
-                  await cancelOrder(cancelOrderConfirm, cancelReason);
-                  setCancelOrderConfirm(null);
+                  await cancelOrder(cancelOrderPopup.data, cancelReason);
+                  cancelOrderPopup.close();
                   setCancelReason("");
                   setCancelReasonOption("");
                 }}
@@ -2411,18 +2558,18 @@ const Orders = ({ adminData, setAdminData }) => {
         </div>
       )}
 
-      {cancelItemConfirm && (
+      {cancelItemPopup.shouldRender && (
         <div
-          className="pickup-overlay"
+          className={`pickup-overlay ${cancelItemPopup.animClass}`}
         >
           <div
-            className="pickup-modal"
+            className={`pickup-modal ${cancelItemPopup.animClass}`}
             onClick={(e) => e.stopPropagation()}
           >
             <h3>Cancel Dish</h3>
             <p>
               Are you sure you want to cancel{" "}
-              <strong>{cancelItemConfirm?.item?.dishName}</strong>? Please select a reason.
+              <strong>{cancelItemPopup.data?.item?.dishName}</strong>? Please select a reason.
             </p>
 
             <div className="cancel-reason-options" style={{ marginTop: "10px" }}>
@@ -2470,7 +2617,7 @@ const Orders = ({ adminData, setAdminData }) => {
               <Button3D
                 variant="cancel"
                 onClick={() => {
-                  setCancelItemConfirm(null);
+                  cancelItemPopup.close();
                   setCancelItemReason("");
                   setCancelItemReasonOption("");
                 }}
@@ -2481,9 +2628,9 @@ const Orders = ({ adminData, setAdminData }) => {
               <Button3D
                 disabled={!cancelItemReason.trim()}
                 onClick={async () => {
-                  const { order, itemIndex } = cancelItemConfirm;
+                  const { order, itemIndex } = cancelItemPopup.data;
                   await cancelOrderItem(order, itemIndex, cancelItemReason);
-                  setCancelItemConfirm(null);
+                  cancelItemPopup.close();
                   setCancelItemReason("");
                   setCancelItemReasonOption("");
                 }}
@@ -2495,13 +2642,13 @@ const Orders = ({ adminData, setAdminData }) => {
         </div>
       )}
 
-      {discountModalOrder && (
-        <div className="pickup-overlay">
+      {discountPopup.shouldRender && (
+        <div className={`pickup-overlay ${discountPopup.animClass}`}>
           <div
-            className="pickup-modal discount-modal"
+            className={`pickup-modal discount-modal ${discountPopup.animClass}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3>Add Discount — Order {discountModalOrder.id}</h3>
+            <h3>Add Discount — Order {discountPopup.data?.id}</h3>
             <p>Enter a discount percentage and the reason for it.</p>
 
             <div className="discount-modal-fields">
@@ -2539,7 +2686,7 @@ const Orders = ({ adminData, setAdminData }) => {
               <Button3D
                 variant="cancel"
                 onClick={() => {
-                  setDiscountModalOrder(null);
+                  discountPopup.close();
                   setDiscountPercent("");
                   setDiscountReason("");
                 }}
@@ -2555,8 +2702,8 @@ const Orders = ({ adminData, setAdminData }) => {
                   !discountReason.trim()
                 }
                 onClick={async () => {
-                  await applyDiscount(discountModalOrder, discountPercent, discountReason);
-                  setDiscountModalOrder(null);
+                  await applyDiscount(discountPopup.data, discountPercent, discountReason);
+                  discountPopup.close();
                   setDiscountPercent("");
                   setDiscountReason("");
                 }}
@@ -2568,16 +2715,17 @@ const Orders = ({ adminData, setAdminData }) => {
         </div>
       )}
 
-      {paymentStatusOrder && (
+      {paymentStatusModal.shouldRender && (
         <PaymentStatusModal
-          order={paymentStatusOrder}
-          onClose={() => setPaymentStatusOrder(null)}
+          order={paymentStatusModal.data}
+          isClosing={paymentStatusModal.isClosing}
+          onClose={paymentStatusModal.close}
         />
       )}
 
-      {editBillOrder && (
-        <div className="overlay">
-          <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
+      {editBillPopup.shouldRender && (
+        <div className={`overlay ${editBillPopup.animClass}`}>
+          <div className={`admin-modal ${editBillPopup.animClass}`} onClick={(e) => e.stopPropagation()}>
             <BillLayout
               onClose={closeAllBillOverlays}
               order={editableBill}
@@ -2616,14 +2764,14 @@ const Orders = ({ adminData, setAdminData }) => {
             />
 
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => setEditBillOrder(null)}>Cancel</Button3D>
+              <Button3D variant="cancel" onClick={closeAllBillOverlays}>Cancel</Button3D>
               <Button3D
                 className="modal-save-btn"
                 onClick={() => {
                   const previewData = recalcOrderTotals(editableBill);
 
-                  setEditBillOrder(null);
-                  setPreviewBillOrder(previewData);
+                  editBillPopup.close();
+                  previewBillPopup.open(previewData);
                 }}
               >
                 Preview
@@ -2643,7 +2791,7 @@ const Orders = ({ adminData, setAdminData }) => {
                     )
                   }));
 
-                  setEditBillOrder(null);
+                  closeAllBillOverlays();
                 } catch (err) {
                   toast.error("Failed to save bill");
                   console.error("Save failed", err);
@@ -2654,20 +2802,20 @@ const Orders = ({ adminData, setAdminData }) => {
         </div>
       )}
 
-      {previewBillOrder && (
-        <div className="overlay">
-          <div className="admin-modal">
+      {previewBillPopup.shouldRender && (
+        <div className={`overlay ${previewBillPopup.animClass}`}>
+          <div className={`admin-modal ${previewBillPopup.animClass}`}>
             <BillLayout
               onClose={closeAllBillOverlays}
-              order={previewBillOrder}
+              order={previewBillPopup.data}
               onPaid={() => {
                 // Payment was just confirmed via "Mark as Paid" while staff
                 // had the Preview modal open with the QR showing — surface
                 // the outcome immediately via the Payment Status modal
                 // instead of leaving them looking at a stale QR.
-                const paidOrder = previewBillOrder;
-                setPreviewBillOrder(null);
-                setPaymentStatusOrder(paidOrder);
+                const paidOrder = previewBillPopup.data;
+                closeAllBillOverlays();
+                paymentStatusModal.open(paidOrder);
               }}
             />
 
@@ -2675,8 +2823,8 @@ const Orders = ({ adminData, setAdminData }) => {
               <button
                 className="modal-confirm-btn"
                 onClick={() => {
-                  printBill(previewBillOrder);
-                  setPreviewBillOrder(null);
+                  printBill(previewBillPopup.data);
+                  closeAllBillOverlays();
                 }}
               >
                 <span className="shadow"></span>

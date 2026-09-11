@@ -14,6 +14,7 @@ import api from "../api";
 import { createRecord, deleteRecord } from "../utils/crudUtils";
 
 import closeIcon from "../icon/close-icon.png";
+import deleteIcon from "../icon/delete-icon.png";
 import { allowTextInput, EmptyRow, sortArray, formatDisplayDate } from "../App";
 import { useToast } from "../useToast";
 import { useAuth } from "../context/AuthContext";
@@ -390,8 +391,8 @@ const Documents = ({ sortConfig, handleSort }) => {
                         isReminderDue(doc.reminderDate)
                           ? "doc-reminder-badge doc-reminder-overdue"
                           : isReminderSoon(doc.reminderDate)
-                          ? "doc-reminder-badge doc-reminder-soon"
-                          : "doc-reminder-badge"
+                            ? "doc-reminder-badge doc-reminder-soon"
+                            : "doc-reminder-badge"
                       }
                     >
                       {formatDisplayDate(doc.reminderDate) || doc.reminderDate}
@@ -399,7 +400,8 @@ const Documents = ({ sortConfig, handleSort }) => {
                   </td>
                   <td className="icon-width">
                     <Button3D
-                      variant="danger"
+                      variant="cancel"
+                      iconOnly
                       onClick={() =>
                         deleteRecord({
                           api,
@@ -417,7 +419,7 @@ const Documents = ({ sortConfig, handleSort }) => {
                         })
                       }
                     >
-                      Delete
+                      <img src={deleteIcon} alt="Delete" />
                     </Button3D>
                   </td>
                 </tr>

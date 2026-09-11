@@ -570,7 +570,9 @@ export default function Staffs({
                   </div>
                 )}
               </div>
-              <Button3D variant="cancel" iconOnly onClick={resetForm}><img src={closeIcon} /></Button3D>
+              <div style={{position: "absolute", top: -4, right: 0}}>
+                <Button3D variant="cancel" iconOnly onClick={resetForm}><img src={closeIcon} /></Button3D>
+                </div>
             </div>
 
             {/* BODY */}

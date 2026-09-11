@@ -748,7 +748,6 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 <td className="icon-width">
                   <Button3D variant="cancel" iconOnly disabled={showForm}
                     onClick={() => handleDelete(dish.id, dish.name)}><img src={deleteIcon} alt="" /></Button3D>
-
                 </td>
               </tr>
             ))}
@@ -918,6 +917,28 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                     </button>
                   </div>
                 </div>
+              </div>
+
+              <div className="horizontal-form-group">
+                <div className="admin-form-group">
+                  <label>Combo Food</label>
+                  <div className="dish-switch-group">
+                    <button
+                      type="button"
+                      className={`dish-switch-btn${newDish.isComboFood ? " is-active" : ""}`}
+                      onClick={() => setNewDish({ ...newDish, isComboFood: true })}
+                    >
+                      <span className="dish-switch-dot veg" /> Yes
+                    </button>
+                    <button
+                      type="button"
+                      className={`dish-switch-btn${!newDish.isComboFood ? " is-active" : ""}`}
+                      onClick={() => setNewDish({ ...newDish, isComboFood: false })}
+                    >
+                      <span className="dish-switch-dot non-veg" /> No
+                    </button>
+                  </div>
+                </div>
 
                 <div className="admin-form-group">
                   <label>Subscription Food</label>
@@ -941,58 +962,22 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               </div>
 
               <div className="admin-form-group">
-                <label>Combo Food</label>
-                <div className="dish-switch-group">
-                  <button
-                    type="button"
-                    className={`dish-switch-btn${newDish.isComboFood ? " is-active" : ""}`}
-                    onClick={() => setNewDish({ ...newDish, isComboFood: true })}
-                  >
-                    <span className="dish-switch-dot veg" /> Yes
-                  </button>
-                  <button
-                    type="button"
-                    className={`dish-switch-btn${!newDish.isComboFood ? " is-active" : ""}`}
-                    onClick={() => setNewDish({ ...newDish, isComboFood: false })}
-                  >
-                    <span className="dish-switch-dot non-veg" /> No
-                  </button>
-                </div>
-              </div>
-
-              <div className="admin-form-group">
-                <label>Subscription Food</label>
-                <div className="dish-switch-group">
-                  <button
-                    type="button"
-                    className={`dish-switch-btn${newDish.isSubscriptionFood ? " is-active" : ""}`}
-                    onClick={() => setNewDish({ ...newDish, isSubscriptionFood: true })}
-                  >
-                    <span className="dish-switch-dot veg" /> Yes
-                  </button>
-                  <button
-                    type="button"
-                    className={`dish-switch-btn${!newDish.isSubscriptionFood ? " is-active" : ""}`}
-                    onClick={() => setNewDish({ ...newDish, isSubscriptionFood: false })}
-                  >
-                    <span className="dish-switch-dot non-veg" /> No
-                  </button>
-                </div>
-              </div>
-
-              <div className="admin-form-group">
                 <label htmlFor="">Slot</label>
-                <div className="slot-checkbox-group">
-                  {SLOT_OPTIONS.map(opt => (
-                    <label className="slot-checkbox" key={opt.value}>
-                      <input
-                        type="checkbox"
-                        checked={(newDish.slots || []).includes(opt.value)}
-                        onChange={() => toggleNewDishSlot(opt.value)}
-                      />
-                      <span>{opt.label}</span>
-                    </label>
-                  ))}
+                <div className="dish-switch-group slot-switch-group">
+                  {SLOT_OPTIONS.map(opt => {
+                    const active = (newDish.slots || []).includes(opt.value);
+                    return (
+                      <button
+                        type="button"
+                        key={opt.value}
+                        className={`dish-switch-btn${active ? " is-active" : ""}`}
+                        onClick={() => toggleNewDishSlot(opt.value)}
+                        aria-pressed={active}
+                      >
+                        <span className={`dish-switch-dot${active ? " veg" : ""}`} /> {opt.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
