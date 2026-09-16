@@ -400,7 +400,9 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
               <p>{localDish.isEventFood ? "Yes" : "No"}</p>
             )}
           </div>
+        </div>
 
+        <div className="horizontal-form-group">
           {/* SUBSCRIPTION FOOD */}
           <div className="section">
             <div className="section-title">
@@ -459,17 +461,21 @@ const DishDetails = ({ adminData, setAdminData, toCamelCase, generateIdFromName,
           <div className="section">
             <div className="section-title"><span>Slot</span></div>
             {isEditing ? (
-              <div className="slot-checkbox-group">
-                {SLOT_OPTIONS.map(opt => (
-                  <label className="slot-checkbox" key={opt.value}>
-                    <input
-                      type="checkbox"
-                      checked={(localDish.slots || []).includes(opt.value)}
-                      onChange={() => toggleLocalDishSlot(opt.value)}
-                    />
-                    <span>{opt.label}</span>
-                  </label>
-                ))}
+              <div className="slot-toggle-group">
+                {SLOT_OPTIONS.map(opt => {
+                  const isSelected = (localDish.slots || []).includes(opt.value);
+                  return (
+                    <button
+                      type="button"
+                      key={opt.value}
+                      className={`slot-toggle-btn${isSelected ? " is-active" : ""}`}
+                      aria-pressed={isSelected}
+                      onClick={() => toggleLocalDishSlot(opt.value)}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
               </div>
             ) : (
               <span className="slot-cell">

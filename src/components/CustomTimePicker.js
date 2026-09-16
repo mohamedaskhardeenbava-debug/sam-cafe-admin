@@ -43,8 +43,11 @@ const toXY = (angle, r) => ({
 // Props:
 //   value      – "HH:MM" 24-h string or ""
 //   onChange   – (value: string) => void
-//   slotStart  – optional "HH:MM" – hours before this are disabled
-//   slotEnd    – optional "HH:MM" – hours from this onward are disabled
+//   label      – optional prefix label shown on the trigger button (e.g. "From"/"To")
+//   slotStart  – optional "HH:MM" – hours before this are disabled (dish-slot window)
+//   slotEnd    – optional "HH:MM" – hours from this onward are disabled (dish-slot window, exclusive)
+//   minTime    – optional "HH:MM" – values before this are disabled (inclusive floor, e.g. a paired "From" time)
+//   maxTime    – optional "HH:MM" – values after this are disabled (inclusive ceiling, e.g. a paired "To" time)
 //   disabled   – boolean
 //   isToday    – boolean – disables past hours/minutes vs current wall clock
 //   placeholder – string shown when no time selected
@@ -52,8 +55,11 @@ const toXY = (angle, r) => ({
 export const CustomTimePicker = ({
   value,
   onChange,
+  label,
   slotStart,
   slotEnd,
+  minTime,
+  maxTime,
   disabled = false,
   isToday = false,
   placeholder,
@@ -81,27 +87,53 @@ export const CustomTimePicker = ({
 
   useEffect(() => { modeRef.current = mode; }, [mode]);
 
-  // ── Slot / today constraint helpers ──────────────────────────────────────
+  // ── Slot / today / min-max constraint helpers ────────────────────────────
   const slotH24Start = slotStart ? parseInt(slotStart.split(":")[0], 10) : null;
   const slotH24End = slotEnd ? parseInt(slotEnd.split(":")[0], 10) : null;
   const nowH = new Date().getHours();
   const nowM = new Date().getMinutes();
 
+  // minTime/maxTime are compared inclusively, in total minutes since
+  // midnight, so e.g. a "To" picker with minTime = the current "From"
+  // value still allows picking the exact same time (a zero-length span),
+  // matching the date-range picker's inclusive min/max behaviour.
+  const toMinutes = (hhmm) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  };
+  const minTotal = minTime ? toMinutes(minTime) : null;
+  const maxTotal = maxTime ? toMinutes(maxTime) : null;
+
+  const h12ToH24 = (h, ampm) => (ampm === "PM" ? (h === 12 ? 12 : h + 12) : (h === 12 ? 0 : h));
+
   const isHourDis = (h, ampm) => {
-    const h24 = ampm === "PM" ? (h === 12 ? 12 : h + 12) : (h === 12 ? 0 : h);
+    const h24 = h12ToH24(h, ampm);
     if (slotH24Start !== null && slotH24End !== null) {
       if (h24 < slotH24Start || h24 >= slotH24End) return true;
     }
     if (isToday && h24 < nowH) return true;
+    // An hour is only fully disabled by min/max if every minute in it
+    // would be out of range too (i.e. the whole hour block, not just
+    // part of it) — the minute check below handles the boundary hour.
+    if (minTotal !== null && h24 * 60 + 59 < minTotal) return true;
+    if (maxTotal !== null && h24 * 60 > maxTotal) return true;
     return false;
   };
 
   const isMinDis = (m) => {
-    if (!isToday) return false;
     const cur = selRef.current;
-    const h24 = cur.ampm === "PM" ? (cur.h === 12 ? 12 : cur.h + 12) : (cur.h === 12 ? 0 : cur.h);
-    return h24 === nowH && m <= nowM;
+    const h24 = h12ToH24(cur.h, cur.ampm);
+    if (isToday && h24 === nowH && m <= nowM) return true;
+    const total = h24 * 60 + m;
+    if (minTotal !== null && total < minTotal) return true;
+    if (maxTotal !== null && total > maxTotal) return true;
+    return false;
   };
+
+  // An AM/PM half is disabled only when every hour within it is disabled —
+  // i.e. the whole half-day falls outside the slot window / min-max span —
+  // so the user can't switch into a half with nothing pickable.
+  const isAmpmDis = (ampm) => hours12.every((h) => isHourDis(h, ampm));
 
   // ── Emit ──────────────────────────────────────────────────────────────────
   const emit = (ns) => {
@@ -187,7 +219,7 @@ export const CustomTimePicker = ({
   const displayVal = value
     ? (() => {
       const [hh, mm] = value.split(":").map(Number);
-      return `${hh % 12 || 12}:${pad(mm)} ${hh >= 12 ? "PM" : "AM"}`;
+      return `${pad(hh % 12 || 12)}:${pad(mm)} ${hh >= 12 ? "PM" : "AM"}`;
     })()
     : (placeholder ?? defaultPlaceholder);
 
@@ -208,6 +240,7 @@ export const CustomTimePicker = ({
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
           </svg>
+          {label && <span className="ctp-label">{label}</span>}
           <span className={`ctp-val${!value ? " ctp-ph" : ""}`}>{displayVal}</span>
         </div>
         <span className="ctp-arrow">▾</span>
@@ -224,13 +257,15 @@ export const CustomTimePicker = ({
                 <div className="ctp-ampm-col">
                   <button
                     type="button"
-                    className={`ctp-ampm-btn${sel.ampm === "AM" ? " active" : ""}`}
-                    onClick={() => tapAmpm("AM")}
+                    className={`ctp-ampm-btn${sel.ampm === "AM" ? " active" : ""}${isAmpmDis("AM") ? " ctp-ampm-dis" : ""}`}
+                    disabled={isAmpmDis("AM")}
+                    onClick={() => { if (!isAmpmDis("AM")) tapAmpm("AM"); }}
                   >AM</button>
                   <button
                     type="button"
-                    className={`ctp-ampm-btn${sel.ampm === "PM" ? " active" : ""}`}
-                    onClick={() => tapAmpm("PM")}
+                    className={`ctp-ampm-btn${sel.ampm === "PM" ? " active" : ""}${isAmpmDis("PM") ? " ctp-ampm-dis" : ""}`}
+                    disabled={isAmpmDis("PM")}
+                    onClick={() => { if (!isAmpmDis("PM")) tapAmpm("PM"); }}
                   >PM</button>
                 </div>
                 <div className="ctp-time-display">

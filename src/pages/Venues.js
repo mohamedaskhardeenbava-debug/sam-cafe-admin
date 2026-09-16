@@ -22,7 +22,7 @@ import CollapseChevron from "../components/CollapseChevron";
 import CollapseSection from "../components/CollapseSection";
 import PageLoader from "../components/PageLoader";
 import closeIcon from "../icon/close-icon.png";
-import { EmptyRow, allowTextInput } from "../App";
+import { EmptyRow, allowTextInput, sortArray } from "../App";
 
 import "./Offers.css"; // reuses the shared admin list/modal styling
 import "./Venues.css"; // main-branch badge
@@ -39,6 +39,15 @@ const Venues = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [search, setSearch] = useState("");
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
+  const handleSort = (key) => {
+    setSortConfig((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" }
+    );
+  };
 
   const [showModal, setShowModal] = useState(false);
   const venueModal = useAnimatedModal("venues-addEdit");
@@ -81,14 +90,20 @@ const Venues = () => {
 
   const filteredVenues = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (!q) return venues;
-    return venues.filter(
-      (v) =>
-        v.name?.toLowerCase().includes(q) ||
-        v.address?.toLowerCase().includes(q) ||
-        v.area?.toLowerCase().includes(q)
-    );
-  }, [venues, search]);
+    const base = q
+      ? venues.filter(
+        (v) =>
+          v.name?.toLowerCase().includes(q) ||
+          v.address?.toLowerCase().includes(q) ||
+          v.area?.toLowerCase().includes(q)
+      )
+      : venues;
+    if (sortConfig.key === "staff") {
+      const withCounts = base.map((v) => ({ ...v, staff: staffCounts[v.id] || 0 }));
+      return sortArray(withCounts, sortConfig);
+    }
+    return sortArray(base, sortConfig);
+  }, [venues, search, sortConfig, staffCounts]);
 
   const openCreateModal = () => {
     setEditingId(null);
@@ -267,11 +282,46 @@ const Venues = () => {
         <table>
           <thead>
             <tr>
-              <th>Branch Name</th>
-              <th>Address</th>
-              <th>Area</th>
-              <th>Staff</th>
-              <th>Status</th>
+              <th onClick={() => handleSort("name")} className={sortConfig.key === "name" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Branch Name</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "name" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("address")} className={sortConfig.key === "address" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Address</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "address" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("area")} className={sortConfig.key === "area" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Area</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "area" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("staff")} className={sortConfig.key === "staff" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Staff</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "staff" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("status")} className={sortConfig.key === "status" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Status</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "status" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
               <th style={{ width: 220 }}>Actions</th>
             </tr>
           </thead>

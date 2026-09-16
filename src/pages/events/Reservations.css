@@ -1,25 +1,4 @@
-/* ═══════════════════════════════════════════════════════
-   Reservations.css  —  Sam Cafe Admin  —  Reservations page
-   Depends on Common.css + EvtCommon.css + ModalCSS.css
-═══════════════════════════════════════════════════════ */
 
-.evt-res-clear-all {
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 1.5px solid #fca5a5;
-  background: #fee2e2;
-  color: #dc2626;
-  font-size: 11px;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s;
-}
-
-.evt-res-clear-all:hover {
-  background: #fecaca;
-}
 
 .clickable {
   cursor: pointer;
@@ -29,20 +8,6 @@
   display: flex;
   align-items: center;
   gap: 9px;
-}
-
-.evt-res-avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #ff9f43, #ee5253);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 800;
-  flex-shrink: 0;
 }
 
 .evt-res-name {
@@ -62,19 +27,6 @@
 .evt-res-email {
   font-size: 11px;
   color: #888;
-}
-
-.evt-res-source {
-  font-size: 12px;
-  font-weight: 500;
-  color: #555;
-}
-
-.evt-res-empty {
-  text-align: center;
-  padding: 30px;
-  color: #777;
-  font-size: 14px;
 }
 
 /* INLINE STATUS BUTTONS — text only, no emoji */
@@ -129,51 +81,6 @@
   color: #dc2626;
 }
 
-/* ACTION BUTTONS */
-.evt-res-act-btn {
-  height: 28px;
-  padding: 0 10px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  font-size: 11px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.evt-res-act-remind {
-  background: #f3f4f6;
-  color: #555;
-}
-
-.evt-res-act-remind:hover {
-  background: #fef9c3;
-  color: #ca8a04;
-}
-
-.evt-res-act-remind.active {
-  background: #dcfce7 !important;
-  color: #16a34a !important;
-}
-
-/* MODAL */
-.evt-res-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  backdrop-filter: blur(3px);
-  animation: res-fade-in 0.2s ease;
-}
-
 @keyframes res-fade-in {
   from {
     opacity: 0;
@@ -182,19 +89,6 @@
   to {
     opacity: 1;
   }
-}
-
-.evt-res-modal {
-  background: #fff;
-  border-radius: 22px;
-  width: 100%;
-  max-width: 600px;
-  max-height: 92vh;
-  overflow-y: auto;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
-  animation: res-modal-up 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
-  display: flex;
-  flex-direction: column;
 }
 
 @keyframes res-modal-up {
@@ -207,120 +101,6 @@
     transform: scale(1) translateY(0);
     opacity: 1;
   }
-}
-
-.evt-res-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 22px 16px;
-  border-bottom: 1px solid #f0f0f0;
-  flex-shrink: 0;
-}
-
-.evt-res-modal-title {
-  font-size: 17px;
-  font-weight: 800;
-  color: #111;
-}
-
-.evt-res-modal-close {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: none;
-  background: #f3f4f6;
-  color: #555;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-}
-
-.evt-res-modal-close:hover {
-  background: #e5e7eb;
-}
-
-.evt-res-modal-body {
-  padding: 18px 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  flex: 1;
-}
-
-.evt-res-modal-footer {
-  padding: 14px 22px 20px;
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  border-top: 1px solid #f0f0f0;
-  flex-shrink: 0;
-}
-
-.evt-res-modal-cancel {
-  height: 40px;
-  padding: 0 20px;
-  border-radius: 10px;
-  border: 1.5px solid #e5e7eb;
-  background: transparent;
-  color: #555;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.evt-res-modal-cancel:hover {
-  border-color: #999;
-}
-
-.evt-res-modal-save {
-  height: 40px;
-  padding: 0 22px;
-  border-radius: 10px;
-  border: none;
-  background: #111;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.evt-res-modal-save:hover:not(:disabled) {
-  background: #333;
-  transform: translateY(-1px);
-}
-
-.evt-res-modal-save:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.evt-res-form-row {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.evt-res-form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  flex: 1;
-  min-width: 140px;
-}
-
-.evt-res-form-group label {
-  font-size: 11px;
-  font-weight: 700;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 .evt-res-req {
@@ -351,31 +131,6 @@
 .evt-res-form-input.error {
   border-color: #e74c3c;
   background: #fff5f5;
-}
-
-.evt-res-form-error {
-  font-size: 11px;
-  color: #e74c3c;
-}
-
-.evt-res-form-textarea {
-  border-radius: 10px;
-  border: 1.5px solid #e5e7eb;
-  padding: 10px 12px;
-  font-size: 13px;
-  font-family: inherit;
-  color: #111;
-  background: #f9fafb;
-  outline: none;
-  resize: none;
-  width: 100%;
-  box-sizing: border-box;
-  transition: border-color 0.2s;
-}
-
-.evt-res-form-textarea:focus {
-  border-color: #111;
-  background: #fff;
 }
 
 /* SOURCE CHIPS */
@@ -475,25 +230,6 @@
   color: #111;
 }
 
-.res-val {
-  font-weight: 500;
-  flex: 1;
-  text-align: left;
-}
-
-.res-popup {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 9999;
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
-  padding: 14px;
-  width: 270px;
-  animation: cdpFadeIn 0.18s ease;
-}
-
 @keyframes cdpFadeIn {
   from {
     opacity: 0;
@@ -506,204 +242,12 @@
   }
 }
 
-.res-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.res-nav-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  border: 1.5px solid #f0f0f0;
-  background: #fff;
-  font-size: 15px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #555;
-}
-
-.res-nav-center {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-}
-
-.res-nav-lbl {
-  background: none;
-  border: none;
-  font-size: 13px;
-  font-weight: 700;
-  color: #111;
-  cursor: pointer;
-  padding: 3px 7px;
-  border-radius: 6px;
-  font-family: inherit;
-}
-
-.res-nav-lbl:hover {
-  background: #f5f5f5;
-}
-
-.res-weekdays {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  text-align: center;
-  margin-bottom: 5px;
-}
-
-.res-weekdays span {
-  font-size: 9px;
-  font-weight: 700;
-  color: #222;
-  text-transform: uppercase;
-  padding: 3px 0;
-}
-
-.res-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
-}
-
-.res-day {
-  width: 32px;
-  height: 32px;
-  border-radius: 7px;
-  border: none;
-  background: transparent;
-  font-size: 12px;
-  color: #333;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: inherit;
-}
-
-.res-day:hover:not(.res-dis) {
-  background: #e0e0e0;
-  color: #4361ee;
-}
-
-.res-day.res-today {
-  font-weight: 700;
-  color: #4361ee;
-}
-
-.res-day.res-sel {
-  background: #111 !important;
-  color: #fff !important;
-  font-weight: 700;
-}
-
-.res-day.res-dis {
-  color: #b6b6b6;
-  cursor: not-allowed;
-}
-
-.res-month-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 5px;
-  padding: 4px 0;
-}
-
-.res-month-btn {
-  padding: 9px 4px;
-  border-radius: 9px;
-  border: 1.5px solid #f0f0f0;
-  background: #fff;
-  font-size: 12px;
-  font-weight: 500;
-  color: #333;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.res-month-btn.res-sel {
-  background: #111;
-  color: #fff;
-  border-color: #111;
-}
-
-.res-year-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 5px;
-  padding: 4px 0;
-}
-
-.res-year-btn {
-  padding: 9px 4px;
-  border-radius: 9px;
-  border: 1.5px solid #f0f0f0;
-  background: #fff;
-  font-size: 11px;
-  font-weight: 500;
-  color: #333;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.res-year-btn.res-sel {
-  background: #111;
-  color: #fff;
-  border-color: #111;
-}
-
-.evt-form-section-label {
-  margin-top: 6px;
-  font-weight: 600;
-  font-size: 14px;
-}
-
 /* RESPONSIVE */
 @media (max-width: 640px) {
-  .evt-filter-groups {
-    gap: 6px 10px;
-  }
-
-  .evt-filter-group+.evt-filter-group {
-    padding-left: 0;
-    border-left: none;
-  }
 
   .evt-res-pref-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-
-  .evt-res-form-row {
-    flex-direction: column;
-  }
-}
-
-/* ══════════════════════════════════════════════════
-   NEW ADDITIONS – call history, pref manager, dates
-══════════════════════════════════════════════════ */
-
-/* ── "Table Preferences" management button ── */
-.evt-res-pref-manage-btn {
-  height: 38px;
-  padding: 0 16px;
-  border-radius: 999px;
-  border: 1px solid #d1d5db;
-  background: #fff;
-  color: #555;
-  font-weight: 500;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.evt-res-pref-manage-btn:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
 }
 
 /* ── Pref manager rows inside modal ── */
@@ -754,16 +298,6 @@
   pointer-events: none;
 }
 
-@keyframes callTipFade {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
 /* old bottom-arrow removed — portal uses left-pointing arrow */
 
 .evt-res-call-tooltip-title {
@@ -784,14 +318,6 @@
 
 .evt-res-call-tooltip-row:last-child {
   border-bottom: none;
-}
-
-/* ── Filter date picker inside filter bar ── */
-.evt-filter-bar .res-trigger {
-  min-height: 32px;
-  font-size: 12px;
-  padding: 5px 10px;
-  border-radius: 8px;
 }
 
 /* ══════════════════════════════════════════════
@@ -836,38 +362,6 @@
   color: #6b7280;
 }
 
-/* ── Slot chip grid in create form ── */
-.evt-res-slot-grid {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 4px;
-}
-
-.evt-res-slot-chip {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 6px 12px;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 10px;
-  background: #fafafa;
-  cursor: pointer;
-  transition: all .15s ease;
-  font-size: 13px;
-}
-
-.evt-res-slot-chip:hover {
-  background: #f0f0f0;
-  border-color: #ccc;
-}
-
-.evt-res-slot-chip.active {
-  background: var(--color-blue);
-  border-color: var(--color-blue);
-  color: #fff;
-}
-
 .evt-res-slot-chip-label {
   font-weight: 600;
   font-size: 12px;
@@ -878,14 +372,6 @@
   opacity: .7;
 }
 
-/* ── Table preference image thumbnail in table row ── */
-.evt-res-tpref-cell {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-}
-
 .evt-res-tpref-thumb {
   width: 32px;
   height: 32px;
@@ -893,16 +379,6 @@
   border-radius: 6px;
   border: 1px solid #e5e7eb;
   flex-shrink: 0;
-}
-
-/* ── Avatar with image ── */
-.evt-res-avatar-img {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-  border: 2px solid #e5e7eb;
 }
 
 /* ── Upload image button ── */
@@ -922,19 +398,6 @@
 .evt-res-upload-img-btn:hover {
   background: #d1fae5;
   border-color: #6ee7b7;
-}
-
-/* ── Pref image upload row in create form ── */
-.evt-res-pref-img-upload-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 10px;
-  flex-wrap: wrap;
-  padding: 8px 12px;
-  background: #f8fffe;
-  border-radius: 10px;
-  border: 1px dashed #a3e4d7;
 }
 
 /* ── Pref manage row preview ── */
@@ -967,79 +430,6 @@
   justify-content: center;
   background: #f3f4f6;
   font-size: 14px;
-}
-
-/* ══════════════════════════════════════════════
-   MODAL TAB BAR — Reservations
-   (same visual style as PreBookings prv-tab-bar)
-══════════════════════════════════════════════ */
-/* ── Step bar (matches Events page ae-spec-steps) ── */
-.ae-spec-steps {
-  display: flex;
-  gap: 0;
-  margin-top: 10px;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid #e5e7eb;
-}
-
-.ae-spec-step {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  background: #f9f9f9;
-  border: none;
-  border-right: 1px solid #e5e7eb;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  color: #888;
-  transition: all 0.2s;
-  font-family: inherit;
-}
-
-.ae-spec-step:last-child {
-  border-right: none;
-}
-
-.ae-spec-step.active {
-  background: #111;
-  color: #fff;
-}
-
-.ae-spec-step.done {
-  background: #dcfce7;
-  color: #16a34a;
-}
-
-.ae-step-num {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.ae-spec-step.active .ae-step-num {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-}
-
-.ae-spec-step.done .ae-step-num {
-  background: #16a34a;
-  color: #fff;
-}
-
-.ae-step-label {
-  font-size: 12px;
-  white-space: nowrap;
 }
 /* ═══════════════════════════════════════════
    RESPONSIVE ADDENDUM — 1080 / 992 / 768 / 578 / 480

@@ -51,9 +51,25 @@ export const getLastMonthRange = () => {
   return [toLocalISO(first), toLocalISO(last)];
 };
 
+/** Jan 1 of the current year → today. Returns ["YYYY-MM-DD", "YYYY-MM-DD"]. */
+export const getThisYearRange = () => {
+  const now = new Date();
+  const first = new Date(now.getFullYear(), 0, 1);
+  return [toLocalISO(first), toLocalISO(now)];
+};
+
+/** Jan 1 → Dec 31 of the previous calendar year. Returns ["YYYY-MM-DD", "YYYY-MM-DD"]. */
+export const getPreviousYearRange = () => {
+  const now = new Date();
+  const first = new Date(now.getFullYear() - 1, 0, 1);
+  const last = new Date(now.getFullYear() - 1, 11, 31);
+  return [toLocalISO(first), toLocalISO(last)];
+};
+
 /**
  * Resolve a preset key to a [from, to] range.
- * Supported keys: "today" | "week" | "month" | "lastMonth" | "all"
+ * Supported keys: "today" | "week" | "month" | "lastMonth" | "year" |
+ * "lastYear" | "all"
  * "all" and any unrecognized key return ["", ""] (no filter applied).
  */
 export const resolveDateRange = (preset) => {
@@ -63,6 +79,8 @@ export const resolveDateRange = (preset) => {
     case "week": return getWeekRange();
     case "month": return getMonthRange();
     case "lastMonth": return getLastMonthRange();
+    case "year": return getThisYearRange();
+    case "lastYear": return getPreviousYearRange();
     default: return ["", ""];
   }
 };
@@ -74,4 +92,12 @@ export const DEFAULT_PERIOD_PRESETS = [
   ["week", "This Week"],
   ["month", "This Month"],
   ["lastMonth", "Last Month"],
+];
+
+/** Period presets for pages that filter by year rather than day/week —
+ *  used on the Users list and User detail pages. */
+export const USER_PERIOD_PRESETS = [
+  ["all", "All Data"],
+  ["year", "This Year"],
+  ["lastYear", "Previous Year"],
 ];

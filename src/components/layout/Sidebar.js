@@ -42,7 +42,15 @@ const BASE_MENU = [
       { label: "Catering", path: "/catering" },
     ],
   },
-  { label: "Users", path: "/users", icon: userIcon, module: "users" },
+  {
+    label: "Users",
+    icon: userIcon,
+    module: "users",
+    children: [
+      { label: "All Users", path: "/users" },
+      { label: "Loyalty Settings", path: "/users-loyalty-settings" },
+    ],
+  },
   {
     label: "Staff",
     icon: staffIcon,

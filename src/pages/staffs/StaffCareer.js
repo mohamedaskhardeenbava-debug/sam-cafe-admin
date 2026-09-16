@@ -9,6 +9,8 @@ import { exportToExcel } from "../../utils/excelUtils";
 import api from "../../api";
 
 import closeIcon from "../../icon/close-icon.png";
+import editIcon from "../../icon/edit-icon.png";
+import deleteIcon from "../../icon/delete-icon.png";
 import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import CustomDropdown from "../../components/CustomDropdown";
@@ -59,6 +61,7 @@ export default function StaffCareer() {
     setter(prev => { const next = new Set(prev); next.has(val) ? next.delete(val) : next.add(val); return next; });
   const [form, setForm] = useState({ role: "", description: "", experience: "" });
   const [formErrors, setFormErrors] = useState({});
+  const [editingId, setEditingId] = useState(null); // non-null while the add modal is being used to edit an existing job
 
   useEffect(() => {
     setIsLoading(true);
@@ -68,23 +71,58 @@ export default function StaffCareer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeVenueId]);
 
-  const addJob = async (e) => {
+  const submitJob = async (e) => {
     e.preventDefault();
     const err = {};
     if (!form.role) err.role = true;
     if (!form.description.trim()) err.description = true;
     if (Object.keys(err).length) { setFormErrors(err); return; }
     try {
-      const res = await api.post("/careers", { id: String(Date.now()), ...form });
-      setJobs(prev => [...prev, res.data]);
+      if (editingId) {
+        const res = await api.put(`/careers/${editingId}`, { id: editingId, ...form });
+        setJobs(prev => prev.map(j => j.id === editingId ? res.data : j));
+        toast.success("Career record updated");
+      } else {
+        const res = await api.post("/careers", { id: String(Date.now()), ...form });
+        setJobs(prev => [...prev, res.data]);
+        toast.success("Career record saved");
+      }
       setForm({ role: "", description: "", experience: "" });
       setFormErrors({});
+      setEditingId(null);
       addJobModal.close(() => setShowForm(false));
-      toast.success("Career record saved");
     } catch (err) {
-      toast.error("Failed to save career record");
+      toast.error(editingId ? "Failed to update career record" : "Failed to save career record");
       console.error("Career save failed:", err.response?.data || err.message);
     }
+  };
+
+  const openEditJob = (job) => {
+    setEditingId(job.id);
+    setForm({ role: job.role || "", description: job.description || "", experience: job.experience || "" });
+    setFormErrors({});
+    setShowForm(true);
+    addJobModal.open();
+  };
+
+  const closeJobModal = () => {
+    addJobModal.close(() => setShowForm(false));
+    setFormErrors({});
+    setEditingId(null);
+    setForm({ role: "", description: "", experience: "" });
+  };
+
+  const deleteJob = (job) => {
+    toast.confirm(`Delete the "${job.role}" job vacancy?`, async () => {
+      try {
+        await api.delete(`/careers/${job.id}`);
+        setJobs(prev => prev.filter(j => j.id !== job.id));
+        toast.success("Job vacancy deleted");
+      } catch (err) {
+        toast.error("Failed to delete job vacancy");
+        console.error("Career delete failed:", err.response?.data || err.message);
+      }
+    });
   };
 
   const filteredJobs = jobs.filter(j => {
@@ -138,7 +176,7 @@ export default function StaffCareer() {
         </div>
         <div className="header-btn-container">
           <Button3D onClick={exportJobs}>Export</Button3D>
-          <Button3D onClick={() => { setShowForm(true); addJobModal.open(); }}>+ Add Job Vacancy</Button3D>
+          <Button3D onClick={() => { setEditingId(null); setForm({ role: "", description: "", experience: "" }); setShowForm(true); addJobModal.open(); }}>+ Add Job Vacancy</Button3D>
         </div>
       </div>
 
@@ -197,6 +235,11 @@ export default function StaffCareer() {
                   <p className="sc-desc">{job.description || "No description provided."}</p>
                 </div>
 
+                <div className="st-actions sc-card-actions" onClick={e => e.stopPropagation()}>
+                  <Button3D variant="cancel" iconOnly title="Edit" onClick={() => openEditJob(job)}><img src={editIcon} alt="" /></Button3D>
+                  <Button3D variant="danger" iconOnly title="Delete" onClick={() => deleteJob(job)}><img src={deleteIcon} alt="" /></Button3D>
+                </div>
+
                 <div className="sc-footer">
                   <div className="st-ribbon-wing1"></div>
                   <div className="st-ribbon-wing1-sq1"></div>
@@ -212,13 +255,13 @@ export default function StaffCareer() {
         </div>
       </div>
 
-      {/* ADD MODAL */}
+      {/* ADD / EDIT MODAL */}
       {addJobModal.shouldRender && (
         <div className={`modal-overlay ${addJobModal.overlayClass}`}>
-          <form className={`admin-modal ${addJobModal.modalClass}`} onSubmit={addJob}>
+          <form className={`admin-modal ${addJobModal.modalClass}`} onSubmit={submitJob}>
             <div className="admin-modal-header">
-              <h3>Add Job Vacancy</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => { addJobModal.close(() => setShowForm(false)); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
+              <h3>{editingId ? "Edit Job Vacancy" : "Add Job Vacancy"}</h3>
+              <Button3D variant="cancel" iconOnly onClick={closeJobModal}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="admin-modal-body">
@@ -263,8 +306,8 @@ export default function StaffCareer() {
             </div>
 
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => { addJobModal.close(() => setShowForm(false)); setFormErrors({}); }}>Cancel</Button3D>
-              <Button3D type="submit">Save Vacancy</Button3D>
+              <Button3D variant="cancel" onClick={closeJobModal}>Cancel</Button3D>
+              <Button3D type="submit">{editingId ? "Update Vacancy" : "Save Vacancy"}</Button3D>
             </div>
           </form>
         </div>
@@ -293,7 +336,9 @@ export default function StaffCareer() {
             </div>
 
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => jobDetailModal.close(() => setSelected(null))}>Close</Button3D>
+              <Button3D variant="danger" onClick={() => { jobDetailModal.close(() => setSelected(null)); deleteJob(selected); }}>Delete</Button3D>
+              <Button3D variant="cancel" onClick={() => { jobDetailModal.close(() => setSelected(null)); openEditJob(selected); }}>Edit</Button3D>
+              <Button3D onClick={() => jobDetailModal.close(() => setSelected(null))}>Close</Button3D>
             </div>
           </div>
         </div>

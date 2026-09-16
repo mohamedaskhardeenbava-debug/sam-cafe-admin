@@ -7,8 +7,8 @@
 /* ── Wrapper ── */
 .ctp-wrap {
     position: relative;
-    display: block;
-    width: 100%;
+    display: inline-block;
+    min-width: 160px;
 }
 
 .ctp-trigger-main {
@@ -53,6 +53,14 @@
 .ctp-disabled {
     opacity: 0.5;
     cursor: not-allowed !important;
+}
+
+.ctp-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
 }
 
 /* Value / placeholder text */
@@ -218,6 +226,17 @@
     color: #fff;
 }
 
+.ctp-ampm-btn.ctp-ampm-dis {
+    opacity: 0.4;
+    cursor: not-allowed;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.ctp-ampm-btn.ctp-ampm-dis:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.5);
+}
+
 /* Digital time display */
 .ctp-time-display {
     display: flex;
@@ -277,47 +296,6 @@
     justify-content: flex-end;
     gap: 8px;
     padding: 8px 16px 0;
-}
-
-.ctp-cancel {
-    padding: 6px 14px;
-    border-radius: 8px;
-    border: none;
-    background: #f0f0f0;
-    color: #666;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s;
-    font-family: inherit;
-}
-
-.ctp-cancel:hover {
-    background: #e5e5e5;
-}
-
-.ctp-ok {
-    padding: 6px 18px;
-    border-radius: 8px;
-    border: none;
-    background: var(--color-blue, #e74c3c);
-    color: #fff;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background 0.15s;
-    font-family: inherit;
-}
-
-.ctp-ok:hover {
-    background: color-mix(in srgb, var(--color-blue, #e74c3c) 85%, #000);
-    filter: brightness(0.92);
-}
-
-/* ── Error wrapper ── */
-.cdp-error-wrap .ctp-trigger {
-    border-color: #ef4444 !important;
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
 }
 
 /* ═══════════════════════════════════════════

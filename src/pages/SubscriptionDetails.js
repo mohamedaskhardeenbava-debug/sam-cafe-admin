@@ -21,6 +21,7 @@ import Button3D from "../components/Button3D";
 import CustomDropdown from "../components/CustomDropdown";
 import { CustomDatePicker } from "../components/CustomDatePicker";
 import { todayStr } from "../utils/dateRangeUtils";
+import { fmtDate } from "../utils/dateUtils";
 
 import { useSubscriptionBuilder, SLOT_OPTIONS, WEEKS, WEEK_LABELS, DAYS, flattenScheduledCells } from "./subscriptions/useSubscriptionBuilder";
 import SubBuilderFields from "./subscriptions/SubBuilderFields";
@@ -282,7 +283,7 @@ const SubscriptionDetails = ({ adminData, setAdminData }) => {
               </div>
               <div className="section">
                 <div className="section-title"><span>Start Date</span></div>
-                <p>{subscription.startDate || "—"}</p>
+                <p>{fmtDate(subscription.startDate)}</p>
               </div>
               <div className="section">
                 <div className="section-title"><span>Status</span></div>

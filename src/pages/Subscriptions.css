@@ -194,29 +194,6 @@
   color: #fff;
 }
 
-.sub-day-chip {
-  min-width: 52px;
-  padding: 8px 14px;
-  border: 1px solid #d8dbe0;
-  border-radius: 999px;
-  background: #fff;
-  color: #555;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-
-.sub-day-chip:hover {
-  border-color: #27ae60;
-}
-
-.sub-day-chip.is-active {
-  background: #27ae60;
-  border-color: #27ae60;
-  color: #fff;
-}
-
 /* ── "Already scheduled" list — one plain row per dish, the days it's
    on, and a Remove button. This is the running record of what's been
    set for the active slot/week, independent of whatever the picker

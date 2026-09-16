@@ -9,7 +9,7 @@ import { exportToExcel } from "../../utils/excelUtils";
 import api from "../../api";
 
 import { getTodayKey, getTodayFormatted } from "../../App";
-import { EmptyRow } from "../../App";
+import { EmptyRow, sortArray } from "../../App";
 import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import Button3D from "../../components/Button3D";
@@ -49,8 +49,27 @@ export default function ServiceMise({ adminData, setAdminData }) {
   const [sectionFilters, setSectionFilters] = useState(new Set());
   const toggleSet = (setter, val) =>
     setter(prev => { const next = new Set(prev); next.has(val) ? next.delete(val) : next.add(val); return next; });
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
+  const handleSort = (key) => {
+    setSortConfig((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" }
+    );
+  };
 
   const miseDay = adminData.serviceMise?.[today] || {};
+
+  const sortRows = (items) => {
+    if (!sortConfig.key) return items;
+    const rows = items.map((task) => ({
+      task,
+      staff: miseDay[task]?.staff || "",
+      time: miseDay[task]?.time || "",
+    }));
+    return sortArray(rows, sortConfig).map((r) => r.task);
+  };
 
   const filteredTasks = useMemo(() => {
     const q = miseSearch.toLowerCase();
@@ -187,10 +206,31 @@ export default function ServiceMise({ adminData, setAdminData }) {
         <table >
           <thead>
             <tr>
-              <th>Task</th>
-              <th>Staff</th>
+              <th onClick={() => handleSort("task")} className={sortConfig.key === "task" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Task</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "task" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("staff")} className={sortConfig.key === "staff" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Staff</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "staff" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
               <th>Verify</th>
-              <th>Time</th>
+              <th onClick={() => handleSort("time")} className={sortConfig.key === "time" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Time</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "time" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -208,7 +248,7 @@ export default function ServiceMise({ adminData, setAdminData }) {
                     </span>
                   </td>
                 </tr>
-                {items.map(task => {
+                {sortRows(items).map(task => {
                   const entry = miseDay[task];
                   const staffAssigned = !!entry?.staff;
                   const isVerified = !!entry?.verified;

@@ -7,7 +7,8 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 import { exportToExcel } from "../../utils/excelUtils";
-import { CustomDatePicker } from "../../components/CustomDatePicker";
+import { CustomDatePicker, todayStr } from "../../components/CustomDatePicker";
+import { fmtDate } from "../../utils/dateUtils";
 import api from "../../api";
 import { createRecord, updateRecord, deleteRecord } from "../../utils/crudUtils";
 import { useTabLiquid } from "../../hooks/useTabLiquid";
@@ -37,6 +38,7 @@ import "./Staffs.css";
 import "./StaffAccounts.css"; // .st-page-tabcard, .st-account-step, credential-panel styling
 import "../ModalCSS.css";
 import "../events/Events.css"; // reuses .ecard / .ebutton step-tab styling
+import { sanitizePhoneInput } from "../../utils/phoneUtils";
 
 
 
@@ -71,6 +73,23 @@ const EMPTY_FORM = {
 // Mirrors the server's email check in auth.js — keeps the inline Login
 // Account step from submitting an obviously malformed address.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Strips everything but digits and caps at 10 — used for both Contact
+// Number and Alternate Contact so neither field can hold more than a
+// plain 10-digit mobile number, regardless of what's pasted in.
+const sanitizeMobile = sanitizePhoneInput;
+
+const pad2 = (n) => String(n).padStart(2, "0");
+const toDateStr = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
+// The latest DOB that still makes someone 18+ today — i.e. 18 years ago
+// from today. Used as the DOB picker's `max` so anything younger than
+// 18 is disabled outright.
+const latestValidDob = () => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 18);
+  return toDateStr(d);
+};
 
 const generateStaffId = (name) => {
   const base = name.toLowerCase().replace(/\s+/g, "_");
@@ -111,6 +130,7 @@ export default function Staffs({
   const [accountForm, setAccountForm] = useState(EMPTY_ACCOUNT_FORM);
   const [accountErrors, setAccountErrors] = useState({});
   const [accountSaving, setAccountSaving] = useState(false);
+  const [isSavingStaff, setIsSavingStaff] = useState(false);
   const [createdAccountInfo, setCreatedAccountInfo] = useState(null); // { email, tempPassword } shown once after save
   const [accountsRefreshKey, setAccountsRefreshKey] = useState(0);
 
@@ -127,7 +147,7 @@ export default function Staffs({
   useEffect(() => {
     if (!canManageStaffAccounts) return;
     if (accountsRefreshKey === 0) return; // already seeded from adminData.roles
-    api.get("/roles").then((res) => setAllRoles(res.data || [])).catch(() => {});
+    api.get("/roles").then((res) => setAllRoles(res.data || [])).catch(() => { });
   }, [canManageStaffAccounts, accountsRefreshKey]);
   useEffect(() => {
     if (adminData.roles?.length) setAllRoles(adminData.roles);
@@ -195,7 +215,7 @@ export default function Staffs({
       Experience: s.experience ? `${s.experience} yr` : "—",
       Contact: s.contact || "—",
       "Alt Contact": s.altContact || "—",
-      "Joining Date": s.joiningDate || "—",
+      "Joining Date": fmtDate(s.joiningDate),
       Education: s.education || "—",
       "Bank Name": s.bank?.name || "—",
       "Account No": s.bank?.account || "—",
@@ -238,11 +258,17 @@ export default function Staffs({
     if (isSuperAdmin && !formData.venueId) e.venueId = true;
     if (!formData.joiningDate) e.joiningDate = true;
     if (!formData.dob) e.dob = true;
+    // Belt-and-braces checks alongside the pickers' own `max` bounds —
+    // catches a value set programmatically (edit mode loading an old
+    // record, etc.) that the picker UI itself wouldn't have allowed a
+    // user to type in.
+    if (formData.joiningDate && formData.joiningDate > todayStr()) e.joiningDate = true;
+    if (formData.dob && formData.dob > latestValidDob()) e.dob = true;
     if (!formData.experience) e.experience = true;
     if (!formData.salary) e.salary = true;
     if (!formData.education.trim()) e.education = true;
-    if (!formData.contact) e.contact = true;
-    if (!formData.altContact) e.altContact = true;
+    if (!formData.contact || formData.contact.replace(/\D/g, "").length !== 10) e.contact = true;
+    if (!formData.altContact || formData.altContact.replace(/\D/g, "").length !== 10) e.altContact = true;
     if (!formData.residentialAddress.trim()) e.residentialAddress = true;
     if (!formData.permanentAddress.trim()) e.permanentAddress = true;
     if (!formData.idProof) e.idProof = true;
@@ -257,12 +283,29 @@ export default function Staffs({
   };
 
   const handleSave = async () => {
+    if (isSavingStaff || accountSaving) return; // guard against double-submit
     const payload = {
       ...formData,
       id: isEditMode ? formData.id : generateStaffId(formData.name)
     };
 
-    isEditMode ? onUpdate(payload.id, payload) : onAdd(payload);
+    setIsSavingStaff(true);
+    try {
+      // Must be awaited before the login-account step below: that step
+      // posts staffId to /staff-auth/create-staff-account, which looks
+      // the record up server-side (getStaffModel().findOne({ id:
+      // staffId })). Firing that request before the staff record has
+      // actually finished saving is a race — it usually loses, and the
+      // account creation fails with "staffId does not match an existing
+      // staff record".
+      if (isEditMode) {
+        await onUpdate(payload.id, payload);
+      } else {
+        await onAdd(payload);
+      }
+    } finally {
+      setIsSavingStaff(false);
+    }
     toast.success(isEditMode ? "Staff updated" : "Staff added");
 
     // Optional login account, created only for new staff (not edits) when
@@ -329,202 +372,203 @@ export default function Staffs({
           initialAccounts={adminData.staffAccounts}
           initialUnlinkedStaff={adminData.unlinkedStaff}
           initialRoles={adminData.roles}
+          setAdminData={setAdminData}
         />
       ) : (
-      <>
-      {/* HEADER */}
-      <div className="header">
-        <div className="header-title-row">
-          <div className="header-collapse-col">
-            <button
-              type="button"
-              className="header-collapse-btn"
-              onClick={() => setHeaderCollapsed(prev => !prev)}
-              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand header" : "Collapse header"}
-              aria-expanded={!headerCollapsed}
-            >
-              <CollapseChevron collapsed={headerCollapsed} />
-            </button>
-          </div>
-          <div className="header-title-col">
-            <div className="header-title-with-count">
-              <h2 className="title">Staff</h2>
-              <span className="result-count">{staffs.length} staff</span>
+        <>
+          {/* HEADER */}
+          <div className="header">
+            <div className="header-title-row">
+              <div className="header-collapse-col">
+                <button
+                  type="button"
+                  className="header-collapse-btn"
+                  onClick={() => setHeaderCollapsed(prev => !prev)}
+                  data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title={headerCollapsed ? "Expand header" : "Collapse header"}
+                  aria-expanded={!headerCollapsed}
+                >
+                  <CollapseChevron collapsed={headerCollapsed} />
+                </button>
+              </div>
+              <div className="header-title-col">
+                <div className="header-title-with-count">
+                  <h2 className="title">Staff</h2>
+                  <span className="result-count">{staffs.length} staff</span>
+                </div>
+              </div>
+            </div>
+            <div className="header-btn-container">
+              <Button3D onClick={exportStaffs}>Export</Button3D>
+              <Button3D onClick={() => { setFormData({ ...EMPTY_FORM, venueId: activeVenueId || "" }); setShowModal(true); staffModal.open(); }}>+ Add Staff</Button3D>
             </div>
           </div>
-        </div>
-        <div className="header-btn-container">
-          <Button3D onClick={exportStaffs}>Export</Button3D>
-          <Button3D onClick={() => { setFormData({ ...EMPTY_FORM, venueId: activeVenueId || "" }); setShowModal(true); staffModal.open(); }}>+ Add Staff</Button3D>
-        </div>
-      </div>
 
-      {/* FILTER BAR */}
-      <CollapseSection collapsed={headerCollapsed}>
-        <div className="filter-bar">
-          <div className="filter-groups">
-            <input
-              className="search-input"
-              placeholder=" Search name, role, contact…"
-              value={staffSearch}
-              onChange={e => setStaffSearch(allowTextInput(staffSearch, e.target.value, 100, 5))}
-            />
+          {/* FILTER BAR */}
+          <CollapseSection collapsed={headerCollapsed}>
+            <div className="filter-bar">
+              <div className="filter-groups">
+                <input
+                  className="search-input"
+                  placeholder=" Search name, role, contact…"
+                  value={staffSearch}
+                  onChange={e => setStaffSearch(allowTextInput(staffSearch, e.target.value, 100, 5))}
+                />
 
-            <MultiPillGroup
-              label="Work Type"
-              options={[["full-time", "Full-Time"], ["part-time", "Part-Time"], ["double-shift", "Double Shift"]]}
-              value={workTypeFilters}
-              onToggle={(key) => toggleSet(setWorkTypeFilters, key)}
-            />
-            <MultiPillGroup
-              label="Role"
-              options={jobRoles.map(r => [r, r])}
-              value={roleFilters}
-              onToggle={(key) => toggleSet(setRoleFilters, key)}
-            />
-            {isSuperAdmin && (
-              <MultiPillGroup
-                label="Branch"
-                options={(venues || []).map(v => [v.id, v.name])}
-                value={branchFilters}
-                onToggle={(key) => toggleSet(setBranchFilters, key)}
-              />
-            )}
-            {(staffSearch || workTypeFilters.size > 0 || roleFilters.size > 0 || branchFilters.size > 0) && (
-              <button className="ae-clear-filter" onClick={() => { setStaffSearch(""); setWorkTypeFilters(new Set()); setRoleFilters(new Set()); setBranchFilters(new Set()); }}>Clear</button>
-            )}
-          </div>
-        </div>
-      </CollapseSection>
+                <MultiPillGroup
+                  label="Work Type"
+                  options={[["full-time", "Full-Time"], ["part-time", "Part-Time"], ["double-shift", "Double Shift"]]}
+                  value={workTypeFilters}
+                  onToggle={(key) => toggleSet(setWorkTypeFilters, key)}
+                />
+                <MultiPillGroup
+                  label="Role"
+                  options={jobRoles.map(r => [r, r])}
+                  value={roleFilters}
+                  onToggle={(key) => toggleSet(setRoleFilters, key)}
+                />
+                {isSuperAdmin && (
+                  <MultiPillGroup
+                    label="Branch"
+                    options={(venues || []).map(v => [v.id, v.name])}
+                    value={branchFilters}
+                    onToggle={(key) => toggleSet(setBranchFilters, key)}
+                  />
+                )}
+                {(staffSearch || workTypeFilters.size > 0 || roleFilters.size > 0 || branchFilters.size > 0) && (
+                  <button className="ae-clear-filter" onClick={() => { setStaffSearch(""); setWorkTypeFilters(new Set()); setRoleFilters(new Set()); setBranchFilters(new Set()); }}>Clear</button>
+                )}
+              </div>
+            </div>
+          </CollapseSection>
 
-      {/* TABLE */}
-      <div className="table-wrapper" ref={containerRef}>
-        <table >
-          <thead>
-            <tr>
-              <th onClick={() => handleSort("name")} className={`${sortConfig.key === "name" ? "sorted" : ""}`}>
-                <span className="th-content sort-th">
-                  <span>Name</span>
-                  <span className="sort-arrow">{sortConfig.key === "name" ? (sortConfig.direction === "asc" ? "▲" : "▼") : "▼"}</span>
-                </span>
-              </th>
-              <th onClick={() => handleSort("role")} className={sortConfig.key === "role" ? "sorted" : ""}>
-                <span className="th-content sort-th">
-                  <span>Role</span>
-                  <span className="sort-arrow">{sortConfig.key === "role" ? (sortConfig.direction === "asc" ? "▲" : "▼") : "▼"}</span>
-                </span>
-              </th>
-              <th onClick={() => handleSort("salary")} className={sortConfig.key === "salary" ? "sorted" : ""}>
-                <span className="th-content sort-th">
-                  <span>Salary</span>
-                  <span className="sort-arrow">{sortConfig.key === "salary" ? (sortConfig.direction === "asc" ? "▲" : "▼") : "▼"}</span>
-                </span>
-              </th>
-              <th onClick={() => handleSort("experience")} className={sortConfig.key === "experience" ? "sorted" : ""}>
-                <span className="th-content sort-th">
-                  <span>Exp</span>
-                  <span className="sort-arrow">{sortConfig.key === "experience" ? (sortConfig.direction === "asc" ? "▲" : "▼") : "▼"}</span>
-                </span>
-              </th>
-              <th>Contact</th>
-              {isSuperAdmin && <th>Branch</th>}
-              <th onClick={() => handleSort("workType")} className={sortConfig.key === "workType" ? "sorted" : ""}>
-                <span className="th-content sort-th">
-                  <span>Work Type</span>
-                  <span className="sort-arrow">{sortConfig.key === "workType" ? (sortConfig.direction === "asc" ? "▲" : "▼") : "▼"}</span>
-                </span>
-              </th>
-              <th className="icon-width">Edit</th>
-              <th className="icon-width">Delete</th>
-            </tr>
-          </thead>
-          <tbody>
-            {staffs.length === 0 ? (
-              <EmptyRow colSpan={isSuperAdmin ? 9 : 8} message="No staff available" />
-            ) : (
-              staffs.slice(0, displayLimit).map((staff, i) => {
-              const PALETTE = ["#4361ee", "#06d6a0", "#ffd166", "#ef476f", "#7209b7", "#4cc9f0", "#f72585", "#3a0ca3", "#fb8500", "#023e8a"];
-              const avatarBg = PALETTE[i % PALETTE.length];
-              return (
-                <tr key={staff.id}>
-                  <td>
-                    <div className="st-name-cell">
-                      {staff.idImage ? (
-                        <img src={staff.idImage} alt={staff.name || "Staff"} className="st-avatar st-avatar-photo" />
-                      ) : (
-                        <div className="st-avatar" style={{ background: avatarBg }}>
-                          {(staff.name || "?").charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <span>
-                        <span
-                          className="st-name clickable"
-                          onClick={() => navigate(`/staff/${staff.id}`)}
-                        >
-                          {staff.name}
-                        </span>
-                        <div className="st-join">Joined {staff.joiningDate || "—"}</div>
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="st-role-badge">{staff.role || "—"}</span>
-                  </td>
-                  <td>
-                    <span className="st-salary">₹{Number(staff.salary || 0).toLocaleString("en-IN")}</span>
-                  </td>
-                  <td>
-                    <span className="st-exp">{staff.experience ? `${staff.experience} yr` : "—"}</span>
-                  </td>
-                  <td>
-                    <span className="st-contact">{staff.contact || "—"}</span>
-                  </td>
-                  {isSuperAdmin && (
-                    <td>
-                      <span className="st-branch">{(venues || []).find((v) => v.id === staff.venueId)?.name || "—"}</span>
-                    </td>
-                  )}
-                  <td>
-                    <span className={`st-worktype-badge st-wt-${(staff.workType || "full-time").replace("-", "")}`}>
-                      {staff.workType || "full-time"}
+          {/* TABLE */}
+          <div className="table-wrapper" ref={containerRef}>
+            <table >
+              <thead>
+                <tr>
+                  <th onClick={() => handleSort("name")} className={`${sortConfig.key === "name" ? "sorted" : ""}`}>
+                    <span className="th-content sort-th">
+                      <span>Name</span>
+                      <span className="sort-arrow">{sortConfig.key === "name" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}</span>
                     </span>
-                  </td>
-                  <td className="icon-width" onClick={e => e.stopPropagation()}>
-                    <Button3D variant="cancel" iconOnly onClick={() => { setFormData(staff); setIsEditMode(true); setShowModal(true); staffModal.open(); }}
-                      title="Edit"><img src={editIcon} alt="" /></Button3D>
-                  </td>
-
-                  <td className="icon-width" onClick={e => e.stopPropagation()}>
-                    <Button3D variant="cancel" iconOnly title="Delete" onClick={() => deleteRecord({
-                      api, toast,
-                      endpoint: `/staff/${staff.id}`,
-                      item: staff,
-                      stateKey: "staff",
-                      adminData,
-                      setAdminData,
-                      confirmMsg: `Delete "${staff.name}"?`,
-                      successMsg: "Staff deleted",
-                      errorMsg: "Failed to delete staff",
-                    })}>
-                      <img src={deleteIcon} alt="" />
-                    </Button3D>
-                  </td>
+                  </th>
+                  <th onClick={() => handleSort("role")} className={sortConfig.key === "role" ? "sorted" : ""}>
+                    <span className="th-content sort-th">
+                      <span>Role</span>
+                      <span className="sort-arrow">{sortConfig.key === "role" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}</span>
+                    </span>
+                  </th>
+                  <th onClick={() => handleSort("salary")} className={sortConfig.key === "salary" ? "sorted" : ""}>
+                    <span className="th-content sort-th">
+                      <span>Salary</span>
+                      <span className="sort-arrow">{sortConfig.key === "salary" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}</span>
+                    </span>
+                  </th>
+                  <th onClick={() => handleSort("experience")} className={sortConfig.key === "experience" ? "sorted" : ""}>
+                    <span className="th-content sort-th">
+                      <span>Exp</span>
+                      <span className="sort-arrow">{sortConfig.key === "experience" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}</span>
+                    </span>
+                  </th>
+                  <th>Contact</th>
+                  {isSuperAdmin && <th>Branch</th>}
+                  <th onClick={() => handleSort("workType")} className={sortConfig.key === "workType" ? "sorted" : ""}>
+                    <span className="th-content sort-th">
+                      <span>Work Type</span>
+                      <span className="sort-arrow">{sortConfig.key === "workType" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}</span>
+                    </span>
+                  </th>
+                  <th className="icon-width">Edit</th>
+                  <th className="icon-width">Delete</th>
                 </tr>
-              );
-            })
-            )}
-            {staffs.length > 0 && (
-              <InfiniteScrollLoader
-                sentinelRef={sentinelRef}
-                hasMore={hasMore}
-                colSpan={isSuperAdmin ? 9 : 8}
-              />
-            )}
-          </tbody>
-        </table>
-        <InfiniteScrollOverlay isLoading={isLoadingMore} />
-      </div>
-      </>
+              </thead>
+              <tbody>
+                {staffs.length === 0 ? (
+                  <EmptyRow colSpan={isSuperAdmin ? 9 : 8} message="No staff available" />
+                ) : (
+                  staffs.slice(0, displayLimit).map((staff, i) => {
+                    const PALETTE = ["#4361ee", "#06d6a0", "#ffd166", "#ef476f", "#7209b7", "#4cc9f0", "#f72585", "#3a0ca3", "#fb8500", "#023e8a"];
+                    const avatarBg = PALETTE[i % PALETTE.length];
+                    return (
+                      <tr key={staff.id}>
+                        <td>
+                          <div className="st-name-cell">
+                            {staff.idImage ? (
+                              <img src={staff.idImage} alt={staff.name || "Staff"} className="st-avatar st-avatar-photo" />
+                            ) : (
+                              <div className="st-avatar" style={{ background: avatarBg }}>
+                                {(staff.name || "?").charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <span>
+                              <span
+                                className="st-name clickable"
+                                onClick={() => navigate(`/staff/${staff.id}`)}
+                              >
+                                {staff.name}
+                              </span>
+                              <div className="st-join">Joined {fmtDate(staff.joiningDate)}</div>
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <span className="st-role-badge">{staff.role || "—"}</span>
+                        </td>
+                        <td>
+                          <span className="st-salary">₹{Number(staff.salary || 0).toLocaleString("en-IN")}</span>
+                        </td>
+                        <td>
+                          <span className="st-exp">{staff.experience ? `${staff.experience} yr` : "—"}</span>
+                        </td>
+                        <td>
+                          <span className="st-contact">{staff.contact || "—"}</span>
+                        </td>
+                        {isSuperAdmin && (
+                          <td>
+                            <span className="st-branch">{(venues || []).find((v) => v.id === staff.venueId)?.name || "—"}</span>
+                          </td>
+                        )}
+                        <td>
+                          <span className={`st-worktype-badge st-wt-${(staff.workType || "full-time").replace("-", "")}`}>
+                            {staff.workType || "full-time"}
+                          </span>
+                        </td>
+                        <td className="icon-width" onClick={e => e.stopPropagation()}>
+                          <Button3D variant="cancel" iconOnly onClick={() => { setFormData(staff); setIsEditMode(true); setShowModal(true); staffModal.open(); }}
+                            title="Edit"><img src={editIcon} alt="" /></Button3D>
+                        </td>
+
+                        <td className="icon-width" onClick={e => e.stopPropagation()}>
+                          <Button3D variant="cancel" iconOnly title="Delete" onClick={() => deleteRecord({
+                            api, toast,
+                            endpoint: `/staff/${staff.id}`,
+                            item: staff,
+                            stateKey: "staff",
+                            adminData,
+                            setAdminData,
+                            confirmMsg: `Delete "${staff.name}"?`,
+                            successMsg: "Staff deleted",
+                            errorMsg: "Failed to delete staff",
+                          })}>
+                            <img src={deleteIcon} alt="" />
+                          </Button3D>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+                {staffs.length > 0 && (
+                  <InfiniteScrollLoader
+                    sentinelRef={sentinelRef}
+                    hasMore={hasMore}
+                    colSpan={isSuperAdmin ? 9 : 8}
+                  />
+                )}
+              </tbody>
+            </table>
+            <InfiniteScrollOverlay isLoading={isLoadingMore} />
+          </div>
+        </>
       )}
 
       {/* MODAL */}
@@ -570,9 +614,9 @@ export default function Staffs({
                   </div>
                 )}
               </div>
-              <div style={{position: "absolute", top: -4, right: 0}}>
+              <div style={{ position: "absolute", top: -4, right: 0 }}>
                 <Button3D variant="cancel" iconOnly onClick={resetForm}><img src={closeIcon} /></Button3D>
-                </div>
+              </div>
             </div>
 
             {/* BODY */}
@@ -644,7 +688,7 @@ export default function Staffs({
                           label="Login Role"
                           required
                           value={accountForm.roleTitle}
-                          onChange={() => {}}
+                          onChange={() => { }}
                           options={roleTitleOptions}
                           placeholder="Set from Staff Details"
                           hasError={!!accountErrors.roleTitle}
@@ -661,7 +705,7 @@ export default function Staffs({
                             label="Branch"
                             required
                             value={accountForm.venueId}
-                            onChange={() => {}}
+                            onChange={() => { }}
                             options={(venues || []).map((v) => ({ value: v.id, label: v.name }))}
                             placeholder="Set from Staff Details"
                             hasError={!!accountErrors.venueId}
@@ -736,6 +780,7 @@ export default function Staffs({
                           value={formData.joiningDate}
                           onChange={(v) => { setFormData({ ...formData, joiningDate: v }); setFormErrors(p => ({ ...p, joiningDate: false })); }}
                           placeholder="Select joining date"
+                          max={todayStr()}
                           hasError={!!formErrors.joiningDate}
                         />
                       </div>
@@ -797,9 +842,12 @@ export default function Staffs({
                             value={formData.dob}
                             onChange={(v) => { setFormData({ ...formData, dob: v }); setFormErrors(p => ({ ...p, dob: false })); }}
                             placeholder="Select date of birth"
-                            max={new Date().toISOString().split("T")[0]}
+                            max={latestValidDob()}
                             hasError={!!formErrors.dob}
                           />
+                          <p className="rf-hint" style={{ fontSize: 12, marginTop: 4, opacity: 0.7 }}>
+                            Staff must be at least 18 years old.
+                          </p>
                         </div>
 
                         <div className="admin-form-group">
@@ -1002,9 +1050,11 @@ export default function Staffs({
                             className={`mat-input${formErrors.contact ? " mat-error" : ""}`}
                             placeholder=" "
                             required
-                            type="number"
+                            type="tel"
+                            inputMode="numeric"
+                            maxLength={10}
                             value={formData.contact}
-                            onChange={(e) => { setFormData({ ...formData, contact: e.target.value }); setFormErrors(p => ({ ...p, contact: false })); }}
+                            onChange={(e) => { setFormData({ ...formData, contact: sanitizeMobile(e.target.value) }); setFormErrors(p => ({ ...p, contact: false })); }}
                           />
                           <label className={`mat-label${formErrors.contact ? " mat-label-error" : ""}`}>Contact Number<span className="rf-req">*</span></label>
                           <span className={`mat-bar${formErrors.contact ? " mat-bar-error" : ""}`} />
@@ -1017,9 +1067,11 @@ export default function Staffs({
                             className={`mat-input${formErrors.altContact ? " mat-error" : ""}`}
                             placeholder=" "
                             required
-                            type="number"
+                            type="tel"
+                            inputMode="numeric"
+                            maxLength={10}
                             value={formData.altContact}
-                            onChange={(e) => { setFormData({ ...formData, altContact: e.target.value }); setFormErrors(p => ({ ...p, altContact: false })); }}
+                            onChange={(e) => { setFormData({ ...formData, altContact: sanitizeMobile(e.target.value) }); setFormErrors(p => ({ ...p, altContact: false })); }}
                           />
                           <label className={`mat-label${formErrors.altContact ? " mat-label-error" : ""}`}>Alternate Contact<span className="rf-req">*</span></label>
                           <span className={`mat-bar${formErrors.altContact ? " mat-bar-error" : ""}`} />
@@ -1211,8 +1263,8 @@ export default function Staffs({
                     <h4>Personal</h4>
                     <table className="preview-table">
                       <tbody>
-                        <tr><td>DOB</td><td>{formData.dob}</td></tr>
-                        <tr><td>Date of Joining</td><td>₹{formData.joiningDate}</td></tr>
+                        <tr><td>DOB</td><td>{fmtDate(formData.dob)}</td></tr>
+                        <tr><td>Date of Joining</td><td>{fmtDate(formData.joiningDate)}</td></tr>
                         <tr><td>Education</td><td>{formData.education}</td></tr>
                         <tr><td>Experience</td><td>{formData.experience}</td></tr>
                         <tr><td>Salary</td><td>₹{formData.salary}</td></tr>
@@ -1302,7 +1354,7 @@ export default function Staffs({
                 <>
                   <Button3D variant="cancel" onClick={resetForm}>Cancel</Button3D>
                   <Button3D onClick={() => { setPreviewMode(false); if (!isEditMode && canManageStaffAccounts) setCreateStep(accountForm.enabled ? 1 : 0); }}>Edit</Button3D>
-                  <Button3D onClick={handleSave} disabled={accountSaving}>{accountSaving ? "Saving…" : "Save"}</Button3D>
+                  <Button3D onClick={handleSave} disabled={accountSaving || isSavingStaff}>{accountSaving || isSavingStaff ? "Saving…" : "Save"}</Button3D>
                 </>
               )}
             </div>

@@ -49,25 +49,6 @@
   color: #7c3aed;
 }
 
-/* ── Add / Create Buttons ────────────────────────── */
-.ae-add-btn {
-  height: 38px;
-  padding: 0 18px;
-  border-radius: 999px;
-  border: 1px solid #111;
-  background: #111;
-  color: #fff;
-  font-weight: 500;
-  font-size: 13px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: opacity 0.2s;
-}
-
-.ae-add-btn:hover {
-  opacity: 0.85;
-}
-
 /* ── Empty State ────────────────────────────────── */
 .ae-empty-state {
   display: flex;
@@ -76,10 +57,6 @@
   gap: 10px;
   padding: 60px 20px;
   color: #888;
-}
-
-.ae-empty-icon {
-  font-size: 48px;
 }
 
 .ae-empty-state p {
@@ -447,91 +424,6 @@
   color: #111;
 }
 
-/* ── Dish Selector ───────────────────────────────── */
-.ae-dish-selector {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.ae-dish-search {
-  padding: 8px 12px;
-  font-size: 13px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  outline: none;
-}
-
-.ae-dish-search:focus {
-  border-color: #111;
-}
-
-.ae-dish-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-height: 200px;
-  overflow-y: auto;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 6px;
-}
-
-.ae-dish-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: background 0.15s;
-}
-
-.ae-dish-item:hover {
-  background: #f5f5f5;
-}
-
-.ae-dish-item.selected {
-  background: #f0fdf4;
-}
-
-.ae-dish-item input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
-  cursor: pointer;
-  accent-color: #111;
-  flex-shrink: 0;
-}
-
-.ae-dish-name {
-  flex: 1;
-  color: #222;
-}
-
-.ae-dish-price {
-  font-size: 12px;
-  color: #666;
-  font-weight: 500;
-}
-
-.ae-dish-count {
-  font-size: 12px;
-  color: var(--color-blue);
-  font-weight: 500;
-  margin: 0;
-}
-
-.ae-filter-select {
-  padding: 8px 10px;
-  font-size: 13px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fff;
-  cursor: pointer;
-  outline: none;
-}
-
 .ae-clear-filter {
   padding: 8px 14px;
   font-size: 12px;
@@ -546,67 +438,6 @@
   font-size: 12px;
   color: #888;
   margin-left: auto;
-}
-
-/* ── Booking Table ──────────────────────────────── */
-.ae-booking-table-wrapper {
-  width: 100%;
-  overflow-x: auto;
-  border-radius: 14px;
-  background: #e9e9e9;
-  padding: 0 10px 10px;
-  flex: 1 1 auto;
-  min-height: 0;
-  box-sizing: border-box;
-}
-
-.ae-booking-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 5px;
-  background: transparent;
-  min-width: 700px;
-}
-
-.ae-booking-table thead th {
-  padding: 14px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #555;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: #e9e9e9;
-  text-align: left;
-  position: sticky;
-  top: 0;
-  z-index: 5;
-}
-
-.ae-booking-table tbody tr {
-  background: #fff;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
-}
-
-.ae-booking-table tbody tr td {
-  padding: 10px 12px;
-  font-size: 13px;
-  color: #333;
-  border: none;
-  background: #fff;
-}
-
-.ae-booking-table tbody tr td:first-child {
-  border-top-left-radius: 12px;
-  border-bottom-left-radius: 12px;
-}
-
-.ae-booking-table tbody tr td:last-child {
-  border-top-right-radius: 12px;
-  border-bottom-right-radius: 12px;
-}
-
-.ae-booking-table tbody tr:hover td {
-  background: #f5f5f5;
 }
 
 .ae-booking-name {
@@ -650,35 +481,6 @@
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-}
-
-.ae-tbl-btn {
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 500;
-  border-radius: 5px;
-  border: none;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.ae-tbl-btn:hover {
-  opacity: 0.8;
-}
-
-.ae-tbl-view {
-  background: var(--color-offwhite);
-  color: #111;
-}
-
-.ae-tbl-confirm {
-  background: #dcfce7;
-  color: #16a34a;
-}
-
-.ae-tbl-cancel {
-  background: #fee2e2;
-  color: #dc2626;
 }
 
 /* ── Event Form Modal specifics ─────────────────── */
@@ -927,18 +729,6 @@
   min-width: 0;
 }
 
-.ae-cat-icon {
-  font-size: 22px;
-  line-height: 1;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.12));
-  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.ae-cat-btn:hover .ae-cat-icon,
-.ae-cat-btn.active .ae-cat-icon {
-  transform: scale(1.2) rotate(-4deg);
-}
-
 .ae-cat-label {
   font-size: 13px;
   font-weight: 600;
@@ -1049,13 +839,6 @@
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.ae-addon-icon {
-  font-size: 20px;
-  width: 32px;
-  text-align: center;
-  flex-shrink: 0;
 }
 
 .ae-addon-label {
@@ -1187,11 +970,6 @@
   color: var(--color-blue);
 }
 
-.ae-step-prev-btn {
-  background: var(--color-offwhite) !important;
-  color: #111 !important;
-}
-
 /* ── Booking Detail Modal ───────────────────────── */
 .ae-booking-detail-modal {
   width: 500px !important;
@@ -1226,24 +1004,6 @@
   margin: 0;
   font-size: 13px;
   color: #666;
-}
-
-.ae-detail-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.ae-detail-table td {
-  padding: 6px 10px;
-  border-bottom: 1px solid #f0f0f0;
-  color: #333;
-}
-
-.ae-detail-table td:first-child {
-  font-weight: 500;
-  color: #777;
-  width: 40%;
 }
 
 .ae-mono {
@@ -1340,30 +1100,6 @@
   flex-shrink: 0;
 }
 
-.ae-guest-add-confirm-btn {
-  padding: 8px 18px;
-  border-radius: 10px;
-  border: none;
-  background: #16a34a;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.ae-guest-add-confirm-btn:hover:not(:disabled) {
-  background: #15803d;
-  transform: scale(1.03);
-  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3);
-}
-
-.ae-guest-add-confirm-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 /* Additional cost hint */
 .ae-add-guest-cost {
   font-size: 12px;
@@ -1376,11 +1112,6 @@
   width: fit-content;
 }
 
-.btn-primary {
-  background-color: #111 !important;
-  color: #fff !important;
-}
-
 /* ── Responsive ─────────────────────────────────── */
 @media (max-width: 768px) {
   .ae-events-grid {
@@ -1390,11 +1121,6 @@
   .ae-packages-grid,
   .ae-category-grid {
     grid-template-columns: 1fr 1fr;
-  }
-
-  .ae-spec-step {
-    border-right: none;
-    border-bottom: 1px solid var(--color-offwhite);
   }
 
   .ae-header-actions {
@@ -1415,18 +1141,10 @@
     grid-template-columns: 1fr;
   }
 
-  .ae-page-header {
-    flex-direction: column;
-  }
-
   .ae-header-actions {
     width: 100%;
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .ae-tab-pills {
-    width: 100%;
   }
 
   .act-dish-card,
@@ -1498,74 +1216,6 @@
   cursor: not-allowed;
 }
 
-/* Category dropdown (replaces checkbox row) */
-.ae-cat-dropdown-wrap {
-  position: relative;
-  margin-bottom: 12px;
-}
-
-.ae-cat-dropdown {
-  width: 100%;
-  padding: 8px 36px 8px 14px;
-  border-radius: 10px;
-  border: 1.5px solid var(--color-offwhite);
-  background: #f9fafb;
-  font-size: 13px;
-  font-weight: 500;
-  color: #111;
-  font-family: inherit;
-  appearance: none;
-  -webkit-appearance: none;
-  outline: none;
-  cursor: pointer;
-  transition: border-color 0.18s, background 0.18s;
-}
-
-.ae-cat-dropdown:focus,
-.ae-cat-dropdown:hover {
-  border-color: #111;
-  background: #fff;
-}
-
-.ae-cat-dropdown-arrow {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  font-size: 11px;
-  color: #888;
-}
-
-/* Dish list v2 */
-.ae-dish-list-v2 {
-  display: flex;
-  flex-direction: column;
-  max-height: 220px;
-  overflow-y: auto;
-  border: 1px solid var(--color-offwhite);
-  border-radius: 10px;
-  padding: 6px;
-  margin-bottom: 14px;
-}
-
-.ae-dish-thumb {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
-.ae-dish-cat-tag {
-  font-size: 10px;
-  color: #888;
-  background: #f3f4f6;
-  padding: 1px 6px;
-  border-radius: 999px;
-  flex-shrink: 0;
-}
-
 .ae-dish-empty {
   font-size: 13px;
   color: #aaa;
@@ -1629,14 +1279,6 @@
   font-weight: 500;
 }
 
-.ae-sdt-img {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
 .ae-sdt-cat {
   font-size: 11px;
   color: #888;
@@ -1674,52 +1316,6 @@
   padding-top: 8px;
 }
 
-.evt-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  height: 40px;
-  padding: 0 12px;
-  border-radius: 10px;
-  border: 1.5px solid var(--color-offwhite);
-  background: #f9fafb;
-  font-size: 13px;
-  color: #111;
-  cursor: pointer;
-  transition: all 0.18s;
-  font-family: inherit;
-}
-
-.evt-trigger:hover {
-  border-color: #111;
-  background: #fff;
-}
-
-.evt-res-evt-trigger {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.evt-val {
-  font-weight: 500;
-  flex: 1;
-  text-align: left;
-}
-
-.evt-popup {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 9999;
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
-  padding: 14px;
-  width: 270px;
-  animation: cdpFadeIn 0.18s ease;
-}
-
 @keyframes cdpFadeIn {
   from {
     opacity: 0;
@@ -1730,156 +1326,6 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.evt-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.evt-nav-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  border: 1.5px solid #f0f0f0;
-  background: #fff;
-  font-size: 15px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #555;
-}
-
-.evt-nav-center {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-}
-
-.evt-nav-lbl {
-  background: none;
-  border: none;
-  font-size: 13px;
-  font-weight: 700;
-  color: #111;
-  cursor: pointer;
-  padding: 3px 7px;
-  border-radius: 6px;
-  font-family: inherit;
-}
-
-.evt-nav-lbl:hover {
-  background: #f5f5f5;
-}
-
-.evt-weekdays {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  text-align: center;
-  margin-bottom: 5px;
-}
-
-.evt-weekdays span {
-  font-size: 9px;
-  font-weight: 700;
-  color: #222;
-  text-transform: uppercase;
-  padding: 3px 0;
-}
-
-.evt-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
-}
-
-.evt-day {
-  width: 32px;
-  height: 32px;
-  border-radius: 7px;
-  border: none;
-  background: transparent;
-  font-size: 12px;
-  color: #333;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: inherit;
-}
-
-.evt-day:hover:not(.evt-dis) {
-  background: #f0f4ff;
-  color: #4361ee;
-}
-
-.evt-day.evt-today {
-  font-weight: 700;
-  color: #4361ee;
-}
-
-.evt-day.evt-sel {
-  background: #111 !important;
-  color: #fff !important;
-  font-weight: 700;
-}
-
-.evt-day.evt-dis {
-  color: #ddd;
-  cursor: not-allowed;
-}
-
-.evt-month-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 5px;
-  padding: 4px 0;
-}
-
-.evt-month-btn {
-  padding: 9px 4px;
-  border-radius: 9px;
-  border: 1.5px solid #f0f0f0;
-  background: #fff;
-  font-size: 12px;
-  font-weight: 500;
-  color: #333;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.evt-month-btn.evt-sel {
-  background: #111;
-  color: #fff;
-  border-color: #111;
-}
-
-.evt-year-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 5px;
-  padding: 4px 0;
-}
-
-.evt-year-btn {
-  padding: 9px 4px;
-  border-radius: 9px;
-  border: 1.5px solid #f0f0f0;
-  background: #fff;
-  font-size: 11px;
-  font-weight: 500;
-  color: #333;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.evt-year-btn.evt-sel {
-  background: #111;
-  color: #fff;
-  border-color: #111;
 }
 
 /* ── Confirm Delete Modal ─────────────────────────── */
@@ -1899,116 +1345,6 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px 14px;
-}
-
-/* Field wrapper — just for grid cell */
-.evt-addr-field {
-  display: flex;
-  flex-direction: column;
-}
-
-/* Mat container — provides room for the floating label */
-.ae-addr-mat {
-  position: relative;
-  padding-top: 12px;
-  width: 100%;
-}
-
-/* The input — no box, only underline */
-.ae-addr-input {
-  display: block;
-  width: 100%;
-  font-size: 14px;
-  font-weight: 500;
-  font-family: inherit;
-  color: #111;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid #e0e0e0;
-  border-radius: 0;
-  outline: none;
-  box-shadow: none;
-  box-sizing: border-box;
-  padding: 0 2px;
-  caret-color: #111;
-  transition: border-color 0.25s ease;
-}
-
-.ae-addr-input::placeholder {
-  color: transparent;
-}
-
-.ae-addr-input:hover {
-  border-bottom-color: #bbb;
-}
-
-.ae-addr-input:focus {
-  border-bottom-color: transparent;
-  /* bar covers it */
-  background: transparent;
-  box-shadow: none !important;
-  outline: none;
-}
-
-.ae-addr-input:disabled {
-  color: #999;
-  cursor: not-allowed;
-  border-bottom-color: var(--color-offwhite);
-  opacity: 0.7;
-}
-
-/* Floating label */
-.ae-addr-mat .ae-addr-label {
-  position: absolute;
-  top: 20px;
-  /* baseline when idle */
-  left: 2px;
-  font-size: 14px;
-  font-weight: 400;
-  color: #aaa;
-  pointer-events: none;
-  line-height: 1;
-  white-space: nowrap;
-  transition:
-    top 0.22s ease,
-    font-size 0.22s ease,
-    font-weight 0.22s ease,
-    color 0.22s ease,
-    letter-spacing 0.22s ease;
-}
-
-/* Float up when focused or has value */
-.ae-addr-input:focus~.ae-addr-label,
-.ae-addr-input:not(:placeholder-shown)~.ae-addr-label {
-  top: 2px;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--color-blue);
-  letter-spacing: 0.06em;
-  text-transform: uppercase !important;
-}
-
-/* Highlight bar — draws on focus */
-.ae-addr-bar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 2px;
-  width: 0;
-  background: var(--color-blue);
-  border-radius: 1px;
-  pointer-events: none;
-  transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.ae-addr-input:focus~.ae-addr-label~.ae-addr-bar,
-.ae-addr-input:focus~.ae-addr-bar {
-  width: 100%;
-}
-
-.ae-req {
-  color: #dc2626;
-  font-size: 11px;
 }
 
 /* ══════════════════════════════════════════════
@@ -2198,30 +1534,6 @@
   flex-shrink: 0;
 }
 
-.act-dish-add-btn {
-  padding: 4px 12px;
-  border-radius: 6px;
-  border: 1.5px solid var(--color-blue);
-  background: transparent;
-  color: var(--color-blue);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s;
-  flex-shrink: 0;
-  white-space: nowrap;
-
-  transition: all 0.3s ease-in;
-}
-
-.act-dish-add-btn:hover {
-  background: var(--color-paleblue);
-  color: var(--color-blue);
-  border: 2px solid var(--color-blue);
-  font-weight: 800;
-}
-
 /* ── Booking filter enhancements ── */
 .ae-filter-group-label {
   font-size: 10px;
@@ -2239,64 +1551,25 @@
   width: 100%;
   gap: 10px;
   flex-wrap: wrap;
-}
-
-.use-restaurant-loc-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: 10px;
-  padding: 4px 12px;
-  border-radius: 999px;
-  border: 1.5px solid #bfdbfe;
-  background: var(--color-paleblue);
-  color: var(--color-blue);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s;
-  user-select: none;
-}
-
-.use-restaurant-loc-toggle:hover {
-  border-color: var(--color-blue);
-  background: #dbeafe;
-}
-
-.use-restaurant-loc-toggle.active {
-  background: var(--color-blue);
-  border-color: var(--color-blue);
-  color: #fff;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
-}
-
-/* ══════════════════════════════════════════════════════
+}/* ══════════════════════════════════════════════════════
    MODAL FORM INPUTS — matches ReservationForm field-group
    (mat underline + floating label pattern)
 ══════════════════════════════════════════════════════ */
 
 /* Override form-group inside event modals */
 .ae-event-form-body .form-group,
-.ae-spec-form-body .form-group,
-.ae-event-form-body .evt-addr-field,
-.ae-spec-form-body .evt-addr-field {
+.ae-spec-form-body .form-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-
-.ae-event-form-body .form-group>label,
-.ae-spec-form-body .form-group>label,
-.evt-addr-field>label {
+}.ae-event-form-body .form-group>label,
+.ae-spec-form-body .form-group>label {
   font-size: 12px;
   font-weight: 700;
   color: #555;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-}
-
-/* All text/number/email inputs inside modal form bodies */
+}/* All text/number/email inputs inside modal form bodies */
 .ae-event-form-body .form-group input[type="text"],
 .ae-event-form-body .form-group input[type="number"],
 .ae-event-form-body .form-group input[type="email"],
@@ -2304,8 +1577,7 @@
 .ae-spec-form-body .form-group input[type="text"],
 .ae-spec-form-body .form-group input[type="number"],
 .ae-spec-form-body .form-group input[type="email"],
-.ae-spec-form-body .form-group select,
-.evt-addr-field input[type="text"] {
+.ae-spec-form-body .form-group select {
   height: 32px;
   border: none;
   border-bottom: 2px solid var(--color-offwhite);
@@ -2320,13 +1592,10 @@
   box-sizing: border-box;
   transition: border-color 0.25s ease;
   width: 100%;
-}
-
-.ae-event-form-body .form-group input:focus,
+}.ae-event-form-body .form-group input:focus,
 .ae-event-form-body .form-group select:focus,
 .ae-spec-form-body .form-group input:focus,
-.ae-spec-form-body .form-group select:focus,
-.evt-addr-field input:focus {
+.ae-spec-form-body .form-group select:focus {
   border-bottom-color: #111;
   background: transparent;
   box-shadow: none;
@@ -2382,21 +1651,6 @@
   box-shadow: none !important;
 }
 
-/* Address field inputs also get the underline style */
-.evt-addr-field input[type="text"] {
-  border-radius: 0;
-  border: none;
-  border-bottom: 2px solid var(--color-offwhite);
-  background: transparent;
-  padding: 6px 2px;
-  height: 38px;
-}
-
-.evt-addr-field input[type="text"]:focus {
-  border-bottom-color: #111;
-  background: transparent;
-}
-
 /* Section card grouping inside modal body */
 .ae-event-form-body .form-group,
 .ae-spec-form-body .form-group {
@@ -2411,102 +1665,6 @@
 /* ae-form-row already grid, keep it */
 .ae-form-row .form-group {
   border-bottom: none !important;
-}
-
-.ae-addr-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.ae-addr-field label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #555;
-}
-
-.ae-addr-field input {
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1.5px solid var(--color-offwhite);
-  font-size: 13px;
-  font-family: inherit;
-  background: #f9fafb;
-  outline: none;
-  transition: border-color 0.18s;
-}
-
-.ae-addr-field input:focus {
-  border-color: #111;
-  background: #fff;
-}
-
-/* Step progress */
-.evt-spec-steps {
-  display: flex;
-  gap: 0;
-  margin-top: 10px;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid var(--color-offwhite);
-}
-
-.evt-spec-step {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  background: #f9f9f9;
-  border: none;
-  border-right: 1px solid var(--color-offwhite);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  color: #888;
-  transition: all 0.2s;
-}
-
-.evt-spec-step:last-child {
-  border-right: none;
-}
-
-.evt-spec-step.active {
-  background: #111;
-  color: #fff;
-}
-
-.evt-spec-step.done {
-  background: #dcfce7;
-  color: #16a34a;
-}
-
-.evt-step-num {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.evt-spec-step.active .evt-step-num {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-}
-
-.evt-spec-step.done .evt-step-num {
-  background: #16a34a;
-  color: #fff;
-}
-
-.evt-step-label {
-  font-size: 12px;
-  white-space: nowrap;
 }
 
 .evt-modal-footer {
@@ -3000,29 +2158,6 @@
   font-weight: 500;
   color: #111;
   word-break: break-word;
-}
-
-.evt-page.dishes-status-dropdowm {
-  min-width: 150px !important;
-  width: 100% !important;
-  height: 46px !important;
-  padding: 0 36px 0 10px !important;
-  font-size: 14px !important;
-  font-weight: 400 !important;
-  color: #111 !important;
-  background-color: #f9f9f9 !important;
-  box-sizing: border-box;
-  text-align: left !important;
-  cursor: pointer !important;
-  transition: border-color 0.2s ease !important;
-  background-image: url("data:image/svg+xml;utf8,<svg fill='%23666' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
-  background-repeat: no-repeat !important;
-  background-position: right 10px center !important;
-  background-size: 16px !important;
-  appearance: none !important;
-  border: none !important;
-  text-transform: capitalize !important;
-  text-align: center !important;
 }
 
 /* ═══════════════════════════════════════════

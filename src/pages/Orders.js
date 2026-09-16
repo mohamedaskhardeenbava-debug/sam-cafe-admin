@@ -14,6 +14,7 @@ import { exportToExcel } from "../utils/excelUtils";
 import api from "../api";
 import socket from "../socket";
 import { CustomDatePicker } from "../components/CustomDatePicker";
+import { TimeRangeGroup } from "../components/FilterBar";
 import CustomDropdown from "../components/CustomDropdown";
 import "../components/CustomDropdown.css";
 import usePopupAnimation, { MODAL_ANIM_EXIT_DURATION } from "../hooks/usePopupAnimation";
@@ -22,6 +23,7 @@ import closeIcon from "../icon/close-icon.png";
 import { EmptyRow } from "../App";
 import { formatDisplayDate } from "../App";
 import { formatIndianTime } from "../App";
+import { fmtDateTime } from "../utils/dateUtils";
 import { allowTextInput } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
@@ -521,11 +523,7 @@ const PaymentStatusModal = ({ order, isClosing, onClose }) => {
     ? PAYMENT_OUTCOME_INFO.PAID
     : (PAYMENT_OUTCOME_INFO[payment?.status] || PAYMENT_OUTCOME_INFO.NONE);
 
-  const formatDateTime = (iso) => {
-    if (!iso) return "—";
-    const d = new Date(iso);
-    return isNaN(d.getTime()) ? "—" : d.toLocaleString("en-IN");
-  };
+  const formatDateTime = (iso) => fmtDateTime(iso);
 
   return (
     <div className={`modal-overlay ${isClosing ? "modal-anim-out" : "modal-anim-in"}`}>
@@ -1309,6 +1307,17 @@ const Orders = ({ adminData, setAdminData }) => {
     }
     return saved?.toDate || todayLocal;
   });
+
+  // Time-of-day filter — persisted alongside the date range so a saved
+  // "today, 6pm–9pm dinner service" style filter survives a refresh.
+  const [fromTime, setFromTime] = useState(() => {
+    const saved = JSON.parse(localStorage.getItem(DATE_STORAGE_KEY) || "null");
+    return saved?.fromTime || "";
+  });
+  const [toTime, setToTime] = useState(() => {
+    const saved = JSON.parse(localStorage.getItem(DATE_STORAGE_KEY) || "null");
+    return saved?.toTime || "";
+  });
   const location = useLocation();
   const isOrdersPage = location.pathname === "/orders";
   const orderRefs = useRef({});
@@ -1435,6 +1444,16 @@ const Orders = ({ adminData, setAdminData }) => {
       const orderDate = new Date(order.date);
       const withinDate = orderDate >= from && orderDate <= to;
 
+      const withinTime = (() => {
+        if (!fromTime && !toTime) return true;
+        const hh = String(orderDate.getHours()).padStart(2, "0");
+        const mm = String(orderDate.getMinutes()).padStart(2, "0");
+        const hm = `${hh}:${mm}`;
+        if (fromTime && hm < fromTime) return false;
+        if (toTime && hm > toTime) return false;
+        return true;
+      })();
+
       const matchesStatus =
         statusFilter === "all" ||
         normalizeStatus(order.status) === statusFilter;
@@ -1453,9 +1472,9 @@ const Orders = ({ adminData, setAdminData }) => {
         String(order.tableNo ?? "").includes(q)
       );
 
-      return withinDate && matchesStatus && matchesMode && matchesSearch;
+      return withinDate && withinTime && matchesStatus && matchesMode && matchesSearch;
     });
-  }, [normalizedOrders, fromDate, toDate, statusFilter, modeFilter, orderSearch]);
+  }, [normalizedOrders, fromDate, toDate, fromTime, toTime, statusFilter, modeFilter, orderSearch]);
 
   const sortedOrders = useMemo(() => {
     const data = [...filteredOrders];
@@ -1638,9 +1657,9 @@ const Orders = ({ adminData, setAdminData }) => {
   useEffect(() => {
     localStorage.setItem(
       DATE_STORAGE_KEY,
-      JSON.stringify({ fromDate, toDate, preset: datePreset })
+      JSON.stringify({ fromDate, toDate, preset: datePreset, fromTime, toTime })
     );
-  }, [fromDate, toDate, datePreset]);
+  }, [fromDate, toDate, datePreset, fromTime, toTime]);
 
   useEffect(() => {
     if (!location.state) return;
@@ -1675,8 +1694,8 @@ const Orders = ({ adminData, setAdminData }) => {
 
         rows.push({
           OrderID: index === 0 ? order.id : "",
-          Date: index === 0 ? order.date : "",
-          Time: index === 0 ? order.time : "",
+          Date: index === 0 ? formatDisplayDate(order.date) : "",
+          Time: index === 0 ? formatIndianTime(order.date, order.time) : "",
           Customer: index === 0 ? (order.userName || "Guest") : "",
           Category: item.categoryName || item.categoryId || "",
           Dish: item.dishName,
@@ -2259,9 +2278,20 @@ const Orders = ({ adminData, setAdminData }) => {
                   />
                 </div>
               </div>
-            </div>
+              
+              <TimeRangeGroup
+                from={fromTime}
+                to={toTime}
+                onChangeFrom={setFromTime}
+                onChangeTo={setToTime}
+                groupClass="orders-div-group"
+                fromLabel=""
+                toLabel=""
+                pickerLabels
+                pickerFromLabel="From"
+                pickerToLabel="To"
+              />
 
-            <div className="filter-group">
               <div className="orders-div-group">
                 <CustomDropdown
                   value={modeFilter}

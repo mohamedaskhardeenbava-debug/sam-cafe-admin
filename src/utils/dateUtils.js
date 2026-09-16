@@ -50,17 +50,24 @@ export const fmtTime = (t) => {
   if (!t) return "—";
   const [h, m] = t.split(":").map(Number);
   const ap = h >= 12 ? "PM" : "AM";
-  return `${h % 12 || 12}:${pad(m)} ${ap}`;
+  return `${pad(h % 12 || 12)}:${pad(m)} ${ap}`;
 };
 
 /**
  * Format an ISO datetime string → "13-06-2026, 02:30 PM"
  * (DD-MM-YYYY + Indian 12-hour time). Returns "—" for falsy input.
+ * Built by hand (not toLocaleTimeString) because Node's en-IN locale
+ * renders the AM/PM marker in lowercase ("2:30 pm") on this stack —
+ * hand-rolling guarantees the uppercase "PM"/"AM" this app requires
+ * everywhere, the same way fmtTime already does.
  */
 export const fmtDateTime = (iso) => {
   if (!iso) return "—";
   const d = new Date(iso);
-  return `${fmtDate(iso)}, ${d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}`;
+  if (isNaN(d.getTime())) return "—";
+  const h = d.getHours();
+  const ap = h >= 12 ? "PM" : "AM";
+  return `${fmtDate(iso)}, ${pad(h % 12 || 12)}:${pad(d.getMinutes())} ${ap}`;
 };
 
 /**

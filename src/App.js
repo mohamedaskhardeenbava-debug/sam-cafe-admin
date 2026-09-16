@@ -39,6 +39,7 @@ import SubscriptionDetails from "./pages/SubscriptionDetails";
 import MemberDetails from "./pages/MemberDetails";
 import Users from "./pages/Users";
 import UserDetails from "./pages/UserDetails";
+import LoyaltySettings from "./pages/LoyaltySettings";
 import Venues from "./pages/Venues";
 import Permissions from "./pages/Permissions";
 import CategoryCards from "./pages/CategoryCards";
@@ -193,6 +194,43 @@ function App() {
   // come back empty or wrong right after landing on a page.
   const fetchRequestIdRef = useRef(0);
 
+  // Per-endpoint retry with exponential backoff. A transient blip (a
+  // dropped wifi/VPN interface mid-request, a momentary backend hiccup)
+  // can fail some or all of the ~30 parallel calls in fetchAllData at
+  // once; without this, that single moment of bad luck sticks until the
+  // next whole-batch retry 3s later (see MAX_RETRIES loop below). Retrying
+  // the individual failed call a few times, with increasing delay, lets
+  // most blips resolve within the same fetchAllData() pass instead of
+  // requiring a full app-level retry cycle.
+  // - Only network/5xx errors are retried — a 4xx (permission denied, bad
+  //   request, etc.) will fail identically on retry, so retrying it just
+  //   burns time for no benefit.
+  // - If a newer fetchAllData() has started (requestId went stale), retries
+  //   stop immediately rather than keep hammering a request whose result
+  //   will be discarded anyway.
+  const RETRYABLE_STATUS = (status) => status === undefined || status >= 500;
+  const fetchWithRetry = async (path, params, requestId, maxAttempts = 3) => {
+    let attempt = 0;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      try {
+        return await api.get(path, { params });
+      } catch (err) {
+        attempt += 1;
+        const status = err?.response?.status;
+        const isLastAttempt = attempt >= maxAttempts;
+        const isStale = requestId !== fetchRequestIdRef.current;
+        if (isStale || isLastAttempt || !RETRYABLE_STATUS(status)) throw err;
+        // Exponential backoff: 500ms, 1000ms, 2000ms... with a little
+        // jitter so a batch of simultaneously-failed requests (e.g. every
+        // call failing together on ERR_NETWORK_CHANGED) doesn't retry in
+        // one synchronized burst.
+        const delay = 500 * 2 ** (attempt - 1) + Math.random() * 250;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  };
+
   const fetchAllData = async () => {
     const requestId = ++fetchRequestIdRef.current;
     try {
@@ -208,7 +246,7 @@ function App() {
       ];
 
       const settled = await Promise.allSettled(
-        endpoints.map((path) => api.get(path, { params: venueParam() }))
+        endpoints.map((path) => fetchWithRetry(path, venueParam(), requestId))
       );
 
       // A newer fetchAllData() call has started since this one began —
@@ -862,11 +900,22 @@ function App() {
                   handleSort={handleSort}
                   users={adminData.users}
                   subscriptions={adminData.subscriptions}
+                  setAdminData={setAdminData}
                 />
               }
             />
 
-            <Route path="/users/:userId" element={<UserDetails users={adminData.users} />} />
+            <Route
+              path="/users/:userId"
+              element={
+                <UserDetails
+                  users={adminData.users}
+                  setAdminData={setAdminData}
+                />
+              }
+            />
+
+            <Route path="/users-loyalty-settings" element={<LoyaltySettings />} />
 
             <Route
               path="/staffs"
@@ -1143,19 +1192,20 @@ export const formatDisplayDate = (date) => {
   ).padStart(2, "0")}-${d.getFullYear()}`;
 };
 
+// Hand-rolled rather than toLocaleTimeString("en-IN", ...): that locale
+// renders the AM/PM marker lowercase on this stack ("2:30 pm"), which
+// fails the "HH:MM AM/PM uppercase" format required everywhere in this
+// app. Building it manually guarantees "2:30 PM" every time.
 export const formatIndianTime = (dateStr, timeStr) => {
   if (!dateStr || !timeStr) return "—";
 
   const dateTime = new Date(`${dateStr}T${timeStr}`);
-
   if (isNaN(dateTime.getTime())) return timeStr;
 
-  return dateTime.toLocaleTimeString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true
-  });
+  const h = dateTime.getHours();
+  const m = dateTime.getMinutes();
+  const ap = h >= 12 ? "PM" : "AM";
+  return `${String(h % 12 || 12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${ap}`;
 };
 
 // ─────────────────────────────────────────────────────

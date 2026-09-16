@@ -1,84 +1,4 @@
-/* ═══════════════════════════════════════════════════════
-   PreBookings.css  —  Sam Cafe Admin  —  PreBookings page
-   Depends on Common.css + EvtCommon.css + ModalCSS.css
-═══════════════════════════════════════════════════════ */
 
-/* ── ADD BUTTON ── */
-.evt-pre-add-btn {
-  height: 40px;
-  padding: 0 20px;
-  border-radius: 999px;
-  border: none;
-  background: #111;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.2s, transform 0.15s;
-  white-space: nowrap;
-  align-self: center;
-}
-
-.evt-pre-add-btn:hover {
-  background: #333;
-  transform: translateY(-1px);
-}
-
-.evt-pre-clear-all {
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 1.5px solid #fca5a5;
-  background: #fee2e2;
-  color: #dc2626;
-  font-size: 11px;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s;
-}
-
-.evt-pre-clear-all:hover {
-  background: #fecaca;
-}
-
-/* ── TABLE WRAPPER ── */
-.evt-pre-table-wrapper {
-  width: 100%;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: auto;
-  padding: 0 8px;
-  background: #e9e9e9;
-  border-radius: 20px;
-}
-
-/* ── TABLE ── */
-.evt-pre-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 6px;
-  min-width: 900px;
-}
-
-.evt-pre-table thead {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.evt-pre-table th {
-  padding: 12px 12px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #555;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: #e9e9e9;
-  text-align: left;
-}
 
 /* ── ROW ── */
 .evt-pre-row {
@@ -113,27 +33,6 @@
   cursor: pointer;
 }
 
-/* ── GUEST CELL ── */
-.evt-pre-name-cell {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-
-.evt-pre-avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #ff9f43, #ee5253);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 800;
-  flex-shrink: 0;
-}
-
 .evt-pre-name {
   font-weight: 600;
 }
@@ -152,14 +51,6 @@
 .evt-pre-email {
   font-size: 11px;
   color: #888;
-}
-
-/* ── EMPTY ── */
-.evt-pre-empty {
-  text-align: center;
-  padding: 30px;
-  color: #777;
-  font-size: 14px;
 }
 
 /* ── SLOT BADGES ── */
@@ -220,70 +111,6 @@
   display: flex;
   gap: 4px;
   align-items: center;
-}
-
-.evt-pre-istatus-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  border: 1.5px solid #e5e7eb;
-  background: #f9f9f9;
-  font-size: 10px;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.18s;
-  color: #888;
-  font-family: inherit;
-}
-
-.evt-pre-istatus-btn:hover {
-  border-color: #bbb;
-  color: #111;
-}
-
-.evt-pre-istatus-btn.active.evt-pre-istatus-scheduled {
-  background: #e0f2fe;
-  border-color: #7dd3fc;
-  color: #075985;
-}
-
-.evt-pre-istatus-btn.active.evt-pre-istatus-preparing {
-  background: #fef3c7;
-  border-color: #fcd34d;
-  color: #92400e;
-}
-
-.evt-pre-istatus-btn.active.evt-pre-istatus-completed {
-  background: #d1fae5;
-  border-color: #6ee7b7;
-  color: #065f46;
-}
-
-/* ── ACTION BUTTON ── */
-.evt-pre-act-btn {
-  height: 28px;
-  padding: 0 10px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  font-size: 11px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  white-space: nowrap;
-  background: #f3f4f6;
-  color: #555;
-  transition: all 0.2s;
-  font-family: inherit;
-}
-
-.evt-pre-act-btn:hover {
-  background: #fef9c3;
-  color: #ca8a04;
 }
 
 /* ── CALL TOOLTIP ── */
@@ -360,25 +187,6 @@
   border-bottom: none;
 }
 
-.pre-res-val {
-  font-weight: 500;
-  flex: 1;
-  text-align: left;
-}
-
-.pre-res-popup {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 9999;
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
-  padding: 14px;
-  width: 268px;
-  animation: preResFade 0.18s ease;
-}
-
 @keyframes preResFade {
   from {
     opacity: 0;
@@ -391,158 +199,6 @@
   }
 }
 
-.pre-res-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.pre-res-nav-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  border: 1.5px solid #f0f0f0;
-  background: #fff;
-  font-size: 15px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #555;
-}
-
-.pre-res-nav-center {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-}
-
-.pre-res-nav-lbl {
-  background: none;
-  border: none;
-  font-size: 13px;
-  font-weight: 700;
-  color: #111;
-  cursor: pointer;
-  padding: 3px 7px;
-  border-radius: 6px;
-  font-family: inherit;
-}
-
-.pre-res-nav-lbl:hover {
-  background: #f5f5f5;
-}
-
-.pre-res-weekdays {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  text-align: center;
-  margin-bottom: 5px;
-}
-
-.pre-res-weekdays span {
-  font-size: 9px;
-  font-weight: 700;
-  color: #222;
-  text-transform: uppercase;
-  padding: 3px 0;
-}
-
-.pre-res-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
-}
-
-.pre-res-day {
-  width: 32px;
-  height: 32px;
-  border-radius: 7px;
-  border: none;
-  background: transparent;
-  font-size: 12px;
-  color: #333;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: inherit;
-}
-
-.pre-res-day:hover {
-  background: #e0e0e0;
-}
-
-.pre-res-today {
-  font-weight: 700;
-  color: #4361ee;
-}
-
-.pre-res-sel {
-  background: #111 !important;
-  color: #fff !important;
-  font-weight: 700;
-}
-
-.pre-res-dis {
-  color: #c4c4c4;
-  cursor: not-allowed;
-}
-
-.pre-res-month-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 5px;
-  padding: 4px 0;
-}
-
-.pre-res-month-btn {
-  padding: 9px 4px;
-  border-radius: 9px;
-  border: 1.5px solid #f0f0f0;
-  background: #fff;
-  font-size: 12px;
-  font-weight: 500;
-  color: #333;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.pre-res-year-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 5px;
-  padding: 4px 0;
-}
-
-.pre-res-year-btn {
-  padding: 9px 4px;
-  border-radius: 9px;
-  border: 1.5px solid #f0f0f0;
-  background: #fff;
-  font-size: 11px;
-  font-weight: 500;
-  color: #333;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-/* ══════════════════════════════════════════════
-   ADD PREBOOKING MODAL
-══════════════════════════════════════════════ */
-.evt-pre-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  animation: preModalBgFade 0.2s ease;
-}
-
 @keyframes preModalBgFade {
   from {
     opacity: 0
@@ -551,19 +207,6 @@
   to {
     opacity: 1
   }
-}
-
-.evt-pre-modal {
-  background: #fff;
-  border-radius: 20px;
-  width: 100%;
-  max-width: 560px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.22);
-  animation: preModalSlide 0.22s ease;
-  overflow: hidden;
 }
 
 @keyframes preModalSlide {
@@ -578,103 +221,11 @@
   }
 }
 
-/* Modal Header */
-.evt-pre-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 20px 14px;
-  border-bottom: 1px solid #f0f0f0;
-  flex-shrink: 0;
-}
-
-.evt-pre-modal-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: #111;
-  margin: 0;
-}
-
-.evt-pre-modal-close {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  border: none;
-  background: #f3f4f6;
-  color: #555;
-  font-size: 14px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-  font-family: inherit;
-}
-
-.evt-pre-modal-close:hover {
-  background: #e5e7eb;
-  color: #111;
-}
-
-/* Modal Body */
-.evt-pre-modal-body {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 18px 20px;
-  overflow-y: auto;
-  flex: 1;
-}
-
 /* Modal rows / groups */
 .evt-pre-modal-row {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-}
-
-.evt-pre-modal-group {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  flex: 1;
-  min-width: 120px;
-}
-
-.evt-pre-modal-group label {
-  font-size: 11px;
-  font-weight: 700;
-  color: #555;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-/* Modal input */
-.evt-pre-modal-input {
-  height: 40px;
-  border-radius: 10px;
-  border: 1.5px solid #e5e7eb;
-  padding: 0 12px;
-  font-size: 13px;
-  font-family: inherit;
-  color: #111;
-  background: #f9fafb;
-  outline: none;
-  width: 100%;
-  box-sizing: border-box;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.evt-pre-modal-input:focus {
-  border-color: #111;
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
-}
-
-.evt-pre-modal-input.error {
-  border-color: #e74c3c;
-  background: #fff5f5;
-  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.08);
 }
 
 /* Modal stepper */
@@ -726,150 +277,10 @@
   height: 100%;
 }
 
-/* Slot chips in modal */
-.evt-pre-modal-slots {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 3px;
-}
-
-.evt-pre-modal-slot-chip {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 5px 10px;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 9px;
-  background: #f9fafb;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  color: #444;
-  transition: all 0.15s;
-  line-height: 1.3;
-}
-
-.evt-pre-modal-slot-chip:hover {
-  border-color: #bbb;
-  background: #f0f0f0;
-}
-
-.evt-pre-modal-slot-chip.active {
-  background: var(--color-blue);
-  border-color: var(--color-blue);
-  color: #fff;
-}
-
 .evt-pre-modal-slot-time {
   font-size: 9px;
   opacity: .65;
   font-weight: 400;
-}
-
-/* Source buttons */
-.evt-pre-modal-source-row {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 3px;
-}
-
-.evt-pre-modal-source-btn {
-  padding: 6px 12px;
-  border-radius: 8px;
-  border: 1.5px solid #e5e7eb;
-  background: #f9fafb;
-  color: #555;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s;
-}
-
-.evt-pre-modal-source-btn:hover {
-  border-color: #bbb;
-  background: #f0f0f0;
-}
-
-.evt-pre-modal-source-btn.active {
-  background: var(--color-blue);
-  border-color: var(--color-blue);
-  color: #fff;
-}
-
-/* Textarea in modal */
-.evt-pre-modal-textarea {
-  border-radius: 10px;
-  border: 1.5px solid #e5e7eb;
-  padding: 9px 12px;
-  font-size: 13px;
-  font-family: inherit;
-  color: #111;
-  background: #f9fafb;
-  resize: none;
-  outline: none;
-  width: 100%;
-  box-sizing: border-box;
-  transition: border-color 0.2s;
-}
-
-.evt-pre-modal-textarea:focus {
-  border-color: #111;
-  background: #fff;
-}
-
-/* Modal Footer */
-.evt-pre-modal-footer {
-  display: flex;
-  gap: 10px;
-  padding: 14px 20px 18px;
-  border-top: 1px solid #f0f0f0;
-  flex-shrink: 0;
-}
-
-.evt-pre-modal-cancel {
-  flex: 1;
-  height: 44px;
-  border-radius: 12px;
-  border: 1.5px solid #e5e7eb;
-  background: #fff;
-  color: #374151;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.2s;
-}
-
-.evt-pre-modal-cancel:hover {
-  background: #f3f4f6;
-}
-
-.evt-pre-modal-save {
-  flex: 2;
-  height: 44px;
-  border-radius: 12px;
-  border: none;
-  background: #111;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.2s, opacity 0.2s;
-}
-
-.evt-pre-modal-save:hover:not(:disabled) {
-  background: #333;
-}
-
-.evt-pre-modal-save.saving,
-.evt-pre-modal-save:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
 }
 
 /* Helper labels */
@@ -897,34 +308,14 @@
    RESPONSIVE ADDENDUM — 1080 / 992 / 768 / 578 / 480
 ═══════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .evt-pre-table-wrapper {
-    border-radius: 12px;
-    padding: 0 4px;
-  }
-
-  .evt-pre-table th {
-    font-size: 10px;
-    padding: 10px 8px;
-  }
 
   .evt-pre-row td {
     font-size: 12px;
     padding: 9px 8px;
   }
-
-  .evt-pre-add-btn,
-  .evt-pre-clear-all {
-    width: 100%;
-    text-align: center;
-  }
 }
 
 @media (max-width: 578px) {
-  .evt-pre-avatar {
-    width: 26px;
-    height: 26px;
-    font-size: 11px;
-  }
 
   .evt-pre-slot-badge,
   .evt-pre-discount-badge {

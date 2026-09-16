@@ -9,6 +9,8 @@ import { exportToExcel } from "../../utils/excelUtils";
 import api from "../../api";
 
 import closeIcon from "../../icon/close-icon.png";
+import editIcon from "../../icon/edit-icon.png";
+import deleteIcon from "../../icon/delete-icon.png";
 import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import CustomDropdown from "../../components/CustomDropdown";
@@ -53,6 +55,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
     staffId: "", role: "", duration: "", type: "", certificate: ""
   });
   const [formErrors, setFormErrors] = useState({});
+  const [editingTraining, setEditingTraining] = useState(null); // the original {..., staffId} being edited, or null when adding
 
   useEffect(() => {
     const load = async () => {
@@ -60,7 +63,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
       try {
         const res = await api.get("/staff", { params: venueParam() });
         const all = res.data.flatMap(s =>
-          (s.training || []).map(t => ({ ...t, staffName: s.name }))
+          (s.training || []).map(t => ({ ...t, staffId: s.id, staffName: s.name }))
         );
         setTrainings(all);
       } catch (err) {
@@ -74,7 +77,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeVenueId]);
 
-  const addTraining = async (e) => {
+  const submitTraining = async (e) => {
     e.preventDefault();
     const err = {};
     if (!form.staffId) err.staffId = true;
@@ -83,21 +86,86 @@ export default function StaffTraining({ adminData, setAdminData }) {
     if (!form.type) err.type = true;
     if (Object.keys(err).length) { setFormErrors(err); return; }
     try {
-      const staff = adminData.staff.find(s => s.id === form.staffId);
-      const updated = { ...staff, training: [...(staff.training || []), form] };
-      const res = await api.put(`/staff/${form.staffId}`, updated);
-      setTrainings(prev => [...prev, { ...form, staffName: staff.name }]);
-      setAdminData(prev => ({
-        ...prev,
-        staff: prev.staff.map(s => s.id === form.staffId ? res.data : s)
-      }));
+      const isEditing = !!editingTraining;
+      // Editing can move a record to a different staff member — if so,
+      // remove it from the original staff's array and add it to the
+      // new one; otherwise just update it in place.
+      const record = { id: isEditing ? editingTraining.id : String(Date.now()), role: form.role, duration: form.duration, type: form.type, certificate: form.certificate };
+
+      if (isEditing && editingTraining.staffId === form.staffId) {
+        const staff = adminData.staff.find(s => s.id === form.staffId);
+        const updated = { ...staff, training: (staff.training || []).map(t => t.id === editingTraining.id ? record : t) };
+        const res = await api.put(`/staff/${form.staffId}`, updated);
+        setTrainings(prev => prev.map(t => (t.id === editingTraining.id && t.staffId === editingTraining.staffId) ? { ...record, staffId: form.staffId, staffName: staff.name } : t));
+        setAdminData(prev => ({ ...prev, staff: prev.staff.map(s => s.id === form.staffId ? res.data : s) }));
+      } else if (isEditing) {
+        // Moved to a different staff member: pull from old, push to new.
+        const oldStaff = adminData.staff.find(s => s.id === editingTraining.staffId);
+        const newStaff = adminData.staff.find(s => s.id === form.staffId);
+        const oldUpdated = { ...oldStaff, training: (oldStaff.training || []).filter(t => t.id !== editingTraining.id) };
+        const newUpdated = { ...newStaff, training: [...(newStaff.training || []), record] };
+        const [oldRes, newRes] = await Promise.all([
+          api.put(`/staff/${editingTraining.staffId}`, oldUpdated),
+          api.put(`/staff/${form.staffId}`, newUpdated),
+        ]);
+        setTrainings(prev => prev
+          .filter(t => !(t.id === editingTraining.id && t.staffId === editingTraining.staffId))
+          .concat([{ ...record, staffId: form.staffId, staffName: newStaff.name }]));
+        setAdminData(prev => ({
+          ...prev,
+          staff: prev.staff.map(s => s.id === oldRes.data.id ? oldRes.data : s.id === newRes.data.id ? newRes.data : s)
+        }));
+      } else {
+        const staff = adminData.staff.find(s => s.id === form.staffId);
+        const updated = { ...staff, training: [...(staff.training || []), record] };
+        const res = await api.put(`/staff/${form.staffId}`, updated);
+        setTrainings(prev => [...prev, { ...record, staffId: form.staffId, staffName: staff.name }]);
+        setAdminData(prev => ({
+          ...prev,
+          staff: prev.staff.map(s => s.id === form.staffId ? res.data : s)
+        }));
+      }
+
       setForm({ staffId: "", role: "", duration: "", type: "", certificate: "" });
+      setEditingTraining(null);
+      setFormErrors({});
       addTrainingModal.close(() => setShowForm(false));
-      toast.success("Training record saved");
+      toast.success(isEditing ? "Training record updated" : "Training record saved");
     } catch (err) {
-      toast.error("Failed to save training record");
+      toast.error(editingTraining ? "Failed to update training record" : "Failed to save training record");
       console.error("Training save failed:", err);
     }
+  };
+
+  const openEditTraining = (t) => {
+    setEditingTraining(t);
+    setForm({ staffId: t.staffId || "", role: t.role || "", duration: t.duration || "", type: t.type || "", certificate: t.certificate || "" });
+    setFormErrors({});
+    setShowForm(true);
+    addTrainingModal.open();
+  };
+
+  const closeTrainingModal = () => {
+    addTrainingModal.close(() => setShowForm(false));
+    setFormErrors({});
+    setEditingTraining(null);
+    setForm({ staffId: "", role: "", duration: "", type: "", certificate: "" });
+  };
+
+  const deleteTraining = (t) => {
+    toast.confirm(`Delete this training record for ${t.staffName}?`, async () => {
+      try {
+        const staff = adminData.staff.find(s => s.id === t.staffId);
+        const updated = { ...staff, training: (staff.training || []).filter(rec => rec.id !== t.id) };
+        const res = await api.put(`/staff/${t.staffId}`, updated);
+        setTrainings(prev => prev.filter(rec => !(rec.id === t.id && rec.staffId === t.staffId)));
+        setAdminData(prev => ({ ...prev, staff: prev.staff.map(s => s.id === t.staffId ? res.data : s) }));
+        toast.success("Training record deleted");
+      } catch (err) {
+        toast.error("Failed to delete training record");
+        console.error("Training delete failed:", err);
+      }
+    });
   };
 
   const handleFile = (e) => {
@@ -163,7 +231,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
         </div>
         <div className="header-btn-container">
           <Button3D onClick={exportTrainings}>Export</Button3D>
-          <Button3D onClick={() => { setShowForm(true); addTrainingModal.open(); }}>+ Add Training</Button3D>
+          <Button3D onClick={() => { setEditingTraining(null); setForm({ staffId: "", role: "", duration: "", type: "", certificate: "" }); setShowForm(true); addTrainingModal.open(); }}>+ Add Training</Button3D>
         </div>
       </div>
 
@@ -204,7 +272,7 @@ export default function StaffTraining({ adminData, setAdminData }) {
           {filteredTrainings.map((t, i) => {
             const colors = typeColors[t.type] || { bg: "#f5f4f1", color: "#3a3a3a" };
             return (
-              <div className="card st-card" key={i} onClick={() => { setSelected(t); trainingDetailModal.open(); }}>
+              <div className="card st-card" key={t.id || i} onClick={() => { setSelected(t); trainingDetailModal.open(); }}>
                 {/* accent bar coloured by type */}
                 <div className="st-card-accent" style={{ background: colors.color }} />
 
@@ -237,6 +305,11 @@ export default function StaffTraining({ adminData, setAdminData }) {
                   )}
                 </div>
 
+                <div className="st-actions sc-card-actions" onClick={e => e.stopPropagation()}>
+                  <Button3D variant="cancel" iconOnly title="Edit" onClick={() => openEditTraining(t)}><img src={editIcon} alt="" /></Button3D>
+                  <Button3D variant="danger" iconOnly title="Delete" onClick={() => deleteTraining(t)}><img src={deleteIcon} alt="" /></Button3D>
+                </div>
+
                 <div className="st-card-footer">
                   <div className="st-ribbon-wing1"></div>
                   <div className="st-ribbon-wing1-sq1"></div>
@@ -250,13 +323,13 @@ export default function StaffTraining({ adminData, setAdminData }) {
         </div>
       </div>
 
-      {/* ADD MODAL */}
+      {/* ADD / EDIT MODAL */}
       {addTrainingModal.shouldRender && (
         <div className={`modal-overlay ${addTrainingModal.overlayClass}`}>
-          <form className={`admin-modal ${addTrainingModal.modalClass}`} onSubmit={addTraining}>
+          <form className={`admin-modal ${addTrainingModal.modalClass}`} onSubmit={submitTraining}>
             <div className="admin-modal-header">
-              <h3>Add Training Record</h3>
-              <Button3D variant="cancel" iconOnly onClick={() => { addTrainingModal.close(() => setShowForm(false)); setFormErrors({}); }}><img src={closeIcon} /></Button3D>
+              <h3>{editingTraining ? "Edit Training Record" : "Add Training Record"}</h3>
+              <Button3D variant="cancel" iconOnly onClick={closeTrainingModal}><img src={closeIcon} /></Button3D>
             </div>
 
             <div className="admin-modal-body">
@@ -327,8 +400,8 @@ export default function StaffTraining({ adminData, setAdminData }) {
             </div>
 
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => { addTrainingModal.close(() => setShowForm(false)); setFormErrors({}); }}>Cancel</Button3D>
-              <Button3D type="submit">Save Training</Button3D>
+              <Button3D variant="cancel" onClick={closeTrainingModal}>Cancel</Button3D>
+              <Button3D type="submit">{editingTraining ? "Update Training" : "Save Training"}</Button3D>
             </div>
           </form>
         </div>
@@ -372,7 +445,9 @@ export default function StaffTraining({ adminData, setAdminData }) {
             </div>
 
             <div className="admin-modal-footer">
-              <Button3D variant="cancel" onClick={() => trainingDetailModal.close(() => setSelected(null))}>Close</Button3D>
+              <Button3D variant="danger" onClick={() => { trainingDetailModal.close(() => setSelected(null)); deleteTraining(selected); }}>Delete</Button3D>
+              <Button3D variant="cancel" onClick={() => { trainingDetailModal.close(() => setSelected(null)); openEditTraining(selected); }}>Edit</Button3D>
+              <Button3D onClick={() => trainingDetailModal.close(() => setSelected(null))}>Close</Button3D>
             </div>
           </div>
         </div>

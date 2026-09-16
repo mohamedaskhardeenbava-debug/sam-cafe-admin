@@ -262,20 +262,6 @@
   color: var(--ink-4);
 }
 
-/* QR MODAL OVERLAY */
-.qr-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(10, 10, 10, 0.42);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-  animation: fadeIn 0.16s ease;
-}
-
 /* QR MODAL */
 .qr-modal {
   background: var(--surface);
@@ -327,40 +313,6 @@
   letter-spacing: 0.01em;
 }
 
-.qr-close-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--surface-2);
-  cursor: pointer;
-  position: relative;
-  transition: var(--t);
-}
-
-.qr-close-btn:hover {
-  background: var(--surface-3);
-}
-
-.qr-close-btn::before,
-.qr-close-btn::after {
-  content: "";
-  position: absolute;
-  width: 14px;
-  height: 1.5px;
-  background: var(--ink-3);
-  top: 50%;
-  left: 50%;
-}
-
-.qr-close-btn::before {
-  transform: translate(-50%, -50%) rotate(45deg);
-}
-
-.qr-close-btn::after {
-  transform: translate(-50%, -50%) rotate(-45deg);
-}
-
 /* QR MODAL BODY */
 .qr-modal-body {
   padding: 24px;
@@ -403,38 +355,11 @@
   box-sizing: border-box;
 }
 
-/* DOWNLOAD BUTTON */
-.qr-download-btn {
-  height: 36px;
-  padding: 0 22px;
-  border: none;
-  background: var(--ink);
-  color: #fff;
-  border-radius: 999px;
-  cursor: pointer;
-  font-family: var(--font);
-  font-size: 13px;
-  font-weight: 500;
-  transition: var(--t);
-}
-
-.qr-download-btn:hover {
-  background: var(--ink-2);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
-}
-
 /* QR icon in card */
 .qr-icon {
   width: 15px;
   height: 15px;
   opacity: 0.6;
-}
-
-.delete-icon {
-  width: 15px;
-  height: 15px;
-  opacity: 0.5;
 }
 
 /* ═══════════════════════════════════════════

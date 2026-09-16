@@ -104,61 +104,6 @@
     font-weight: 500;
 }
 
-/* DELETE BUTTON */
-.recipe-delete-btn {
-    width: 28px;
-    height: 28px;
-    border-radius: 7px;
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: var(--t);
-    flex-shrink: 0;
-    padding: 0;
-    outline: none;
-}
-
-.recipe-delete-btn:hover {
-    background: #fff0f0;
-    border-color: rgba(220, 60, 60, 0.2);
-}
-
-.recipe-delete-btn img {
-    width: 14px;
-    height: 14px;
-    opacity: 0.5;
-    transition: opacity 0.14s;
-}
-
-.recipe-delete-btn:hover img {
-    opacity: 0.85;
-}
-
-.dish-close-btn {
-    width: 30px;
-    height: 30px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    cursor: pointer;
-    font-size: 13px;
-    color: var(--ink-3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: var(--t);
-    font-family: var(--font);
-    line-height: 1;
-}
-
-.dish-close-btn:hover {
-    background: var(--surface-3);
-    color: var(--ink);
-}
-
 /* EMPTY STATE */
 .recipe-empty {
     display: flex;

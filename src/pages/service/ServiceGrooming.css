@@ -1,81 +1,4 @@
-/* ═══════════════════════════════════════════════════════
-   ServiceGrooming.css  —  Sam Cafe Admin  —  ServiceGrooming page
-   Depends on Common.css + ModalCSS.css
-═══════════════════════════════════════════════════════ */
 
-/* ── SUMMARY ROW ─────────────────────────────────────── */
-.sgroom-summary-row {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.sgroom-summary-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 12px 14px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-  flex: 1;
-  min-width: 140px;
-  border: 1px solid #f0f0f0;
-  transition: transform 0.2s;
-}
-
-.sgroom-summary-card:hover {
-  transform: translateY(-2px);
-}
-
-.sgroom-sum-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.sgroom-sum-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.sgroom-sum-name {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sgroom-sum-bar-wrap {
-  height: 5px;
-  background: #f0f0f0;
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 4px;
-}
-
-.sgroom-sum-bar {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.4s;
-}
-
-.sgroom-sum-pct {
-  font-size: 11px;
-  color: #888;
-  font-weight: 500;
-}
 
 .sgroom-staff-th {
   padding: 12px 14px;
@@ -347,41 +270,7 @@
   color: #dc2626;
 }
 
-.sgroom-form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.sgroom-form-group label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.sgroom-form-group select,
-.sgroom-form-group textarea {
-  padding: 10px 12px;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.2s;
-  resize: none;
-  font-family: inherit;
-}
-
-.sgroom-form-group select:focus,
-.sgroom-form-group textarea:focus {
-  border-color: #111;
-}
-
 @media (max-width: 768px) {
-  .sgroom-summary-row {
-    flex-direction: column;
-  }
 
   .sgroom-date-th {
     min-width: 90px;
@@ -485,32 +374,6 @@
   font-size: 13px;
   color: #aaa;
   text-align: center;
-}
-
-.sgroom-summary-collapsible {
-  display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  overflow: hidden;
-  transition: grid-template-rows 0.32s ease, opacity 0.28s ease, margin 0.28s ease;
-  margin-top: -16px;
-  pointer-events: none;
-}
-
-.sgroom-summary-collapsible>* {
-  min-height: 0;
-  overflow: hidden;
-}
-
-.sgroom-summary-collapsible.sgroom-summary-open {
-  grid-template-rows: 1fr;
-  opacity: 1;
-  margin-top: 0;
-  pointer-events: auto;
-}
-
-.sgroom-summary-toggle {
-  margin-left: auto;
 }
 
 .ae-result-count {

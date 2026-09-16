@@ -1,10 +1,4 @@
-/* ═══════════════════════════════════════════════════════
-   Dishes.css  —  Sam Cafe Admin  —  Dishes page
-   Depends on Common.css + ModalCSS.css
-═══════════════════════════════════════════════════════ */
-.dish-block {
-  overflow: hidden;
-}
+
 
 .dish-category-buttons {
   display: flex;
@@ -98,99 +92,14 @@
   background: #e74c3c;
 }
 
-/* Veg toggle in form */
-.veg-toggle-group {
-  display: flex;
-  gap: 10px;
-}
-
-.veg-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  background: #fff;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #555;
-}
-
-.veg-toggle-btn:hover {
-  border-color: #aaa;
-}
-
-.veg-toggle-btn.active-veg {
-  border-color: #27ae60;
-  background: #e6f9ec;
-  color: #1a7a38;
-}
-
-.veg-toggle-btn.active-non-veg {
-  border-color: #e74c3c;
-  background: #fff0ee;
-  color: #c0392b;
-}
-
-.veg-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.veg-dot.veg {
-  background: #27ae60;
-}
-
-.veg-dot.non-veg {
-  background: #e74c3c;
-}
-
-.dish-image,
-.dish-placeholder {
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
-}
-
-.dish-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
 .dish-name {
   font-size: 14px;
   font-weight: 500;
   text-transform: capitalize;
 }
 
-.icon-btn {
-  background-color: transparent;
-  cursor: pointer;
-  font-size: 14px;
-  border-radius: 6px;
-  transition: background-color 0.2s ease;
-  border: none;
-  padding: 0;
-}
-
 .-edit-btn {
   color: red;
-}
-
-.delete-btn {
-  color: red;
-}
-
-.dish-header-actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
 }
 
 .form-group input {
@@ -200,59 +109,6 @@
   font-size: 14px;
   border-radius: 6px;
   border: 1px solid #d1d5db;
-}
-
-.dish-close-btn {
-  position: relative;
-
-  width: 36px;
-  height: 36px;
-
-  border-radius: 5px;
-  border: none;
-  background-color: #f2f2f2;
-
-  cursor: pointer;
-  padding: 0;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  transition: background-color 0.2s ease, transform 0.15s ease;
-}
-
-/* hover & active */
-.dish-close-btn:hover {
-  background-color: #e5e5e5;
-  transform: scale(1.05);
-}
-
-.dish-close-btn:active {
-  transform: scale(0.95);
-}
-
-/* ✕ icon */
-.dish-close-btn::before,
-.dish-close-btn::after {
-  content: "";
-  position: absolute;
-
-  width: 18px;
-  height: 2px;
-
-  background-color: #333;
-  border-radius: 2px;
-}
-
-/* first line */
-.dish-close-btn::before {
-  transform: rotate(45deg);
-}
-
-/* second line */
-.dish-close-btn::after {
-  transform: rotate(-45deg);
 }
 
 .benefits-grid {
@@ -331,39 +187,6 @@
   width: 16px;
   height: 16px;
   cursor: pointer;
-}
-
-/* BUTTON */
-.custom-dropdown-btn {
-  border-radius: 10px !important;
-  border: 1px solid #d1d5db !important;
-  background: #fff !important;
-  font-size: 14px;
-}
-
-/* ITEM */
-.custom-dropdown-item {
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-/* HOVER */
-.custom-dropdown-item:hover {
-  background: #111 !important;
-  color: #fff !important;
-}
-
-/* ACTIVE */
-.custom-dropdown-item.active {
-  background: #111 !important;
-  color: #fff !important;
-}
-
-/* TEXT */
-.item-name {
-  font-weight: 500;
 }
 
 .dishes-dropdown-wrapper {
@@ -509,21 +332,6 @@
   width: 100%;
 }
 
-/* Dropdown menu — must escape the relative wrapper via high z-index */
-.mat-select .dishes-dropdown-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  z-index: 9999;
-  background: #fff;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  overflow-y: auto;
-  max-height: 200px;
-}
-
 /* Required asterisk */
 .mat-select .rf-req {
   color: #e74c3c;
@@ -608,10 +416,6 @@
   .dish-header-search .search-input {
     width: 180px;
   }
-
-  .dish-header-actions {
-    flex-wrap: wrap;
-  }
 }
 
 @media (max-width: 768px) {
@@ -629,18 +433,8 @@
     width: 100%;
   }
 
-  .dish-header-actions {
-    width: 100%;
-    flex-direction: column;
-    align-items: stretch;
-  }
-
   .benefits-grid {
     grid-template-columns: 1fr;
-  }
-
-  .veg-toggle-group {
-    gap: 6px;
   }
 }
 
@@ -652,12 +446,6 @@
   .veg-badge {
     font-size: 11px;
     padding: 2px 6px;
-  }
-
-  .dish-image,
-  .dish-placeholder {
-    width: 30px;
-    height: 30px;
   }
 
   .ingredient-form-table th,

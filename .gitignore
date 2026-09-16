@@ -6,6 +6,12 @@
 .pnp.js
 .env
 
+# Orphaned WhatsApp/campaign mini-server — functionality moved into the
+# main backend's whatsapp.js (mounted at /whatsapp, with auth + rate
+# limiting). This directory (and its committed server/.env) is no
+# longer used; kept out of the repo going forward.
+/server
+
 # testing
 /coverage
 

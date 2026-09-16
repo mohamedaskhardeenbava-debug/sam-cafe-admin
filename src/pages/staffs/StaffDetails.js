@@ -8,6 +8,7 @@ import { useParams, useNavigate } from "react-router-dom";
 
 import api from "../../api";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
+import { fmtDate } from "../../utils/dateUtils";
 
 import editIcon from "../../icon/edit-icon.png";
 import deleteIcon from "../../icon/delete-icon.png";
@@ -30,6 +31,11 @@ const StaffDetails = ({ adminData, setAdminData }) => {
   const { roleTitles: jobRoles } = useRoleTitles(); // same Roles and Responsibilities registry used on the Staffs list, so this page can't drift out of sync with login account role titles
 
   const staff = adminData.staff.find(s => s.id === staffId);
+  // The staff record itself has no email field — that lives on the
+  // linked login account (Admin doc), if one exists. adminData.staffAccounts
+  // is already loaded app-wide (see fetchAllData in App.js), so this is
+  // just a lookup, no extra request needed.
+  const linkedAccount = (adminData.staffAccounts || []).find(a => a.staffId === staffId);
 
   const [localStaff, setLocalStaff] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -258,7 +264,7 @@ const StaffDetails = ({ adminData, setAdminData }) => {
                       />
                     </div>
                   ) : (
-                    <p>{localStaff.joiningDate}</p>
+                    <p>{fmtDate(localStaff.joiningDate)}</p>
                   )}
                 </div>
               </div>
@@ -310,11 +316,11 @@ const StaffDetails = ({ adminData, setAdminData }) => {
             <div className="staff-info-grid">
               <div className="staff-info-cell">
                 <span className="staff-info-label">DOB</span>
-                <span className="staff-info-value">{localStaff.dob || "—"}</span>
+                <span className="staff-info-value">{fmtDate(localStaff.dob)}</span>
               </div>
               <div className="staff-info-cell">
                 <span className="staff-info-label">Joining Date</span>
-                <span className="staff-info-value">{localStaff.joiningDate || "—"}</span>
+                <span className="staff-info-value">{fmtDate(localStaff.joiningDate)}</span>
               </div>
               <div className="staff-info-cell">
                 <span className="staff-info-label">Education</span>
@@ -365,6 +371,12 @@ const StaffDetails = ({ adminData, setAdminData }) => {
               <div className="staff-info-cell">
                 <span className="staff-info-label">Alt Phone</span>
                 <span className="staff-info-value">{localStaff.altContact || "—"}</span>
+              </div>
+              <div className="staff-info-cell">
+                <span className="staff-info-label">Login Email</span>
+                <span className="staff-info-value">
+                  {linkedAccount?.email || "— (no login account)"}
+                </span>
               </div>
             </div>
           )}

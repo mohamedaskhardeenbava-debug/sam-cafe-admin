@@ -1,30 +1,4 @@
-/* ═══════════════════════════════════════════════════════
-   ComboOffers.css  —  Sam Cafe Admin  —  ComboOffers page
-   Depends on Common.css + ModalCSS.css
-═══════════════════════════════════════════════════════ */
 
-/* ── Toast ───────────────────────────────────────── */
-.co-toast {
-  position: fixed;
-  top: 20px;
-  right: 24px;
-  z-index: 99999;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #fff;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, .15);
-  animation: coFadeIn .25s ease;
-}
-
-.co-toast--success {
-  background: #22c55e;
-}
-
-.co-toast--error {
-  background: #ef4444;
-}
 
 @keyframes coFadeIn {
   from {
@@ -38,67 +12,10 @@
   }
 }
 
-/* ── Loading ─────────────────────────────────────── */
-.co-loading {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  justify-content: center;
-  margin-top: 120px;
-  font-size: 15px;
-  color: #888;
-}
-
-.co-spinner {
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  border: 2px solid #ddd;
-  border-top-color: var(--color-accent, #f59e0b);
-  border-radius: 50%;
-  animation: coSpin .7s linear infinite;
-}
-
 @keyframes coSpin {
   to {
     transform: rotate(360deg);
   }
-}
-
-.co-pill {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  vertical-align: middle;
-}
-
-.co-pill--starter {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.co-pill--main {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.co-pill--bev {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.co-pill-price {
-  display: inline-block;
-  margin-left: 5px;
-  font-size: 11px;
-  color: #9ca3af;
-  vertical-align: middle;
 }
 
 .co-discount-badge {
@@ -117,13 +34,6 @@
 .co-discount-badge.flat {
   background: #ede9fe;
   color: #5b21b6;
-}
-
-.co-empty-row {
-  text-align: center;
-  padding: 48px 16px;
-  color: #aaa;
-  font-style: italic;
 }
 
 /* ── Modal wide override ─────────────────────────── */
@@ -420,10 +330,6 @@
   align-items: center;
   gap: 6px;
   margin-bottom: 5px;
-}
-
-.co-slot-icon {
-  font-size: 14px;
 }
 
 .co-slot-label {
@@ -826,13 +732,6 @@
   .co-slot {
     padding: 9px 10px;
     min-height: 56px;
-  }
-
-  .co-toast {
-    right: 10px;
-    left: 10px;
-    top: 12px;
-    text-align: center;
   }
 }
 

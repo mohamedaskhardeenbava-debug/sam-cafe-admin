@@ -30,9 +30,11 @@ import useAnimatedModal from "../../hooks/useAnimatedModal";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import CustomDropdown from "../../components/CustomDropdown";
 import PageLoader from "../../components/PageLoader";
+import useInfiniteScroll from "../../components/useInfiniteScroll";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 import closeIcon from "../../icon/close-icon.png";
 import deleteIcon from "../../icon/delete-icon.png";
-import { EmptyRow } from "../../App";
+import { EmptyRow, sortArray } from "../../App";
 
 import "./StaffAccounts.css";
 
@@ -58,6 +60,7 @@ export default function StaffAccounts({
   initialAccounts,
   initialUnlinkedStaff,
   initialRoles,
+  setAdminData,
 } = {}) {
   const { toast } = useToast();
   const { isSuperAdmin, creatableRoleTitles, canManageStaffAccounts, isLoading: isAuthLoading } = useAuth();
@@ -69,6 +72,23 @@ export default function StaffAccounts({
   // has. Falls back to [] when rendered standalone (no props passed).
   const hasPreloadedData = Boolean(initialAccounts?.length || initialUnlinkedStaff?.length || initialRoles?.length);
   const [accounts, setAccounts] = useState(initialAccounts || []);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
+  const handleSort = (key) => {
+    setSortConfig((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" }
+    );
+  };
+
+  const sortedAccounts = sortArray(
+    sortConfig.key === "staffName" ? accounts.map((a) => ({ ...a, staffName: a.staffName || a.name || "" })) : accounts,
+    sortConfig
+  );
+
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
+    useInfiniteScroll(sortedAccounts.length, 20);
   const [isLoading, setIsLoading] = useState(!hasPreloadedData);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -92,6 +112,14 @@ export default function StaffAccounts({
       setAccounts(accRes.data || []);
       setUnlinkedStaff(unlinkedRes.data || []);
       setAllRoles(rolesRes.data || []);
+      // Keep the app-wide store (App.js's adminData) in sync too — other
+      // pages (e.g. StaffDetails' "Login Email" field) read staffAccounts
+      // from there, not from this component's local state.
+      setAdminData?.((prev) => ({
+        ...prev,
+        staffAccounts: accRes.data || [],
+        unlinkedStaff: unlinkedRes.data || [],
+      }));
     } catch (err) {
       console.error("Failed to load staff accounts:", err);
       toast.error("Failed to load staff accounts");
@@ -161,8 +189,18 @@ export default function StaffAccounts({
         ...(isSuperAdmin ? { venueId: linkForm.venueId || undefined } : {}),
       };
       const res = await api.post("/staff-auth/create-staff-account", body);
-      setAccounts((prev) => [...prev, res.data.admin]);
+      const newAccount = res.data.admin;
+      setAccounts((prev) => [...prev, newAccount]);
       setUnlinkedStaff((prev) => prev.filter((s) => s.id !== linkForm.staffId));
+      // Same sync as load() — a link done here must also be visible to
+      // other pages reading adminData.staffAccounts (StaffDetails'
+      // "Login Email" field in particular), not just this component's
+      // own local state.
+      setAdminData?.((prev) => ({
+        ...prev,
+        staffAccounts: [...(prev.staffAccounts || []), newAccount],
+        unlinkedStaff: (prev.unlinkedStaff || []).filter((s) => s.id !== linkForm.staffId),
+      }));
       setCreatedInfo({ email: linkForm.email.trim(), tempPassword });
       toast.success("Login account linked.");
     } catch (err) {
@@ -180,12 +218,19 @@ export default function StaffAccounts({
       setAccounts((prev) => prev.filter((a) => a.id !== deleteTarget.id));
       // The account's staff member is unlinked again, so they can be
       // re-linked (or picked up by the Add Staff flow) going forward.
-      if (deleteTarget.staffId) {
-        setUnlinkedStaff((prev) => [
-          ...prev,
-          { id: deleteTarget.staffId, name: deleteTarget.staffName || deleteTarget.name, role: deleteTarget.staffJobRole || "" },
-        ]);
+      const reunlinkedEntry = deleteTarget.staffId
+        ? { id: deleteTarget.staffId, name: deleteTarget.staffName || deleteTarget.name, role: deleteTarget.staffJobRole || "" }
+        : null;
+      if (reunlinkedEntry) {
+        setUnlinkedStaff((prev) => [...prev, reunlinkedEntry]);
       }
+      // Same sync as load()/handleLink — App.js's adminData.staffAccounts
+      // must reflect the deletion too, not just this component's state.
+      setAdminData?.((prev) => ({
+        ...prev,
+        staffAccounts: (prev.staffAccounts || []).filter((a) => a.id !== deleteTarget.id),
+        unlinkedStaff: reunlinkedEntry ? [...(prev.unlinkedStaff || []), reunlinkedEntry] : prev.unlinkedStaff,
+      }));
       toast.success("Staff account deleted.");
     } catch (err) {
       toast.error(err.response?.data?.error || "Failed to delete staff account");
@@ -226,14 +271,42 @@ export default function StaffAccounts({
       {isLoading ? (
         <PageLoader label="Loading accounts…" />
       ) : (
-        <div className="table-wrapper stacc-table-wrapper">
+        <div className="table-wrapper stacc-table-wrapper" ref={containerRef}>
           <table>
             <thead>
               <tr>
-                <th>Staff Member</th>
-                <th>Email</th>
-                <th>Login Role</th>
-                <th>Status</th>
+                <th onClick={() => handleSort("staffName")} className={sortConfig.key === "staffName" ? "sorted" : ""}>
+                  <span className="th-content sort-th">
+                    <span>Staff Member</span>
+                    <span className="sort-arrow">
+                      {sortConfig.key === "staffName" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                    </span>
+                  </span>
+                </th>
+                <th onClick={() => handleSort("email")} className={sortConfig.key === "email" ? "sorted" : ""}>
+                  <span className="th-content sort-th">
+                    <span>Email</span>
+                    <span className="sort-arrow">
+                      {sortConfig.key === "email" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                    </span>
+                  </span>
+                </th>
+                <th onClick={() => handleSort("roleTitle")} className={sortConfig.key === "roleTitle" ? "sorted" : ""}>
+                  <span className="th-content sort-th">
+                    <span>Login Role</span>
+                    <span className="sort-arrow">
+                      {sortConfig.key === "roleTitle" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                    </span>
+                  </span>
+                </th>
+                <th onClick={() => handleSort("status")} className={sortConfig.key === "status" ? "sorted" : ""}>
+                  <span className="th-content sort-th">
+                    <span>Status</span>
+                    <span className="sort-arrow">
+                      {sortConfig.key === "status" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                    </span>
+                  </span>
+                </th>
                 <th className="icon-width">Delete</th>
               </tr>
             </thead>
@@ -241,7 +314,7 @@ export default function StaffAccounts({
               {accounts.length === 0 ? (
                 <EmptyRow colSpan={5} message="No staff login accounts yet" />
               ) : (
-                accounts.map((a) => (
+                sortedAccounts.slice(0, displayLimit).map((a) => (
                   <tr key={a.id}>
                     <td>
                       {a.staffName || a.name}
@@ -262,8 +335,14 @@ export default function StaffAccounts({
                   </tr>
                 ))
               )}
+              <InfiniteScrollLoader
+                sentinelRef={sentinelRef}
+                hasMore={hasMore}
+                colSpan={5}
+              />
             </tbody>
           </table>
+          <InfiniteScrollOverlay isLoading={isLoadingMore} />
         </div>
       )}
 
@@ -342,7 +421,7 @@ export default function StaffAccounts({
                       label="Login Role"
                       required
                       value={linkForm.roleTitle}
-                      onChange={() => {}}
+                      onChange={() => { }}
                       options={roleTitleOptions}
                       placeholder="Select a staff member first"
                       hasError={!!linkErrors.roleTitle}
@@ -359,7 +438,7 @@ export default function StaffAccounts({
                         label="Branch"
                         required
                         value={linkForm.venueId}
-                        onChange={() => {}}
+                        onChange={() => { }}
                         options={(venues || []).map((v) => ({ value: v.id, label: v.name }))}
                         placeholder="Select a staff member first"
                         hasError={!!linkErrors.venueId}

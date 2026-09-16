@@ -17,25 +17,6 @@
     box-sizing: border-box;
 }
 
-/* ── Loading ── */
-.ts-loading {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 60px;
-    color: #888;
-    font-size: 14px;
-}
-
-.ts-spinner {
-    width: 20px;
-    height: 20px;
-    border: 2px solid #eee;
-    border-top-color: #111;
-    border-radius: 50%;
-    animation: ts-spin 0.7s linear infinite;
-}
-
 @keyframes ts-spin {
     to {
         transform: rotate(360deg);
@@ -70,47 +51,6 @@
     gap: 10px;
     align-items: center;
     flex-wrap: wrap;
-}
-
-.ts-reset-btn {
-    height: 38px;
-    padding: 0 16px;
-    border-radius: 999px;
-    border: 1px solid #d1d5db;
-    background: #fff;
-    color: #555;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.ts-reset-btn:hover {
-    border-color: #111;
-    color: #111;
-    transform: translateY(-1px);
-}
-
-/* ── Notice bar ── */
-.ts-notice {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
-    border-radius: 10px;
-    padding: 12px 16px;
-    font-size: 13px;
-    color: #1d4ed8;
-}
-
-.ts-notice-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #3b82f6;
-    flex-shrink: 0;
-    animation: ts-pulse 1.5s ease-in-out infinite;
 }
 
 @keyframes ts-pulse {
@@ -277,11 +217,6 @@
     color: #94a3b8;
 }
 
-/* ── Add/Edit theme modal ── */
-.ts-preset-modal {
-    max-width: 380px;
-}
-
 .ts-preset-modal-preview {
     display: flex;
     align-items: center;
@@ -306,16 +241,6 @@
 
 .ts-preset-delete-modal {
     max-width: 340px;
-}
-
-.ts-modal-close {
-    border: none;
-    background: transparent;
-    font-size: 22px;
-    line-height: 1;
-    cursor: pointer;
-    color: var(--text-secondary);
-    padding: 4px 8px;
 }
 
 /* ── Mode tabs ── */

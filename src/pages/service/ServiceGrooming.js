@@ -12,7 +12,7 @@ import { todayStr, getWeekRange, getMonthRange, getLastMonthRange } from "../../
 
 import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
-import { EmptyRow } from "../../App";
+import { EmptyRow, sortArray } from "../../App";
 import closeIcon from "../../icon/close-icon.png";
 import useInfiniteScroll from "../../components/useInfiniteScroll";
 import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
@@ -79,6 +79,15 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
   const [sgroomFrom, setSgroomFrom] = useState(() => getWeekRange()[0]);
   const [sgroomTo, setSgroomTo] = useState(today);
   const [sgroomPreset, setSgroomPreset] = useState("week");
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
+  const handleSort = (key) => {
+    setSortConfig((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" }
+    );
+  };
 
   useEffect(() => {
     const handler = (e) => {
@@ -104,9 +113,10 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
 
   const visibleStaff = useMemo(() => {
     const q = sgroomSearch.toLowerCase();
-    return adminData.staff.filter(s =>
+    const base = adminData.staff.filter(s =>
       !q || (s.name || "").toLowerCase().includes(q) || (s.role || "").toLowerCase().includes(q));
-  }, [adminData.staff, sgroomSearch]);
+    return sortConfig.key ? sortArray(base, sortConfig) : base;
+  }, [adminData.staff, sgroomSearch, sortConfig]);
 
   const staffStats = useMemo(() => visibleStaff.map((s, i) => {
     let perfect = 0;
@@ -302,7 +312,14 @@ export default function ServiceGrooming({ adminData, setAdminData }) {
         <table >
           <thead>
             <tr>
-              <th className="sgroom-staff-th">Staff</th>
+              <th className={`sgroom-staff-th${sortConfig.key === "name" ? " sorted" : ""}`} onClick={() => handleSort("name")}>
+                <span className="th-content sort-th">
+                  <span>Staff</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "name" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
               {visibleDates.map(d => {
                 const dObj = new Date(d); const isToday = d === today;
                 return (

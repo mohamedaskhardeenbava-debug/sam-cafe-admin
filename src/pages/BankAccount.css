@@ -62,19 +62,6 @@
   text-align: center;
 }
 
-.ba-form {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.ba-form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 12px;
-}
-
 .field-error-msg {
   color: #dc2626;
   font-size: 12px;

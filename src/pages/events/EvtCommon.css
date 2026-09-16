@@ -176,19 +176,6 @@
   max-width: 300px;
 }
 
-.event-modal-header {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background-color: #ffffff;
-  display: flex;
-  justify-content: space-between;
-}
-
-.event-modal-header h3 {
-  margin: 0;
-}
-
 .event-modal-body {
   overflow-y: auto;
   overflow-x: hidden;
@@ -235,31 +222,6 @@
   overflow: visible !important;
   max-height: none !important;
   padding: 0;
-}
-
-
-/* ── Create / spec buttons ── */
-.evt-res-create-btn,
-.ae-spec-btn {
-  height: 38px;
-  padding: 0 18px;
-  border-radius: 999px;
-  border: none;
-  background: #111;
-  color: #fff;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 13px;
-  transition: all 0.2s;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.evt-res-create-btn:hover,
-.ae-spec-btn:hover {
-  background: #333;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
 }
 
 
@@ -317,38 +279,24 @@
   letter-spacing: 0.07em;
   border-bottom: 1px solid #c0c0c0;
   margin-top: 10px;
-}
-
-
-/* ── Validation error states ── */
+}/* ── Validation error states ── */
 
 /* Input underline */
-.mat-input.mat-error,
-.ae-addr-input.mat-error {
+.mat-input.mat-error {
   border-bottom-color: #ef4444 !important;
   caret-color: #ef4444;
   animation: mat-shake 0.35s ease;
-}
-
-/* Label */
+}/* Label */
 .mat-label.mat-label-error,
-.ae-addr-label.mat-label-error,
 .mat-area-label.mat-label-error,
 label.mat-label-error {
   color: #ef4444 !important;
-}
-
-/* Animated underline bar */
+}/* Animated underline bar */
 .mat-bar.mat-bar-error,
-.ae-addr-bar.mat-bar-error,
 .mat-area-bar.mat-bar-error {
   background: #ef4444 !important;
-}
-
-.mat-bar.mat-bar-error::before,
+}.mat-bar.mat-bar-error::before,
 .mat-bar.mat-bar-error::after,
-.ae-addr-bar.mat-bar-error::before,
-.ae-addr-bar.mat-bar-error::after,
 .mat-area-bar.mat-bar-error::before,
 .mat-area-bar.mat-bar-error::after {
   width: 50% !important;
@@ -390,22 +338,6 @@ label.mat-label-error {
   color: #ef4444 !important;
 }
 
-/* Step button error indicator */
-.ebutton.has-error {
-  border-color: #fca5a5 !important;
-  background: #fff5f5 !important;
-}
-
-.ebutton.has-error .eevt-step-num {
-  background: #ef4444 !important;
-  border-color: #ef4444 !important;
-  color: #fff !important;
-}
-
-.ebutton.has-error .eevt-step-label {
-  color: #ef4444 !important;
-}
-
 /* Shake animation */
 @keyframes mat-shake {
 
@@ -429,12 +361,6 @@ label.mat-label-error {
   80% {
     transform: translateX(4px);
   }
-}
-
-/* Hide old error span (backward compat) */
-.evt-res-form-error,
-.evt-pre-req+.evt-res-form-error {
-  display: none !important;
 }
 
 

@@ -11,6 +11,7 @@ import { CustomDatePicker } from "../components/CustomDatePicker";
 
 import editIcon from "../icon/edit-icon.png";
 import { CustomTimePicker } from "../components/CustomTimePicker";
+import { fmtDate, fmtTime } from "../utils/dateUtils";
 import CustomDropdown from "../components/CustomDropdown";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
@@ -243,7 +244,7 @@ const OfferDetails = ({ adminData, setAdminData }) => {
                 />
               </div>
             ) : (
-              <p>{localOffer.startDate}{localOffer.startTime ? ` · ${localOffer.startTime}` : ""}</p>
+              <p>{fmtDate(localOffer.startDate)}{localOffer.startTime ? ` · ${fmtTime(localOffer.startTime)}` : ""}</p>
             )}
           </div>
 
@@ -266,7 +267,7 @@ const OfferDetails = ({ adminData, setAdminData }) => {
                 />
               </div>
             ) : (
-              <p>{localOffer.endDate}{localOffer.endTime ? ` · ${localOffer.endTime}` : ""}</p>
+              <p>{fmtDate(localOffer.endDate)}{localOffer.endTime ? ` · ${fmtTime(localOffer.endTime)}` : ""}</p>
             )}
           </div>
 

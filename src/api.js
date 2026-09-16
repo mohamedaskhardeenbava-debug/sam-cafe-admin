@@ -20,6 +20,13 @@ const api = axios.create({
   // view requests need this for the httpOnly cookie to be included, and it's
   // a harmless no-op difference locally where the cookie is same-site anyway.
   withCredentials: true,
+  // Required by the backend's CSRF defense (see server.js): the session
+  // cookie is SameSite=None in production (needed because the backend
+  // can't tell which frontend/origin is calling), which offers no CSRF
+  // protection by itself. A plain HTML form has no way to add a custom
+  // header, so requiring one blocks the classic CSRF vector while
+  // costing nothing here — axios sends it on every request automatically.
+  headers: { "X-Requested-With": "XMLHttpRequest" },
 });
 
 // Dozens of pages call api.post/put/patch (directly, or via the

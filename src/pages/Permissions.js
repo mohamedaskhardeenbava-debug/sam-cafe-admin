@@ -24,6 +24,7 @@ import PageLoader from "../components/PageLoader";
 import CollapseChevron from "../components/CollapseChevron";
 import CollapseSection from "../components/CollapseSection";
 import { EmptyRow, allowTextInput } from "../App";
+import { sortArray } from "../App";
 import { useTabLiquid } from "../hooks/useTabLiquid";
 
 import "./Common.css";
@@ -430,6 +431,17 @@ const RolesPanel = () => {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ title: "", responsibilities: "" });
   const [formErrors, setFormErrors] = useState({});
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
+  const handleSort = (key) => {
+    setSortConfig((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" }
+    );
+  };
+
+  const sortedEntries = sortArray(entries, sortConfig);
 
   const load = async () => {
     try {
@@ -533,7 +545,14 @@ const RolesPanel = () => {
         <table>
           <thead>
             <tr>
-              <th>Role</th>
+              <th onClick={() => handleSort("title")} className={sortConfig.key === "title" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Role</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "title" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
               <th>Responsibilities</th>
               {isSuperAdmin && <th style={{ width: 160 }}>Actions</th>}
             </tr>
@@ -542,7 +561,7 @@ const RolesPanel = () => {
             {entries.length === 0 ? (
               <EmptyRow colSpan={isSuperAdmin ? 3 : 2} message="No roles defined yet" />
             ) : (
-              entries.map((entry) => (
+              sortedEntries.map((entry) => (
                 <tr key={entry.id}>
                   <td><strong>{entry.title}</strong></td>
                   <td>{entry.responsibilities || "—"}</td>

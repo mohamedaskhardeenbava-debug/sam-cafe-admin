@@ -15,6 +15,8 @@ import doubleArrowIcon from "../icon/double-arrow-icon.png";
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
 import useAnimatedModal from "../hooks/useAnimatedModal";
+import useInfiniteScroll from "../components/useInfiniteScroll";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/InfiniteScrollLoader";
 import { useVenue } from "../context/VenueContext";
 import { EmptyRow } from "../App";
 
@@ -202,6 +204,9 @@ const ComboOffers = () => {
       return sortConfig.direction === "asc" ? aVal - bVal : bVal - aVal;
     });
   }, [offers, sortConfig]);
+
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
+    useInfiniteScroll(sortedOffers.length, 20);
 
   /* ── build dish pools from categories + section config, filtered to
      eventField === "yes" (combo/event-eligible dishes) ── */
@@ -524,7 +529,7 @@ const ComboOffers = () => {
         </div>
       </div>
 
-      <div className="table-wrapper">
+      <div className="table-wrapper" ref={containerRef}>
         <table >
           <thead>
             <tr>
@@ -540,14 +545,13 @@ const ComboOffers = () => {
                   key={col.key}
                   onClick={() => handleSort(col.key)}
                   className={sortConfig.key === col.key ? "sorted" : ""}
-                  style={{ cursor: "pointer" }}
                 >
                   <span className="th-content sort-th">
                     <span>{col.label}</span>
                     <span className="sort-arrow">
                       {sortConfig.key === col.key
                         ? sortConfig.direction === "asc" ? "▲" : "▼"
-                        : "⇅"}
+                        : ""}
                     </span>
                   </span>
                 </th>
@@ -560,7 +564,7 @@ const ComboOffers = () => {
             {offers.length === 0 && (
               <EmptyRow colSpan={8} message='No combo offers yet. Click "+ Add Combo" to create one.' />
             )}
-            {sortedOffers.map((o, i) => (
+            {sortedOffers.slice(0, displayLimit).map((o, i) => (
               <tr key={o.id}>
                 <td>
                   <span className="">{o.condition?.dishes || "—"}</span>
@@ -600,8 +604,14 @@ const ComboOffers = () => {
                 </td>
               </tr>
             ))}
+            <InfiniteScrollLoader
+              sentinelRef={sentinelRef}
+              hasMore={hasMore}
+              colSpan={8}
+            />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
 
       {/* ═══ OFFER MODAL ══════════════════════════════════════════ */}

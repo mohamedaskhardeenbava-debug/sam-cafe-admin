@@ -354,20 +354,70 @@ const Documents = ({ sortConfig, handleSort }) => {
           <thead>
             <tr>
               <th
-                onClick={() => handleSort?.("name")}
-                className={sortConfig?.key === "name" ? "sorted" : ""}
+                onClick={() => handleSort("name")}
+                className={sortConfig.key === "name" ? "sorted" : ""}
               >
                 <span className="th-content sort-th">
                   <span>Name</span>
-                  {sortConfig?.key === "name" && (
-                    <span className="sort-arrow">{sortConfig.direction === "asc" ? "▲" : "▼"}</span>
-                  )}
+                  <span className="sort-arrow">
+                    {sortConfig.key === "name"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
+                  </span>
                 </span>
               </th>
-              <th>Department</th>
-              <th>From Date</th>
-              <th>To Date</th>
-              <th>Reminder Date</th>
+              <th
+                onClick={() => handleSort("department")}
+                className={sortConfig.key === "department" ? "sorted" : ""}
+              >
+                <span className="th-content sort-th">
+                  <span>Department</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "department"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
+                  </span>
+                </span>
+              </th>
+              <th
+                onClick={() => handleSort("date")}
+                className={sortConfig.key === "date" ? "sorted" : ""}
+              >
+                <span className="th-content sort-th">
+                  <span>From Date</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "date"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
+                  </span>
+                </span>
+              </th>
+              <th
+                onClick={() => handleSort("toDate")}
+                className={sortConfig.key === "toDate" ? "sorted" : ""}
+              >
+                <span className="th-content sort-th">
+                  <span>To Date</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "toDate"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
+                  </span>
+                </span>
+              </th>
+              <th
+                onClick={() => handleSort("reminderDate")}
+                className={sortConfig.key === "reminderDate" ? "sorted" : ""}
+              >
+                <span className="th-content sort-th">
+                  <span>Reminder Date</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "reminderDate"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
+                  </span>
+                </span>
+              </th>
               <th>Actions</th>
             </tr>
           </thead>

@@ -574,7 +574,9 @@ const Ingredients = ({ adminData, setAdminData, onAdd, onUpdate, onDelete, toCam
                 <span className="th-content sort-th">
                   <span>Name</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "name"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>

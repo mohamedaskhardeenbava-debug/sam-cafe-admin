@@ -51,15 +51,6 @@
   color: #999;
 }
 
-/* Compact CustomDropdown variant used for the inline period/status
-   filters in the "Your To-Dos" section header. */
-.todo-filter-dropdown .dishes-status-dropdown {
-  padding: 5px 10px;
-  font-size: 12px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
-
 /* Light-theme mat-input, scoped to this page */
 .details-container .mat {
   position: relative;
@@ -164,15 +155,6 @@
   font-size: 15px;
   font-weight: 700;
   color: #1a1a1a;
-}
-
-/* ── Filters (inline in section-title, top-right) ───────── */
-.todo-filters {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 400;
 }
 
 .todo-empty {

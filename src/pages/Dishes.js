@@ -679,7 +679,9 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
                 <span className="th-content sort-th">
                   <span>Name</span>
                   <span className="sort-arrow">
-                    {sortConfig.direction === "asc" ? "▲" : "▼"}
+                    {sortConfig.key === "name"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
                   </span>
                 </span>
               </th>
@@ -687,7 +689,19 @@ const Dishes = ({ adminData, setAdminData, toCamelCase, handleSort, sortConfig }
               <th>Event Food</th>
               <th>Subscription Food</th>
               <th>Slot</th>
-              <th>Base Price</th>
+              <th
+                onClick={() => handleSort("basePrice")}
+                className={sortConfig.key === "basePrice" ? "sorted" : ""}
+              >
+                <span className="th-content sort-th">
+                  <span>Base Price</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "basePrice"
+                      ? sortConfig.direction === "asc" ? "▲" : "▼"
+                      : ""}
+                  </span>
+                </span>
+              </th>
               <th className="icon-width">Delete</th>
             </tr>
           </thead>

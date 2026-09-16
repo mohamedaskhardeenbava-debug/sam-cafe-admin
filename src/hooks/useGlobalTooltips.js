@@ -134,6 +134,7 @@ export default function useGlobalTooltips() {
     // that would otherwise cause scan() to rebuild (and re-show) a fresh
     // instance a moment later.
     const handleDocumentClick = (e) => {
+      if (!(e.target instanceof Element)) return;
       const trigger = e.target.closest('[data-bs-toggle="tooltip"]');
       if (!trigger) return;
       const instance = window.bootstrap.Tooltip.getInstance(trigger);
@@ -148,6 +149,7 @@ export default function useGlobalTooltips() {
     // Once the pointer truly leaves a suppressed trigger, it's safe to
     // let it get a normal tooltip instance again on the next hover.
     const handlePointerOut = (e) => {
+      if (!(e.target instanceof Element)) return;
       const trigger = e.target.closest('[data-bs-toggle="tooltip"]');
       if (trigger && suppressedUntilLeave.has(trigger)) {
         suppressedUntilLeave.delete(trigger);

@@ -23,7 +23,7 @@ import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../components/Infin
 import { FilterBar } from "../components/FilterBar";
 import { resolveDateRange } from "../utils/dateRangeUtils";
 import { fmtDateTime } from "../utils/dateUtils";
-import { allowTextInput, EmptyRow } from "../App";
+import { allowTextInput, EmptyRow, sortArray } from "../App";
 
 import "./AuditLogs.css";
 
@@ -92,6 +92,25 @@ const AuditLogs = () => {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const patchFilters = (patch) => setFilters((p) => ({ ...p, ...patch }));
   const [filtersCollapsed, setFiltersCollapsed] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
+  const handleSort = (key) => {
+    setSortConfig((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" }
+    );
+  };
+
+  // Sorting is client-side over the rows already fetched (see PAGE_SIZE
+  // above) since there's no server-side sort param on /audit-logs yet —
+  // this reorders what's on screen without changing which pages load.
+  const sortedLogs = sortArray(
+    sortConfig.key === "who"
+      ? logs.map((l) => ({ ...l, who: l.adminName || "" }))
+      : logs,
+    sortConfig.key === "when" ? { key: "createdAt", direction: sortConfig.direction } : sortConfig
+  );
 
   const buildParams = (pageNum) => {
     const params = { limit: PAGE_SIZE, page: pageNum };
@@ -269,8 +288,22 @@ const AuditLogs = () => {
         <table>
           <thead>
             <tr>
-              <th>When</th>
-              <th>Who</th>
+              <th onClick={() => handleSort("when")} className={sortConfig.key === "when" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>When</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "when" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("who")} className={sortConfig.key === "who" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Who</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "who" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
               <th>Venue</th>
               <th>Action</th>
               <th>Module</th>
@@ -289,7 +322,7 @@ const AuditLogs = () => {
               <EmptyRow colSpan={7} message="No audit entries match your filters." />
             ) : (
               <>
-                {logs.map((log) => (
+                {sortedLogs.map((log) => (
                   <tr key={log.id}>
                     <td>{fmtDateTime(log.createdAt)}</td>
                     <td>

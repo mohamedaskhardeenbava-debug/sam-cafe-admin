@@ -11,6 +11,7 @@ import api from "../../api";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 import { DateRangeGroup, PillGroup, MultiPillGroup } from "../../components/FilterBar";
 import { resolveDateRange, todayStr } from "../../utils/dateRangeUtils";
+import { fmtDate } from "../../utils/dateUtils";
 
 import closeIcon from "../../icon/close-icon.png";
 import { useToast } from "../../useToast";
@@ -21,6 +22,9 @@ import Button3D from "../../components/Button3D";
 import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
 import CollapseSection from "../../components/CollapseSection";
+import useInfiniteScroll from "../../components/useInfiniteScroll";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
+import { sortArray } from "../../App";
 
 import "./KitchenSchedules.css";
 
@@ -64,17 +68,32 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
   const scheduleModal = useAnimatedModal("kitchenSchedules-add");
   const [form, setForm] = useState(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState({});
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
+  const handleSort = (key) => {
+    setSortConfig((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" }
+    );
+  };
 
   const list = adminData.kitchenSchedules || [];
 
-  const filteredList = useMemo(() => list.filter(item => {
-    const matchStatus = statusFilters.size === 0 || statusFilters.has(item.status || "");
-    const q = searchText.toLowerCase();
-    const matchSearch = !q || (item.work || "").toLowerCase().includes(q) || (item.staff || "").toLowerCase().includes(q);
-    const d = item.date || "";
-    const matchDate = d >= fromDate && d <= toDate;
-    return matchStatus && matchSearch && matchDate;
-  }), [list, statusFilters, searchText, fromDate, toDate]);
+  const filteredList = useMemo(() => {
+    const base = list.filter(item => {
+      const matchStatus = statusFilters.size === 0 || statusFilters.has(item.status || "");
+      const q = searchText.toLowerCase();
+      const matchSearch = !q || (item.work || "").toLowerCase().includes(q) || (item.staff || "").toLowerCase().includes(q);
+      const d = item.date || "";
+      const matchDate = d >= fromDate && d <= toDate;
+      return matchStatus && matchSearch && matchDate;
+    });
+    return sortArray(base, sortConfig);
+  }, [list, statusFilters, searchText, fromDate, toDate, sortConfig]);
+
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
+    useInfiniteScroll(filteredList.length, 20);
 
   // ── Handlers
 
@@ -173,7 +192,7 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
     const rows = filteredList.map(item => ({
       Work: item.work || "—",
       Staff: item.staff || "—",
-      Date: item.date || "—",
+      Date: fmtDate(item.date),
       Department: item.department || "—",
       Status: item.status || "—",
       "Response (Days)": item.lastRate !== "" && item.lastRate != null ? `${item.lastRate} days` : "—",
@@ -213,29 +232,29 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
         <div className="filter-bar">
           <div className="filter-groups">
             <input className="search-input" placeholder=" Search work / staff…" value={searchText} onChange={e => setSearchText(allowTextInput(searchText, e.target.value, 100, 5))} />
-              <DateRangeGroup
-                from={fromDate}
-                to={toDate}
-                onChangeFrom={setFromDate}
-                onChangeTo={setToDate}
-                preset={activePreset}
-                onChangePreset={setActivePreset}
-                presets={PERIOD_PRESETS}
-                fromLabel="from"
-                toLabel="to"
-                pickerFromLabel="From"
-                pickerToLabel="To"
-                showPresets={false}
-                pickerLabels
-              />
+            <DateRangeGroup
+              from={fromDate}
+              to={toDate}
+              onChangeFrom={setFromDate}
+              onChangeTo={setToDate}
+              preset={activePreset}
+              onChangePreset={setActivePreset}
+              presets={PERIOD_PRESETS}
+              fromLabel="from"
+              toLabel="to"
+              pickerFromLabel="From"
+              pickerToLabel="To"
+              showPresets={false}
+              pickerLabels
+            />
 
-              <PillGroup
-                label="period"
-                options={PERIOD_PRESETS}
-                value={activePreset}
-                onChange={applyPreset}
-                toggle={false}
-              />
+            <PillGroup
+              label="period"
+              options={PERIOD_PRESETS}
+              value={activePreset}
+              onChange={applyPreset}
+              toggle={false}
+            />
 
             <MultiPillGroup
               label="status"
@@ -247,12 +266,58 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
         </div>
       </CollapseSection>
 
-      <div className="table-wrapper" >
+      <div className="table-wrapper" ref={containerRef}>
         <table >
           <thead>
             <tr>
-              <th>Work</th><th>Staff</th><th>Date</th>
-              <th>Department</th><th>Status</th><th>Response</th>
+              <th onClick={() => handleSort("work")} className={sortConfig.key === "work" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Work</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "work" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("staff")} className={sortConfig.key === "staff" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Staff</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "staff" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("date")} className={sortConfig.key === "date" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Date</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "date" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("department")} className={sortConfig.key === "department" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Department</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "department" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("status")} className={sortConfig.key === "status" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Status</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "status" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("lastRate")} className={sortConfig.key === "lastRate" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Response</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "lastRate" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
               <th style={{ width: 60, textAlign: "center" }}>Done</th>
             </tr>
           </thead>
@@ -260,11 +325,11 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
             {filteredList.length === 0 ? (
               <EmptyRow colSpan={7} message="No schedules found" />
             ) : (
-              filteredList.map(i => (
+              filteredList.slice(0, displayLimit).map(i => (
                 <tr key={i.id}>
                   <td>{i.work}</td>
                   <td>{i.staff}</td>
-                  <td>{i.date}</td>
+                  <td>{fmtDate(i.date)}</td>
                   <td>{i.department || "—"}</td>
                   <td>{i.status ? <span className={`status status-${i.status.toLowerCase().replace(/\s+/g, "-")}`}>{i.status}</span> : "—"}</td>
                   <td>{i.lastRate ? `${i.lastRate} days` : "—"}</td>
@@ -281,8 +346,14 @@ export default function KitchenSchedules({ adminData, setAdminData }) {
                 </tr>
               ))
             )}
+            <InfiniteScrollLoader
+              sentinelRef={sentinelRef}
+              hasMore={hasMore}
+              colSpan={7}
+            />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
 
       {scheduleModal.shouldRender && (

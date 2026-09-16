@@ -1,15 +1,4 @@
-/* ═══════════════════════════════════════════════════════
-   Users.css  —  Sam Cafe Admin  —  Users page
-   Depends on Common.css
-═══════════════════════════════════════════════════════ */
 
-.users-row {
-  cursor: pointer;
-}
-
-.users-row:hover {
-  background: #eaeaea;
-}
 
 .ae-result-count {
   font-size: 12px;
@@ -27,4 +16,56 @@
   font-weight: 700;
   background: #eaf6ee;
   color: #27ae60;
+}
+
+/* Loyalty tier badge — colour keyed to the tier, matching the
+   bronze/silver/gold/VIP progression used on the Guest Management page. */
+.loyalty-tier-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.loyalty-tier-badge--vip {
+  background: #f3e8ff;
+  color: #8e24aa;
+}
+
+.loyalty-tier-badge--gold {
+  background: #fff6df;
+  color: #b8860b;
+}
+
+.loyalty-tier-badge--silver {
+  background: #eef1f4;
+  color: #64748b;
+}
+
+.loyalty-tier-badge--bronze {
+  background: #fbeee6;
+  color: #a5622f;
+}
+
+/* "New Gold/VIP this week" flag next to a guest's name */
+.user-new-tier-flag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10.5px;
+  font-weight: 700;
+  background: #fff0f6;
+  color: #c2185b;
+  white-space: nowrap;
+}
+
+/* Churn-risk warning flag next to a guest's name */
+.user-churn-flag {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 13px;
+  cursor: default;
 }

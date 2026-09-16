@@ -1,271 +1,9 @@
-/* =====================================================
-   StaffAttendance.css  ---  Sam Cafe Admin  ---  StaffAttendance page
-   Depends on Common.css + ModalCSS.css
-===================================================== */
 
-/* ── Loading ── */
-.att-loading {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 40px;
-  color: #888;
-  font-size: 14px;
-}
-
-.att-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #eee;
-  border-top-color: #111;
-  border-radius: 50%;
-  animation: att-spin 0.7s linear infinite;
-}
 
 @keyframes att-spin {
   to {
     transform: rotate(360deg);
   }
-}
-
-/* ── Header ── */
-.att-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  gap: 14px;
-  margin-bottom: 14px;
-}
-
-.att-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: #111;
-  margin: 0;
-}
-
-.att-subtitle {
-  font-size: 16px;
-  color: #666;
-  margin: 0;
-}
-
-.att-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.att-summary-chips {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.att-chip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid transparent;
-}
-
-.att-chip-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-}
-
-.att-chip-present {
-  background: #dcfce7;
-  color: #16a34a;
-  border-color: #bbf7d0;
-}
-
-.att-chip-present .att-chip-dot {
-  background: #16a34a;
-}
-
-.att-chip-leave {
-  background: #fef9c3;
-  color: #ca8a04;
-  border-color: #fde68a;
-}
-
-.att-chip-leave .att-chip-dot {
-  background: #ca8a04;
-}
-
-.att-chip-absent {
-  background: #f3f4f6;
-  color: #6b7280;
-  border-color: #e5e7eb;
-}
-
-.att-chip-absent .att-chip-dot {
-  background: #9ca3af;
-}
-
-.att-chip-holiday {
-  background: #fef3c7;
-  color: #d97706;
-  border-color: #fde68a;
-}
-
-.att-chip-holiday .att-chip-dot {
-  background: #d97706;
-}
-
-.att-add-btn {
-  height: 36px;
-  padding: 0 16px;
-  border-radius: 999px;
-  border: none;
-  background: #111;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.att-add-btn:hover {
-  background: #000;
-  transform: translateY(-1px);
-}
-
-/* ── Stats row — collapsible wrapper (mirrors kgroom-summary-collapsible) ── */
-.att-stats-collapsible {
-  display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  overflow: hidden;
-  transition: grid-template-rows 0.32s ease, opacity 0.28s ease, margin 0.28s ease;
-  margin-top: -16px;
-  pointer-events: none;
-}
-
-.att-stats-collapsible>* {
-  min-height: 0;
-  overflow: hidden;
-}
-
-.att-stats-collapsible.att-stats-open {
-  grid-template-rows: 1fr;
-  opacity: 1;
-  margin-top: 0;
-  pointer-events: auto;
-}
-
-.att-stats-row {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.att-stat-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 12px 14px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-  flex: 1;
-  min-width: 140px;
-  border: 1px solid #f0f0f0;
-  transition: transform 0.2s;
-}
-
-.att-stat-card:hover {
-  transform: translateY(-2px);
-}
-
-.att-stat-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.att-stat-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.att-stat-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: #333;
-  display: block;
-  margin-bottom: 5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.att-stat-bar-wrap {
-  height: 5px;
-  background: #f0f0f0;
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 5px;
-}
-
-.att-stat-bar {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.4s ease;
-}
-
-.att-stat-nums {
-  display: flex;
-  gap: 8px;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.att-present-num {
-  color: #16a34a;
-}
-
-.att-leave-num {
-  color: #ca8a04;
-}
-
-.att-absent-num {
-  color: #9ca3af;
-}
-
-.att-pct-num {
-  color: #666;
-  margin-left: auto;
-}
-
-/* ── Table wrapper ── */
-.att-table-wrapper {
-  background: #e9e9e9;
-  border-radius: 16px;
-  padding: 0 10px 10px;
-  overflow: hidden;
-}
-
-.att-table-scroll {
-  overflow: auto;
-  max-width: 100%;
 }
 
 .att-table {
@@ -305,76 +43,6 @@
   gap: 1px;
 }
 
-.att-date-day {
-  font-size: 13px;
-  font-weight: 700;
-  color: #333;
-}
-
-.att-date-weekday {
-  font-size: 9px;
-  color: #999;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.att-sunday .att-date-day {
-  color: #ef4444;
-}
-
-.att-sunday .att-date-weekday {
-  color: #fca5a5;
-}
-
-.att-holiday-col {
-  background: #fffbeb !important;
-}
-
-.att-today-col {
-  background: #eff6ff !important;
-}
-
-.att-holiday-tag {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  margin-top: 3px;
-}
-
-.att-holiday-tag span {
-  font-size: 9px;
-  color: #d97706;
-  font-weight: 600;
-  background: #fef3c7;
-  padding: 1px 5px;
-  border-radius: 3px;
-  max-width: 60px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.att-remove-holiday {
-  width: 12px;
-  height: 12px;
-  cursor: pointer;
-  accent-color: #ef4444;
-}
-
-.att-today-dot {
-  width: 5px;
-  height: 5px;
-  background: #3b82f6;
-  border-radius: 50%;
-  margin: 3px auto 0;
-}
-
-.att-name-col {
-  text-align: left !important;
-  min-width: 140px !important;
-}
-
 /* Rows */
 .att-row {
   background: #fff;
@@ -383,17 +51,6 @@
 
 .att-row:hover td {
   background: #fafafe;
-}
-
-.att-sticky-col {
-  position: sticky;
-  left: 0;
-  background: #fff;
-  z-index: 5;
-}
-
-thead .att-sticky-col {
-  background: #e9e9e9;
 }
 
 /* Cells */
@@ -413,11 +70,6 @@ thead .att-sticky-col {
 .att-td:last-child {
   border-top-right-radius: 10px;
   border-bottom-right-radius: 10px;
-}
-
-.att-name-cell {
-  padding: 8px 10px;
-  text-align: left !important;
 }
 
 .att-name-wrap {
@@ -463,22 +115,6 @@ thead .att-sticky-col {
 
 .att-today-td {
   background: #eff6ff !important;
-}
-
-.att-holiday-cell {
-  background: #fffbeb !important;
-}
-
-.att-sunday-cell span {
-  font-size: 10px;
-  color: #fca5a5;
-  font-weight: 600;
-}
-
-.att-holiday-label {
-  font-size: 10px;
-  color: #d97706;
-  font-weight: 600;
 }
 
 /* Leave cell */
@@ -645,77 +281,7 @@ thead .att-sticky-col {
   transform: rotate(45deg);
 }
 
-.att-btn-secondary {
-  padding: 9px 16px;
-  background: #f5f5f5;
-  color: #555;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.att-btn-secondary:hover {
-  background: #e5e7eb;
-}
-
 @media (max-width: 768px) {
-  .att-stats-row {
-    gap: 8px;
-  }
-
-  .att-stat-card {
-    min-width: 120px;
-  }
-
-  .att-header {
-    flex-direction: column;
-  }
-
-  .att-summary-chips {
-    display: none;
-  }
-}
-
-/* ── Shared: Export button ── */
-.orders-export-btn {
-  height: 36px;
-  padding: 0 16px;
-  border-radius: 999px;
-  border: 1.5px solid #e5e7eb;
-  background: #f9fafb;
-  color: #555;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-  font-family: inherit;
-  white-space: nowrap;
-}
-
-.orders-export-btn:hover {
-  border-color: #111;
-  background: #111;
-  color: #fff;
-}
-
-.staff-search-input {
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid #ddd;
-  background: #f9f9f9;
-  font-size: 13px;
-  outline: none;
-  width: 100%;
-  max-width: 280px;
-  transition: border-color 0.2s;
-  font-family: inherit;
-}
-
-.staff-search-input:focus {
-  border-color: #111;
-  background: #fff;
 }
 
 /* ── Header sections ── */
@@ -724,35 +290,6 @@ thead .att-sticky-col {
   align-items: center;
   gap: 6px;
   flex: 1;
-}
-
-.att-header-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-/* ── Column edit all btn ── */
-.att-col-edit-btn {
-  height: 32px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1.5px solid #e5e7eb;
-  background: #f9fafb;
-  color: #555;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-  font-family: inherit;
-  white-space: nowrap;
-}
-
-.att-col-edit-btn:hover {
-  border-color: #111;
-  background: #111;
-  color: #fff;
 }
 
 /* ── Table scroll wrapper ── */
@@ -796,13 +333,6 @@ thead .att-sticky-col {
 
 .att-holiday-th {
   background: #fffbeb !important;
-}
-
-.att-date-head {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
 }
 
 .att-date-num {
@@ -884,20 +414,6 @@ thead .att-name-th {
   white-space: nowrap;
 }
 
-.att-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
 .att-name {
   font-size: 13px;
   font-weight: 600;
@@ -925,10 +441,6 @@ thead .att-name-th {
 
 .att-empty-td {
   background: #f9fafb !important;
-}
-
-.att-editing-td {
-  min-width: 110px;
 }
 
 /* ── Summary cell ── */
@@ -1079,43 +591,19 @@ thead .att-name-th {
    RESPONSIVE ADDENDUM — 1080 / 992 / 578 / 480
 ═══════════════════════════════════════════ */
 @media (max-width: 1080px) {
-  .att-stats-row {
-    flex-wrap: wrap;
-  }
 }
 
 @media (max-width: 992px) {
-  .att-stat-card {
-    min-width: 100px;
-  }
 }
 
 @media (max-width: 578px) {
-  .att-table-wrapper {
-    padding: 0 6px 6px;
-    border-radius: 12px;
-  }
 
   .att-table th {
     font-size: 11px;
     min-width: 42px;
     padding: 6px 6px 4px;
   }
-
-  .att-btn-secondary {
-    padding: 6px 10px;
-    font-size: 12px;
-  }
 }
 
 @media (max-width: 480px) {
-  .att-stat-card {
-    min-width: 90px;
-  }
-
-  .orders-export-btn {
-    height: 32px;
-    padding: 0 12px;
-    font-size: 12px;
-  }
 }

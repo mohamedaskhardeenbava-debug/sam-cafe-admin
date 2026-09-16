@@ -252,14 +252,63 @@ export const DateRangeGroup = ({
    Props:
      from, to             – "HH:MM" 24h strings
      onChangeFrom(v)       onChangeTo(v)
-     fromLabel, toLabel    – override labels
+     fromLabel, toLabel    – outer <span> label beside each trigger
+                             (default "From"/"To"; pass "" to hide),
+                             same as DateRangeGroup's own fromLabel/toLabel
+     pickerFromLabel,
+     pickerToLabel         – optional label shown inside the ctp-trigger
+                             itself. Only rendered when pickerLabels is
+                             true (mirrors DateRangeGroup's pickerLabels
+                             flag) — off by default, since the outer
+                             <span> is what "like the date pickers" asks
+                             for.
+     groupClass            – wrapper class (default "filter-group")
+
+   Span rule (mirrors DateRangeGroup's min/max behaviour): the From
+   clock disables any time after the current To (maxTime={to}), and
+   the To clock disables any time before the current From
+   (minTime={from}) — same as hours/dates past the date-range's
+   min/max being greyed out, not just corrected after picking. The
+   onChange handlers still nudge the other value to match if a stale
+   selection would otherwise become inverted (e.g. a preset changing
+   `to` out from under an already-picked `from`).
 ──────────────────────────────────────────────────────────────── */
-export const TimeRangeGroup = ({ from, to, onChangeFrom, onChangeTo, fromLabel = "From", toLabel = "To" }) => (
-  <div className="filter-group">
-    <span className="filter-group-label">{fromLabel}</span>
-    <CustomTimePicker value={from} onChange={onChangeFrom} placeholder="Start time" />
-    <span className="filter-group-label">{toLabel}</span>
-    <CustomTimePicker value={to} onChange={onChangeTo} placeholder="End time" />
+export const TimeRangeGroup = ({
+  from,
+  to,
+  onChangeFrom,
+  onChangeTo,
+  fromLabel = "From",
+  toLabel = "To",
+  pickerFromLabel,
+  pickerToLabel,
+  pickerLabels = false,
+  labelClass = "filter-group-label",
+  groupClass = "filter-group",
+}) => (
+  <div className={groupClass}>
+    {fromLabel && <span className={labelClass}>{fromLabel}</span>}
+    <CustomTimePicker
+      label={pickerLabels ? (pickerFromLabel ?? fromLabel) : undefined}
+      value={from}
+      maxTime={to || undefined}
+      onChange={(v) => {
+        onChangeFrom?.(v);
+        if (to && v > to) onChangeTo?.(v);
+      }}
+      placeholder="Start time"
+    />
+    {toLabel && <span className={labelClass}>{toLabel}</span>}
+    <CustomTimePicker
+      label={pickerLabels ? (pickerToLabel ?? toLabel) : undefined}
+      value={to}
+      minTime={from || undefined}
+      onChange={(v) => {
+        onChangeTo?.(v);
+        if (from && v < from) onChangeFrom?.(v);
+      }}
+      placeholder="End time"
+    />
   </div>
 );
 

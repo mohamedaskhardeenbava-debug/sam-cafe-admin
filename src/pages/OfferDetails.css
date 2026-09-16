@@ -1,33 +1,4 @@
-/* ═══════════════════════════════════════════════════════
-   OfferDetails.css  —  Sam Cafe Admin  —  OfferDetails page
-   Depends on Common.css
-═══════════════════════════════════════════════════════ */
 
-.offer-details-page {
-  display: flex;
-}
-
-.offer-back-btn {
-  width: 50px;
-  height: 50px;
-  border-radius: 25px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  position: relative;
-}
-
-.offer-back-btn::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 40%;
-  width: 12px;
-  height: 12px;
-  border-left: 3px solid #111;
-  border-bottom: 3px solid #111;
-  transform: translateY(-50%) rotate(45deg);
-}
 
 /* HEADER */
 .details-header {
@@ -40,110 +11,14 @@
   flex: 1;
   margin: 0;
 }
-
-/* GLOBAL EDIT BUTTON */
-.global-edit-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  background: #fff;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  color: #111;
-  transition: all 0.2s ease;
-  margin-left: auto;
-}
-
-.global-edit-btn img {
-  width: 16px;
-  height: 16px;
-}
-
-.global-edit-btn:hover {
-  background: #f0f0f0;
-  border-color: #aaa;
-}
-
-/* STICKY SAVE / CANCEL BAR */
-.global-edit-actions {
-  position: sticky;
-  bottom: 0;
-  background: #fff;
-  padding: 12px 0 4px;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-  margin-top: 20px;
-  z-index: 10;
-}
-
-/* TABLE */
-.offer-data-table {
-  width: 100%;
-}
-
-.offer-data-table td {
-  padding: 6px;
-}
-
-/* ACTIONS */
-.offer-action {
-  display: flex;
-  gap: 10px;
-}
-
-.offer-action button {
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  background: #f0f0f0;
-}
-
-.offer-action button:first-child {
-  background: #111;
-  color: #fff;
-}
 /* ═══════════════════════════════════════════
    RESPONSIVE — 1080 / 992 / 768 / 578 / 480
 ═══════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .offer-back-btn {
-    width: 40px;
-    height: 40px;
-  }
-
-  .offer-data-table {
-    display: block;
-    overflow-x: auto;
-  }
 }
 
 @media (max-width: 578px) {
-  .offer-action {
-    flex-wrap: wrap;
-  }
-
-  .offer-action button {
-    flex: 1;
-    min-width: 100px;
-  }
-
-  .global-edit-btn {
-    margin-left: 0;
-    padding: 6px 10px;
-    font-size: 13px;
-  }
 }
 
 @media (max-width: 480px) {
-  .offer-action {
-    flex-direction: column;
-  }
-
-  .offer-action button {
-    width: 100%;
-  }
 }

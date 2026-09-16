@@ -41,6 +41,7 @@ import { useToast } from "../useToast";
 import { CustomDatePicker } from "../components/CustomDatePicker";
 import CustomDropdown from "../components/CustomDropdown";
 import { todayStr } from "../utils/dateRangeUtils";
+import { fmtDate } from "../utils/dateUtils";
 import Button3D from "../components/Button3D";
 import CollapseChevron from "../components/CollapseChevron";
 import CollapseSection from "../components/CollapseSection";
@@ -427,7 +428,7 @@ const Subscriptions = ({ adminData, setAdminData }) => {
                           {sub.planType === "monthly" ? "Custom / Monthly" : "Weekly Repeat"}
                         </span>
                       </td>
-                      <td>{sub.startDate || "—"}</td>
+                      <td>{fmtDate(sub.startDate)}</td>
                       <td>{usedSlots.length ? usedSlots.join(", ") : "—"}</td>
                       <td>₹{sub.totalPrice ?? 0}</td>
                       <td>
@@ -580,7 +581,7 @@ const Subscriptions = ({ adminData, setAdminData }) => {
                         {m.latestPlanType === "monthly" ? "Custom / Monthly" : "Weekly Repeat"}
                       </span>
                     </td>
-                    <td>{m.latestStartDate !== "—" ? m.latestStartDate : "—"}</td>
+                    <td>{m.latestStartDate !== "—" ? fmtDate(m.latestStartDate) : "—"}</td>
                     <td>
                       <span className={`sub-status-badge ${m.latestStatus}`}>
                         {m.latestStatus.charAt(0).toUpperCase() + m.latestStatus.slice(1)}
@@ -618,7 +619,7 @@ const Subscriptions = ({ adminData, setAdminData }) => {
             {/* BODY — contact fields, then the shared two-column builder
                 (left: builder controls, right: Summary + totals). */}
             <div className="admin-modal-body">
-              <div className="horizontal-form-group" style={{alignItems: "flex-end"}}>
+              <div className="horizontal-form-group" style={{ alignItems: "flex-end" }}>
                 <div className="admin-form-group">
                   <div className="mat">
                     <input

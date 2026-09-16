@@ -28,7 +28,7 @@ import ConfirmDialog from "../components/ConfirmDialog";
 import PageLoader from "../components/PageLoader";
 import CollapseChevron from "../components/CollapseChevron";
 import CollapseSection from "../components/CollapseSection";
-import { allowTextInput } from "../App";
+import { allowTextInput, sortArray } from "../App";
 
 import "../Common.css"; // shared page shell (.inner-page/.header/.table-wrapper) — Offers.css depends on this
 import "./Offers.css"; // reuses the shared admin list/modal + status-badge styling
@@ -114,6 +114,22 @@ const CategoryCards = () => {
   // Pending enable/disable awaiting confirmation via the overlay, rather
   // than applying instantly — same pattern as the Permissions page.
   const [pendingToggle, setPendingToggle] = useState(null); // { cardId, cardName, nextValue }
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
+  const handleSort = (key) => {
+    setSortConfig((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" }
+    );
+  };
+
+  const sortedCards = sortArray(
+    sortConfig.key === "status"
+      ? cards.map((c) => ({ ...c, status: c.enabled ? "Enabled" : "Disabled" }))
+      : cards,
+    sortConfig.key === "key" ? { key: "id", direction: sortConfig.direction } : sortConfig
+  );
 
   const load = async () => {
     try {
@@ -259,14 +275,35 @@ const CategoryCards = () => {
           <thead>
             <tr>
               <th className="icon-width">Image</th>
-              <th>Card Name</th>
-              <th>Card Key</th>
-              <th>Status</th>
+              <th onClick={() => handleSort("name")} className={sortConfig.key === "name" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Card Name</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "name" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("key")} className={sortConfig.key === "key" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Card Key</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "key" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("status")} className={sortConfig.key === "status" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Status</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "status" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
               <th style={{ width: 160 }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {cards.map((card) => (
+            {sortedCards.map((card) => (
               <tr key={card.id}>
                 <td className="icon-width">
                   <div className="table-image">

@@ -17,6 +17,7 @@ import Button3D from "../components/Button3D";
 import useAnimatedModal from "../hooks/useAnimatedModal";
 import CustomDropdown from "../components/CustomDropdown";
 import CustomDatePicker, { todayStr } from "../components/CustomDatePicker";
+import { fmtDate } from "../utils/dateUtils";
 import { FilterBar } from "../components/FilterBar";
 import CollapseChevron from "../components/CollapseChevron";
 import CollapseSection from "../components/CollapseSection";
@@ -231,7 +232,7 @@ const Todo = () => {
                     <span className="todo-item-meta-row">
                       <span className="todo-item-meta">
                         {t.status === "done" ? "Completed" : "Due"}
-                        {t.dueDate ? ` ${t.dueDate}` : t.status === "done" ? " just now" : ""}
+                        {t.dueDate ? ` ${fmtDate(t.dueDate)}` : t.status === "done" ? " just now" : ""}
                       </span>
                       <span className={`todo-chip todo-chip-${t.period}`}>{t.period}</span>
                       {t.status === "done" && <span className="todo-chip todo-chip-done">DONE</span>}

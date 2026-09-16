@@ -9,6 +9,7 @@ import { useLocation } from "react-router-dom";
 import { format } from "date-fns";
 
 import { exportToExcel } from "../../utils/excelUtils";
+import { fmtDate } from "../../utils/dateUtils";
 import api from "../../api";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 
@@ -21,6 +22,9 @@ import Button3D from "../../components/Button3D";
 import useAnimatedModal from "../../hooks/useAnimatedModal";
 import CollapseChevron from "../../components/CollapseChevron";
 import CollapseSection from "../../components/CollapseSection";
+import useInfiniteScroll from "../../components/useInfiniteScroll";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
+import { sortArray } from "../../App";
 
 import "./ServiceSchedules.css";
 
@@ -71,8 +75,6 @@ const PRESETS = [
 
 const EMPTY_FORM = { work: "", staff: "", date: "", department: "", status: "", lastRate: "" };
 
-const SORT_KEYS = ["date", "work", "staff", "department", "status"];
-
 export default function ServiceSchedules({ adminData, setAdminData }) {
   // ── Hooks
 
@@ -92,8 +94,15 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
   const scheduleModal = useAnimatedModal("serviceSchedules-add");
   const [form, setForm] = useState(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState({});
-  const [sortKey, setSortKey] = useState("date");
-  const [sortDir, setSortDir] = useState("asc");
+  const [sortConfig, setSortConfig] = useState({ key: "date", direction: "asc" });
+
+  const handleSort = (key) => {
+    setSortConfig((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" }
+    );
+  };
 
   const list = adminData.serviceSchedules || [];
 
@@ -106,23 +115,11 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
       const matchDate = d >= fromDate && d <= toDate;
       return matchStatus && matchSearch && matchDate;
     });
+    return sortArray(base, sortConfig);
+  }, [list, statusFilter, searchText, fromDate, toDate, sortConfig]);
 
-    return [...base].sort((a, b) => {
-      const aVal = (a[sortKey] || "").toString().toLowerCase();
-      const bVal = (b[sortKey] || "").toString().toLowerCase();
-      return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-    });
-  }, [list, statusFilter, searchText, fromDate, toDate, sortKey, sortDir]);
-
-  const toggleSort = (key) => {
-    if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
-    else { setSortKey(key); setSortDir("asc"); }
-  };
-
-  const SortIcon = ({ col }) => {
-    if (sortKey !== col) return <span style={{ color: "#bbb", fontSize: 11 }}>⇅</span>;
-    return <span style={{ fontSize: 11 }}>{sortDir === "asc" ? "↑" : "↓"}</span>;
-  };
+  const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
+    useInfiniteScroll(filteredList.length, 20);
 
   const applyPreset = (p) => { const [f, t] = p.fn(); setFromDate(f); setToDate(t); setActivePreset(p.label); };
 
@@ -216,7 +213,7 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
     const rows = filteredList.map(item => ({
       Work: item.work || "—",
       Staff: item.staff || "—",
-      Date: item.date || "—",
+      Date: fmtDate(item.date),
       Department: item.department || "—",
       Status: item.status || "—",
       "Response (Days)": item.lastRate !== "" && item.lastRate != null ? `${item.lastRate} days` : "—",
@@ -287,16 +284,58 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
         </div>
       </CollapseSection>
 
-      <div className="table-wrapper" >
+      <div className="table-wrapper" ref={containerRef}>
         <table >
           <thead>
             <tr>
-              <th onClick={() => toggleSort("work")} style={{ cursor: "pointer" }}>Work <SortIcon col="work" /></th>
-              <th onClick={() => toggleSort("staff")} style={{ cursor: "pointer" }}>Staff <SortIcon col="staff" /></th>
-              <th onClick={() => toggleSort("date")} style={{ cursor: "pointer" }}>Date <SortIcon col="date" /></th>
-              <th onClick={() => toggleSort("department")} style={{ cursor: "pointer" }}>Department <SortIcon col="department" /></th>
-              <th onClick={() => toggleSort("status")} style={{ cursor: "pointer" }}>Status <SortIcon col="status" /></th>
-              <th>Response</th>
+              <th onClick={() => handleSort("work")} className={sortConfig.key === "work" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Work</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "work" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("staff")} className={sortConfig.key === "staff" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Staff</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "staff" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("date")} className={sortConfig.key === "date" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Date</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "date" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("department")} className={sortConfig.key === "department" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Department</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "department" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("status")} className={sortConfig.key === "status" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Status</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "status" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("lastRate")} className={sortConfig.key === "lastRate" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Response</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "lastRate" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
               <th style={{ width: 60, textAlign: "center" }}>Done</th>
             </tr>
           </thead>
@@ -304,11 +343,11 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
             {filteredList.length === 0 ? (
               <EmptyRow colSpan={7} message="No schedules found" />
             ) : (
-              filteredList.map(i => (
+              filteredList.slice(0, displayLimit).map(i => (
                 <tr key={i.id}>
                   <td>{i.work}</td>
                   <td>{i.staff}</td>
-                  <td>{i.date}</td>
+                  <td>{fmtDate(i.date)}</td>
                   <td>{i.department || "—"}</td>
                   <td>{i.status ? <span className={`status status-${i.status.toLowerCase().replace(/\s+/g, "-")}`}>{i.status}</span> : "—"}</td>
                   <td>{i.lastRate ? `${i.lastRate} days` : "—"}</td>
@@ -325,8 +364,14 @@ export default function ServiceSchedules({ adminData, setAdminData }) {
                 </tr>
               ))
             )}
+            <InfiniteScrollLoader
+              sentinelRef={sentinelRef}
+              hasMore={hasMore}
+              colSpan={7}
+            />
           </tbody>
         </table>
+        <InfiniteScrollOverlay isLoading={isLoadingMore} />
       </div>
 
       {scheduleModal.shouldRender && (

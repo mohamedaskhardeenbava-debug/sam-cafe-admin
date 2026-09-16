@@ -451,19 +451,11 @@ th.sorted .sort-arrow {
   margin-right: 5px !important;
   width: 14px !important;
   cursor: pointer;
-}
-
-.card p,
-.category-modal p {
+}.card p {
   white-space: pre-line;
-}
-
-
-/* ─────────────────────────────────────────────────────────────
+}/* ─────────────────────────────────────────────────────────────
    7. ICON BUTTONS
 ───────────────────────────────────────────────────────────── */
-.edit-icon,
-.delete-icon,
 .qr-icon {
   cursor: pointer;
   width: 16px;
@@ -532,40 +524,6 @@ th.sorted .sort-arrow {
 
 .file-preview-link-label {
   word-break: break-word;
-}
-
-
-/* ─────────────────────────────────────────────────────────────
-   8. ACTION BUTTONS (.category-add-btn / .export-btn)
-───────────────────────────────────────────────────────────── */
-.category-add-btn,
-.export-btn {
-  height: 38px;
-  padding: 0 18px;
-  border-radius: 999px;
-  background: #111;
-  color: #fff;
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.25s;
-  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.25);
-}
-
-.category-add-btn:hover,
-.export-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.38);
-}
-
-.category-add-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.category-add-btn.category-saved {
-  background: #16a34a;
 }
 
 
@@ -903,13 +861,6 @@ th.sorted .sort-arrow {
   font-weight: 600;
 }
 
-.dish-details-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 14px;
-}
-
 
 /* ─────────────────────────────────────────────────────────────
    13. DROPDOWN MENU
@@ -1062,53 +1013,18 @@ th.sorted .sort-arrow {
 
 ::-webkit-scrollbar-corner {
   background: transparent !important;
-}
-
-/* Named table wrappers — slightly wider thumb for readability */
-.stocks-table-wrapper::-webkit-scrollbar,
-.ingredient-table-wrapper::-webkit-scrollbar,
-.dish-table-wrapper::-webkit-scrollbar,
-.category-table-wrapper::-webkit-scrollbar,
-.category-buttons::-webkit-scrollbar {
+}/* Named table wrappers — slightly wider thumb for readability */
+.ingredient-table-wrapper::-webkit-scrollbar {
   width: 8px;
-}
-
-.stocks-table-wrapper::-webkit-scrollbar-track,
-.ingredient-table-wrapper::-webkit-scrollbar-track,
-.dish-table-wrapper::-webkit-scrollbar-track,
-.category-table-wrapper::-webkit-scrollbar-track,
-.category-buttons::-webkit-scrollbar-track {
+}.ingredient-table-wrapper::-webkit-scrollbar-track {
   background: #f1f1f1;
-}
-
-.stocks-table-wrapper::-webkit-scrollbar-thumb,
-.ingredient-table-wrapper::-webkit-scrollbar-thumb,
-.dish-table-wrapper::-webkit-scrollbar-thumb,
-.category-table-wrapper::-webkit-scrollbar-thumb,
-.category-buttons::-webkit-scrollbar-thumb {
+}.ingredient-table-wrapper::-webkit-scrollbar-thumb {
   background-color: #9ca3af;
-}
-
-.stocks-table-wrapper::-webkit-scrollbar-thumb:hover,
-.ingredient-table-wrapper::-webkit-scrollbar-thumb:hover,
-.dish-table-wrapper::-webkit-scrollbar-thumb:hover,
-.category-table-wrapper::-webkit-scrollbar-thumb:hover,
-.category-buttons::-webkit-scrollbar-thumb:hover {
+}.ingredient-table-wrapper::-webkit-scrollbar-thumb:hover {
   background-color: #6b7280;
-}
-
-.stocks-table-wrapper::-webkit-scrollbar-button,
-.ingredient-table-wrapper::-webkit-scrollbar-button,
-.dish-table-wrapper::-webkit-scrollbar-button,
-.category-table-wrapper::-webkit-scrollbar-button {
+}.ingredient-table-wrapper::-webkit-scrollbar-button {
   display: none !important;
-}
-
-.stocks-table-wrapper,
-.ingredient-table-wrapper,
-.dish-table-wrapper,
-.category-table-wrapper,
-.category-buttons {
+}.ingredient-table-wrapper {
   scrollbar-color: #9ca3af #f1f1f1;
 }
 

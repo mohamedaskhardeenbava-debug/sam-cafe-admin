@@ -145,9 +145,6 @@
   flex-direction: column;
   gap: 2px;
   scrollbar-width: none;
-
-  /* IE/Edge */
-  -ms-overflow-style: none;
 }
 
 .sidebar-menu::-webkit-scrollbar {
@@ -215,16 +212,6 @@
   border-radius: 0 3px 3px 0;
 }
 
-/* Parent link active (has active child) */
-.sidebar-link-parent {
-  color: #666;
-}
-
-.parent-active {
-  color: #111;
-  background: #f7f7f7;
-}
-
 /* ── Icon Wrap ───────────────────────────── */
 .sidebar-icon-wrap {
   width: 32px;
@@ -236,11 +223,8 @@
   flex-shrink: 0;
   position: relative;
   transition: background 0.18s;
-}
-
-.sidebar-link:hover .sidebar-icon-wrap,
-.sidebar-link-active .sidebar-icon-wrap,
-.parent-active .sidebar-icon-wrap {
+}.sidebar-link:hover .sidebar-icon-wrap,
+.sidebar-link-active .sidebar-icon-wrap {
   background: #ebebeb;
 }
 
@@ -250,11 +234,8 @@
   object-fit: contain;
   filter: grayscale(30%);
   transition: filter 0.18s;
-}
-
-.sidebar-link:hover .sidebar-icon-img,
-.sidebar-link-active .sidebar-icon-img,
-.parent-active .sidebar-icon-img {
+}.sidebar-link:hover .sidebar-icon-img,
+.sidebar-link-active .sidebar-icon-img {
   filter: grayscale(0%);
 }
 
@@ -274,10 +255,7 @@
   color: #bbb;
   flex-shrink: 0;
   transition: color 0.18s;
-}
-
-.sidebar-link:hover .sidebar-chevron,
-.parent-active .sidebar-chevron {
+}.sidebar-link:hover .sidebar-chevron {
   color: #888;
 }
 
@@ -353,21 +331,6 @@
   border: 1px solid #f0f0f0;
 }
 
-.sidebar-footer-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: #111;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  flex-shrink: 0;
-  letter-spacing: 0.02em;
-}
-
 .sidebar-footer-info {
   display: flex;
   flex-direction: column;
@@ -433,13 +396,6 @@
    (positioning handled in Common.css .app > .sidebar). A dimmed
    backdrop appears behind it whenever it's expanded. */
 @media (max-width: 992px) {
-  .sidebar-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.35);
-    z-index: 1100;
-    animation: fadeSlide 0.15s ease;
-  }
 }
 
 @media (max-width: 768px) {
@@ -471,12 +427,6 @@
 
   .brand-logo-img {
     width: 70px;
-  }
-
-  .sidebar-footer-avatar {
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
   }
 }
 

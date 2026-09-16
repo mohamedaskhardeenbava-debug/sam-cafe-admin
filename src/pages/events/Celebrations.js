@@ -396,8 +396,8 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       Mobile: item.mobile || "—",
       Email: item.email || "—",
       Type: CELEBRATION_TYPE_MAP[item.type] || item.type || "—",
-      Date: item.date || "—",
-      Time: item.time || "—",
+      Date: fmtDate(item.date),
+      Time: fmtTime(item.time),
       Guests: item.guests ?? "—",
       Decoration: item.decoration || "—",
       "Total Amount": item.totalAmount ? `₹${Number(item.totalAmount).toLocaleString("en-IN")}` : "—",
@@ -523,27 +523,27 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
               <th onClick={() => handleSort("name")} className={sortField === "name" ? "sorted" : ""}>
                 <span className="th-content sort-th">
                   <span>Guest</span>
-                  <span className="sort-arrow">{sortField === "name" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                  <span className="sort-arrow">{sortField === "name" ? (sortDir === "asc" ? "▲" : "▼") : ""}</span>
                 </span>
               </th>
               <th>Contact</th>
               <th onClick={() => handleSort("type")} className={sortField === "type" ? "sorted" : ""}>
                 <span className="th-content sort-th">
                   <span>Type</span>
-                  <span className="sort-arrow">{sortField === "type" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                  <span className="sort-arrow">{sortField === "type" ? (sortDir === "asc" ? "▲" : "▼") : ""}</span>
                 </span>
               </th>
               <th onClick={() => handleSort("date")} className={sortField === "date" ? "sorted" : ""}>
                 <span className="th-content sort-th">
                   <span>Date</span>
-                  <span className="sort-arrow">{sortField === "date" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                  <span className="sort-arrow">{sortField === "date" ? (sortDir === "asc" ? "▲" : "▼") : ""}</span>
                 </span>
               </th>
               <th>Time</th>
               <th onClick={() => handleSort("guests")} className={sortField === "guests" ? "sorted" : ""}>
                 <span className="th-content sort-th">
                   <span>Guests</span>
-                  <span className="sort-arrow">{sortField === "guests" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                  <span className="sort-arrow">{sortField === "guests" ? (sortDir === "asc" ? "▲" : "▼") : ""}</span>
                 </span>
               </th>
               <th>Decoration</th>
@@ -551,13 +551,13 @@ const Celebrations = ({ adminData, setAdminData, filters, patchFilters, onResetF
               <th onClick={() => handleSort("totalAmount")} className={sortField === "totalAmount" ? "sorted" : ""}>
                 <span className="th-content sort-th">
                   <span>Est. Total</span>
-                  <span className="sort-arrow">{sortField === "totalAmount" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                  <span className="sort-arrow">{sortField === "totalAmount" ? (sortDir === "asc" ? "▲" : "▼") : ""}</span>
                 </span>
               </th>
               <th onClick={() => handleSort("status")} className={sortField === "status" ? "sorted" : ""}>
                 <span className="th-content sort-th">
                   <span>Status</span>
-                  <span className="sort-arrow">{sortField === "status" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                  <span className="sort-arrow">{sortField === "status" ? (sortDir === "asc" ? "▲" : "▼") : ""}</span>
                 </span>
               </th>
               <th>Actions</th>

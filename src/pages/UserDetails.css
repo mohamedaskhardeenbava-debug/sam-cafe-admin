@@ -1,53 +1,136 @@
-/* ═══════════════════════════════════════════════════════
-   UserDetails.css  —  Sam Cafe Admin  —  UserDetails page
-   Depends on Common.css
-═══════════════════════════════════════════════════════ */
 
-.user-info-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.user-info-table td {
-  padding: 8px;
-  border: 1px solid #e0e0e0;
-}
-
-.user-orders-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.user-orders-table th,
-.user-orders-table td {
-  padding: 8px;
-  border: 1px solid #e0e0e0;
-}
-
-.user-orders-table th {
-  background: #f5f5f5;
-}
 
 .clickable {
   cursor: pointer;
+}
+
+/* ═══════════ Guest Management / Loyalty ═══════════ */
+
+.guest-header-tier {
+  margin-left: 10px;
+}
+
+.loyalty-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.loyalty-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f7f8fa;
+  border: 1px solid #e5e7eb;
+}
+
+.loyalty-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #888;
+}
+
+.loyalty-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #222;
+}
+
+.loyalty-stat-sub {
+  font-size: 11.5px;
+  color: #999;
+}
+
+.loyalty-points-panel {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff8e6, #fff);
+  border: 1px solid #f0e0b0;
+}
+
+.loyalty-points-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.loyalty-points-value {
+  font-size: 30px;
+  font-weight: 800;
+  color: #b8860b;
+}
+
+.loyalty-points-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #777;
+}
+
+.loyalty-tier-pill {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.loyalty-points-next {
+  font-size: 12.5px;
+  color: #888;
+  margin-left: auto;
+}
+
+/* Negative-points row in the merged Orders & Loyalty History table (manual removals) */
+.loyalty-points-negative {
+  color: #c0392b;
+  font-weight: 600;
+}
+
+/* Staff notes field */
+.guest-notes-textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #d7dbe0;
+  font-size: 13.5px;
+  font-family: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.guest-notes-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* "Adjust Points" button in the page header, next to the tier badge */
+.adjust-points-header-btn {
+  margin-left: auto;
 }
 /* ═══════════════════════════════════════════
    RESPONSIVE — 1080 / 992 / 768 / 578 / 480
 ═══════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .user-info-table,
-  .user-orders-table {
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
+
+  .loyalty-overview-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .loyalty-points-next {
+    margin-left: 0;
+    width: 100%;
   }
 }
 
 @media (max-width: 578px) {
-  .user-info-table td,
-  .user-orders-table th,
-  .user-orders-table td {
-    padding: 6px;
-    font-size: 12px;
-  }
 }

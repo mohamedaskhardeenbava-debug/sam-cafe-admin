@@ -1,19 +1,4 @@
-/* ═══════════════════════════════════════════════════════
-   Categories.css  —  Sam Cafe Admin  —  Categories page
-   Depends on Common.css + ModalCSS.css
-═══════════════════════════════════════════════════════ */
 
-.category-image,
-.category-placeholder {
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
-}
-
-.category-name {
-  font-size: 14px;
-  font-weight: 500;
-}
 
 .subcategory-row td {
   padding: 0 !important;
@@ -119,20 +104,6 @@
   object-fit: contain;
 }
 
-.subcategory-input-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.subcategory-input-row input {
-  flex: 1;
-  padding: 8px 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 13px;
-}
-
 .category-size-row,
 .subcategory-size-row {
   display: flex;
@@ -199,10 +170,6 @@
   cursor: pointer;
 }
 
-.sub-edit-btn {
-  background: #f0f0f0;
-}
-
 .sub-delete-btn {
   background: #ffe5e5;
   color: #b00000;
@@ -253,44 +220,6 @@ button img {
   width: 14px;
 }
 
-.icon-btn {
-  padding: 10px;
-}
-
-.edit-btn,
-.delete-btn {
-  color: red;
-}
-
-.edit-column {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.edit-column input[type="text"] {
-  padding: 6px;
-  font-size: 14px;
-}
-
-.edit-column input[type="file"] {
-  font-size: 12px;
-}
-
-.edit-image-preview {
-  width: 60px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 6px;
-  margin-top: 4px;
-}
-
-.edit-actions {
-  display: flex;
-  gap: 6px;
-  margin-top: 4px;
-}
-
 .form-group textarea {
   width: 100%;
   height: 72px;
@@ -300,54 +229,6 @@ button img {
   border: 1px solid #ccc;
   border-radius: 6px;
   box-sizing: border-box;
-}
-
-.category-close-btn {
-  position: absolute;
-  top: 24px;
-  right: 24px;
-  width: 36px;
-  height: 36px;
-  border-radius: 5px;
-  border: none;
-  background-color: #f2f2f2;
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s ease, transform 0.15s ease;
-}
-
-/* hover & active */
-.category-close-btn:hover {
-  background-color: #e5e5e5;
-  transform: scale(1.05);
-}
-
-.category-close-btn:active {
-  transform: scale(0.95);
-}
-
-/* icon */
-.category-close-btn::before,
-.category-close-btn::after {
-  content: "";
-  position: absolute;
-  width: 18px;
-  height: 2px;
-  background-color: #333;
-  border-radius: 2px;
-}
-
-/* first line */
-.category-close-btn::before {
-  transform: rotate(45deg);
-}
-
-/* second line */
-.category-close-btn::after {
-  transform: rotate(-45deg);
 }
 /* ═══════════════════════════════════════════
    RESPONSIVE — 1080 / 992 / 768 / 578 / 480
@@ -360,10 +241,6 @@ button img {
 }
 
 @media (max-width: 768px) {
-  .subcategory-input-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
 
   .subcategory-preview-table,
   .preview-table {
@@ -371,25 +248,9 @@ button img {
     overflow-x: auto;
     white-space: nowrap;
   }
-
-  .edit-actions {
-    flex-wrap: wrap;
-  }
-
-  .category-close-btn {
-    top: 14px;
-    right: 14px;
-  }
 }
 
-@media (max-width: 578px) {
-  .category-name {
-    font-size: 13px;
-  }
-
-  .category-image,
-  .category-placeholder,
-  .subcategory-image {
+@media (max-width: 578px) {.subcategory-image {
     width: 30px;
     height: 30px;
   }
@@ -405,8 +266,4 @@ button img {
 }
 
 @media (max-width: 480px) {
-  .edit-image-preview {
-    width: 48px;
-    height: 48px;
-  }
 }

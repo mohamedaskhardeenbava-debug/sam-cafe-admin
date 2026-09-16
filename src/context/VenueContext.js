@@ -44,8 +44,11 @@ export function VenueProvider({ children }) {
       setVenues(res.data || []);
       return res.data;
     } catch {
-      setVenues([]);
-      return [];
+      // Leave any previously-loaded venues in place instead of wiping them
+      // out on a transient failure (e.g. a dropped request, or the backend
+      // briefly unreachable) — clearing here is what made the dropdown look
+      // "broken" until a full page reload, since nothing ever retried.
+      return null;
     }
   }, []);
 
@@ -55,11 +58,28 @@ export function VenueProvider({ children }) {
       setIsLoading(false);
       return;
     }
-    (async () => {
+
+    let cancelled = false;
+    let attempt = 0;
+
+    const load = async () => {
       setIsLoading(true);
-      await refreshVenues();
+      const data = await refreshVenues();
+      if (cancelled) return;
+
+      // Retry a couple of times on failure before giving up, with a short
+      // backoff — covers the "sometimes doesn't load" case of a cold-
+      // starting backend or a single dropped request.
+      if (data === null && attempt < 3) {
+        attempt += 1;
+        setTimeout(load, attempt * 1000);
+        return;
+      }
       setIsLoading(false);
-    })();
+    };
+
+    load();
+    return () => { cancelled = true; };
   }, [isAuthenticated, refreshVenues]);
 
   // Super Admin no longer has an "all venues" choice — once venues have

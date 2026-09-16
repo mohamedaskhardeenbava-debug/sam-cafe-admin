@@ -58,7 +58,6 @@
     overflow-y: visible;
     /* Hide scrollbar but keep scrollability */
     scrollbar-width: none;
-    -ms-overflow-style: none;
     max-width: calc(100vw - 280px);
     padding-bottom: 2px;
     /* optical for scrollbar-less */
@@ -1223,12 +1222,6 @@
 .chip-tooltip--portal .chip-tooltip__row--note {
   color: #666;
   font-style: italic;
-}
-
-.chip-tooltip--portal .chip-tooltip__icon {
-  font-size: 13px;
-  flex-shrink: 0;
-  line-height: 1.4;
 }
 
 @media (max-width: 578px) {

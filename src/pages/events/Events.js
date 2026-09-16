@@ -24,6 +24,8 @@ import CollapseSection from "../../components/CollapseSection";
 import CurrentLocationToggle from "../../components/CurrentLocationToggle";
 import { useVenue } from "../../context/VenueContext";
 import { venueToAddressFields, emptyAddressFields } from "../../utils/resolveVenueAddress";
+import useInfiniteScroll from "../../components/useInfiniteScroll";
+import InfiniteScrollLoader, { InfiniteScrollOverlay } from "../../components/InfiniteScrollLoader";
 
 import "../Common.css";
 import "./Events.css";
@@ -236,6 +238,9 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
     });
   }, [bookings, filterEventId, filterStatuses, filterFromDate, filterToDate, searchQuery, bookSortKey, bookSortDir]);
 
+  const { displayLimit: bookingsDisplayLimit, sentinelRef: bookingsSentinelRef, containerRef: bookingsContainerRef, hasMore: bookingsHasMore, isLoadingMore: bookingsIsLoadingMore } =
+    useInfiniteScroll(filteredBookings.length, 20);
+
   const toggleBookSort = (key) => {
     if (bookSortKey === key) setBookSortDir(d => d === "asc" ? "desc" : "asc");
     else { setBookSortKey(key); setBookSortDir("asc"); }
@@ -271,8 +276,8 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
       return {
         Title: evt.title || "—",
         Type: evt.categoryLabel || evt.eventType || "—",
-        Date: evt.date || "—",
-        Time: evt.time || "—",
+        Date: formatDate(evt.date),
+        Time: fmtTime(evt.time),
         Venue: evt.venue || "—",
         "Max Capacity": evt.maxCapacity || 0,
         "Price (₹)": evt.price || 0,
@@ -296,7 +301,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
         Email: b.email || "—",
         Phone: b.phone || "—",
         Event: evt?.title || b.eventId || "—",
-        "Booked On": (b.bookedAt || b.date || "—").slice(0, 10),
+        "Booked On": formatDate(b.bookedAt || b.date),
         Guests: b.guests ?? "—",
         Amount: b.totalAmount ? `₹${Number(b.totalAmount).toLocaleString("en-IN")}` : "—",
         Status: b.status || "—",
@@ -310,7 +315,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
 
   const BookSortIcon = ({ col }) => (
     <span className="sort-arrow">
-      {bookSortKey === col ? (bookSortDir === "asc" ? "▲" : "▼") : "▼"}
+      {bookSortKey === col ? (bookSortDir === "asc" ? "▲" : "▼") : ""}
     </span>
   );
 
@@ -1062,7 +1067,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
             </div>
           )}
 
-          <div className="table-wrapper">
+          <div className="table-wrapper" ref={bookingsContainerRef}>
             {filteredBookings.length === 0 ? (
               <div className="ae-empty-state"><p>No bookings found.</p></div>
             ) : (
@@ -1110,7 +1115,7 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredBookings.map((b, i) => {
+                  {filteredBookings.slice(0, bookingsDisplayLimit).map((b, i) => {
                     const evt = events.find((e) => e.id === b.eventId);
                     return (
                       <tr key={b.id}>
@@ -1142,10 +1147,16 @@ const Events = ({ adminData, setAdminData, filters, patchFilters }) => {
                       </tr>
                     );
                   })}
+                  <InfiniteScrollLoader
+                    sentinelRef={bookingsSentinelRef}
+                    hasMore={bookingsHasMore}
+                    colSpan={8}
+                  />
                 </tbody>
               </table>
             )}
           </div>
+          <InfiniteScrollOverlay isLoading={bookingsIsLoadingMore} />
         </div>
       )}
 

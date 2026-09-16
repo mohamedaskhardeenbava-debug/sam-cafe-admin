@@ -1,99 +1,4 @@
-/* ═══════════════════════════════════════════════════════
-   KitchenGrooming.css  —  Sam Cafe Admin  —  KitchenGrooming page
-   Depends on Common.css + ModalCSS.css
-═══════════════════════════════════════════════════════ */
 
-.kgroom-page {
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* ── SUMMARY ROW ─────────────────────────────────────── */
-.kgroom-summary-row {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.kgroom-summary-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 12px 14px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-  flex: 1;
-  min-width: 140px;
-  border: 1px solid #f0f0f0;
-  transition: transform 0.2s;
-}
-
-.kgroom-summary-card:hover {
-  transform: translateY(-2px);
-}
-
-.kgroom-sum-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.kgroom-sum-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.kgroom-sum-name {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.kgroom-sum-bar-wrap {
-  height: 5px;
-  background: #f0f0f0;
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 4px;
-}
-
-.kgroom-sum-bar {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.4s;
-}
-
-.kgroom-sum-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.kgroom-sum-days {
-  font-size: 11px;
-  color: #aaa;
-}
-
-.kgroom-sum-pct {
-  font-size: 12px;
-  font-weight: 700;
-}
 
 /* ── TABLE WRAPPER ───────────────────────────────────── */
 .kgroom-table-wrapper {
@@ -328,85 +233,6 @@
   color: #ef476f;
 }
 
-/* ── MODAL ───────────────────────────────────────────── */
-.kgroom-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-  backdrop-filter: blur(2px);
-}
-
-.kgroom-modal {
-  background: #fff;
-  width: 420px;
-  max-width: 95vw;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-}
-
-.kgroom-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 20px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.kgroom-modal-header h3 {
-  font-size: 16px;
-  font-weight: 700;
-  color: #111;
-  margin: 0;
-}
-
-.kgroom-close-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: 6px;
-  border: none;
-  background: #f5f5f5;
-  cursor: pointer;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-}
-
-.kgroom-close-btn:hover {
-  background: #eee;
-}
-
-.kgroom-close-btn::before,
-.kgroom-close-btn::after {
-  content: "";
-  position: absolute;
-  width: 14px;
-  height: 2px;
-  background: #666;
-  border-radius: 2px;
-}
-
-.kgroom-close-btn::before {
-  transform: rotate(45deg);
-}
-
-.kgroom-close-btn::after {
-  transform: rotate(-45deg);
-}
-
-.kgroom-modal-body {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
 .kgroom-detail-name {
   font-size: 16px;
   font-weight: 700;
@@ -468,60 +294,7 @@
   color: #dc2626;
 }
 
-.kgroom-form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.kgroom-form-group label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.kgroom-form-group select,
-.kgroom-form-group textarea {
-  padding: 10px 12px;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.2s;
-  resize: none;
-  font-family: inherit;
-}
-
-.kgroom-modal-footer {
-  display: flex;
-  gap: 10px;
-  padding: 14px 20px;
-  border-top: 1px solid #f0f0f0;
-  justify-content: flex-end;
-}
-
 @media (max-width: 768px) {
-  .kgroom-summary-row {
-    flex-direction: column;
-  }
-}
-
-/* ── Shared kitchen filter bar ── */
-.kgroom-filter-bar,
-.assign-filter-bar,
-.recipe-filter-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  padding: 10px 14px 12px;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  border: 1px solid #f0f0f0;
-  margin-bottom: 4px;
 }
 
 .kgroom-filter-label {
@@ -531,34 +304,6 @@
   text-transform: uppercase;
   letter-spacing: 0.07em;
   white-space: nowrap;
-}
-
-/* ── Shared pill btn ── */
-.sched-pill-btn {
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 1.5px solid #e5e7eb;
-  background: #f9fafb;
-  color: #555;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-  font-family: inherit;
-  white-space: nowrap;
-}
-
-.sched-pill-btn:hover {
-  border-color: #bbb;
-  background: #f3f4f6;
-  color: #111;
-}
-
-.sched-pill-btn.active {
-  background: #111;
-  border-color: #111;
-  color: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 /* ── Shared clear + count ── */
@@ -678,32 +423,6 @@
   text-align: center;
 }
 
-.kgroom-summary-collapsible {
-  display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  overflow: hidden;
-  transition: grid-template-rows 0.32s ease, opacity 0.28s ease, margin 0.28s ease;
-  margin-top: -16px;
-  pointer-events: none;
-}
-
-.kgroom-summary-collapsible>* {
-  min-height: 0;
-  overflow: hidden;
-}
-
-.kgroom-summary-collapsible.kgroom-summary-open {
-  grid-template-rows: 1fr;
-  opacity: 1;
-  margin-top: 0;
-  pointer-events: auto;
-}
-
-.kgroom-summary-toggle {
-  margin-left: auto;
-}
-
 .ae-result-count {
   font-size: 12px;
   color: #888;
@@ -714,17 +433,9 @@
    RESPONSIVE ADDENDUM — 1080 / 992 / 578 / 480
 ═══════════════════════════════════════════ */
 @media (max-width: 992px) {
-  .kgroom-filter-bar,
-  .assign-filter-bar,
-  .recipe-filter-bar {
-    padding: 8px 10px 10px;
-  }
 }
 
 @media (max-width: 578px) {
-  .kgroom-modal {
-    width: 92vw;
-  }
 
   .kgroom-table th,
   .kgroom-table td {
@@ -733,8 +444,4 @@
 }
 
 @media (max-width: 480px) {
-  .kgroom-modal-footer {
-    flex-wrap: wrap;
-    padding: 12px 14px;
-  }
 }

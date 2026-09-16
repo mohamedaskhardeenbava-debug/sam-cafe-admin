@@ -40,38 +40,11 @@
   min-height: 0;
 }
 
-.perm-roles-hint {
-  font-size: 13px;
-  color: #888;
-  margin: 0 0 14px;
-  flex-shrink: 0;
-}
-
 /* ── Module tabs inside the filter bar ───────────────────────────── */
 .perm-filter-bar {
   flex-direction: column;
   align-items: stretch;
   gap: 10px;
-}
-
-/* ── Table shell ─────────────────────────────────────────────────── */
-.perm-table-wrapper {
-  overflow: auto;
-}
-
-.perm-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-/* ── Header ──────────────────────────────────────────────────────── */
-.perm-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: var(--color-white);
-  border-bottom: 1px solid var(--color-offwhite);
 }
 
 .perm-module-col {
@@ -103,19 +76,6 @@
   text-transform: uppercase;
   color: var(--text-placeholder);
   border-left: 1px solid var(--color-offwhite);
-}
-
-/* ── Group divider rows ──────────────────────────────────────────── */
-.perm-group-row td {
-  background: #f6f7f8;
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 8px 16px !important;
-  border-top: 1px solid var(--color-offwhite);
-  border-bottom: 1px solid var(--color-offwhite);
 }
 
 /* ── Data rows ───────────────────────────────────────────────────── */

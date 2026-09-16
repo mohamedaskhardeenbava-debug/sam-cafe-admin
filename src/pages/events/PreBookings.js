@@ -716,9 +716,9 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
       Name: item.name || "—",
       Mobile: item.mobile || "—",
       Email: item.email || "—",
-      Date: item.date || "—",
+      Date: fmtDate(item.date),
       Slot: item.slotGroup || "—",
-      Time: item.time || "—",
+      Time: fmtTime(item.time),
       Guests: item.guests ?? "—",
       Items: (item.items || []).length,
       "Total Amount": item.totalAmount ? `₹${Number(item.totalAmount).toLocaleString("en-IN")}` : "—",
@@ -842,14 +842,14 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
               <th onClick={() => handleSort("name")} className={sortField === "name" ? "sorted" : ""}>
                 <span className="th-content sort-th">
                   <span>Guest Name</span>
-                  <span className="sort-arrow">{sortField === "name" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                  <span className="sort-arrow">{sortField === "name" ? (sortDir === "asc" ? "▲" : "▼") : ""}</span>
                 </span>
               </th>
               <th>Contact</th>
               <th onClick={() => handleSort("date")} className={sortField === "date" ? "sorted" : ""}>
                 <span className="th-content sort-th">
                   <span>Date</span>
-                  <span className="sort-arrow">{sortField === "date" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                  <span className="sort-arrow">{sortField === "date" ? (sortDir === "asc" ? "▲" : "▼") : ""}</span>
                 </span>
               </th>
               <th>Slot</th>
@@ -857,20 +857,20 @@ const PreBookings = ({ adminData, setAdminData, filters, patchFilters, onResetFi
               <th onClick={() => handleSort("guests")} className={sortField === "guests" ? "sorted" : ""}>
                 <span className="th-content sort-th">
                   <span>Guests</span>
-                  <span className="sort-arrow">{sortField === "guests" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                  <span className="sort-arrow">{sortField === "guests" ? (sortDir === "asc" ? "▲" : "▼") : ""}</span>
                 </span>
               </th>
               <th>Items</th>
               <th onClick={() => handleSort("totalAmount")} className={sortField === "totalAmount" ? "sorted" : ""}>
                 <span className="th-content sort-th">
                   <span>Total</span>
-                  <span className="sort-arrow">{sortField === "totalAmount" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                  <span className="sort-arrow">{sortField === "totalAmount" ? (sortDir === "asc" ? "▲" : "▼") : ""}</span>
                 </span>
               </th>
               <th onClick={() => handleSort("status")} className={sortField === "status" ? "sorted" : ""}>
                 <span className="th-content sort-th">
                   <span>Status</span>
-                  <span className="sort-arrow">{sortField === "status" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                  <span className="sort-arrow">{sortField === "status" ? (sortDir === "asc" ? "▲" : "▼") : ""}</span>
                 </span>
               </th>
               <th>Actions</th>

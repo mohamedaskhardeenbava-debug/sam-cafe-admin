@@ -523,10 +523,10 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
       Name: r.name || "—",
       Mobile: r.mobile || "—",
       Email: r.email || "—",
-      "Reserved Date": r.date || "—",
-      "Booked On": r.bookedDate || r.reservedDate || "—",
+      "Reserved Date": fmtDate(r.date),
+      "Booked On": fmtDate(r.bookedDate || r.reservedDate),
       Slot: r.slotGroup || "—",
-      Time: r.time || "—",
+      Time: fmtTime(r.time),
       Guests: r.guests ?? "—",
       Table: r.tableNo || "—",
       "Table Pref": r.tablePref || "—",
@@ -670,14 +670,14 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
               <th onClick={() => handleSort("name")} className={sortField === "name" ? "sorted" : ""}>
                 <span className="th-content sort-th">
                   <span>Guest Name</span>
-                  <span className="sort-arrow">{sortField === "name" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                  <span className="sort-arrow">{sortField === "name" ? (sortDir === "asc" ? "▲" : "▼") : ""}</span>
                 </span>
               </th>
               <th>Contact</th>
               <th onClick={() => handleSort("date")} className={sortField === "date" ? "sorted" : ""}>
                 <span className="th-content sort-th">
                   <span>Reserved Date</span>
-                  <span className="sort-arrow">{sortField === "date" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                  <span className="sort-arrow">{sortField === "date" ? (sortDir === "asc" ? "▲" : "▼") : ""}</span>
                 </span>
               </th>
               <th>Booked On</th>
@@ -686,7 +686,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
               <th onClick={() => handleSort("guests")} className={sortField === "guests" ? "sorted" : ""}>
                 <span className="th-content sort-th">
                   <span>Guests</span>
-                  <span className="sort-arrow">{sortField === "guests" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                  <span className="sort-arrow">{sortField === "guests" ? (sortDir === "asc" ? "▲" : "▼") : ""}</span>
                 </span>
               </th>
               <th>Table Pref</th>
@@ -695,7 +695,7 @@ const Reservations = ({ adminData, setAdminData, filters, patchFilters, onResetF
               <th onClick={() => handleSort("status")} className={sortField === "status" ? "sorted" : ""}>
                 <span className="th-content sort-th">
                   <span>Status</span>
-                  <span className="sort-arrow">{sortField === "status" ? (sortDir === "asc" ? "▲" : "▼") : "▼"}</span>
+                  <span className="sort-arrow">{sortField === "status" ? (sortDir === "asc" ? "▲" : "▼") : ""}</span>
                 </span>
               </th>
               <th>Actions</th>

@@ -16,35 +16,6 @@
   border-radius: 12px;
 }
 
-.edit-icon {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  opacity: 0.7;
-}
-
-.edit-icon:hover {
-  opacity: 1;
-}
-
-.edit-row input,
-.edit-row textarea {
-  flex: 1;
-  padding: 8px 10px;
-  font-size: 14px;
-}
-
-.edit-row textarea {
-  min-height: 80px;
-}
-
-.edit-row button {
-  padding: 6px 14px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-}
-
 .tag-list {
   display: flex;
   gap: 8px;

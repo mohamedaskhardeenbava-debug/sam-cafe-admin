@@ -1,50 +1,4 @@
-/* ═══════════════════════════════════════════════════════
-   ModalCSS.css  —  Sam Cafe Admin  —  Modal base styles
-   Import after Common.css. 3D buttons live in Common.css.
-═══════════════════════════════════════════════════════ */
 
-/* ── Close button ── */
-.close-btn {
-    position: relative;
-    width: 36px;
-    height: 36px;
-    border-radius: 5px;
-    border: none;
-    background-color: var(--color-offwhite);
-    cursor: pointer;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s ease, transform 0.15s ease;
-}
-
-.close-btn:hover {
-    background-color: #e5e5e5;
-    transform: scale(1.05);
-}
-
-.close-btn:active {
-    transform: scale(0.95);
-}
-
-.close-btn::before,
-.close-btn::after {
-    content: "";
-    position: absolute;
-    width: 18px;
-    height: 2px;
-    background-color: var(--text-secondary);
-    border-radius: 2px;
-}
-
-.close-btn::before {
-    transform: rotate(45deg);
-}
-
-.close-btn::after {
-    transform: rotate(-45deg);
-}
 
 
 /* ── Overlay ── */
@@ -154,10 +108,6 @@
     overflow: visible;
 }
 
-.modal.large {
-    width: 480px;
-}
-
 .admin-modal textarea {
     resize: none;
     min-height: 70px;
@@ -224,19 +174,6 @@
     gap: 10px;
     box-sizing: border-box;
 }
-
-.modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-}
-
-.modal-actions button {
-    padding: 8px 14px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-}
 /* ═══════════════════════════════════════════
    RESPONSIVE — 1080 / 992 / 768 / 578 / 480
 ═══════════════════════════════════════════ */
@@ -248,10 +185,6 @@
 
 @media (max-width: 992px) {
   .admin-modal {
-    width: 90vw;
-  }
-
-  .modal.large {
     width: 90vw;
   }
 }
@@ -272,10 +205,6 @@
   .admin-modal-header h5 {
     font-size: 18px !important;
   }
-
-  .modal-actions {
-    flex-wrap: wrap;
-  }
 }
 
 @media (max-width: 578px) {
@@ -287,31 +216,12 @@
     border-radius: 10px;
     gap: 8px;
   }
-
-  .close-btn {
-    width: 30px;
-    height: 30px;
-  }
-
-  .modal-actions button {
-    padding: 7px 12px;
-    font-size: 13px;
-  }
 }
 
 @media (max-width: 480px) {
   .admin-modal {
     width: 98vw;
     padding: 12px;
-  }
-
-  .modal-actions {
-    flex-direction: column-reverse;
-    align-items: stretch;
-  }
-
-  .modal-actions button {
-    width: 100%;
   }
 }
 

@@ -26,7 +26,7 @@ import {
 } from "recharts";
 import { format } from "date-fns";
 import { CustomDatePicker } from "../components/CustomDatePicker";
-import { fmtDate as sharedFmtDateOnly } from "../utils/dateUtils";
+import { fmtDate as sharedFmtDateOnly, fmtTime as sharedFmtTime } from "../utils/dateUtils";
 import { todayStr, getWeekRange as sharedWeekRange, getMonthRange as sharedMonthRange, getLastMonthRange as sharedLastMonthRange } from "../utils/dateRangeUtils";
 import Button3D from "../components/Button3D";
 import PageLoader from "../components/PageLoader";
@@ -259,7 +259,7 @@ const SalesDashboard = ({ adminData, setAdminData, orders = [] }) => {
         orderRows.push({
           OrderID: order.id,
           Date: sharedFmtDateOnly(order.date),
-          Time: order.time ?? (order.createdAt ? new Date(order.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }) : "—"),
+          Time: order.time ?? (order.createdAt ? (() => { const d = new Date(order.createdAt); return sharedFmtTime(`${d.getHours()}:${d.getMinutes()}`); })() : "—"),
           Customer: order.userName || "",
           Mode: order.mode || "",
           Category: item.categoryId,

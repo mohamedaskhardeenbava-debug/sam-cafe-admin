@@ -38,6 +38,7 @@ import { CustomDatePicker } from "./CustomDatePicker";
 import { DateRangeGroup, PillGroup } from "./FilterBar";
 import { resolveDateRange, todayStr } from "../utils/dateRangeUtils";
 import { exportToExcel } from "../utils/excelUtils";
+import { fmtDate } from "../utils/dateUtils";
 
 import { useToast } from "../useToast";
 import Button3D from "../components/Button3D";
@@ -100,7 +101,7 @@ const ActivityLog = ({ title, items = [], exportFilePrefix }) => {
     const rows = filtered.map((item) => ({
       Work: item.work || "—",
       Staff: item.staff || "—",
-      Date: item.date || "—",
+      Date: fmtDate(item.date),
     }));
     const ok = exportToExcel({
       rows,
@@ -196,7 +197,7 @@ const ActivityLog = ({ title, items = [], exportFilePrefix }) => {
                 <tr key={`${item.id ?? ""}-${i}`}>
                   <td>{item.work || "—"}</td>
                   <td>{item.staff || "—"}</td>
-                  <td>{item.date || "—"}</td>
+                  <td>{fmtDate(item.date)}</td>
                 </tr>
               ))
             )}

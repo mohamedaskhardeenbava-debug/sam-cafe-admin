@@ -15,6 +15,7 @@ import { todayStr, resolveDateRange } from "../utils/dateRangeUtils";
 import closeIcon from "../icon/close-icon.png";
 import { formatDisplayDate } from "../App";
 import { EmptyRow } from "../App";
+import { sortArray } from "../App";
 import useInfiniteScroll from "../components/useInfiniteScroll";
 import { useToast } from "../useToast";
 import { allowTextInput } from "../App";
@@ -45,6 +46,15 @@ const Offers = ({ adminData, setAdminData }) => {
   const [offerDatePreset, setOfferDatePreset] = useState("today");
   const [offerFromDate, setOfferFromDate] = useState(todayStr());
   const [offerToDate, setOfferToDate] = useState(todayStr());
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
+  const handleSort = (key) => {
+    setSortConfig((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" }
+    );
+  };
 
   const [newOffer, setNewOffer] = useState({
     dishId: "",
@@ -136,7 +146,7 @@ const Offers = ({ adminData, setAdminData }) => {
   };
 
   const filteredOffers = useMemo(() => {
-    return (adminData.offers || []).filter(o => {
+    const base = (adminData.offers || []).filter(o => {
       const q = offerSearch.toLowerCase();
       if (q && !(o.dishId || "").toLowerCase().includes(q)) return false;
       if (offerStatusFilters.size > 0 && !offerStatusFilters.has(o.active)) return false;
@@ -144,7 +154,11 @@ const Offers = ({ adminData, setAdminData }) => {
       if (offerToDate && o.startDate && o.startDate > offerToDate) return false;
       return true;
     });
-  }, [adminData.offers, offerSearch, offerStatusFilters, offerFromDate, offerToDate]);
+    return sortArray(
+      sortConfig.key === "dish" ? base.map((o) => ({ ...o, dish: o.dishId || "" })) : base,
+      sortConfig.key === "dish" ? { key: "dish", direction: sortConfig.direction } : sortConfig
+    );
+  }, [adminData.offers, offerSearch, offerStatusFilters, offerFromDate, offerToDate, sortConfig]);
 
   const { displayLimit, sentinelRef, containerRef, hasMore, isLoadingMore } =
     useInfiniteScroll(filteredOffers.length, 30);
@@ -251,13 +265,55 @@ const Offers = ({ adminData, setAdminData }) => {
         <table >
           <thead>
             <tr>
-              <th>Dish</th>
-              <th>Original</th>
+              <th onClick={() => handleSort("dish")} className={sortConfig.key === "dish" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Dish</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "dish" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("originalPrice")} className={sortConfig.key === "originalPrice" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Original</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "originalPrice" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
               <th>Discount</th>
-              <th>Offer Price</th>
-              <th>Start Date</th>
-              <th>End Date</th>
-              <th>Active</th>
+              <th onClick={() => handleSort("offerPrice")} className={sortConfig.key === "offerPrice" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Offer Price</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "offerPrice" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("startDate")} className={sortConfig.key === "startDate" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Start Date</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "startDate" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("endDate")} className={sortConfig.key === "endDate" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>End Date</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "endDate" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
+              <th onClick={() => handleSort("active")} className={sortConfig.key === "active" ? "sorted" : ""}>
+                <span className="th-content sort-th">
+                  <span>Active</span>
+                  <span className="sort-arrow">
+                    {sortConfig.key === "active" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                  </span>
+                </span>
+              </th>
             </tr>
           </thead>
           <tbody>

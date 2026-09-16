@@ -250,7 +250,7 @@ const Stocks = ({ adminData, setAdminData, handleSort, sortConfig }) => {
     const rows = adminData.ingredients.map((ing) => ({
       Ingredient: ing.name,
       "Stock Remaining (kg)": toTwoDecimals(ing.stockRemaining ?? 0),
-      "Last Purchased": ing.lastUpdated || "—"
+      "Last Purchased": formatDisplayDate(ing.lastUpdated)
     }));
 
     exportToExcel({ rows, sheetName: "Stocks", fileName: "stocks_export.xlsx" });

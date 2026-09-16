@@ -1,76 +1,4 @@
-/* ═══════════════════════════════════════════════════════
-   ServiceMise.css  —  Sam Cafe Admin  —  ServiceMise page
-   Depends on Common.css + ModalCSS.css
-═══════════════════════════════════════════════════════ */
 
-.service-mise-main {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-/* HEADER */
-.service-mise-header {
-  display: flex;
-  gap: 12px;
-}
-
-.service-mise-title,
-.service-mise-date {
-  font-size: 24px;
-  font-weight: 600;
-  margin: 0;
-}
-
-/* SECTION */
-.service-mise-section {
-  margin-bottom: 20px;
-}
-
-.service-mise-section-title {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0;
-  margin-bottom: 8px;
-}
-
-/* CHECKBOX */
-.service-mise-checkbox {
-  width: 14px;
-  height: 14px;
-  cursor: pointer;
-}
-
-/* ── Page wrapper ── */
-.service-mise-page {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ── Header layout ── */
-.service-mise-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.service-mise-header-left {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-}
-
-.service-mise-header-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
 
 /* ── Stat badges ── */
 .service-mise-stat-badge {
@@ -170,37 +98,8 @@
   letter-spacing: 0;
 }
 
-/* ── Section header (kept for any remaining usage) ── */
-.service-mise-section-hdr {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  background: #fff;
-  border-radius: 12px;
-  border-left: 4px solid #8b5cf6;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  font-size: 13px;
-  font-weight: 700;
-  color: #333;
-}
-
 .mise-section-icon {
   font-size: 16px;
-}
-
-.service-mise-section-label {
-  flex: 1;
-}
-
-.service-mise-section-count {
-  margin-left: auto;
-  font-size: 11px;
-  font-weight: 600;
-  color: #888;
-  background: #f3f4f6;
-  padding: 2px 8px;
-  border-radius: 999px;
 }
 
 /* ── Verified row ── */

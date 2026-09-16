@@ -9,7 +9,7 @@ import { exportToExcel } from "../../utils/excelUtils";
 import api from "../../api";
 
 import { getTomorrowKey, getTomorrowFormatted } from "../../App";
-import { EmptyRow } from "../../App";
+import { EmptyRow, sortArray } from "../../App";
 import { useToast } from "../../useToast";
 import { allowTextInput } from "../../App";
 import deleteIcon from "../../icon/delete-icon.png";
@@ -74,6 +74,15 @@ export default function ServiceAssign({ adminData, setAdminData }) {
     setter(prev => { const next = new Set(prev); next.has(val) ? next.delete(val) : next.add(val); return next; });
   const [listView, setListView] = useState(false);
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
+  const handleSort = (key) => {
+    setSortConfig((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" }
+    );
+  };
 
   const assignedDay = adminData.serviceAssign?.[tomorrow] || {};
 
@@ -274,6 +283,8 @@ export default function ServiceAssign({ adminData, setAdminData }) {
           handleChange={handleChange}
           handleDelete={handleDelete}
           headerCollapsed={headerCollapsed}
+          sortConfig={sortConfig}
+          handleSort={handleSort}
         />
       }
 
@@ -321,15 +332,46 @@ export default function ServiceAssign({ adminData, setAdminData }) {
 }
 
 /* ─── TABLE ─────────────────────────────────────────────────── */
-function STableLayout({ filteredTasks, assignedDay, adminData, handleChange, handleDelete, headerCollapsed }) {
+function STableLayout({ filteredTasks, assignedDay, adminData, handleChange, handleDelete, headerCollapsed, sortConfig, handleSort }) {
+  const sortRows = (items) => {
+    if (!sortConfig.key) return items;
+    const rows = items.map((task) => ({
+      task,
+      staff: assignedDay[task]?.staff || "",
+      assignedAt: assignedDay[task]?.assignedAt || "",
+    }));
+    return sortArray(rows, sortConfig).map((r) => r.task);
+  };
+
   return (
     <div className="table-wrapper" >
       <table >
         <thead>
           <tr>
-            <th>Task</th>
-            <th>Staff</th>
-            <th>Assigned At</th>
+            <th onClick={() => handleSort("task")} className={sortConfig.key === "task" ? "sorted" : ""}>
+              <span className="th-content sort-th">
+                <span>Task</span>
+                <span className="sort-arrow">
+                  {sortConfig.key === "task" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                </span>
+              </span>
+            </th>
+            <th onClick={() => handleSort("staff")} className={sortConfig.key === "staff" ? "sorted" : ""}>
+              <span className="th-content sort-th">
+                <span>Staff</span>
+                <span className="sort-arrow">
+                  {sortConfig.key === "staff" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                </span>
+              </span>
+            </th>
+            <th onClick={() => handleSort("assignedAt")} className={sortConfig.key === "assignedAt" ? "sorted" : ""}>
+              <span className="th-content sort-th">
+                <span>Assigned At</span>
+                <span className="sort-arrow">
+                  {sortConfig.key === "assignedAt" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+                </span>
+              </span>
+            </th>
             <th className="icon-width">Delete</th>
           </tr>
         </thead>
@@ -345,7 +387,7 @@ function STableLayout({ filteredTasks, assignedDay, adminData, handleChange, han
                   {SECTION_META[sec]?.label || sec.toUpperCase()}
                 </td>
               </tr>
-              {items.map(task => {
+              {sortRows(items).map(task => {
                 const entry = assignedDay[task];
                 const isAssigned = !!entry?.staff;
                 return (
